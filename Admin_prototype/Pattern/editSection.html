@@ -1,0 +1,253 @@
+
+<!-- /teacher/teacher.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pattern Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../commonPart/navbar.css" rel="stylesheet">
+    <link href="./form.css" rel="stylesheet">
+
+</head>
+<body>
+    <div class="container my-4">
+        <div class="container ">
+            <div class="row g-2 justify-content-end">
+                <a class="btn btn-close" href="./editPattern.html" aria-label="Close"></a>
+              </div>
+              <div class="row justify-content-center align-items-center my-2">
+                <div class="col col-12 col-sm-10 col-md-8">
+                  <h4 class="text-left  fw-bolder text-uppercase  mb-2">Edit Section</h4>
+                </div>
+                
+              </div>
+              <hr>
+        </div>
+        <div id="form-container" class="row mt-4 justify-content-center" >
+            
+                <form > 
+                  <div class="row g-3 justify-content-center">
+
+                    <div class="col col-12 col-sm-10 col-md-8 ">
+                       <!-- Input Group with Floating Labels -->
+                        <div class="input-group d-flex">
+                            <!-- Floating Label for First Input -->
+                            <div class="form-floating " style="flex: 0 0 10%;">
+                                <input type="text" class="form-control "  id="floatingQueNum" placeholder="Question Number" value="1">
+                                <label for="floatingQueNum">Q.</label>
+                            </div>
+                        
+                            <!-- Floating Label for Second Input -->
+                            <div class="form-floating " style="flex: 0 0 10%;">
+                                <input type="text" class="form-control " id="floatingSubQue" placeholder="Sub Question" value="A">
+                                <label for="floatingSubQue">Sub Q.</label>
+                            </div>
+                        
+                            <!-- Floating Label for Third Input -->
+                            <div class="form-floating" style="flex: 0 0 80%;">
+                                <input type="text" class="form-control " id="floatingSection" placeholder="Section Name" value="Answer the following questions:">
+                                <label for="floatingSection">Section Name / Main Question</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col col-12 col-sm-10 col-md-8">
+                        <div class="row g-2">
+                        <div class="col col-12 col-sm-4 ">
+                            <div class="form-floating">
+                              <input type="text" class="form-control " id="totalQuestion" placeholder="Total Number of Question" value="5">
+                              <label for="totalQuestion">Total Questions</label>
+                          </div>
+                        </div>
+                          <div class="col col-12 col-sm-4 ">
+                              <div class="form-floating">
+                                <input type="text" class="form-control " id="requiredQuestion" placeholder=" required Question" value="5">
+                                <label for="requiredQuestion"> Mandatory Question </label>
+                            </div>
+                          </div>
+                            <div class="col col-12 col-sm-4 ">
+                              <div class="form-floating">
+                                <input type="text" class="form-control " id="marksPerQuestion" placeholder="Marks per Question" value="1">
+                                <label for="marksPerQuestion">Marks per Question.</label>
+                            </div>
+                            </div>
+                    </div>
+                        
+                
+                    </div>
+                    <div class="col col-12 col-sm-10 col-md-8">
+                        <div class="row justify-content-center">
+                            <label for="sectionMarks" class="col-form-label col-6 col-sm-auto fw-bold">Section Marks:</label>    
+                            <div class="col-6 col-sm-auto">
+                                <input type="text" readonly class="form-control-plaintext " id="sectionMarks" value="5"> 
+                            </div>
+                            <label for="remainingMarks" class="col-form-label col-6 col-sm-auto fw-bold">Remaining Marks:</label>    
+                            <div class="col-6 col-sm-auto">
+                                <input type="text" readonly class="form-control-plaintext " id="remainingMarks" value="75"> 
+                            </div>
+                        </div>
+                    </div>
+
+                      
+
+                    <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-2">
+                      <legend class="float-none w-auto  ">Select Question Type :</legend>
+                
+                      <div class="row g-2 justify-content-center">
+                            <div class="col col-12 mb-3 ms-5">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="sameType">
+                                    <label class="form-check-label" for="sameType">
+                                        All questions are of the same type.
+                                    </label>
+                                  </div>
+                            </div>
+                          <div class="col col-12 ">
+                            <div class="input-group">
+                                <span class="input-group-text">1</span>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="questionType" placeholder="Question Type" list="questionTypeList" value="Fill in the Blanks" >
+                                    <label for="cityName">Search for Question Type</label>
+                                  </div>
+                                  <datalist id="questionTypeList">
+                                      <option value="Multiple Choice">
+                                          <option value="True or False">
+                                          <option value="Short Answer">
+                                          <option value="Long Answer">
+                                          <option value="Fill in the Blanks">
+                                          <option value="Matching">
+                                          <option value="Essay">
+                                          <option value="Numerical">
+                                          <option value="Coding Problem">
+                                          <option value="Case Study">
+                                          <option value="Diagram Based">
+                                  </datalist>
+                            </div>
+                           
+                          </div>
+                          <div class="col col-12 ">
+                            <div class="input-group">
+                                <span class="input-group-text">2</span>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="questionType" placeholder="Question Type" list="questionTypeList" value="Matching">
+                                    <label for="cityName">Search for Question Type</label>
+                                  </div>
+                                  <datalist id="questionTypeList">
+                                      <option value="Multiple Choice">
+                                          <option value="True or False">
+                                          <option value="Short Answer">
+                                          <option value="Long Answer">
+                                          <option value="Fill in the Blanks">
+                                          <option value="Matching">
+                                          <option value="Essay">
+                                          <option value="Numerical">
+                                          <option value="Coding Problem">
+                                          <option value="Case Study">
+                                          <option value="Diagram Based">
+                                  </datalist>
+                            </div>
+                           
+                          </div>
+                          <div class="col col-12 ">
+                            <div class="input-group">
+                                <span class="input-group-text">3</span>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="questionType" placeholder="Question Type" list="questionTypeList"value="Fill in the Blanks" >
+                                    <label for="cityName">Search for Question Type</label>
+                                  </div>
+                                  <datalist id="questionTypeList">
+                                      <option value="Multiple Choice">
+                                          <option value="True or False">
+                                          <option value="Short Answer">
+                                          <option value="Long Answer">
+                                          <option value="Fill in the Blanks">
+                                          <option value="Matching">
+                                          <option value="Essay">
+                                          <option value="Numerical">
+                                          <option value="Coding Problem">
+                                          <option value="Case Study">
+                                          <option value="Diagram Based">
+                                  </datalist>
+                            </div>
+                           
+                          </div>
+                          <div class="col col-12 ">
+                            <div class="input-group">
+                                <span class="input-group-text">4</span>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="questionType" placeholder="Question Type" list="questionTypeList" value="Case Study" >
+                                    <label for="cityName">Search for Question Type</label>
+                                  </div>
+                                  <datalist id="questionTypeList">
+                                      <option value="Multiple Choice">
+                                          <option value="True or False">
+                                          <option value="Short Answer">
+                                          <option value="Long Answer">
+                                          <option value="Fill in the Blanks">
+                                          <option value="Matching">
+                                          <option value="Essay">
+                                          <option value="Numerical">
+                                          <option value="Coding Problem">
+                                          <option value="Case Study">
+                                          <option value="Diagram Based">
+                                  </datalist>
+                            </div>
+                           
+                          </div>
+                          <div class="col col-12 ">
+                            <div class="input-group">
+                                <span class="input-group-text">5</span>
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="questionType" placeholder="Question Type" list="questionTypeList" value="Diagram Based" >
+                                    <label for="cityName">Search for Question Type</label>
+                                  </div>
+                                  <datalist id="questionTypeList">
+                                      <option value="Multiple Choice">
+                                          <option value="True or False">
+                                          <option value="Short Answer">
+                                          <option value="Long Answer">
+                                          <option value="Fill in the Blanks">
+                                          <option value="Matching">
+                                          <option value="Essay">
+                                          <option value="Numerical">
+                                          <option value="Coding Problem">
+                                          <option value="Case Study">
+                                          <option value="Diagram Based">
+                                  </datalist>
+                            </div>
+                           
+                          </div>
+                         
+
+     
+                      </div>
+
+                  </fieldset>
+
+                 
+
+                    <div class="col col-12 col-sm-10 col-md-8">
+                    <div class="text-center mt-3">
+                      <a id="submit_button" type="submit" class="btn btn-dark" href="./editPattern.html">Save</a>
+                  </div>
+                    </div>
+                    
+                  </div>
+                </form>
+            
+        </div>
+    </div>
+
+
+  
+    
+    <!-- Link to your external JavaScript file -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+<script src="./section.js"> </script>
+</body>
+</html>
+    
+  

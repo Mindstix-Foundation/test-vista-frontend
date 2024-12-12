@@ -1,0 +1,35 @@
+<!-- /index.html or any other page (school.html, pattern.html, etc.) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="./commonPart/navbar.css" rel="stylesheet">  <!-- Use styles.css from commonPart -->
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div> <!-- This is where the navbar will be loaded -->
+
+    <div class="container mt-5">
+        <h3>Welcome to the Admin Dashboard</h3>
+        <p>Manage schools, teachers, patterns, and question banks from here.</p>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Load JavaScript files -->
+    <script src="commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar and Footer -->
+    <script>
+        loadComponent('navbar', 'commonPart/navbar.html', 'navbar-container');
+        loadComponent('footer', 'commonPart/footer.html', 'footer-container');
+    </script>
+</body>
+</html>
