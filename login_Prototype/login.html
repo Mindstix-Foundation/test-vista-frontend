@@ -73,7 +73,7 @@
             </div>
     
             <button class="btn btn-primary w-100 mb-2" onclick="login()">Log In</button>
-            <button class="btn btn-link text-decoration-none w-100" onclick="forgotPassword()">Forgot Password?</button>
+            <button href="../Admin_prototype/index.html" class="btn btn-link text-decoration-none w-100" onclick="forgotPassword()">Forgot Password?</button>
         </div>
     </div>
     
@@ -87,7 +87,7 @@
 // Dummy login credentials
 const users = {
     'admin@gmail.com': 'admin',          // Admin page
-    'bondrenishant8@gmail.com': 'nishant', // Teacher page
+    'teacher@gmail.com': 'teacher', // Teacher page
     'adminuser@gmail.com': 'adminuser'  // Both pages
 };
 
@@ -95,7 +95,7 @@ const users = {
         // Redirect based on the email
         if (email === 'admin@gmail.com') {
             window.location.href = "../Admin_prototype/index.html"; // Admin page
-        } else if (email === 'bondrenishant8@gmail.com') {
+        } else if (email === 'teacher@gmail.com') {
             window.location.href = "../Teacher_Prototype/index.html"; // Teacher page
         } else if (email === 'adminuser@gmail.com') {
             window.location.href = "#"; // Page for both
