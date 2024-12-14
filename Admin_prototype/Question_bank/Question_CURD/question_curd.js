@@ -309,19 +309,19 @@ function displayQuestions(data) {
                          ${isTranslatePage ?`
                         
                          
-                                   <i class="bi bi-vector-pen fs-5" data-question='${JSON.stringify(question)}' onclick='translateQuestion(event)'></i> 
+                                   <i class="bi bi-vector-pen fs-4" data-question='${JSON.stringify(question)}' onclick='translateQuestion(event)'></i> 
                                 
                                 `:`
                           
                             
-                           <i class="bi bi-pencil-square fs-5 me-2" data-question='${JSON.stringify(question)}' onclick='editQuestion(event)'></i>
+                           <i class="bi bi-pencil-square fs-4 me-2" data-question='${JSON.stringify(question)}' onclick='editQuestion(event)'></i>
                             
                          
-                              <i class="bi bi-eraser fs-5 mx-2" data-question='${JSON.stringify(question)}' onclick='openRemoveConfirmationModal(${uniqueIndex})'></i>
+                              <i class="bi bi-eraser fs-4 mx-2" data-question='${JSON.stringify(question)}' onclick='openRemoveConfirmationModal(${uniqueIndex})'></i>
                             
                          
                             
-                              <i class="bi bi-trash3 fs-5 ms-2" data-question='${JSON.stringify(question)}' onclick='openDeleteConfirmationModal(${uniqueIndex})'></i>
+                              <i class="bi bi-trash3 fs-4 ms-2" data-question='${JSON.stringify(question)}' onclick='openDeleteConfirmationModal(${uniqueIndex})'></i>
                            
                          `}
                           
@@ -686,15 +686,15 @@ function loadUnverifiedQuestions() {
                   <div class="col-12 text-end">
                   
                       
-                        <i class="bi bi-pencil-square fs-5 me-2" data-question='${JSON.stringify(question)}' onclick='editQuestion(event)'></i>
+                        <i class="bi bi-pencil-square fs-4 me-2" data-question='${JSON.stringify(question)}' onclick='editQuestion(event)'></i>
                       
                     
                       
-                        <i class="bi bi-eraser fs-5 mx-2" data-question='${JSON.stringify(question)}'onclick='openRemoveConfirmationModal(${index})'></i>
+                        <i class="bi bi-eraser fs-4 mx-2" data-question='${JSON.stringify(question)}'onclick='openRemoveConfirmationModal(${index})'></i>
                     
                     ${verifyButtonVisible ? `
                         
-                          <i class="bi bi-check-lg fs-5 ms-2" data-question='${JSON.stringify(question)}' onclick='openVerifyConfirmationModal(${index})'></i>
+                          <i class="bi bi-check-lg fs-4 ms-2" data-question='${JSON.stringify(question)}' onclick='openVerifyConfirmationModal(${index})'></i>
                         
                       ` : ""}
                     

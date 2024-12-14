@@ -19,24 +19,29 @@
     }
   }
   
-
-   /* For screen size "sm" or smaller */
-@media (max-width: 576px) {
   .btn-custom {
-    background-color: #dc3545;
-    color: white;
-  }
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover styles for all devices */
+.btn-custom:hover,
+.btn-custom:focus {
+    background-color: #dc3545 !important ;
+    color: white !important;
+}
+
+/* For screen size "sm" or smaller */
+@media (max-width: 576px) {
+    .btn-custom {
+        background-color: #dc3545;
+        color: white;
+    }
 }
 
 /* For larger screen sizes */
 @media (min-width: 577px) {
-  .btn-custom {
-    background-color: #f8f9fa; /* Matches btn-light */
-    color: black;
-    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth hover effect */
-  }
-  .btn-custom:hover {
-    background-color: #dc3545;
-    color: white;
-  }
+    .btn-custom {
+        background-color: #f8f9fa; /* Matches btn-light */
+        color: black;
+    }
 }

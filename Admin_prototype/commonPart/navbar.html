@@ -19,7 +19,13 @@
         .navbar {
             background-color: black !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: 100px;
+            padding-left: 0;
+            padding-right: 0;
         }
+        .nav-link {
+    white-space: nowrap;
+}
 
         .navbar-brand {
             color: white !important;
@@ -56,17 +62,18 @@
     .navbar-toggler-icon {
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
     }
+    
     </style>
 </head>
 
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <div class="row w-100 align-items-center justify-content-center">
+        <div class="container w-100 h-100 ">
+            <div class="row   w-100 h-100 align-items-end justify-content-center" style="margin-left: unset;">
                 <!-- Project Heading -->
-                <div class="col-8 col-lg-2 text-start text-lg-start">
-                    <a class="navbar-brand" href="#" style="font-size: 24px;">TEST VISTA</a>
+                <div class="col-8 col-lg-2  text-lg-start">
+                    <a class="navbar-brand" href="../../Admin_prototype/index.html" style="font-size: 24px;">TEST VISTA</a>
                 </div>
     
                 <!-- Toggler for Offcanvas -->
@@ -80,30 +87,28 @@
                             <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas"></button>
                         </div>
                         <div class="offcanvas-body">
-                            <ul class="navbar-nav justify-content-start  flex-grow-1">
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="/Admin_prototype/index.html">Home</a>
+                            <ul class="navbar-nav justify-content-end align-items-end flex-grow-1 flex-nowrap">
+                               
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/School/school.html">School</a>
                                 </li>
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="/Admin_prototype/School/school.html">School</a>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Teacher/teacher.html">Teacher</a>
                                 </li>
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="/Admin_prototype/Teacher/teacher.html">Teacher</a>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Pattern/pattern.html">Pattern</a>
                                 </li>
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="/Admin_prototype/Pattern/pattern.html">Pattern</a>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Question_bank/question.html">Question Bank</a>
                                 </li>
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="/Admin_prototype/Question_bank/question.html">Question Bank</a>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Syllabus/syllabus.html">Syllabus</a>
                                 </li>
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="/Admin_prototype/Syllabus/syllabus.html">Syllabus</a>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="#">Profile</a>
                                 </li>
-                                <li class="nav-item text-start">
-                                    <a class="nav-link fs-5" href="#">Profile</a>
-                                </li>
-                                <li class="nav-item text-start ">
-                                    <a class="nav-link fs-5" href="../../login_Prototype/login.html" data-bs-toggle="modal"
+                                <li class="nav-item pe-0 ">
+                                    <a class="nav-link fs-6" href="../../login_Prototype/login.html" data-bs-toggle="modal"
                                         data-bs-target="#logoutModal">Log Out</a>
                                 </li>
                             </ul>
