@@ -1,0 +1,82 @@
+<!-- /syllabus/syllabus.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../commonPart/navbar.css" rel="stylesheet">
+    <link href="./syllabus.css" rel="stylesheet">
+    
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+      <!-- Main Container -->
+      <div class="container mt-4 mb-5">
+        
+        <div class="row p-2 justify-content-center mb-2">
+            <div class="col-12 col-sm-10">
+                <h5 class="text-left  fw-bolder text-uppercase  mb-4">My Profile</h5>
+            </div>
+            
+          
+            <hr>
+        </div>
+        
+        <div class="row gy-2 g-3 justify-content-center p-3">
+            <div class="col-12 col-sm-10 col-md-8">
+            <form>
+                <div class="row mb-3">
+              
+                    <label for="name" class="col-12 col-sm-3 col-form-label fw-bolder">Name</label>
+                    <div class="col-12 col-sm-9">
+                    <input type="text" class="form-control-plaintext" id="name" value="Admin Mindstix Foundation" readonly>
+                </div>
+                </div>
+                <div class="row mb-3">
+               
+                    <label for="username" class="col-12 col-sm-3 col-form-label fw-bolder">Username</label>
+                    <div class="col-12 col-sm-9">
+                    <input type="text" class="form-control-plaintext" id="username" value="AdminMind" readonly>
+                    </div>
+                
+            </div>
+                <div class="row mb-3">
+                
+                    <label for="email" class="col-12 col-sm-3 col-form-label fw-bolder">Email</label>
+                    <div class="col-12 col-sm-9">
+                    <input type="email" class="form-control-plaintext" id="email" value="admin@gmail.com" readonly>
+                    </div>
+                
+            </div>
+                
+            </form>
+            </div>
+
+        </div>
+        
+
+    </div>
+
+   
+
+    <!-- Footer 
+    <div id="footer-container"></div>
+    -->
+    <!-- Load JavaScript files -->
+    <script src="../commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar and Footer -->
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+     
+    </script>
+
+</body>
+</html>
