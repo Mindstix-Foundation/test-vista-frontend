@@ -1,15 +1,22 @@
 body {
-   
+
     padding-top: 20px;
 }
 
 .container {
     max-width: 900px;
-    margin: auto;
+    margin: 0 auto;
+    /* Centers the container horizontally */
+    padding-left: 1rem;
+    /* Adds 1-column margin on the left */
+    padding-right: 1rem;
+    /* Adds 1-column margin on the right */
 }
 
+
 form {
-    background-color: white; /* Changed form background color */
+    background-color: white;
+    /* Changed form background color */
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -50,6 +57,15 @@ form {
 
 .modal-dialog {
     max-width: 500px;
+    /* Fixed width */
+    height: 400px;
+    /* Fixed height */
+    margin: auto;
+    display: flex;
+    align-items: center;
+    /* Center vertically */
+    justify-content: center;
+    /* Center horizontally */
 }
 
 /* Responsive Design */
@@ -68,14 +84,16 @@ form {
 
 /* Test button specific styling */
 .btn.test {
-    background-color: lightgreen; /* Light green color for test button */
+    background-color: lightgreen;
+    /* Light green color for test button */
     color: black;
     border: none;
     transition: background-color 0.3s ease;
 }
 
 .btn.test:hover {
-    background-color: #9cdf9c; /* Slightly darker green on hover */
+    background-color: #9cdf9c;
+    /* Slightly darker green on hover */
 }
 
 .form-select,
@@ -87,35 +105,199 @@ form {
     font-size: 18px;
 }
 
+.modal-content {
+    padding: 1rem;
+    /* Reduce modal internal padding */
+    box-sizing: border-box;
+    /* Ensure padding does not exceed width */
+    width: 100%;
+    /* Ensure full-width alignment */
+    margin: 0;
+    /* Remove additional margins */
+}
+
+.modal-header {
+    border-bottom: 1px solid #ddd;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
 /* Card Styles */
 .card {
-    border: none;
-    color: #250707;
-    transition: transform 0.3s ease;  /* Smooth transition for hover effect */
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     cursor: pointer;
-    border-radius: 10px; /* Rounded corners */
-    margin-bottom: 15px; /* Add margin between cards */
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Card Hover Effect */
 .card:hover {
-    transform: translateY(-10px); /* Lift card on hover */
+    transform: scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Card Text */
-.card-title {
-    font-size: 1.25rem;
-    font-weight: bold;
+.card-body {
+    padding: 1rem;
 }
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
 .card-text {
     font-size: 0.9rem;
     color: #555;
 }
 
-/* Responsive Design */
+/* Collapsible Table Styles */
+.table {
+    margin-top: 1rem;
+}
+
+.table th,
+.table td {
+    padding: 0.5rem;
+}
+
+.table-dark {
+    background-color: #343a40;
+    color: white;
+}
+
+.table-sm td,
+.table-sm th {
+    font-size: 0.875rem;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #ddd;
+}
+
+/* Icon for Collapse */
+.bi-table {
+    font-size: 1.25rem;
+    color: #007bff;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.bi-table:hover {
+    color: #0056b3;
+}
+
+/* Mobile and Desktop Responsiveness */
 @media (max-width: 768px) {
-    .pattern-card {
-        flex: 1 0 100%;
-        max-width: 100%;
+    .modal-dialog {
+        width: 768px;
+        /* Ensure this width is applied with higher priority */
+        max-width: 96% !important;
+        /* Prevent it from exceeding the screen width */
     }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 1rem 0.5rem;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .card-text {
+        font-size: 0.85rem;
+    }
+
+    .bi-table {
+        font-size: 1.1rem;
+    }
+
+    /* Corrected class selector */
+    .container.p-0 {
+        padding: 0;
+    }
+
+    .row.mb-2.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .row.mb-3 {
+        font-size: 0.85rem;
+    }
+
+    .col-12.col-sm-6 {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Desktop Adjustments */
+@media (min-width: 769px) {
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+    }
+
+    .card-text {
+        font-size: 1rem;
+    }
+
+    .bi-table {
+        font-size: 1.5rem;
+    }
+
+    /* Optional: Stacking cards for larger screens */
+    .col-md-6 {
+        flex: 0 0 auto;
+        /* Restore Bootstrap defaults */
+        max-width: 50%;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Custom Search Field for Modal */
+#patternSearch {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+/* Icon for Collapse at the Bottom Right */
+.card-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 1.5rem;
+    color: #007bff;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+/* Card for Larger Views */
+.col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-bottom: 1rem;
+}
+
+.col-12.col-sm-10 {
+    flex: 0 0 100%;
+    max-width: 100%;
 }

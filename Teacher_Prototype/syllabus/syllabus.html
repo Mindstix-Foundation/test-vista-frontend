@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link href="style.css" rel="stylesheet">
     <link href="../style.css" rel="stylesheet">
 </head>
+
 <body>
     <div id="navbar-container"></div> <!-- Navbar -->
 
@@ -17,7 +19,7 @@
         <div class="text-center mb-4">
             <h3>View Syllabus</h3>
         </div>
-        
+
         <!-- Form -->
         <form id="viewSyllabusForm">
             <!-- Board Selection -->
@@ -28,7 +30,17 @@
                     <option value="maharashtra">Maharashtra Board</option>
                 </select>
             </div>
-
+            <div class="mb-3">
+                <!-- Language of Instruction Selection -->
+                <label for="language" class="form-label">Language of Instruction <span
+                        class="text-danger">*</span></label>
+                <select id="language" class="form-select" required disabled>
+                    <option value="">Select Language</option>
+                    <option value="english">English</option>
+                    <option value="marathi">Marathi</option>
+                    <option value="hindi">Hindi</option>
+                </select>
+            </div>
             <!-- Class Selection -->
             <div class="mb-3">
                 <label for="class" class="form-label">Select Class <span class="text-danger">*</span></label>
@@ -52,7 +64,8 @@
 
             <!-- Submit Button -->
             <div class="mb-3 text-center">
-                <button type="submit" class="btn btn-primary mt-3 w-100" id="viewSyllabusBtn" disabled>View Syllabus</button>
+                <button type="submit" class="btn btn-primary mt-3 w-100" id="viewSyllabusBtn" disabled>View
+                    Syllabus</button>
             </div>
         </form>
     </div>
@@ -65,4 +78,5 @@
     <script src="script.js"></script>
     <script src="../script.js"></script>
 </body>
+
 </html>

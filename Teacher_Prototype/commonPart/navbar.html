@@ -55,12 +55,12 @@
 
         .offcanvas .nav-link {
             font-size: 20px;
-            color: rgb(255, 255, 255) !important;
+            color: rgb(212, 212, 212) !important;
             /* Set nav links to white */
         }
 
         .offcanvas .nav-link:hover {
-            color: #6c757d !important;
+            color: #ffffff !important;
             /* Change to golden color on hover */
         }
 
@@ -115,7 +115,6 @@
             }
         }
 
-
         /* Add spacing between buttons */
         .btn+.btn {
             margin-left: 5px;
@@ -152,23 +151,19 @@
                             <a class="nav-link" href="../index.html">Home</a>
                         </li>
                         <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../createTestPaper/createTestPaper.html">Create
+                            <a class="nav-link" href="../createTestPaper/createTestPaper.html">Create
                                 Test Paper</a>
                         </li>
                         <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../previousTestPaper/previousTestPaper.html">Previous
+                            <a class="nav-link" href="../previousTestPaper/previousTestPaper.html">Previous
                                 Test
                                 Papers</a>
                         </li>
                         <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../syllabus/syllabus.html">Syllabus</a>
+                            <a class="nav-link" href="../syllabus/syllabus.html">Syllabus</a>
                         </li>
                         <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../profile/profile.html">Profile</a>
+                            <a class="nav-link" href="../profile/profile.html">Profile</a>
                         </li>
                         <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
                             <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
@@ -196,17 +191,18 @@
             </div>
         </div>
     </div>
-    
+
     <!-- JavaScript -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const toggleRole = document.getElementById('toggleRole');
-
-            toggleRole.addEventListener('change', function () {
-                if (toggleRole.checked) {
-                    window.location.href = "#";
-                } else {
-                    window.location.href = "#";
+          document.addEventListener('DOMContentLoaded', function() {
+            // Get the admin role radio button
+            const adminRoleRadio = document.getElementById('adminRole');
+            
+            // Add event listener to check for change in selection
+            adminRoleRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    // Redirect to the admin page when selected
+                    window.location.href = "../../Admin_prototype/index.html";
                 }
             });
         });

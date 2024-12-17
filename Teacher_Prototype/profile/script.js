@@ -10,12 +10,8 @@ function logout1() {
 
     // Attach an event listener to the confirm button
     document.getElementById('confirmLogout').addEventListener('click', function () {
-        // Clear session or token (if applicable)
-        // Example: localStorage.removeItem('authToken');
-
-        // Redirect to the 'login.html' page in the 'login_Prototype' folder
-        window.location.href = '../login_Prototype/login.html';
+        
+        window.location.href = '../../login_Prototype/login.html';
     });
 }
-
 
