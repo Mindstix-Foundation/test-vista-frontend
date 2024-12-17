@@ -1,0 +1,22 @@
+/* Default styles for screens above 576px */
+.dynamic-style {
+    position: static; /* Replace with your desired default positioning */
+    background-color: transparent; /* Example of default styling */
+    box-shadow: none;
+    width: auto;
+    
+  }
+  
+  /* Styles for screens below 576px */
+  @media (max-width: 576px) {
+    .dynamic-style {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Small shadow */
+      padding: 1rem;
+    }
+  }
+  

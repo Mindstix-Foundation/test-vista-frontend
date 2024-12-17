@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Link to common CSS -->
+    <link href="/Admin_prototype/commonPart/navbar.css" rel="stylesheet">
+    <link href="/Admin_prototype/School/school.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <div class="container mt-4 mb-5 ">
+        <div class="row p-2 justify-content-center mb-1">
+            <div class="col-12 col-sm-5 ">
+                <h5 class="text-left  fw-bolder text-uppercase  mb-4">SCHOOL MANAGEMENT</h5>
+            </div>
+           
+            <div class="col-12 col-sm-5  text-end " >
+                <div class="dynamic-style">
+                    <a class="btn btn-success  stick-bottom" id="addButton" href="./form.html">Add School</a>
+                </div>
+            </div>
+            <hr >
+        </div>
+        
+       
+        <div class="row p-2 gy-2  justify-content-center">
+                <!-- Search Bar -->
+                <div class="col-12 col-sm-5">
+                    <div class=" input-group">
+                        
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="schoolFilter" placeholder="Search for School" list="schoolList" >
+                        <label for="schoolFilter"><i class="bi bi-search text-secondary"></i> Search for School</label>
+                    </div>
+                    
+                    <datalist id="schoolList">
+                      <option value="ABC School">
+                      <option value="XYZ School">
+                      <option value="PQR School">
+                      <option value="MNO School">
+                      <option value="EFG School">
+  
+                    </datalist>
+                    <span class="input-group-text clear-icon" onclick="clearInput('schoolFilter')" style="cursor: pointer;">
+                        <i class="bi bi-x-lg"></i>
+                    </span>
+                    </div>
+
+                </div>
+                <!-- Filter Dropdown -->
+                <div class="col-12 col-sm-5">
+                    <div class=" input-group">
+                        
+
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="boardFilter" placeholder="Search for Board" list="boardList"  >
+                        <label for="boardFilter'"> <i class="bi bi-search text-secondary"></i> Search for  Board</label>
+                    </div>
+                    
+                    <datalist id="boardList">
+                      <option value="Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)">
+                      <option value="Central Board of Secondary Education (CBSE)">
+                      <option value="Council for the Indian School Certificate Examinations (CISCE)">
+                      <option value="National Institute of Open Schooling (NIOS)">
+                      <option value="International Baccalaureate (IB)">
+                      <option value="Gujarat Secondary and Higher Secondary Education Board (GSEB)">
+                      <option value="Madhya Pradesh Board of Secondary Education (MPBSE)">
+                      <option value="Goa Board of Secondary and Higher Secondary Education (GBSHSE)">
+                      <option value="Karnataka Secondary Education Examination Board (KSEEB)">
+                      <option value="Chhattisgarh Board of Secondary Education (CGBSE)">
+                      <option value="Board of Secondary Education, Telangana (BSET)">
+                      <option value="Board of Secondary Education, Andhra Pradesh (BSEAP)">
+                      <option value="Cambridge Assessment International Education (CAIE)">
+                    </datalist>
+                    <span class="input-group-text clear-icon" onclick="clearInput('boardFilter')" style="cursor: pointer;">
+                        <i class="bi bi-x-lg"></i>
+                    </span>
+                    </div>
+                </div>
+        </div>
+            
+ 
+
+        <!-- Table Section -->
+        <div id="table-container" class="row mt-4 p-2 justify-content-center">
+            <div class="col col-12 col-sm-10 col-md-10">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped table-bordered">
+                        <colgroup>
+                            <col style="width: 10px;">
+                            <col style="width: 35%;">
+                            <col style="width: 65%;">
+                            <col style="width: 20px;">
+                        </colgroup>
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">School</th>
+                                <th scope="col">Board</th>
+                                <th scope="col">Manage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-group-divider" id="schoolTable">
+                            <tr data-board="STATE">
+                                <th scope="row">1</th>
+                                <td>ABC School</td>
+                                <td>Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)</td>
+                                <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#viewSchoolModal"></i></td>
+                            </tr>
+                            <tr data-board="CBSE">
+                                <th scope="row">2</th>
+                                <td>XYZ School</td>
+                                <td>Central Board of Secondary Education (CBSE)</td>
+                                <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#viewSchoolModal"></i></td>
+                            </tr>
+                            <tr data-board="ICSE">
+                                <th scope="row">3</th>
+                                <td>PQR School</td>
+                                <td>International Baccalaureate (IB)</td>
+                                <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#viewSchoolModal"></i></td>
+                            </tr>
+                            <tr data-board="STATE">
+                                <th scope="row">4</th>
+                                <td>MNO School</td>
+                                <td>Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)</td>
+                                <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#viewSchoolModal"></i></td>
+                            </tr>
+                            <tr data-board="CBSE">
+                                <th scope="row">5</th>
+                                <td>EFG School</td>
+                                <td>Central Board of Secondary Education (CBSE)</td>
+                                <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#viewSchoolModal"></i></td>
+                            </tr>
+                           
+                            <!-- More rows as needed -->
+                        </tbody>  
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    
+    </div>
+
+  
+
+    <div class="container">
+        <div class="modal fade " id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true" >
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteConfirmationModalLabel">Remove School</h5>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this School from system?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelButton" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="deleteButton" data-bs-dismiss="modal">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+       
+         <!-- View School Modal -->
+         <div class="modal fade" id="viewSchoolModal" tabindex="-1" aria-labelledby="viewSchoolModalLabel" aria-hidden="true">
+            <div class="modal-dialog  modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="viewSchoolModalLabel">School Information</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="container">
+                            <div id="form-container" class="row mt-4" >
+                                <div class="col-12 p-3">
+                        <form > 
+                            <div class="row g-3">
+                                <div class="row">
+                                <label for="schoolName" class="col-form-label col-12 col-lg-3 fw-bold">School Name:</label>    
+                                <div class="col-12 col-lg-9">
+                                    <input type="text" readonly class="form-control-plaintext " id="schoolName" value="ABC School"> 
+                                </div>
+                                </div>
+
+                                <div class="row">
+                                    <label for="boardName" class="col-form-label col-12 col-lg-3 fw-bold">Board:</label>    
+                                    <div class="col-12 col-lg-9">
+                                        <textarea readonly class="form-control-plaintext" id="boardName"  style="white-space: pre-wrap;">Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)</textarea>
+                                    </div>
+                                </div>
+
+                                    <fieldset class="border p-2 rounded col col-12  ">
+                                        <legend class="float-none w-auto fs-5">School Address </legend>
+
+                                        <div class="row">
+                                            <label for="address" class="col-form-label col-12 col-lg-3 fw-bold"> Address:</label>    
+                                            <div class="col-12 col-lg-9">
+                                                <textarea readonly class="form-control-plaintext" id="address"  style="white-space: pre-wrap;">604, Block-A, Ashar Belleza, Near Ashar IT Park,Road no.16, Wagle Estate, Thane.</textarea>
+                                            </div>
+                                            </div>
+
+                                           
+                                        <div class="row">
+                                            <label for="pincode" class="col-form-label col-12 col-lg-3 fw-bold">Pincode / Zipcode:</label>    
+                                            <div class="col-12 col-lg-9">
+                                                <input type="text" readonly class="form-control-plaintext " id="pincode" value="600450"> 
+                                            </div>
+                                            </div> 
+
+                                        <div class="row">
+                                            <div class="col-12 col-lg-3">
+                                                    <label for="country" class="col-form-label col-6 col-lg-6 fw-bold">Country:</label>    
+                                                    <div class="col-12">
+                                                        <input type="text" readonly class="form-control-plaintext " id="country" value="India"> 
+                                                    </div>
+                                               
+                                            </div>
+                                        
+                                            <div class="col-12 col-lg-3">
+                                                <label for="state" class="col-form-label col-6 col-lg-6 fw-bold">State:</label>    
+                                                 <div class="col-12">
+                                                     <input type="text" readonly class="form-control-plaintext " id="state" value="Maharashtra"> 
+                                                 </div>
+                                            </div>
+                                            <div class="col-12 col-lg-3">
+                                                <label for="city" class="col-form-label col-6 col-lg-6 fw-bold">City:</label>    
+                                                 <div class="col-12">
+                                                     <input type="text" readonly class="form-control-plaintext " id="city" value="Thane"> 
+                                                 </div>
+                                            </div>
+                                        </div>                                      
+                                    </fieldset>
+
+                                    <fieldset class="border p-2 rounded col col-12 ">
+                                        <legend class="float-none w-auto  fs-5">Principal's Information </legend>
+
+                                        <div class="row">
+                                        <label for="principalName" class="col-form-label col-12 col-lg-3 fw-bold">Principal:</label>    
+                                        <div class="col-12 col-lg-9">
+                                            <input type="text" readonly class="form-control-plaintext " id="principalName" value="Mr.ABC"> 
+                                        </div>
+                                        </div>
+
+                                        <div class="row ">
+                                            <div class="col-12 col-lg-6">
+                                                <div class="row">
+                                                    <label for="contactNumber" class="col-12 col-lg-6 col-form-label fw-bold">Contact Number:</label>
+                                                    <div class="col-12 col-lg-6">
+                                                        <input type="text" readonly class="form-control-plaintext" id="contactNumber" value="9874563211">
+                                                    </div>
+                                                </div>       
+                                            </div>
+                                            <div class="col-12 col-lg-6">
+                                                <div class="row">
+                                                    <label for="alternateContactNumber" class="col-12 col-lg-6 col-form-label fw-bold">Alternate Number:</label>
+                                                    <div class="col-12 col-lg-6">
+                                                        <input type="text" readonly class="form-control-plaintext" id="alternateContactNumber"  value="1234567899">
+                                                    </div>
+                                                </div>            
+                                            </div>             
+                                        </div>  
+
+                                        <div class="row ">
+                                            <label for="emailId" class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
+                                            <div class="col-12 col-lg-9">
+                                                <input type="text" readonly class="form-control-plaintext" id="emailId"  value="abc.princ@school.edu.in">
+                                            </div>
+                                        </div>
+                                    </fieldset>
+                                    <div class="col col-12">
+                                        <div class="row g-2 ">
+                                            <div class="col-12 col-lg-6 pe-sm-3">
+                                                <div class="row">
+                                                    <label for="medium" class="col-form-label fw-bold">Mediums Offered :</label>
+                                                    <ul class="list-group" id="medium">
+                                                        <li class="list-group-item">English</li>
+                                                        <li class="list-group-item">Marathi</li>
+                                                        <li class="list-group-item">Hindi</li>
+                                                      </ul>
+                                                </div>       
+                                            </div>
+                                            <div class="col-12 col-lg-6 ps-sm-3">
+                                                <div class="row">
+                                                    <label for="standard" class="col-form-label fw-bold">Standards Offered :</label>
+                                                    <ul class="list-group" id="medium">
+                                                        <li class="list-group-item">Standard 1</li>
+                                                        <li class="list-group-item">Standard 2</li>
+                                                        <li class="list-group-item">Standard 3</li>
+                                                        <li class="list-group-item">Standard 4</li>
+                                                        <li class="list-group-item">Standard 5</li>
+                                                      </ul>
+                                                </div>            
+                                            </div>             
+                                        </div> 
+
+                                    </div>
+                                  
+
+                            </div>
+                          </form>
+                    </div>
+                </div>
+            </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a type="button" class="btn btn-dark" id="editSchoolButton" href="./formEdit.html"> Edit</a>
+                        <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
+                    </div>
+                </div>
+            </div>
+         </div>
+
+    <!-- Footer 
+    <div id="footer-container"></div>
+    -->
+
+    <!-- Load JavaScript files -->
+    <script src="/Admin_prototype/commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Link to your external JavaScript file -->
+    <script src="/Admin_prototype/School/school.js"></script>
+
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+        loadComponent('footer', '../commonPart/footer.html', 'footer-container');
+    </script>
+</body>
+</html>

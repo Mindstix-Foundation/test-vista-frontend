@@ -1,0 +1,1164 @@
+{
+    "questions": [
+      {
+        "question": "Define the process of photosynthesis.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Explain the water cycle with a labeled diagram.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          }
+        ]
+      },
+      {
+        "question": "Describe the role of mitochondria in cells.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          }
+        ]
+      },
+      {
+        "question": "List and describe three properties of a triangle.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Mathematics",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Mathematics",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Mathematics",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "What are the different types of energy? Explain with examples.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "Explain the importance of the water cycle in maintaining life on Earth.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          }
+        ]
+      },
+      {
+        "question": "What is the Pythagorean theorem? Prove it with a diagram.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Mathematics",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          }
+        ]
+      },
+      {
+        "question": "Discuss the effects of deforestation on the environment.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "Describe the various Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)s of matter and their properties.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          }
+        ]
+      },
+      {
+        "question": "What is the significance of the discovery of the electron?",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          }
+        ]
+      },
+      {
+        "question": "Explain how plants adapt to different environments.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          }
+        ]
+      },
+      {
+        "question": "Describe the working of a simple electric circuit.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          }
+        ]
+      },
+      {
+        "question": "What are Newton's three laws of motion? Explain with examples.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "Discuss the importance of renewable energy sources.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "How do seasons change on Earth? Explain the science behind it.",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          }
+        ]
+      },
+    
+      {
+        "question": "The chemical formula for water is ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "______ is the largest planet in the solar system.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          }
+        ]
+      },
+      {
+        "question": "The SI unit of force is ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "Plants produce oxygen during ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          }
+        ]
+      },
+      {
+        "question": "The Pythagorean theorem Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)s that a² + b² = ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Mathematics",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Mathematics",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "The boiling point of water is ________ °C.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "The process of converting solid to gas is called ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          }
+        ]
+      },
+      {
+        "question": "The capital of India is ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Social Studies",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          }
+        ]
+      },
+      {
+        "question": "An object in motion stays in motion unless acted upon by ________ force.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Light travels in a ________ line.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "The area of a circle is given by ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Mathematics",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "The atomic number of hydrogen is ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          }
+        ]
+      },
+      {
+        "question": "The smallest unit of life is the ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          }
+        ]
+      },
+      {
+        "question": "The formula for speed is ________ divided by time.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Electric current is measured in ________.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          }
+        ]
+      },
+   
+      {
+        "question": "Which organ is responsible for pumping blood in humans?",
+        "type": "MCQ",
+        "options": ["Liver", "Heart", "Lungs", "Kidney"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "What is the boiling point of water?",
+        "type": "MCQ",
+        "options": ["50°C", "80°C", "100°C", "120°C"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          }
+        ]
+      },
+      {
+        "question": "Which of the following is a primary color?",
+        "type": "MCQ",
+        "options": ["Red", "Green", "Yellow", "Pink"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          }
+        ]
+      },
+      {
+        "question": "What is the capital of India?",
+        "type": "MCQ",
+        "options": ["New Delhi", "Mumbai", "Kolkata", "Chennai"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Social Studies",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Social Studies",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Social Studies",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          }
+        ]
+      },
+      {
+        "question": "Which gas is most abundant in the Earth's atmosphere?",
+        "type": "MCQ",
+        "options": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          }
+        ]
+      },
+      {
+        "question": "The formula for the area of a rectangle is:",
+        "type": "MCQ",
+        "options": ["Length × Breadth", "Length + Breadth", "2 × Length", "Length ÷ Breadth"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Mathematics",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Mathematics",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "What is the largest planet in the Solar System?",
+        "type": "MCQ",
+        "options": ["Earth", "Jupiter", "Mars", "Saturn"],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Which element is represented by the symbol O?",
+        "type": "MCQ",
+        "options": ["Oxygen", "Osmium", "Ozone", "Orthium"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          }
+        ]
+      },
+      {
+        "question": "What is the result of 9 × 8?",
+        "type": "MCQ",
+        "options": ["72", "81", "63", "69"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Mathematics",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          }
+        ]
+      },
+      {
+        "question": "Who invented the telephone?",
+        "type": "MCQ",
+        "options": ["Alexander Graham Bell", "Thomas Edison", "Nikola Tesla", "Isaac Newton"],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "Which country is known as the Land of the Rising Sun?",
+        "type": "MCQ",
+        "options": ["India", "China", "Japan", "Korea"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Social Studies",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          }
+        ]
+      },
+      {
+        "question": "Which organelle is known as the powerhouse of the cell?",
+        "type": "MCQ",
+        "options": ["Nucleus", "Mitochondria", "Chloroplast", "Ribosome"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          }
+        ]
+      },
+      {
+        "question": "What is the chemical formula of carbon dioxide?",
+        "type": "MCQ",
+        "options": ["CO2", "CO", "C2O", "C2O2"],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Which planet is closest to the Sun?",
+        "type": "MCQ",
+        "options": ["Mercury", "Venus", "Earth", "Mars"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "Which part of the plant conducts photosynthesis?",
+        "type": "MCQ",
+        "options": ["Roots", "Stem", "Leaves", "Flowers"],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          }
+        ]
+      },
+    
+      {
+        "question": "Match the pairs of countries and their capitals.",
+        "type": "Match the Pairs",
+        "lhs": ["India", "France", "Germany", "USA"],
+        "rhs": ["New Delhi", "Paris", "Berlin", "Washington D.C.", "Ottawa"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Social Studies",
+            "chapter": 1,
+            "topic": "Topic 1.3"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of fruits and their colors.",
+        "type": "Match the Pairs",
+        "lhs": ["Apple", "Banana", "Grape", "Orange"],
+        "rhs": ["Red", "Yellow", "Purple", "Orange", "Green"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.4"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of devices and their inventors.",
+        "type": "Match the Pairs",
+        "lhs": ["Telephone", "Light Bulb", "Airplane", "Radio"],
+        "rhs": [
+          "Alexander Graham Bell",
+          "Thomas Edison",
+          "Wright Brothers",
+          "Marconi",
+          "Newton"
+        ],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of planets and their moons.",
+        "type": "Match the Pairs",
+        "lhs": ["Earth", "Mars", "Jupiter", "Saturn"],
+        "rhs": ["Moon", "Phobos", "Europa", "Titan", "Ganymede"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)s and their official languages.",
+        "type": "Match the Pairs",
+        "lhs": ["Maharashtra", "Tamil Nadu", "Karnataka", "Kerala"],
+        "rhs": ["Marathi", "Tamil", "Kannada", "Malayalam", "Hindi"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Social Studies",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of metals and their symbols.",
+        "type": "Match the Pairs",
+        "lhs": ["Gold", "Silver", "Iron", "Copper"],
+        "rhs": ["Au", "Ag", "Fe", "Cu", "Hg"],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of books and their authors.",
+        "type": "Match the Pairs",
+        "lhs": ["The Ramayana", "The Mahabharata", "The Odyssey", "Hamlet"],
+        "rhs": ["Valmiki", "Vyasa", "Homer", "Shakespeare", "Mark Twain"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Social Studies",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Social Studies",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of animals and their habitats.",
+        "type": "Match the Pairs",
+        "lhs": ["Camel", "Penguin", "Tiger", "Dolphin"],
+        "rhs": ["Desert", "Antarctica", "Forest", "Ocean", "River"],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.1"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of human body parts and their functions.",
+        "type": "Match the Pairs",
+        "lhs": ["Heart", "Brain", "Lungs", "Stomach"],
+        "rhs": [
+          "Pumps blood",
+          "Processes information",
+          "Breathes air",
+          "Digests food",
+          "Filters waste"
+        ],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of shapes and their properties.",
+        "type": "Match the Pairs",
+        "lhs": ["Circle", "Square", "Triangle", "Rectangle"],
+        "rhs": [
+          "No corners",
+          "All sides equal",
+          "Three sides",
+          "Opposite sides equal",
+          "Four corners"
+        ],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Mathematics",
+            "chapter": 1,
+            "topic": "Topic 1.2"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of energy types and their sources.",
+        "type": "Match the Pairs",
+        "lhs": ["Solar", "Wind", "Hydro", "Nuclear"],
+        "rhs": ["Sun", "Air", "Water", "Uranium", "Fossil fuels"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.4"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of historical events and their years.",
+        "type": "Match the Pairs",
+        "lhs": ["World War I", "World War II", "Indian Independence", "Moon Landing"],
+        "rhs": ["1914", "1939", "1947", "1969", "1989"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "History",
+            "chapter": 2,
+            "topic": "Topic 2.1"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "History",
+            "chapter": 3,
+            "topic": "Topic 3.3"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of computer components and their functions.",
+        "type": "Match the Pairs",
+        "lhs": ["CPU", "RAM", "Hard Disk", "Monitor"],
+        "rhs": [
+          "Processes instructions",
+          "Temporary memory",
+          "Storage",
+          "Displays output",
+          "Power supply"
+        ],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Computer Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of scientists and their discoveries.",
+        "type": "Match the Pairs",
+        "lhs": ["Newton", "Einstein", "Curie", "Darwin"],
+        "rhs": [
+          "Gravity",
+          "Relativity",
+          "Radioactivity",
+          "Evolution",
+          "Vaccination"
+        ],
+        "topics": [
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.4"
+          }
+        ]
+      },
+      {
+        "question": "Match the pairs of musical instruments and their types.",
+        "type": "Match the Pairs",
+        "lhs": ["Guitar", "Flute", "Drum", "Violin"],
+        "rhs": ["String", "Wind", "Percussion", "String", "Brass"],
+        "topics": [
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Music",
+            "chapter": 2,
+            "topic": "Topic 2.2"
+          }
+        ]
+      }
+    ]
+  }
+  

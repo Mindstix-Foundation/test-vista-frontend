@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Include Bootstrap CSS and Bootstrap Icons CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Custom width for the offcanvas in mobile view */
+@media (max-width: 768px) {
+    #offcanvasNavbar.offcanvas-end {
+        width: 75% !important;  /* Adjust this percentage as needed */
+        max-width: 75% !important;
+    }
+}
+
+        /* Custom Navbar Styles */
+        .navbar {
+            background-color: black !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: 100px;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .nav-link {
+    white-space: nowrap;
+}
+
+        .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .navbar-nav .nav-link {
+            color: white !important;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #ffc107 !important;
+        }
+
+        .offcanvas {
+            background-color: black;
+        }
+
+        .offcanvas .nav-link {
+            color: white !important;
+        }
+
+        .offcanvas .nav-link:hover {
+            color: #ffc107 !important;
+        }
+
+        .offcanvas-header {
+            border-bottom: 1px solid #495057;
+        }
+        .navbar-toggler {
+        background-color: black;
+        border-color: white;
+    }
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+    }
+    
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container w-100 h-100 ">
+            <div class="row   w-100 h-100 align-items-end justify-content-center" style="margin-left: unset;">
+                <!-- Project Heading -->
+                <div class="col-8 col-lg-2  text-lg-start">
+                    <a class="navbar-brand" href="../../Admin_prototype/index.html" style="font-size: 24px;">TEST VISTA</a>
+                </div>
+    
+                <!-- Toggler for Offcanvas -->
+                <div class="col-4 col-lg-8 ps-2 text-end">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
+                        <div class="offcanvas-header">
+                            
+                            <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas"></button>
+                        </div>
+                        <div class="offcanvas-body">
+                            <ul class="navbar-nav justify-content-end align-items-end flex-grow-1 flex-nowrap">
+                               
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/School/school.html">School</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Teacher/teacher.html">Teacher</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Pattern/pattern.html">Pattern</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Question_bank/question.html">Question Bank</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/Syllabus/syllabus.html">Syllabus</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link fs-6" href="/Admin_prototype/profile/profile.html">Profile</a>
+                                </li>
+                                <li class="nav-item pe-0 ">
+                                    <a class="nav-link fs-6" href="../../login_Prototype/login.html" data-bs-toggle="modal"
+                                        data-bs-target="#logoutModal">Log Out</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    
+
+    <!-- Logout Confirmation Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to logout?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="../../login_Prototype/login.html" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

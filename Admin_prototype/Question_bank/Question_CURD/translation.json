@@ -1,0 +1,426 @@
+{
+    "questions": [
+      {
+        "question": "मानव शरीरातील हृदयाचे कार्य काय आहे?",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "उष्णतेच्या प्रसारणाचे तीन प्रकार कोणते आहेत?",
+        "type": "Descriptive",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "पाणी 100°C तापमानावर ________ होते.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "सूर्यापासून पृथ्वीपर्यंत उष्णता ___________ प्रक्रियेद्वारे पोहोचते.",
+        "type": "Fill in the Blanks",
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "पाणी कोणत्या अवस्थेत पृथ्वीवर सर्वाधिक प्रमाणात अस्तित्वात आहे?",
+        "type": "MCQ",
+        "options": ["वायू", "द्रव", "ठोस", "गॅस"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      },
+      {
+        "question": "सूर्यप्रकाश पृथ्वीवर पोहोचण्यासाठी किती वेळ लागतो?",
+        "type": "MCQ",
+        "options": ["5 मिनिटे", "8 मिनिटे", "10 मिनिटे", "12 मिनिटे"],
+        "topics": [
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+          {
+            "board": "Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 1,
+            "topic": "Topic 1.1"
+          },
+
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "Central Board of Secondary Education (CBSE)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 2,
+            "topic": "Topic 2.3"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 8,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 6,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          },
+          {
+            "board": "International Baccalaureate (IB)",
+            "class": 7,
+            "subject": "Science",
+            "chapter": 3,
+            "topic": "Topic 3.2"
+          }
+        ]
+      }
+    ]
+}

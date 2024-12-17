@@ -1,0 +1,47 @@
+/* Default styles for screens above 576px */
+.dynamic-style {
+    position: static; /* Replace with your desired default positioning */
+    background-color: transparent; /* Example of default styling */
+    box-shadow: none;
+    width: auto;
+  }
+  
+  /* Styles for screens below 576px */
+  @media (max-width: 576px) {
+    .dynamic-style {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Small shadow */
+      padding: 1rem;
+    }
+  }
+  
+  .btn-custom {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover styles for all devices */
+.btn-custom:hover,
+.btn-custom:focus {
+    background-color: #dc3545 !important ;
+    color: white !important;
+}
+
+/* For screen size "sm" or smaller */
+@media (max-width: 576px) {
+    .btn-custom {
+        background-color: #dc3545;
+        color: white;
+    }
+}
+
+/* For larger screen sizes */
+@media (min-width: 577px) {
+    .btn-custom {
+        background-color: #f8f9fa; /* Matches btn-light */
+        color: black;
+    }
+}

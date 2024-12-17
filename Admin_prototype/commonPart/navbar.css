@@ -1,0 +1,92 @@
+/* General Styling */
+.navbar {
+  background-color: black; /* White background */
+}
+
+.navbar img {
+  width: 50px; /* Adjust thumbnail width */
+  height: auto;
+  
+}
+
+.navbar h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+  color: white;
+  display: inline-block;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.nav-link {
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  text-transform: uppercase;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #ff6f61; /* Soft Coral */
+  text-decoration: underline;
+}
+
+.navbar-toggler {
+ 
+  font-size: 1.2rem;
+}
+
+.offcanvas-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+ 
+}
+
+
+
+/* Responsive Styling */
+@media (max-width: 576px) { /* Small Screens */
+  .navbar h2 {
+    font-size: 1.2rem;
+  }
+  .navbar-nav .nav-link {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 992px) { /* Medium Screens */
+  .navbar h2 {
+    font-size: 1.3rem;
+  }
+  .navbar-nav .nav-link {
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 992px) { /* Large Screens */
+  .navbar h2 {
+    font-size: 1.5rem;
+  }
+  .navbar-nav .nav-link {
+    font-size: 1.1rem;
+  }
+  .navbar-nav .nav-item {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+
+#top-navbar.offcanvas {
+  background-color: white;
+  width: 75%;
+  max-width: 75%;
+}
+
+/* Medium screens - 50% width */
+@media (min-width: 768px) { /* Bootstrap’s "md" breakpoint */
+  #top-navbar.offcanvas {
+    width: 50%;
+    max-width: 50%;
+  }
+}

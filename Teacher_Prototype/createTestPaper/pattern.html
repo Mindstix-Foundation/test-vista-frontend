@@ -1,0 +1,51 @@
+ <!-- Modal for Pattern Selection -->
+ <div class="modal fade" id="patternModal" tabindex="-1" aria-labelledby="patternModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patternModalLabel">Select Pattern</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="patternSearch" class="form-control mb-3" placeholder="Search by Name or Description" onkeyup="filterPatterns()">
+                
+                <div class="row" id="patternCardsContainer">
+                    <!-- Example Card -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card pattern-card" onclick="selectPattern('Board Pattern', this)">
+                            <div class="card-body">
+                                <h5 class="card-title">Board Pattern</h5>
+                                <p class="card-text">
+                                    <strong>Type:</strong> Objective and Subjective<br>
+                                    <strong>Description:</strong> A comprehensive pattern with objective and subjective questions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card pattern-card" onclick="selectPattern('Pattern 1', this)">
+                            <div class="card-body">
+                                <h5 class="card-title">Pattern 1</h5>
+                                <p class="card-text">
+                                    <strong>Type:</strong> Objective<br>
+                                    <strong>Description:</strong> Focused on multiple-choice questions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card pattern-card" onclick="selectPattern('Pattern 2', this)">
+                            <div class="card-body">
+                                <h5 class="card-title">Pattern 2</h5>
+                                <p class="card-text">
+                                    <strong>Type:</strong> Subjective<br>
+                                    <strong>Description:</strong> Composed of short-answer and essay questions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
