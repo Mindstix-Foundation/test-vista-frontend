@@ -34,26 +34,30 @@ form {
 
 .chapter-option {
     cursor: pointer;
-    margin-bottom: 10px;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    flex: 1 0 45%;
-    max-width: 45%;
-    transition: background-color 0.3s ease;
+    margin-bottom: 10px; /* Margin between rows */
+    padding: 10px; /* Padding inside each option */
+    text-align: center; /* Center-align text */
+    border: 1px solid #ccc; /* Light border for visibility */
+    border-radius: 5px; /* Rounded corners */
+    flex: 1 0 calc(50% - 15px); /* Adjusted to fit two options per row with spacing */
+    max-width: calc(50% - 15px); /* Same as flex-basis for consistency */
+    transition: background-color 0.3s ease; /* Smooth hover effect */
+    box-sizing: border-box; /* Include border in width calculations */
 }
 
 .chapter-option:hover {
-    background-color: #e7e7e7;
+    background-color: #e7e7e7; /* Light gray background on hover */
 }
 
 .chapter-options-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
+    display: flex; /* Flexbox layout for alignment */
+    flex-wrap: wrap; /* Allow wrapping to the next row */
+    gap: 15px; /* Spacing between options */
+    margin-bottom: 20px; /* Space below the options container */
+    max-width: 100%; /* Ensure it doesn't exceed the form width */
+    justify-content: space-between; /* Distribute options evenly */
 }
+
 
 .modal-dialog {
     max-width: 500px;

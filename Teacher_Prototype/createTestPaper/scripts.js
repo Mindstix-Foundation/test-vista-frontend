@@ -1,3 +1,113 @@
+// Show weightage section after selecting total marks
+document.getElementById('totalMarks').addEventListener('change', function () {
+    const totalMarks = parseInt(this.value);
+    const chapterOptions = document.querySelectorAll('.chapter-option.active');
+
+    if (totalMarks && chapterOptions.length > 0) {
+        document.getElementById('weightageSection').style.display = 'block';
+        updateWeightageInputs(chapterOptions, totalMarks);
+    } else {
+        document.getElementById('weightageSection').style.display = 'none';
+    }
+});
+
+// Function to update weightage input fields based on selected chapters
+function updateWeightageInputs(chapterOptions, totalMarks) {
+    const weightageInputs = document.getElementById('weightageInputs');
+    weightageInputs.innerHTML = '';
+
+    if (chapterOptions.length > 0) {
+        // Calculate marks per chapter (divide total marks equally)
+        const marksPerChapter = Math.floor(totalMarks / chapterOptions.length);
+        const remainder = totalMarks % chapterOptions.length;
+
+        chapterOptions.forEach((chapter, index) => {
+            const chapterName = chapter.getAttribute('data-chapter');
+            const inputGroup = document.createElement('div');
+            inputGroup.classList.add('input-group', 'mb-2');
+
+            const label = document.createElement('span');
+            label.classList.add('input-group-text');
+            label.innerText = chapterName;
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.classList.add('form-control');
+            input.min = 0;
+            input.value = marksPerChapter + (index < remainder ? 1 : 0); // Distribute remaining marks
+            input.placeholder = `Enter marks for ${chapterName}`;
+            input.setAttribute('data-chapter', chapterName);  // Add data attribute for identification
+            input.addEventListener('input', () => onChapterMarksChange());
+
+            inputGroup.appendChild(label);
+            inputGroup.appendChild(input);
+            weightageInputs.appendChild(inputGroup);
+        });
+    }
+}
+function initializeTotalDisplay() {
+    const totalMarks = parseInt(document.getElementById('totalMarks').value) || 0;
+    const totalBox = document.getElementById('enteredTotal');
+
+    // Set initial total to match totalMarks
+    totalBox.innerText = totalMarks;
+
+    // Set color based on whether we have a matching total
+    if (totalMarks === 0) {
+        totalBox.classList.remove('text-success');
+        totalBox.classList.add('text-danger');
+    } else {
+        totalBox.classList.add('text-success');
+        totalBox.classList.remove('text-danger');
+    }
+}
+// Call initializeTotalDisplay on page load
+initializeTotalDisplay();
+
+// Also update it whenever totalMarks changes
+document.getElementById('totalMarks').addEventListener('input', initializeTotalDisplay);
+
+// Other related functions remain the same
+
+// When a user changes marks for any chapter, recalculate the total and adjust the feedback
+function onChapterMarksChange() {
+    const totalMarks = parseInt(document.getElementById('totalMarks').value);
+    const inputs = document.querySelectorAll('#weightageInputs input');
+
+    let totalEntered = 0;
+
+    // Calculate the total entered marks
+    inputs.forEach(input => {
+        const value = parseInt(input.value) || 0;
+        totalEntered += value;
+    });
+
+    // Update the total marks entered and display it
+    const totalBox = document.getElementById('enteredTotal');
+    totalBox.innerText = totalEntered;
+
+    // Change color based on the total entered
+    if (totalEntered < totalMarks) {
+        totalBox.classList.add('text-danger');
+        totalBox.classList.remove('text-success');
+    } else if (totalEntered > totalMarks) {
+        totalBox.classList.add('text-danger');
+        totalBox.classList.remove('text-success');
+    } else {
+        totalBox.classList.add('text-success');
+        totalBox.classList.remove('text-danger');
+    }
+}
+
+// Toggle active class on selected chapters and update weightage inputs
+document.querySelectorAll('.chapter-option').forEach(chapter => {
+    chapter.addEventListener('click', () => {
+        chapter.classList.toggle('active');
+        const totalMarks = parseInt(document.getElementById('totalMarks').value);
+        updateWeightageInputs(document.querySelectorAll('.chapter-option.active'), totalMarks);
+    });
+});
+
 // Show chapters only when a subject is selected
 document.getElementById('subject').addEventListener('change', function () {
     const chapterSection = document.getElementById('chapterSelection');
