@@ -40,7 +40,9 @@ function shuffleQuestion(questionIndex) {
             ${newQuestion.options}
         </div>
         <div class="shuffle-container">
-            <button class="shuffle-button" onclick="shuffleQuestion(${questionIndex})">Change Question</button>
+        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(${questionIndex})">
+                        <i class="bi bi-arrow-clockwise"></i> Change Question
+                    </button>
         </div>
     `;
 }

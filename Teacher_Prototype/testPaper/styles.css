@@ -46,16 +46,7 @@ body {
 .shuffle-container {
     margin-top: 10px;
 }
-.shuffle-button {
-    padding: 5px 10px;
-    font-size: 14px;
-    color: rgb(255, 255, 255);
-    background-color: #6c757d;
-   border-color: #ffffff;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-top: 5px;
-}
+
 .footer-text {
     font-size: 12px;
     color: #888;
