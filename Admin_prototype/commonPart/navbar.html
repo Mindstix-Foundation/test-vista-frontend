@@ -6,114 +6,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        /* Custom width for the offcanvas in mobile view */
-@media (max-width: 768px) {
-    #offcanvasNavbar.offcanvas-end {
-        width: 75% !important;  /* Adjust this percentage as needed */
-        max-width: 75% !important;
-    }
-    .offcanvas-header{
-        height: 101px;
-    }
-}
-
-        /* Custom Navbar Styles */
-        .navbar {
-            background-color: black !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            height: 100px;
-            padding-left: 0;
-            padding-right: 0;
-        }
-        .nav-link {
-    white-space: nowrap;
-}
-
-        .navbar-brand {
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .navbar-nav .nav-link {
-            color: white !important;
-            font-weight: 550;
-            
-        }
-
-        .navbar-nav .nav-link:hover {
-            color: #ffc107 !important;
-            text-decoration: underline;
-            text-decoration-color: #ffc107;
-        }
-
-        .offcanvas {
-            background-color: black;
-        }
-
-        .offcanvas .nav-link {
-            color: white !important;
-            font-size: 1rem;
-        }
-
-        .offcanvas .nav-link:hover {
-            color: #ffc107 !important;
-        }
-
-        .offcanvas-header {
-            border-bottom: 1px solid #495057;
-        }
-        .navbar-toggler {
-        background-color: black;
-        border-color: white;
-    }
-    .navbar-toggler-icon {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
-    }
-    #navLogout:hover{
-        
-        color: #ffc107 !important;
-        
-        
-        text-decoration: underline !important; /* Ensure underline is applied */
-        text-decoration-color: #ffc107 !important; /* Change the underline color */
-    }
-    #navLogout{
-        
-        color: red !important;
-        font-weight: 600;
-    }
-    @media (max-width: 768px) {
-    /* Left-align nav links inside the offcanvas */
-    .offcanvas .navbar-nav {
-        justify-content: start !important; /* Override end alignment */
-        align-items: start !important;    /* Ensure links align to the left */
-    }
-    .offcanvas .nav-link {
-        text-align: left !important; /* Force left alignment for text */
-        padding-left: 1rem;          /* Add padding for spacing */
-    }
-
-    #navLogout:hover{
-        
-        color: #ffc107 !important;
-        border-radius: 4px;
-        
-        text-decoration: underline !important; /* Ensure underline is applied */
-        text-decoration-color: #ffc107 !important; /* Change the underline color */
-    }
-    /* Align logout link to the bottom-left */
-    #navLogout {
-        position: absolute !important;
-        bottom: 1rem !important; /* Adjust distance from the bottom */
-        left: 1.5rem !important; /* Align with other links' padding */
-        font-size: 1.5rem !important; /* Adjust size for visibility */
-        width: calc(100% - 2rem); /* Optional: Make it span across */
-        text-align: left;         /* Ensure left alignment */
-    }
-    }
+    <link href="./navbar.css" rel="stylesheet">
     
-    </style>
+    
 </head>
 
 <body>
@@ -123,7 +18,7 @@
             <div class="row   w-100 h-100 align-items-end justify-content-center" style="margin-left: unset;">
                 <!-- Project Heading -->
                 <div class="col-8 col-lg-2  text-lg-start">
-                    <a class="navbar-brand" href="../../Admin_prototype/index.html" style="font-size: 24px;">TEST VISTA</a>
+                    <a class="navbar-brand" href="../../Admin_prototype/index.html" style="font-size: 27px;">TEST VISTA</a>
                 </div>
     
                 <!-- Toggler for Offcanvas -->
@@ -140,25 +35,25 @@
                             <ul class="navbar-nav justify-content-end align-items-end flex-grow-1 flex-nowrap">
                                
                                 <li class="nav-item ">
-                                    <a class="nav-link fs-5 pb-0 " id="navSchool" href="/Admin_prototype/School/school.html">School</a>
+                                    <a class="nav-link  pb-0 " id="navSchool" href="/Admin_prototype/School/school.html">School</a>
                                 </li>
                                 <li class="nav-item ">
-                                    <a class="nav-link fs-5 pb-0" id="navTeacher" href="/Admin_prototype/Teacher/teacher.html">Teacher</a>
+                                    <a class="nav-link  pb-0" id="navTeacher" href="/Admin_prototype/Teacher/teacher.html">Teacher</a>
                                 </li>
                                 <li class="nav-item ">
-                                    <a class="nav-link fs-5 pb-0"  id="navPattern" href="/Admin_prototype/Pattern/pattern.html">Pattern</a>
+                                    <a class="nav-link  pb-0"  id="navPattern" href="/Admin_prototype/Pattern/pattern.html">Pattern</a>
                                 </li>
                                 <li class="nav-item ">
-                                    <a class="nav-link fs-5 pb-0"  id="navQuestion" href="/Admin_prototype/Question_bank/question.html">Question Bank</a>
+                                    <a class="nav-link  pb-0"  id="navQuestion" href="/Admin_prototype/Question_bank/question.html">Question Bank</a>
                                 </li>
                                 <li class="nav-item ">
-                                    <a class="nav-link fs-5 pb-0"  id="navSyllabus" href="/Admin_prototype/Syllabus/syllabus.html">Syllabus</a>
+                                    <a class="nav-link  pb-0"  id="navSyllabus" href="/Admin_prototype/Syllabus/syllabus.html">Syllabus</a>
                                 </li>
                                 <li class="nav-item ">
-                                    <a class="nav-link fs-5 pb-0"  id="navProfile" href="/Admin_prototype/profile/profile.html">Profile</a>
+                                    <a class="nav-link  pb-0"  id="navProfile" href="/Admin_prototype/profile/profile.html">Profile</a>
                                 </li>
                                 <li class="nav-item pe-0 ">
-                                    <a class="nav-link fs-5 pb-0 link-danger btn-danger "id="navLogout"  href="../../login_Prototype/login.html" data-bs-toggle="modal"
+                                    <a class="nav-link  pb-0 link-danger btn-danger "id="navLogout"  href="../../login_Prototype/login.html" data-bs-toggle="modal"
                                         data-bs-target="#logoutModal">Logout   <strong><i class="bi bi-box-arrow-right "  ></i></strong></a>
                                 </li>
                             </ul>
