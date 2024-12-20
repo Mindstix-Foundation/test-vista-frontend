@@ -19,4 +19,8 @@
       padding: 1rem;
     }
   }
-  
+  @media (max-width: 576px) {
+    #manage{
+      width: 100% !important;
+    }
+  }

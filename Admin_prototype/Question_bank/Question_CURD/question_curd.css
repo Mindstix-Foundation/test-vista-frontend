@@ -22,4 +22,7 @@
       padding: 1rem;
       z-index: 1000; 
     }
+    #addButton{
+      width: 100%;
+     }
   }

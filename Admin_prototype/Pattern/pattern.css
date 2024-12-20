@@ -19,3 +19,8 @@
       z-index: 1000;
     }
   }
+  @media (max-width: 576px) {
+    #addButton{
+      width: 100% !important;
+    }
+  }
