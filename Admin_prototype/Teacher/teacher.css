@@ -12,7 +12,7 @@
       position: fixed;
       bottom: 0;
       left: 0;
-      width: 100%;
+      width: 100% !important;
       background-color: white;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Small shadow */
       padding: 1rem;
@@ -22,10 +22,15 @@
   .btn-custom {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
-
+@media (max-width: 576px) {
+  #addButton{
+    width: 100% !important;
+  }
+}
 /* Hover styles for all devices */
 .btn-custom:hover,
 .btn-custom:focus {
+  border: 1px solid #dc3545  !important;
     background-color: #dc3545 !important ;
     color: white !important;
 }
@@ -33,15 +38,16 @@
 /* For screen size "sm" or smaller */
 @media (max-width: 576px) {
     .btn-custom {
-        background-color: #dc3545;
-        color: white;
+        background-color: #dc3545 !important;
+        color: white !important;
     }
 }
 
 /* For larger screen sizes */
 @media (min-width: 577px) {
     .btn-custom {
+      border: 1px solid gray !important;
         background-color: #f8f9fa; /* Matches btn-light */
-        color: black;
+        color: black !important;
     }
 }

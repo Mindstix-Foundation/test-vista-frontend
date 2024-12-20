@@ -19,12 +19,14 @@
 /* For larger screen sizes */
 @media (min-width: 577px) {
   .btn-custom {
+    border: 1px solid gray !important;
     background-color: #f8f9fa; /* Matches btn-light */
     color: black;
     transition: background-color 0.3s ease, color 0.3s ease; /* Smooth hover effect */
     border-radius: 1%;
   }
   .btn-custom:hover {
+    border: 1px solid #dc3545 !important;
     background-color: #dc3545;
     color: white;
   }
@@ -204,7 +206,7 @@
                 <input type="file" class="form-control " id="inputGroupFile01">
               </div>
               <div class="col text-end">
-                <button type="button" class="btn btn-light" onclick="insertBlank()">Insert Blank</button>
+                <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" onclick="insertBlank()">Insert Blank</button>
               </div>
              
             </div>
@@ -264,7 +266,7 @@
                     </div>
                   </div>
                 </div>
-                <button type="button" class="btn btn-light" onclick="addInput('lhs')">Add </button>
+                <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" onclick="addInput('lhs')">Add </button>
               </div>
         
               <!-- Right-hand side (RHS) -->
@@ -288,7 +290,7 @@
                     </div>
                   </div>
                 </div>
-                <button type="button" class="btn btn-light" onclick="addInput('rhs')">Add</button>
+                <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" onclick="addInput('rhs')">Add</button>
               </div>
             </div>
         
