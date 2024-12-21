@@ -12,8 +12,6 @@ body {
     padding-right: 1rem;
     /* Adds 1-column margin on the right */
 }
-
-
 form {
     background-color: white;
     /* Changed form background color */
@@ -77,6 +75,9 @@ form {
     .chapter-option {
         flex: 1 0 100%;
         max-width: 100%;
+    }
+    #create-test-paper-btn{
+        width: 100%;
     }
 }
 

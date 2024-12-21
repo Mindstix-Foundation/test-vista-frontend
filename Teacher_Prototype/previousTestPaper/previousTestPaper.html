@@ -15,35 +15,35 @@
 
 <body>
     <div id="navbar-container"></div> <!-- Navbar will be loaded here -->
-
     <!-- Main Container -->
     <div class="container mt-5">
         <div class="text-left mb-4">
             <h3>View Previous Test Papers</h3>
-        </div
-
+        </div>
 
         <!-- Search and Sorting Controls: Side-by-Side Version -->
-        <div class="row mb-4 d-flex">
-            <div class="col-md-8 mb-3">
-                <div class="search-container">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="text" id="searchInput" class="form-control" oninput="searchTestPapers()"
-                        placeholder="Search by Name, Subject, Marks, Date">
-                </div>
-            </div>
-
-            <div class="col-md-4 mb-3">
-                <select id="sortSelect" class="form-select" onchange="sortTestPapers()">
-                    <option value="name-asc">Sort by Name (A-Z)</option>
-                    <option value="name-desc">Sort by Name (Z-A)</option>
-                    <option value="date-asc">Sort by Date (Oldest First)</option>
-                    <option value="date-desc">Sort by Date (Newest First)</option>
-                    <option value="marks-asc">Sort by Marks (Low to High)</option>
-                    <option value="marks-desc">Sort by Marks (High to Low)</option>
-                </select>
-            </div>
+        <div class="row mb-4 ">
+    <!-- Search Container -->
+    <div class="col-12 col-md-8 mb-3">
+        <div class="search-container">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="searchInput" class="form-control" oninput="searchTestPapers()"
+                placeholder="Search by Name, Subject, Marks, Date">
         </div>
+    </div>
+
+    <!-- Sort Select -->
+    <div class="col-12 col-md-4 mb-3">
+        <select id="sortSelect" class="form-select" onchange="sortTestPapers()">
+            <option value="name-asc">Sort by Name (A-Z)</option>
+            <option value="name-desc">Sort by Name (Z-A)</option>
+            <option value="date-asc">Sort by Date (Oldest First)</option>
+            <option value="date-desc">Sort by Date (Newest First)</option>
+            <option value="marks-asc">Sort by Marks (Low to High)</option>
+            <option value="marks-desc">Sort by Marks (High to Low)</option>
+        </select>
+    </div>
+</div>
 
         <!-- Test Papers Cards -->
         <div class="row" id="testPaperCards">

@@ -1,6 +1,3 @@
-/* Page 2 Specific Styles */
-
-/* Profile Page Styling */
 .profile-info {
     background-color: #ffffff;
     padding: 20px;
@@ -9,7 +6,19 @@
     max-width: 600px; /* Set maximum width */
     margin: 0 auto; /* Center-align horizontally */
 }
+/* Center the entire profile container */
+.profile-container {
+    max-width: 600px; /* Set maximum width */
+    margin: 0 auto; /* Center-align horizontally */
+}
 
+/* Profile Info Styling */
+.profile-info {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
 .profile-info p {
     font-size: 16px;
@@ -24,3 +33,8 @@
     width: 48%;
 }
 
+/* Align Header */
+.profile-container h3 {
+    margin-bottom: 20px;
+    color: black;
+}

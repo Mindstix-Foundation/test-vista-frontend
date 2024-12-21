@@ -48,3 +48,8 @@ form button#viewSyllabusBtn:hover:not(:disabled) {
     background-color: #0b5ed7;
     /* Darker blue on hover */
 }
+@media (max-width: 768px) {
+    #viewSyllabusBtn{
+        width: 100%;
+    }
+}

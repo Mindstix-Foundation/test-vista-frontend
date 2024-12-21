@@ -117,7 +117,7 @@
                 <label for="pattern" class="form-label">Pattern <span class="text-danger">*</span></label>
                 <div class="d-flex flex-column">
                     <!-- Button for Select Pattern with custom background color -->
-                    <button type="button" id="selectPatternBtn" class="form-control" data-bs-toggle="modal"
+                    <button type="button" id="selectPatternBtn" class="btn btn-outline-primary" data-bs-toggle="modal"
                         data-bs-target="#patternModal">
                         Select Pattern
                     </button>
@@ -145,9 +145,9 @@
 
             <!-- Create Test Paper Button -->
             <div class="button-container text-center">
-                <button type="button" class="btn btn-primary mt-3" onclick="createTestPaper()">Create Test
-                    Paper</button>
+                <button id="create-test-paper-btn" type="button" class="btn btn-primary mt-3" onclick="createTestPaper()">Create Test Paper</button>
             </div>
+            
 
         </form>
     </div>
@@ -179,9 +179,12 @@
                                         <strong>Subject:</strong> Science (Part: 1)<br>
                                         <strong>Marks:</strong> 40
                                     </p>
-                                    <i class="bi bi-table card-icon" data-bs-toggle="collapse"
-                                        data-bs-target="#stateTenthScience1" aria-expanded="false"
-                                        aria-controls="stateTenthScience1" onclick="event.stopPropagation();"></i>
+                                    <i class="bi bi-chevron-double-down card-icon" 
+                                       data-bs-toggle="collapse" 
+                                       data-bs-target="#stateTenthScience1" 
+                                       aria-expanded="false" 
+                                       aria-controls="stateTenthScience1" 
+                                       onclick="toggleChevron(this, event);"></i>
                                     <div class="collapse mt-3" id="stateTenthScience1">
                                         <table class="table table-sm table-striped table-bordered">
                                             <tbody>
@@ -217,6 +220,7 @@
                                 </div>
                             </div>
                         </div>
+                        
 
                         <!-- Card 2 -->
                         <div class="col-12 mb-4">
@@ -224,15 +228,17 @@
                                 <div class="card-body">
                                     <h5 class="card-title">MCQ 2025</h5>
                                     <p class="card-text">
-                                        <strong>Type:</strong> Maharashtra State Board of Secondary and Higher Secondary
-                                        Education (MSBSHSE)<br>
+                                        <strong>Type:</strong> Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)<br>
                                         <strong>Standard:</strong> Tenth<br>
                                         <strong>Subject:</strong> Science (Part: 2)<br>
                                         <strong>Marks:</strong> 40
                                     </p>
-                                    <i class="bi bi-table card-icon" data-bs-toggle="collapse"
-                                        data-bs-target="#stateTenthScience2" aria-expanded="false"
-                                        aria-controls="stateTenthScience2" onclick="event.stopPropagation();"></i>
+                                    <i class="bi bi-chevron-double-down card-icon" 
+                                       data-bs-toggle="collapse" 
+                                       data-bs-target="#stateTenthScience2" 
+                                       aria-expanded="false" 
+                                       aria-controls="stateTenthScience2" 
+                                       onclick="toggleChevron(this, event);"></i>
                                     <div class="collapse mt-3" id="stateTenthScience2">
                                         <table class="table table-sm table-striped table-bordered">
                                             <tbody>
@@ -268,6 +274,7 @@
                                 </div>
                             </div>
                         </div>
+                        
 
                         <!-- Card 3 -->
                         <div class="col-12 mb-4">
@@ -280,9 +287,12 @@
                                         <strong>Subject:</strong> Science (Part: 1)<br>
                                         <strong>Marks:</strong> 20
                                     </p>
-                                    <i class="bi bi-table card-icon" data-bs-toggle="collapse"
-                                        data-bs-target="#cbseTenthScience1" aria-expanded="false"
-                                        aria-controls="cbseTenthScience1" onclick="event.stopPropagation();"></i>
+                                    <i class="bi bi-chevron-double-down card-icon" 
+                                       data-bs-toggle="collapse" 
+                                       data-bs-target="#cbseTenthScience1" 
+                                       aria-expanded="false" 
+                                       aria-controls="cbseTenthScience1" 
+                                       onclick="toggleChevron(this, event);"></i>
                                     <div class="collapse mt-3" id="cbseTenthScience1">
                                         <table class="table table-sm table-striped table-bordered">
                                             <tbody>

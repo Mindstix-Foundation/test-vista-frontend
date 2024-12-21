@@ -278,3 +278,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+function toggleChevron(iconElement, event) {
+    event.stopPropagation(); // Prevent triggering the card's onclick event
+    const isExpanded = iconElement.getAttribute('aria-expanded') === 'true';
+
+    // Toggle the chevron icon
+    iconElement.classList.toggle('bi-chevron-double-down', !isExpanded);
+    iconElement.classList.toggle('bi-chevron-double-up', isExpanded);
+}

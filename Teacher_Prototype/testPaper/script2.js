@@ -22,6 +22,24 @@ const additionalQuestions = [
     }
 ];
 
+document.addEventListener('DOMContentLoaded', function () {
+    const backToTopButton = document.getElementById('backToTop');
+
+    // Show/hide button based on scroll position
+    window.addEventListener('scroll', function () {
+        if (document.documentElement.scrollTop > 200) {
+            backToTopButton.style.display = 'block';
+        } else {
+            backToTopButton.style.display = 'none';
+        }
+    });
+
+    // Scroll to top
+    backToTopButton.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+});
+
 // Function to shuffle questions
 function shuffleQuestion(questionIndex) {
     const newQuestion = additionalQuestions[Math.floor(Math.random() * additionalQuestions.length)];
