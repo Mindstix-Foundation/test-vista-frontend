@@ -51,3 +51,61 @@
         color: black !important;
     }
 }
+
+
+
+/* Toggle Button Styling */
+.btn-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px; /* Adjust width as needed */
+  height: 40px;
+  border-radius: 20px;
+  background-color: #f8f9fa; /* Light background */
+  color: #212529; /* Dark text for contrast */
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: visible;
+}
+
+/* Status Indicator */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  background-color: #28a745; /* Green for active */
+  border: 2px solid white;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+  left: 12% !important;
+}
+
+/* Inactive State */
+.btn-toggle.inactive .status-indicator {
+  background-color: #dc3545; /* Red for inactive */
+}
+
+.btn-toggle.inactive {
+  background-color: #f8d7da; /* Light red background for inactive */
+  color: #842029; /* Dark red text for contrast */
+}
+
+/* Hover Effect */
+.btn-toggle:hover {
+  opacity: 0.9;
+}
+
+
+/* Indicator */
+.indicator {
+  width: 10px;
+  height: 10px;
+  background-color: #dc3545; /* Default red (e.g., inactive) */
+  border-radius: 50%;
+  margin-left: 10px; /* Adds spacing between text and the circle */
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Optional for better visibility */
+  transition: background-color 0.3s ease; /* Smooth transition for color changes */
+}

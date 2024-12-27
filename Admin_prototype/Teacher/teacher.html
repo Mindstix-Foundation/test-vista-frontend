@@ -114,7 +114,16 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">#</th>
-                                    <th scope="col">Teacher </th>
+                                    <th scope="col" class="d-flex justify-content-between align-items-center">Teacher
+                                        <div class="dropdown d-inline-block">
+                                            <i class=" bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item filter-option" data-filter="ALL">All</a></li>
+                                                <li><a class="dropdown-item filter-option" data-filter="ACTIVE">Active</a></li>
+                                                <li><a class="dropdown-item filter-option" data-filter="INACTIVE">Inactive</a></li>
+                                            </ul>
+                                        </div>    
+                                    </th>
                                     <th scope="col">School </th>
                                     <th scope="col"class="text-end">Manage</th>
                                 </tr>
@@ -129,14 +138,18 @@
                                 </tr>
                                 <tr data-board="CBSE">
                                     <th scope="row">2</th>
-                                    <td>D.E.Two</td>
+                                    <td class="d-flex  align-items-center">D.E.Two 
+                                        <span class="indicator"></span>
+                                    </td>
                                     <td>XYZ School</td>
                                     <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalDE"></i> </td>
                                 </tr>
                                 <tr data-board="ICSE">
                                     <th scope="row">3</th>
-                                    <td>X.Y.Three</td>
+                                    <td class="d-flex  align-items-center">X.Y.Three
+                                        <span class="indicator"></span>
+                                    </td>
                                     <td>PQR School</td>
                                     <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalXY"></i> </td>
@@ -246,6 +259,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button class="btn btn-toggle btn-light position-relative" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="active">
+                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
+                            <span class="status-text">Active</span>
+                        </button>
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
                     </div>
@@ -342,6 +359,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button class="btn btn-toggle btn-light position-relative inactive" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="inactive">
+                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
+                            <span class="status-text">Inactive</span>
+                        </button>
                       <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                       <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
                     </div>
@@ -433,6 +454,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button class="btn btn-toggle btn-light position-relative inactive" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="inactive">
+                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
+                            <span class="status-text">Inactive</span>
+                        </button>
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
                     </div>
@@ -521,6 +546,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button class="btn btn-toggle btn-light position-relative" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="active">
+                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
+                            <span class="status-text">Active</span>
+                        </button>
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
                     </div>
@@ -607,6 +636,12 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button class="btn btn-toggle btn-light position-relative" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="active">
+                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
+                            <span class="status-text">Active</span>
+                        </button>
+                        
+                        
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" >Delete</button>
                     </div>

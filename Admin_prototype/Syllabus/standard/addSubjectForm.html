@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Syllabus </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <style>
+      
+    .scrollable-card {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 425px); /* Adjust height based on surrounding content */
+        overflow: hidden;
+    }
+
+    .scrollable-card .card-body {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 0.5rem; /* Consistent padding */
+    }
+
+    @media (max-width: 576px) {
+        #heading{
+            text-align: start !important;
+        }
+    }
+
+</style>
+
+
+    
+</head>
+<body>
+    <div class="container my-4">
+        <div class="container mb-3">
+            <div class="row g-2 justify-content-end">
+                <a class="btn btn-close" href="./standard.html" aria-label="Close"></a>
+              </div>
+              <div class="row justify-content-center align-items-center my-1">
+                <div class="col col-12 col-sm-5 ">
+                    <p class="text-muted text-start fs-5 m-0">
+                      <span class="col-12 col-md-auto">Maharashtra State Board |</span>  
+                      <span class="col-12 col-md-auto"> English Medium</span>
+                      
+                      </p>
+                    <h4 class="fw-bolder text-start text-dark m-0 ">
+                        Standard 10  
+                        
+                      </h4>
+                  </div>
+                  <div class="col col-12 col-sm-5  text-end  align-self-end" id="heading">
+                    <h3 class="text-left  fw-bolder text-uppercase  mb-2">Select Subject</h3>
+                    </div>
+                  </div>
+              </div>
+              <hr>
+        </div>
+        
+        <div class="container  mt-2 pt-3  pb-3">
+               
+        <div class="row p-2 gy-2  justify-content-center">
+
+            <!-- Filter Dropdown -->
+            <div class="col-12 col-sm-10">
+               <div class=" input-group">
+                   
+               <div class="form-floating">
+                   <input type="text" class="form-control" id="subjectFilter" placeholder="Search for Board" list="subjectList"  >
+                   <label for="subjectFilter"> <i class="bi bi-search text-secondary"></i> Search for  Subject</label>
+               </div>
+               
+               <datalist id="subjectList">
+                 
+               </datalist>
+               <span class="input-group-text clear-icon" >
+                   <i class="bi bi-x-lg"></i>
+               </span>
+               </div>
+         
+             </div>
+        </div>
+
+        
+        <div class="row mt-4 p-2 justify-content-center">
+            <div class="col col-12 col-sm-10 col-md-6 ">
+                <div class="card scrollable-card shadow-sm">
+                    
+                    <div class="card-body p-0">
+                       
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="englishFirst" checked>
+                                <label for="englishFirst">English [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="marathiFirst" >
+                                <label for="marathiFirst">Marathi [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="hindiFirst">
+                                <label for="hindiFirst">Hindi [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="urduFirst">
+                                <label for="urduFirst">Urdu [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="gujaratiFirst">
+                                <label for="gujaratiFirst">Gujarati [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="kannadaFirst">
+                                <label for="kannadaFirst">Kannada [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="tamilFirst">
+                                <label for="tamilFirst">Tamil [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="teluguFirst">
+                                <label for="teluguFirst">Telugu [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="malayalamFirst">
+                                <label for="malayalamFirst">Malayalam [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="sindhiFirst">
+                                <label for="sindhiFirst">Sindhi [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="bengaliFirst">
+                                <label for="bengaliFirst">Bengali [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="punjabiFirst">
+                                <label for="punjabiFirst">Punjabi [First]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="marathiSecond" checked>
+                                <label for="marathiSecond">Marathi [Second/Third]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="hindiSecond" checked>
+                                <label for="hindiSecond">Hindi [Second/Third]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="urduSecond">
+                                <label for="urduSecond">Urdu [Second/Third]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="englishSecond">
+                                <label for="englishSecond">English [Second/Third]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="mathematics" checked>
+                                <label for="mathematics">Mathematics 1 [Algebra] </label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="mathematics" checked>
+                                <label for="mathematics">Mathematics 2 [Geometry]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="science" checked>
+                                <label for="science">Science and Technology 1 [Physics, Chemistry]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="science" checked>
+                                <label for="science">Science and Technology 2 [Biology]</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="socialSciences" checked>
+                                <label for="socialSciences">Geography and Economics </label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="socialSciences" checked>
+                                <label for="socialSciences">History and Political Science </label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="art">
+                                <label for="art">Art</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="physicalEducation">
+                                <label for="physicalEducation">Physical Education</label>
+                            </li>
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="vocationalCourses">
+                                <label for="vocationalCourses">Vocational Courses</label>
+                            </li>
+                        </ul>
+                   
+                </div>
+                <div class="card-footer text-end p-0 pe-1" style="max-height: 30px;">
+                    <small class="text-muted fst-italic ">Scroll to view more</small>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <div class="row mt-2 p-2 justify-content-center">
+        <div class="col col-12 col-sm-10 col-md-8 mt-4">
+            <div class="text-center ">
+              <a id="save_button" type="submit" class="btn btn-dark" href="./standard.html">Save</a>
+          </div>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+   
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("subjectFilter");
+    const clearIcon = document.querySelector(".clear-icon");
+    const listItems = document.querySelectorAll(".list-group-item");
+
+    const filterList = () => {
+        const query = searchInput.value.toLowerCase();
+        let hasResults = false;
+
+        listItems.forEach(item => {
+            const label = item.querySelector("label").innerText.toLowerCase();
+            if (label.includes(query)) {
+                item.style.display = "";
+                hasResults = true;
+            } else {
+                item.style.display = "none";
+            }
+        });
+
+        if (!hasResults) {
+            // Show "no results" if no items match
+            document.querySelector(".list-group").insertAdjacentHTML(
+                "beforeend",
+                `<li class="list-group-item no-results text-muted">No subjects found</li>`
+            );
+        } else {
+            // Remove any existing "no results" messages
+            document.querySelectorAll(".no-results").forEach(el => el.remove());
+        }
+    };
+
+    const clearSearch = () => {
+        searchInput.value = "";
+        filterList();
+    };
+
+    const sortList = () => {
+        const ul = document.querySelector(".list-group");
+        const itemsArray = Array.from(listItems);
+
+        itemsArray.sort((a, b) => {
+            const aText = a.querySelector("label").innerText.toLowerCase();
+            const bText = b.querySelector("label").innerText.toLowerCase();
+            const aChecked = a.querySelector("input").checked ? -1 : 1;
+            const bChecked = b.querySelector("input").checked ? -1 : 1;
+
+            if (aChecked !== bChecked) return aChecked - bChecked;
+            return aText.localeCompare(bText);
+        });
+
+        // Clear and re-append items in the sorted order
+        ul.innerHTML = "";
+        itemsArray.forEach(item => ul.appendChild(item));
+    };
+
+    // Attach event listeners
+    searchInput.addEventListener("input", filterList);
+    clearIcon.addEventListener("click", clearSearch);
+    listItems.forEach(item => {
+        item.querySelector("input").addEventListener("change", sortList);
+    });
+
+    // Initial sort to apply alphabetical order
+    sortList();
+});
+
+</script>
+</body>
+</html>

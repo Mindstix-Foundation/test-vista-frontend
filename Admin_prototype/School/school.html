@@ -197,7 +197,7 @@
 
        
          <!-- View School Modal -->
-         <div class="modal fade" id="viewSchoolModal" tabindex="-1" aria-labelledby="viewSchoolModalLabel" aria-hidden="true">
+        <div class="modal fade" id="viewSchoolModal" tabindex="-1" aria-labelledby="viewSchoolModalLabel" aria-hidden="true">
             <div class="modal-dialog  modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -208,7 +208,7 @@
                         <div class="container">
                             <div id="form-container" class="row mt-4" >
                                 <div class="col-12 p-3">
-                        <form > 
+                                    <form > 
                             <div class="row g-3">
                                 <div class="row">
                                 <label for="schoolName" class="col-form-label col-12 col-lg-3 fw-bold">School Name:</label>    
@@ -236,9 +236,9 @@
 
                                            
                                         <div class="row">
-                                            <label for="pincode" class="col-form-label col-12 col-lg-3 fw-bold">Pincode / Zipcode:</label>    
+                                            <label for="postalCode" class="col-form-label col-12 col-lg-3 fw-bold">Postal Code:</label>    
                                             <div class="col-12 col-lg-9">
-                                                <input type="text" readonly class="form-control-plaintext " id="pincode" value="600450"> 
+                                                <input type="text" readonly class="form-control-plaintext " id="postalCode" value="600450"> 
                                             </div>
                                             </div> 
 
@@ -258,7 +258,7 @@
                                                  </div>
                                             </div>
                                             <div class="col-12 col-lg-3">
-                                                <label for="city" class="col-form-label col-6 col-lg-6 fw-bold">City:</label>    
+                                                <label for="city" class="col-form-label col-6 col-lg-6 fw-bold">City/Town:</label>    
                                                  <div class="col-12">
                                                      <input type="text" readonly class="form-control-plaintext " id="city" value="Thane"> 
                                                  </div>
@@ -306,7 +306,7 @@
                                         <div class="row  justify-content-between ">
                                             <div class="col-12 col-lg-6 pe-sm-3">
                                                 <div class="row">
-                                                    <label for="medium" class="col-form-label fw-bold">Mediums Offered :</label>
+                                                    <label for="medium" class="col-form-label fw-bold">Mediums of Instruction :</label>
                                                     <ul class="list-group p-1" id="medium">
                                                         <li class="list-group-item">English</li>
                                                         <li class="list-group-item">Marathi</li>
@@ -317,7 +317,7 @@
                                             <div class="col-12 col-lg-6 ps-sm-3">
                                                 <div class="row">
                                                     <label for="standard" class="col-form-label fw-bold">Standards Offered :</label>
-                                                    <ul class="list-group p-1" id="medium">
+                                                    <ul class="list-group p-1" id="standard">
                                                         <li class="list-group-item">Standard 1</li>
                                                         <li class="list-group-item">Standard 2</li>
                                                         <li class="list-group-item">Standard 3</li>
@@ -332,18 +332,21 @@
                                   
 
                             </div>
-                          </form>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                     <div class="modal-footer">
+                        <a type="button" class="btn btn-dark" id="viewTeachers" href="../Teacher/teacher.html?school=ABC%20School">
+                            <i class="bi bi-arrow-return-right"></i> Teachers
+                        </a>
+                             <a type="button" class="btn btn-dark" id="editSchoolButton" href="./formEdit.html"> Edit</a>
+                            <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
+                        </div>
+                    </div>
             </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a type="button" class="btn btn-dark" id="editSchoolButton" href="./formEdit.html"> Edit</a>
-                        <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
-                    </div>
-                </div>
-            </div>
-         </div>
+        </div>
 
     <!-- Footer 
     <div id="footer-container"></div>

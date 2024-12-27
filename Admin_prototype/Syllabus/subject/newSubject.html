@@ -12,6 +12,22 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
     <style>
+
+#navSyllabus{
+            font-weight: bolder;
+            
+            text-decoration: underline;
+            text-decoration-color: white;
+            /*color: #ffc107 !important;*/
+        }
+        @media (max-width: 768px) {
+        #navSyllabus{
+          font-weight: bolder;
+          font-size: 1.1rem !important;
+            text-decoration: none !important;
+         
+      }
+      }
         .draggable-item {
             cursor: grab;
         }
@@ -47,21 +63,7 @@ ol.list-group-numbered ol > li::before {
     text-align: right;
 }
 
-#navSyllabus{
-            font-weight: bolder;
-            
-            text-decoration: underline;
-            text-decoration-color: white;
-            /*color: #ffc107 !important;*/
-        }
-        @media (max-width: 768px) {
-        #navSyllabus{
-          font-weight: bolder;
-          font-size: 1.1rem !important;
-            text-decoration: none !important;
-         
-      }
-      }
+  
   /* Styles for screens below 576px */
   @media (max-width: 576px) {
     .dynamic-style {
@@ -82,9 +84,8 @@ ol.list-group-numbered ol > li::before {
     </style>
 </head>
 <body>
-    <!-- Load Navbar -->
-    <div id="navbar-container"></div>
-
+   <!-- Load Navbar -->
+   <div id="navbar-container"></div>
     <div class="container my-4">
         <div class="container mb-3">
             <div class="row g-2 justify-content-end">
@@ -99,7 +100,7 @@ ol.list-group-numbered ol > li::before {
                       </p>
                     <h4 class="fw-bolder text-start text-dark m-0 ">
                         Standard 10  
-                        <span class="d-block text-start text-secondary">Science Syllabus</span>
+                        <span class="d-block text-start text-secondary">Mathematics 1 [Algebra] Syllabus</span>
                       </h4>
                   </div>
                   <div class="col col-12 col-sm-5 dynamic-style text-end align-self-end">
@@ -108,7 +109,7 @@ ol.list-group-numbered ol > li::before {
                         <button id="quickEditButton" class="btn btn-outline-dark  fw-bold stick-bottom" data-bs-toggle="button">Quick Edit</button>
                       </div>
                       <div class="col col-6 col-sm-auto text-end">
-                        <a id="quickEditButton" class="btn btn-success  fw-bold stick-bottom" href="./addChapterFormS1.html">Add Chapter</a>
+                        <a id="quickEditButton" class="btn btn-success  fw-bold stick-bottom" href="./addChapterFormM1.html">Add Chapter</a>
                       </div>
                     </div>
                   </div>
@@ -121,6 +122,7 @@ ol.list-group-numbered ol > li::before {
         <div class="container mt-2 pt-3 mb-5 pb-3">
           <div class="row g-2 justify-content-center  align-items-center ">
             <div class="col col-12 col-sm-9 p-0 m-0 ">
+              <!--
               <ol id="sortable-list" class="list-group list-group-numbered ">
 
                 <li class="list-group-item list-group-item-action d-flex justify-content-between  draggable-item py-1 fs-4">
@@ -227,7 +229,7 @@ ol.list-group-numbered ol > li::before {
                     </div>
                   </div>
                  </div>
-                 <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                 <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
                   
@@ -275,7 +277,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -322,7 +324,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -368,7 +370,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -414,7 +416,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -460,7 +462,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -506,7 +508,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -552,7 +554,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
 <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -598,7 +600,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
   <i class="bi bi-trash3 ms-2 d-none" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
@@ -645,7 +647,7 @@ ol.list-group-numbered ol > li::before {
                       </div>
                     </div>
                    </div>
-                   <a href="./editChapterForm.html" class="text-decoration-none text-black " >
+                   <a href="./editForm.html" class="text-decoration-none text-black " >
                   <i class="bi bi-pencil-square  d-none"></i>
                 </a>
                 
@@ -653,6 +655,7 @@ ol.list-group-numbered ol > li::before {
   
                 </li>
               </ol>
+              -->
             </div>
           </div>
           </div>
@@ -677,17 +680,17 @@ ol.list-group-numbered ol > li::before {
       </div>
   </div>
 
-   <!-- Load JavaScript files -->
-   <script src="../../commonPart/loadComponents.js"></script>
-   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
- 
- 
-    <!-- Load Navbar and Footer -->
-    <script>
-     loadComponent('navbar', '/Admin_prototype/commonPart/navbar.html', 'navbar-container');
-  
- </script>
+     <!-- Load JavaScript files -->
+     <script src="../../commonPart/loadComponents.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+   
+   
+      <!-- Load Navbar and Footer -->
+      <script>
+       loadComponent('navbar', '/Admin_prototype/commonPart/navbar.html', 'navbar-container');
+    
+   </script>
 
     <script>
        document.querySelectorAll('.toggle-card').forEach(item => {

@@ -46,3 +46,62 @@ function clearInput(inputId) {
     document.getElementById(inputId).value = '';
     filterTeacherTable(); // Optional: Refresh the table.
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Get the query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const schoolName = urlParams.get('school');
+
+    if (schoolName) {
+        // Set the search bar value
+        const schoolFilterInput = document.getElementById("searchSchoolInput");
+        schoolFilterInput.value = schoolName;
+
+        // Trigger the filtering logic
+        filterTeacherTable(schoolName);
+    }
+});
+
+
+function toggleTeacherStatus(button) {
+    const currentStatus = button.getAttribute("data-status");
+
+    if (currentStatus === "active") {
+        // Change to inactive
+        button.setAttribute("data-status", "inactive");
+        button.classList.add("inactive");
+        button.querySelector(".status-text").textContent = "Inactive";
+    } else {
+        // Change to active
+        button.setAttribute("data-status", "active");
+        button.classList.remove("inactive");
+        button.querySelector(".status-text").textContent = "Active";
+    }
+}
+
+
+    document.querySelectorAll('.filter-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            const filter = e.target.getAttribute('data-filter');
+            const rows = document.querySelectorAll('#teacherTable tr');
+
+            rows.forEach(row => {
+                const isActive = row.querySelector('.indicator') !== null; // Assume rows with `.indicator` are active
+                switch (filter) {
+                    case 'ALL':
+                        row.style.display = ''; // Show all rows
+                        break;
+                    case 'ACTIVE':
+                        row.style.display = isActive ? '' : 'none'; // Show only active rows
+                        break;
+                    case 'INACTIVE':
+                        row.style.display = isActive ? 'none' : ''; // Show only inactive rows
+                        break;
+                }
+            });
+        });
+    });
+
+
+
