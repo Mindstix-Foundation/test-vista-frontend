@@ -16,140 +16,161 @@
     <div id="navbar-container"></div> <!-- Navbar will be loaded here -->
 
     <!-- Create Test Paper Form -->
-    <div class="container mt-5">
-        <div class="text-left mb-4">
-            <h3>Create Test Paper</h3>
+    <div class="container mt-4 mb-5 ">
+        <div class="row p-2  g-2 mb-1">
+            <div class="row justify-content-center align-items-center g-2 mb-4 " style="margin-left:4px">
+                <div class="col-12 col-sm-5  ">
+                    <h5 class="text-left m-0 fw-bolder text-uppercase">create test paper</h5>
+                </div>
+
+                <div class="col-12 col-sm-5  dynamic-style text-end ">
+
+                </div>
+            </div>
+
+            <hr>
         </div>
-
-        <form id="createTestPaperForm">
-            <div class="mb-3">
-                <!-- Board Selection -->
-                <label for="board" class="form-label">Board <span class="text-danger">*</span></label>
-                <select id="board" class="form-select" required>
-                    <option class="selectBoard" value="">Select Board</option>
-                    <option value="maharashtra">Maharashtra Board</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <!-- Language of Instruction Selection -->
-                <label for="language" class="form-label">Language of Instruction <span
-                        class="text-danger">*</span></label>
-                <select id="language" class="form-select" required>
-                    <option value="">Select Language</option>
-                    <option value="english">English</option>
-                    <option value="marathi">Marathi</option>
-                    <option value="hindi">Hindi</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <!-- Class Selection -->
-                <label for="class" class="form-label">Class <span class="text-danger">*</span></label>
-                <select id="class" class="form-select" required>
-                    <option value="">Select Class</option>
-                    <option value="9th">9th</option>
-                    <option value="10th">10th</option>
-                </select>
-            </div>
-
-
-            <div class="mb-3">
-                <!-- Subject Selection -->
-                <label for="subject" class="form-label">Subject <span class="text-danger">*</span></label>
-                <select id="subject" class="form-select" required>
-                    <option value="">Select Subject</option>
-                    <option value="science">Science</option>
-                    <option value="maths">Maths</option>
-                </select>
-            </div>
-
-            <div class="mb-3" id="chapterSelection" style="display: none;">
-                <!-- Chapter Selection (Initially Hidden) -->
-                <label class="form-label">Select Chapters</label>
-                <div id="chapterOptions" class="chapter-options-container">
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter1"> Laws of Motion</div>
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter2">Force and Pressure</div>
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter3">Work and Energy</div>
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter4">Refraction of Light</div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <!-- Total Marks Selection -->
-                <label for="totalMarks" class="form-label">Total Marks <span class="text-danger">*</span></label>
-                <select id="totalMarks" class="form-select" required>
-                    <option value="">Select Total Marks</option>
-                    <option value="20">20</option>
-                    <option value="40">40</option>
-                    <option value="80">80</option>
-                </select>
-            </div>
-
-
-            <!-- Weightage Section (Marks per Chapter) -->
-            <div class="mb-3" id="weightageSection" style="display: none;">
-                <label class="form-label">Weightage - Marks per Chapter <span class="text-danger">*</span></label>
-                <div id="weightageInputs"></div>
-                <div class="mt-2">
-                    <strong>Total Marks Entered: <span id="enteredTotal" class="total-box"></span></strong>
-                </div>
-            </div>
-
-          
-
-            <!-- CSS for total box colors -->
-            <style>
-                .text-danger {
-                    color: red !important;
-                }
-
-                .text-success {
-                    color: green !important;
-                }
-
-                .total-box {
-                    font-weight: bold;
-                    padding: 5px;
-                    border: 1px solid #ccc;
-                    border-radius: 5px;
-                }
-            </style>
-            <div class="mb-3">
-                <label for="pattern" class="form-label">Pattern <span class="text-danger">*</span></label>
-                <div class="d-flex flex-column">
-                    <!-- Button for Select Pattern with custom background color -->
-                    <button type="button" id="selectPatternBtn" class="btn btn-outline-primary" data-bs-toggle="modal"
-                        data-bs-target="#patternModal">
-                        Select Pattern
-                    </button>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <!-- Generate Test Paper Type -->
-                <label class="form-label">Generate Test Paper From <span class="text-danger">*</span></label>
-                <div class="d-flex flex-column">
-                    <div>
-                        <input type="radio" id="boardOnly" name="questionType" value="boardOnly" required>
-                        <label for="boardOnly">Board Questions Only</label>
+        <div class="row justify-content-center align-items-center g-2 mb-4">
+            <div class="col-md-8">
+                <form id="createTestPaperForm">
+                    <div class="mb-3 form-floating">
+                        <!-- Board Selection -->
+                        <select id="board" class="form-select" required>
+                            <option class="selectBoard" value="">Select Board</option>
+                            <option value="maharashtra">Maharashtra Board</option>
+                        </select>
+                        <label for="board">Board <span class="text-danger">*</span></label>
                     </div>
-                    <div>
-                        <input type="radio" id="otherOnly" name="questionType" value="otherOnly">
-                        <label for="otherOnly">Other Questions Only</label>
+                    <div class="mb-3 form-floating">
+                        <!-- Language of Instruction Selection -->
+                        <select id="language" class="form-select" required>
+                            <option value="">Select Language</option>
+                            <option value="english">English</option>
+                            <option value="marathi">Marathi</option>
+                            <option value="hindi">Hindi</option>
+                        </select>
+                        <label for="language">Language of Instruction <span class="text-danger">*</span></label>
                     </div>
-                    <div>
-                        <input type="radio" id="both" name="questionType" value="both">
-                        <label for="both">Both Board and Other Questions</label>
+                    <div class="mb-3 form-floating">
+                        <!-- Class Selection -->
+                        <select id="class" class="form-select" required>
+                            <option value="">Select Class</option>
+                            <option value="9th">9th</option>
+                            <option value="10th">10th</option>
+                        </select>
+                        <label for="class">Class <span class="text-danger">*</span></label>
                     </div>
-                </div>
-            </div>
 
-            <!-- Create Test Paper Button -->
-            <div class="button-container text-center">
-                <button id="create-test-paper-btn" type="button" class="btn btn-primary mt-3" onclick="createTestPaper()">Create Test Paper</button>
-            </div>
-            
+                    <div class="mb-3 form-floating">
+                        <!-- Subject Selection -->
+                        <select id="subject" class="form-select" required>
+                            <option value="">Select Subject</option>
+                            <option value="science">Science</option>
+                            <option value="maths">Maths</option>
+                        </select>
+                        <label for="subject">Subject <span class="text-danger">*</span></label>
+                    </div>
 
-        </form>
+                    <div class="mb-3" id="chapterSelection" style="display: none;">
+                        <!-- Chapter Selection (Initially Hidden) -->
+                        <div>Select Chapters</div>
+                        <div id="chapterOptions" class="chapter-options-container">
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter1"> Laws of Motion</div>
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter2">Force and Pressure
+                            </div>
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter3">Work and Energy</div>
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter4">Refraction of Light
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-floating">
+                        <!-- Total Marks Selection -->
+                        <select id="totalMarks" class="form-select" required>
+                            <option value="">Select Total Marks</option>
+                            <option value="20">20</option>
+                            <option value="40">40</option>
+                            <option value="80">80</option>
+                        </select>
+                        <label for="totalMarks">Total Marks <span class="text-danger">*</span></label>
+                    </div>
+
+                    <div class="mb-3" id="weightageSection" style="display: none;">
+                        <!-- Weightage Section (Marks per Chapter) -->
+                        <div>Weightage - Marks per Chapter <span class="text-danger">*</span></div>
+                        <div id="weightageInputs"></div>
+                        <div class="mt-2">
+                            <strong>Total Marks Entered: <span id="enteredTotal" class="total-box"></span></strong>
+                        </div>
+                    </div>
+
+
+                    <div class="mb-3">
+                        <label for="pattern" class="form-label">Pattern <span class="text-danger">*</span></label>
+                        <div class="d-flex flex-column">
+                            <!-- Button for Select Pattern with custom background color -->
+                            <button type="button" id="selectPatternBtn" class="btn btn-outline-dark"
+                                data-bs-toggle="modal" data-bs-target="#patternModal">
+                                Select Pattern
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <!-- Generate Test Paper Type -->
+                        <div>Generate Test Paper From <span class="text-danger">*</span></div>
+                        <div class="d-flex flex-column">
+                            <div>
+                                <input type="radio" id="boardOnly" name="questionType" value="boardOnly" required>
+                                <label for="boardOnly">Board Questions Only</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="otherOnly" name="questionType" value="otherOnly">
+                                <label for="otherOnly">Other Questions Only</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="both" name="questionType" value="both">
+                                <label for="both">Both Board and Other Questions</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="additionalFields" style="display: none;">
+                        <div class="mb-3 form-floating">
+                            <!-- Test Paper Name -->
+                            <input type="text" id="testPaperName" class="form-control"
+                                placeholder="Enter Test Paper Name" maxlength="35" required>
+                            <label for="testPaperName">Test Paper Name <span class="text-danger">*</span></label>
+                            <small id="charCount" class="text-muted">0/35 characters</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <!-- Select Total Time -->
+                            <div>Select Total Time <span class="text-danger">*</span></div>
+                            <div class="d-flex gap-2">
+                                <div class="form-floating" style="flex: 1;">
+                                    <input type="number" id="hours" class="form-control" min="0" max="23" value="0"
+                                        required style="padding-top: 1.5rem; height: 3.5rem;">
+                                    <label for="hours">Hours</label>
+                                </div>
+                                <div class="form-floating" style="flex: 1;">
+                                    <input type="number" id="minutes" class="form-control" min="0" max="59" value="0"
+                                        required style="padding-top: 1.5rem; height: 3.5rem;">
+                                    <label for="minutes">Minutes</label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Create Test Paper Button -->
+                    <div class="button-container text-center">
+                        <button id="create-test-paper-btn" type="button" class="btn btn-primary mt-3"
+                            onclick="createTestPaper()">Create Test Paper</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -179,12 +200,6 @@
                                         <strong>Subject:</strong> Science (Part: 1)<br>
                                         <strong>Marks:</strong> 40
                                     </p>
-                                    <i class="bi bi-chevron-double-down card-icon" 
-                                       data-bs-toggle="collapse" 
-                                       data-bs-target="#stateTenthScience1" 
-                                       aria-expanded="false" 
-                                       aria-controls="stateTenthScience1" 
-                                       onclick="toggleChevron(this, event);"></i>
                                     <div class="collapse mt-3" id="stateTenthScience1">
                                         <table class="table table-sm table-striped table-bordered">
                                             <tbody>
@@ -215,12 +230,19 @@
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        <br>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary d-flex align-items-center"
+                                            data-bs-toggle="collapse" data-bs-target="#stateTenthScience1"
+                                            aria-expanded="false" aria-controls="stateTenthScience1"
+                                            onclick="toggleChevron(this, event);">
+                                            <span>View Details</span>
+                                            <i class="bi bi-chevron-down ms-2"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
 
                         <!-- Card 2 -->
                         <div class="col-12 mb-4">
@@ -228,17 +250,12 @@
                                 <div class="card-body">
                                     <h5 class="card-title">MCQ 2025</h5>
                                     <p class="card-text">
-                                        <strong>Type:</strong> Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)<br>
+                                        <strong>Type:</strong> Maharashtra State Board of Secondary and Higher Secondary
+                                        Education (MSBSHSE)<br>
                                         <strong>Standard:</strong> Tenth<br>
                                         <strong>Subject:</strong> Science (Part: 2)<br>
                                         <strong>Marks:</strong> 40
                                     </p>
-                                    <i class="bi bi-chevron-double-down card-icon" 
-                                       data-bs-toggle="collapse" 
-                                       data-bs-target="#stateTenthScience2" 
-                                       aria-expanded="false" 
-                                       aria-controls="stateTenthScience2" 
-                                       onclick="toggleChevron(this, event);"></i>
                                     <div class="collapse mt-3" id="stateTenthScience2">
                                         <table class="table table-sm table-striped table-bordered">
                                             <tbody>
@@ -269,12 +286,19 @@
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        <br>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary d-flex align-items-center"
+                                            data-bs-toggle="collapse" data-bs-target="#stateTenthScience2"
+                                            aria-expanded="false" aria-controls="stateTenthScience2"
+                                            onclick="toggleChevron(this, event);">
+                                            <span>View Details</span>
+                                            <i class="bi bi-chevron-down ms-2"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
 
                         <!-- Card 3 -->
                         <div class="col-12 mb-4">
@@ -287,12 +311,6 @@
                                         <strong>Subject:</strong> Science (Part: 1)<br>
                                         <strong>Marks:</strong> 20
                                     </p>
-                                    <i class="bi bi-chevron-double-down card-icon" 
-                                       data-bs-toggle="collapse" 
-                                       data-bs-target="#cbseTenthScience1" 
-                                       aria-expanded="false" 
-                                       aria-controls="cbseTenthScience1" 
-                                       onclick="toggleChevron(this, event);"></i>
                                     <div class="collapse mt-3" id="cbseTenthScience1">
                                         <table class="table table-sm table-striped table-bordered">
                                             <tbody>
@@ -323,7 +341,15 @@
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        <br>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary d-flex align-items-center"
+                                            data-bs-toggle="collapse" data-bs-target="#cbseTenthScience1"
+                                            aria-expanded="false" aria-controls="cbseTenthScience1"
+                                            onclick="toggleChevron(this, event);">
+                                            <span>View Details</span>
+                                            <i class="bi bi-chevron-down ms-2"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -349,4 +375,5 @@
     <script src="scripts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

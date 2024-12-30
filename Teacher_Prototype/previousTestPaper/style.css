@@ -24,7 +24,6 @@
 
 /* Card header styling */
 .card-header {
-    background-color: #007bff;
     color: white;
     font-size: 1.2rem;
     font-weight: bold;
@@ -101,8 +100,6 @@
         margin-bottom: 15px;
         /* Space between stacked cards */
     }
-
-    /* Ensure search and sort input/buttons adjust their size */
     #searchInput,
     #sortSelect {
         width: 100%;
@@ -121,7 +118,6 @@
 
 .search-container .form-control {
     padding-left: 35px;
-    /* Space for the icon */
 }
 
 .search-container .search-icon {

@@ -278,11 +278,71 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
-function toggleChevron(iconElement, event) {
+function toggleChevron(buttonElement, event) {
     event.stopPropagation(); // Prevent triggering the card's onclick event
-    const isExpanded = iconElement.getAttribute('aria-expanded') === 'true';
+
+    // Find the <i> element inside the button
+    const iconElement = buttonElement.querySelector('i');
+
+    // Check if the collapse is expanded
+    const isExpanded = buttonElement.getAttribute('aria-expanded') === 'true';
 
     // Toggle the chevron icon
-    iconElement.classList.toggle('bi-chevron-double-down', !isExpanded);
-    iconElement.classList.toggle('bi-chevron-double-up', isExpanded);
+    if (iconElement) {
+        iconElement.classList.toggle('bi-chevron-down', !isExpanded);
+        iconElement.classList.toggle('bi-chevron-up', isExpanded);
+    }
 }
+
+// Restrict input values for hours and minutes
+const hoursInput = document.getElementById('hours');
+const minutesInput = document.getElementById('minutes');
+
+hoursInput.addEventListener('input', () => {
+    if (hoursInput.value > 23) hoursInput.value = 23;
+    if (hoursInput.value < 0) hoursInput.value = 0;
+});
+
+minutesInput.addEventListener('input', () => {
+    if (minutesInput.value > 59) minutesInput.value = 59;
+    if (minutesInput.value < 0) minutesInput.value = 0;
+});
+
+const testPaperNameInput = document.getElementById('testPaperName');
+    const charCount = document.getElementById('charCount');
+
+    // Event listener to enforce max character limit and display character count
+    testPaperNameInput.addEventListener('input', () => {
+        const maxLength = 35;
+        const currentLength = testPaperNameInput.value.length;
+
+        if (currentLength > maxLength) {
+            testPaperNameInput.value = testPaperNameInput.value.slice(0, maxLength);
+        }
+
+        // Update the character count display
+        charCount.textContent = `${testPaperNameInput.value.length}/${maxLength} characters`;
+    });
+    
+    const radioButtons = document.getElementsByName('questionType');
+    const additionalFields = document.getElementById('additionalFields');
+
+    // Function to toggle visibility of additional fields
+    const toggleAdditionalFields = () => {
+        const isAnySelected = Array.from(radioButtons).some(radio => radio.checked);
+
+        // Show the fields if any radio button is selected
+        if (isAnySelected) {
+            additionalFields.style.display = 'block';
+        } else {
+            additionalFields.style.display = 'none';
+        }
+    };
+
+    // Attach event listeners to radio buttons
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', toggleAdditionalFields);
+    });
+
+    // Ensure fields are hidden or shown based on the default state
+    toggleAdditionalFields();

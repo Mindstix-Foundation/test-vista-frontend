@@ -1,24 +1,16 @@
-body {
 
-    padding-top: 20px;
-}
 
 .container {
     max-width: 900px;
     margin: 0 auto;
-    /* Centers the container horizontally */
-    padding-left: 1rem;
-    /* Adds 1-column margin on the left */
-    padding-right: 1rem;
-    /* Adds 1-column margin on the right */
+   
 }
+
 form {
     background-color: white;
     /* Changed form background color */
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
+    padding: 16px;
+   
 }
 
 .form-label {
@@ -48,26 +40,22 @@ form {
 }
 
 .chapter-options-container {
-    display: flex; /* Flexbox layout for alignment */
-    flex-wrap: wrap; /* Allow wrapping to the next row */
-    gap: 15px; /* Spacing between options */
-    margin-bottom: 20px; /* Space below the options container */
-    max-width: 100%; /* Ensure it doesn't exceed the form width */
-    justify-content: space-between; /* Distribute options evenly */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px; 
+    margin-bottom: 20px;
+    max-width: 100%; 
+    justify-content: space-between; 
 }
 
 
 .modal-dialog {
     max-width: 500px;
-    /* Fixed width */
     height: 400px;
-    /* Fixed height */
     margin: auto;
     display: flex;
     align-items: center;
-    /* Center vertically */
     justify-content: center;
-    /* Center horizontally */
 }
 
 /* Responsive Design */
@@ -90,7 +78,6 @@ form {
 /* Test button specific styling */
 .btn.test {
     background-color: lightgreen;
-    /* Light green color for test button */
     color: black;
     border: none;
     transition: background-color 0.3s ease;
@@ -112,13 +99,9 @@ form {
 
 .modal-content {
     padding: 1rem;
-    /* Reduce modal internal padding */
     box-sizing: border-box;
-    /* Ensure padding does not exceed width */
     width: 100%;
-    /* Ensure full-width alignment */
     margin: 0;
-    /* Remove additional margins */
 }
 
 .modal-header {
@@ -202,9 +185,7 @@ form {
 @media (max-width: 768px) {
     .modal-dialog {
         width: 768px;
-        /* Ensure this width is applied with higher priority */
         max-width: 96% !important;
-        /* Prevent it from exceeding the screen width */
     }
 
     .modal-body {
@@ -271,7 +252,6 @@ form {
     /* Optional: Stacking cards for larger screens */
     .col-md-6 {
         flex: 0 0 auto;
-        /* Restore Bootstrap defaults */
         max-width: 50%;
         margin-bottom: 1rem;
     }

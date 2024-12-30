@@ -11,65 +11,110 @@ document.addEventListener("DOMContentLoaded", () => {
     subjectSelect.disabled = true;
     viewSyllabusBtn.disabled = true;
 
-    // Enable language selection when board is selected
-    board.addEventListener("change", enableLanguageSelection);
+    // Restore selections from localStorage
+    restoreSelections();
 
-    // Enable class selection when language is selected
-    language.addEventListener("change", enableClassSelection);
+    // Add event listeners
+    board.addEventListener("change", () => {
+        handleBoardChange();
+        saveSelections();
+    });
 
-    // Enable subject selection when class is selected
-    classSelect.addEventListener("change", enableSubjectSelection);
+    language.addEventListener("change", () => {
+        handleLanguageChange();
+        saveSelections();
+    });
 
-    // Enable "View Syllabus" button when subject is selected
-    subjectSelect.addEventListener("change", enableViewSyllabusButton);
+    classSelect.addEventListener("change", () => {
+        handleClassChange();
+        saveSelections();
+    });
+
+    subjectSelect.addEventListener("change", () => {
+        enableViewSyllabusButton();
+        saveSelections();
+    });
 
     // Handle form submission
     const form = document.getElementById("viewSyllabusForm");
     form.addEventListener("submit", handleFormSubmission);
 
-    function enableLanguageSelection() {
+    function handleBoardChange() {
         if (board.value) {
-            language.disabled = false; // Enable language selection
+            language.disabled = false; // Enable language
         } else {
-            resetSelections(); // Reset dependent fields
+            language.disabled = true; // Disable language if board is not selected
         }
+        language.value = ""; // Reset language selection
+        resetClassAndBelow(); // Reset class and all fields below it
     }
 
-    function enableClassSelection() {
+    function handleLanguageChange() {
         if (language.value) {
-            classSelect.disabled = false; // Enable class selection
+            classSelect.disabled = false; // Enable class
         } else {
-            classSelect.disabled = true; // Disable if no language is selected
-            resetClassAndBelow(); // Reset class and dependent fields
+            classSelect.disabled = true; // Disable class if language is not selected
         }
+        classSelect.value = ""; // Reset class selection
+        resetSubjectAndBelow(); // Reset subject and all fields below it
     }
 
-    function enableSubjectSelection() {
+    function handleClassChange() {
         if (classSelect.value) {
-            subjectSelect.disabled = false; // Enable subject selection
+            subjectSelect.disabled = false; // Enable subject
         } else {
-            subjectSelect.disabled = true; // Disable if no class is selected
-            viewSyllabusBtn.disabled = true; // Disable button
-            subjectSelect.value = ""; // Reset subject selection
+            subjectSelect.disabled = true; // Disable subject if class is not selected
         }
+        subjectSelect.value = ""; // Reset subject selection
+        viewSyllabusBtn.disabled = true; // Disable "View Syllabus" button
     }
 
     function enableViewSyllabusButton() {
         viewSyllabusBtn.disabled = !subjectSelect.value; // Enable button only if subject is selected
     }
 
-    function resetSelections() {
-        language.value = ""; // Reset language selection
-        language.disabled = true; // Disable language selection
-        resetClassAndBelow(); // Reset class and dependent fields
-    }
-
     function resetClassAndBelow() {
         classSelect.value = ""; // Reset class selection
         classSelect.disabled = true; // Disable class selection
+        resetSubjectAndBelow(); // Reset subject and dependent fields
+    }
+
+    function resetSubjectAndBelow() {
         subjectSelect.value = ""; // Reset subject selection
         subjectSelect.disabled = true; // Disable subject selection
         viewSyllabusBtn.disabled = true; // Disable button
+    }
+
+    function saveSelections() {
+        // Save current selections to localStorage
+        const state = {
+            board: board.value,
+            language: language.value,
+            classSelect: classSelect.value,
+            subjectSelect: subjectSelect.value,
+        };
+        localStorage.setItem("syllabusFormState", JSON.stringify(state));
+    }
+
+    function restoreSelections() {
+        // Restore selections from localStorage
+        const savedState = JSON.parse(localStorage.getItem("syllabusFormState"));
+        if (savedState) {
+            board.value = savedState.board || "";
+            if (board.value) {
+                language.disabled = false;
+            }
+            language.value = savedState.language || "";
+            if (language.value) {
+                classSelect.disabled = false;
+            }
+            classSelect.value = savedState.classSelect || "";
+            if (classSelect.value) {
+                subjectSelect.disabled = false;
+            }
+            subjectSelect.value = savedState.subjectSelect || "";
+            viewSyllabusBtn.disabled = !subjectSelect.value; // Enable button if subject is selected
+        }
     }
 
     function handleFormSubmission(event) {
