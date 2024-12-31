@@ -104,27 +104,46 @@
             <div id="table-container" class="row p-2 mt-4 justify-content-center">
                 <div class="col-12 col-sm-10 col-md-10">
                     <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover table-bordered   ">
+                        <table class="table table-sm table-striped table-hover table-bordered   " style="width: 100%; ">
                             <colgroup>
-                                <col style="width: 10px;">
+                                <col style="width: 20px;">
                                 <col style="width: 35%;">
                                 <col style="width: 65%;">
-                                <col style="width: 20px;">
+                                <col style="width: 95px;">
+                                <col style="width: 70px;">
                             </colgroup>
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">#</th>
-                                    <th scope="col" class="d-flex justify-content-between align-items-center">Teacher
-                                        <div class="dropdown d-inline-block">
-                                            <i class=" bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></i>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item filter-option" data-filter="ALL">All</a></li>
-                                                <li><a class="dropdown-item filter-option" data-filter="ACTIVE">Active</a></li>
-                                                <li><a class="dropdown-item filter-option" data-filter="INACTIVE">Inactive</a></li>
-                                            </ul>
-                                        </div>    
-                                    </th>
+                                    <th scope="col" >Teacher </th>
                                     <th scope="col">School </th>
+                                    <th scope="col"  class="text-nowrap justify-content-center" > 
+                                        <span data-bs-toggle="collapse" data-bs-target="#filterCarousel" aria-expanded="false" aria-controls="filterCarousel">Access &nbsp;<i class="bi bi-funnel text-white"></i></span> 
+                                        
+                                        <div class="collapse mt-2" id="filterCarousel">
+                                            <div id="statusCarousel" class="carousel slide" data-bs-touch="false" data-bs-interval="false" >
+                                                <div class="carousel-inner text-center">
+                                                    <div class="carousel-item active">
+                                                        <span>All</span>
+                                                    </div>
+                                                    <div class="carousel-item">
+                                                        <span>Grant</span>
+                                                    </div>
+                                                    <div class="carousel-item">
+                                                        <span>Revoke</span>
+                                                    </div>
+                                                </div>
+                                                <button class="carousel-control-prev" type="button" data-bs-target="#statusCarousel" data-bs-slide="prev">
+                                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Previous</span>
+                                                </button>
+                                                <button class="carousel-control-next" type="button" data-bs-target="#statusCarousel" data-bs-slide="next">
+                                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Next</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                     </th>
                                     <th scope="col"class="text-end">Manage</th>
                                 </tr>
                             </thead>
@@ -133,24 +152,23 @@
                                     <th scope="row">1</th>
                                     <td>A.B.One</td>
                                     <td>ABC School</td>
+                                    <td> Grant</td>
                                     <td class="text-center"><i class="bi bi-three-dots"  data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalAB"></i> </td>
                                 </tr>
                                 <tr data-board="CBSE">
                                     <th scope="row">2</th>
-                                    <td class="d-flex  align-items-center">D.E.Two 
-                                        <span class="indicator"></span>
-                                    </td>
+                                    <td >D.E.Two </td>
                                     <td>XYZ School</td>
+                                    <td> Revoke</td>
                                     <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalDE"></i> </td>
                                 </tr>
                                 <tr data-board="ICSE">
                                     <th scope="row">3</th>
-                                    <td class="d-flex  align-items-center">X.Y.Three
-                                        <span class="indicator"></span>
-                                    </td>
+                                    <td >X.Y.Three</td>
                                     <td>PQR School</td>
+                                    <td> Revoke</td>
                                     <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalXY"></i> </td>
                                 </tr>
@@ -158,6 +176,7 @@
                                     <th scope="row">4</th>
                                     <td>S.T.Four</td>
                                     <td>ABC School</td>
+                                    <td> Grant</td>
                                     <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalST"></i></td>
                                 </tr>
@@ -165,6 +184,7 @@
                                     <th scope="row">5</th>
                                     <td>M.N.Five</td>
                                     <td>PQR School</td>
+                                    <td> Grant</td>
                                     <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" 
                                         data-bs-target="#viewTeacherModalMN"></i> </td>
                                 </tr>
@@ -180,7 +200,7 @@
 
         <div class="container">
 
-            <div class="modal fade" id="viewTeacherModalAB" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="viewTeacherModalAB" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                   <div class="modal-content">
                     <div class="modal-header">
@@ -259,9 +279,9 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-toggle btn-light position-relative" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="active">
-                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
-                            <span class="status-text">Active</span>
+                        <button class="btn btn-toggle position-relative" onclick="toggleTeacherStatus(this)" data-status="grant">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Grant</span>
                         </button>
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
@@ -270,7 +290,7 @@
                 </div>
             </div>
             
-            <div class="modal fade" id="viewTeacherModalDE" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="viewTeacherModalDE" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                   <div class="modal-content">
                     <div class="modal-header">
@@ -359,9 +379,9 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-toggle btn-light position-relative inactive" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="inactive">
-                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
-                            <span class="status-text">Inactive</span>
+                        <button class="btn btn-toggle position-relative" onclick="toggleTeacherStatus(this)" data-status="revoke">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Revoke</span>
                         </button>
                       <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                       <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
@@ -370,7 +390,7 @@
                 </div>
             </div>
 
-            <div class="modal fade" id="viewTeacherModalXY" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="viewTeacherModalXY" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                   <div class="modal-content">
                     <div class="modal-header">
@@ -454,10 +474,11 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-toggle btn-light position-relative inactive" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="inactive">
-                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
-                            <span class="status-text">Inactive</span>
+                        <button class="btn btn-toggle position-relative" onclick="toggleTeacherStatus(this)" data-status="revoke">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Revoke</span>
                         </button>
+                        
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
                     </div>
@@ -465,7 +486,7 @@
                 </div>
             </div>
 
-            <div class="modal fade" id="viewTeacherModalST" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="viewTeacherModalST" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                   <div class="modal-content">
                     <div class="modal-header">
@@ -546,9 +567,9 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-toggle btn-light position-relative" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="active">
-                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
-                            <span class="status-text">Active</span>
+                        <button class="btn btn-toggle position-relative" onclick="toggleTeacherStatus(this)" data-status="grant">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Grant</span>
                         </button>
                         <a type="button" class="btn btn-dark" id="editTeacherButton" href="./formEdit.html">Edit</a>
                         <button type="button" class="btn btn-custom" id="deleteTeacherButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
@@ -557,7 +578,7 @@
                 </div>
             </div>
 
-            <div class="modal fade" id="viewTeacherModalMN" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true">
+            <div class="modal fade" id="viewTeacherModalMN" tabindex="-1" aria-labelledby="viewTeacherModalLabel" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                   <div class="modal-content">
                     <div class="modal-header">
@@ -636,9 +657,9 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-toggle btn-light position-relative" style="border: 1px solid gray;" onclick="toggleTeacherStatus(this)" data-status="active">
-                            <span class="status-indicator position-absolute top-50  translate-middle rounded-circle"></span>
-                            <span class="status-text">Active</span>
+                        <button class="btn btn-toggle position-relative" onclick="toggleTeacherStatus(this)" data-status="grant"  >
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Grant</span>
                         </button>
                         
                         
@@ -652,7 +673,7 @@
         </div>
         
         <div class="container">
-            <div class="modal fade " id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true" >
+            <div class="modal fade " id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true" data-bs-backdrop="static" >
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header bg-danger text-white">
@@ -669,7 +690,44 @@
                 </div>
             </div>
         </div>
-       
+        <div class="container">
+            <!-- Grant Modal -->
+            <div class="modal fade" id="grantModal" tabindex="-1" aria-labelledby="grantModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title" id="grantModalLabel">Grant Teacher Access</h5>
+                        </div>
+                        <div class="modal-body">
+                            Are you sure you want to grant access to this teacher?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" style="border: 1px solid gray;" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success" id="grantButton" data-bs-dismiss="modal">Grant</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- Revoke Modal -->
+            <div class="modal fade" id="revokeModal" tabindex="-1" aria-labelledby="revokeModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" id="revokeModalLabel">Revoke Teacher Access</h5>
+                        </div>
+                        <div class="modal-body">
+                            Are you sure you want to revoke this teacher's access?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" style="border: 1px solid gray;" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="revokeButton" data-bs-dismiss="modal">Revoke</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         
         
         <!-- Footer 

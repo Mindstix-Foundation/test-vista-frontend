@@ -67,41 +67,44 @@ document.addEventListener("DOMContentLoaded", () => {
 function toggleTeacherStatus(button) {
     const currentStatus = button.getAttribute("data-status");
 
-    if (currentStatus === "active") {
+    if (currentStatus === "grant") {
         // Change to inactive
-        button.setAttribute("data-status", "inactive");
-        button.classList.add("inactive");
-        button.querySelector(".status-text").textContent = "Inactive";
+        button.setAttribute("data-status", "revoke");
+        button.classList.add("revoke");
+        button.querySelector(".status-text").textContent = "Revoke";
     } else {
         // Change to active
-        button.setAttribute("data-status", "active");
-        button.classList.remove("inactive");
-        button.querySelector(".status-text").textContent = "Active";
+        button.setAttribute("data-status", "grant");
+        button.classList.remove("revoke");
+        button.querySelector(".status-text").textContent = "Grant";
     }
 }
 
+// Get references to carousel and table
+const carousel = document.getElementById('statusCarousel');
+const teacherTable = document.getElementById('teacherTable');
 
-    document.querySelectorAll('.filter-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-            const filter = e.target.getAttribute('data-filter');
-            const rows = document.querySelectorAll('#teacherTable tr');
-
-            rows.forEach(row => {
-                const isActive = row.querySelector('.indicator') !== null; // Assume rows with `.indicator` are active
-                switch (filter) {
-                    case 'ALL':
-                        row.style.display = ''; // Show all rows
-                        break;
-                    case 'ACTIVE':
-                        row.style.display = isActive ? '' : 'none'; // Show only active rows
-                        break;
-                    case 'INACTIVE':
-                        row.style.display = isActive ? 'none' : ''; // Show only inactive rows
-                        break;
-                }
-            });
-        });
+// Function to filter rows based on status
+function filterTable(status) {
+    const rows = teacherTable.querySelectorAll('tr'); // Get all table rows
+    
+    rows.forEach(row => {
+        const statusCell = row.querySelector('td:nth-child(4)'); // Target the Status column (4th column)
+        if (status === 'All' || statusCell.textContent.trim() === status) {
+            row.style.display = ''; // Show row
+        } else {
+            row.style.display = 'none'; // Hide row
+        }
     });
+}
 
+// Event listener for carousel changes
+carousel.addEventListener('slid.bs.carousel', event => {
+    const activeItem = carousel.querySelector('.carousel-item.active span'); // Get active carousel item
+    if (activeItem) {
+        filterTable(activeItem.textContent.trim()); // Filter based on the active carousel item
+    }
+});
 
-
+// Initial filter (set to All)
+filterTable('All');
