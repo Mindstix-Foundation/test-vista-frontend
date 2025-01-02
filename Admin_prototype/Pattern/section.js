@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Helper function to create a default input group
     function createDefaultInputGroup(index) {
         const inputGroup = document.createElement("div");
-        inputGroup.classList.add("input-group", "mb-3");
+        inputGroup.classList.add("input-group");
     
         const inputGroupText = document.createElement("span");
         inputGroupText.classList.add("input-group-text");
