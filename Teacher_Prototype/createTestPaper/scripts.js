@@ -23,19 +23,20 @@ function updateWeightageInputs(chapterOptions, totalMarks) {
 
         chapterOptions.forEach((chapter, index) => {
             const chapterName = chapter.getAttribute('data-chapter');
+            const chapterText = chapter.innerText;  // Get the chapter name (e.g., "1.Laws of Motion")
             const inputGroup = document.createElement('div');
             inputGroup.classList.add('input-group', 'mb-2');
 
             const label = document.createElement('span');
             label.classList.add('input-group-text');
-            label.innerText = chapterName;
+            label.innerText = chapterText;  // Use the chapter's inner text (name)
 
             const input = document.createElement('input');
             input.type = 'number';
             input.classList.add('form-control');
             input.min = 0;
             input.value = marksPerChapter + (index < remainder ? 1 : 0); // Distribute remaining marks
-            input.placeholder = `Enter marks for ${chapterName}`;
+            input.placeholder = `Enter marks for ${chapterText}`;  // Use the chapter's inner text (name)
             input.setAttribute('data-chapter', chapterName);  // Add data attribute for identification
             input.addEventListener('input', () => onChapterMarksChange());
 
@@ -45,6 +46,7 @@ function updateWeightageInputs(chapterOptions, totalMarks) {
         });
     }
 }
+
 function initializeTotalDisplay() {
     const totalMarks = parseInt(document.getElementById('totalMarks').value) || 0;
     const totalBox = document.getElementById('enteredTotal');
