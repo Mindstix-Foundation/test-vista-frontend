@@ -1659,9 +1659,7 @@ const confirmAndSubmit = async () => {
     const formattedAddress = {
       street: form.value.address.street?.trim() || '',
       postal_code: form.value.address.postal_code?.trim() || '',
-      city_id: parseInt(String(form.value.address.city_id)),
-      state_id: parseInt(String(form.value.address.state_id)),
-      country_id: parseInt(String(form.value.address.country_id)),
+      city_id: parseInt(String(form.value.address.city_id))
     }
 
     let addressId: number | undefined
@@ -1728,10 +1726,8 @@ const confirmAndSubmit = async () => {
       mediums: form.value.mediums
         .filter((m) => m.name.trim())
         .map((m) => ({
-          id: m.id,
           name: m.name.trim(),
-          board_id: props.boardId ? parseInt(props.boardId) : 0,
-          instruction_medium: m.name.trim(),
+          board_id: props.boardId ? parseInt(props.boardId) : 0
         })),
       standards: form.value.standards
         .filter((s) => s.name.trim())

@@ -27,9 +27,7 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
       body: JSON.stringify({
         street: schoolData.address.street,
         postal_code: schoolData.address.postal_code,
-        city_id: schoolData.address.city_id,
-        state_id: schoolData.address.state_id,
-        country_id: schoolData.address.country_id,
+        city_id: schoolData.address.city_id
       }),
     })
 

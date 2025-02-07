@@ -1,81 +1,78 @@
 <template>
   <nav class="navbar navbar-expand-lg">
-    <div class="container w-100 h-100">
-      <div
-        class="row w-100 h-100 align-items-end justify-content-center"
-        style="margin-left: unset"
-      >
-        <!-- Project Heading -->
-        <div class="col-8 col-lg-2 text-lg-start">
-          <router-link class="navbar-brand" to="/" style="font-size: 27px">TEST VISTA</router-link>
-        </div>
+    <div class="container-fluid px-4">
+      <!-- Project Heading -->
+      <router-link class="navbar-brand d-flex align-items-center" to="/">
+        <img src="@/assets/logo.png" alt="Test Vista Logo" class="brand-logo" />
+      </router-link>
 
-        <!-- Toggler for Offcanvas -->
-        <div class="col-4 col-lg-8 ps-2 text-end">
+      <!-- Toggler for Offcanvas -->
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasNavbar"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
+        <div class="offcanvas-header justify-content-end align-items-end">
           <button
-            class="navbar-toggler"
             type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
-            <div class="offcanvas-header justify-content-end align-items-end">
-              <button
-                type="button"
-                class="btn-close btn-close-white text-reset fs-3"
-                data-bs-dismiss="offcanvas"
-              ></button>
-            </div>
-            <div class="offcanvas-body">
-              <ul class="navbar-nav justify-content-end align-items-end flex-grow-1 flex-nowrap">
-                <li class="nav-item">
-                  <router-link
-                    class="nav-link pb-0"
-                    id="navBoard"
-                    to="/admin/board"
-                    @click="closeOffcanvas"
-                  >
-                    Board
-                  </router-link>
-                </li>
-                <li class="nav-item">
-                  <router-link
-                    to="/admin/school"
-                    class="nav-link"
-                    id="navSchool"
-                    @click="closeOffcanvas"
-                  >
-                    School
-                  </router-link>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link pb-0 disabled" id="navTeacher" href="#">Teacher</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link pb-0 disabled" id="navSyllabus" href="#">Syllabus</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link pb-0 disabled" id="navQuestion" href="#">Question Bank</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link pb-0 disabled" id="navPattern" href="#">Pattern</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link pb-0 disabled" id="navProfile" href="#">Profile</a>
-                </li>
-                <li class="nav-item pe-0">
-                  <a
-                    class="nav-link pb-0 link-danger btn-danger"
-                    id="navLogout"
-                    @click="showLogoutModal"
-                  >
-                    Logout <strong><i class="bi bi-box-arrow-right"></i></strong>
-                  </a>
-                </li>
-              </ul>
-            </div>
+            class="btn-close btn-close-white text-reset fs-3"
+            data-bs-dismiss="offcanvas"
+          ></button>
+        </div>
+        <div class="offcanvas-body">
+          <ul class="navbar-nav desktop-center">
+            <li class="nav-item">
+              <router-link
+                class="nav-link pb-0"
+                id="navBoard"
+                to="/admin/board"
+                @click="closeOffcanvas"
+              >
+                Board
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link
+                to="/admin/school"
+                class="nav-link pb-0"
+                id="navSchool"
+                @click="closeOffcanvas"
+              >
+                School
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link
+                to="/admin/teacher"
+                class="nav-link pb-0"
+                id="navTeacher"
+                @click="closeOffcanvas"
+              >
+                Teacher
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link pb-0 disabled" id="navSyllabus" href="#">Syllabus</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link pb-0 disabled" id="navQuestion" href="#">Question Bank</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link pb-0 disabled" id="navPattern" href="#">Pattern</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link pb-0 disabled" id="navProfile" href="#">Profile</a>
+            </li>
+          </ul>
+          <div class="navbar-nav">
+            <a class="nav-link pb-0 link-danger btn-danger" id="navLogout" @click="showLogoutModal">
+              Logout <strong><i class="bi bi-box-arrow-right"></i></strong>
+            </a>
           </div>
         </div>
       </div>
@@ -171,21 +168,46 @@ const closeOffcanvas = () => {
   background-color: black !important;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   height: 100px;
-  padding-left: 0;
-  padding-right: 0;
+  padding-bottom: 10px;
+}
+
+.container-fluid {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.brand-logo {
+  height: 62.5px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 0;
+  margin-top: 40px;
 }
 
 .navbar-brand {
-  color: white !important;
-  font-weight: bold;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+.offcanvas {
+  background-color: black !important;
+}
+
+.offcanvas-header {
+  border-bottom: 1px solid #ffffff;
 }
 
 .nav-link {
-  font-size: 20px;
+  font-size: 17px;
   color: white !important;
   text-transform: uppercase;
   transition: color 0.3s ease;
   white-space: nowrap;
+  padding: 0 10px;
 }
 
 .nav-link:hover {
@@ -193,10 +215,15 @@ const closeOffcanvas = () => {
   text-decoration: underline;
   text-decoration-color: #ffc107;
 }
-#navSchool {
-  padding-top: 0;
-  padding-bottom: 0;
-  line-height: 1.5; /* Ensure consistency */
+
+#navLogout {
+  color: red !important;
+  font-weight: 600;
+}
+
+#navLogout:hover {
+  text-decoration: underline !important;
+  text-decoration-color: red !important;
 }
 
 .nav-link.disabled {
@@ -205,41 +232,26 @@ const closeOffcanvas = () => {
 }
 
 .nav-link.disabled:hover {
+  text-decoration: none !important;
   color: #6c757d !important;
-  text-decoration: none;
 }
 
-.navbar-toggler {
-  background-color: black;
-  font-size: 1.2rem;
-}
-
-.offcanvas {
-  background-color: black !important;
-}
-
-.offcanvas-header {
-  border-bottom: 1px solid #495057;
-}
-
-.navbar-nav .nav-item {
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-.navbar-toggler-icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E") !important;
-}
-
-#navLogout:hover {
+/* Active link styling */
+.router-link-active:not(.navbar-brand) {
+  font-weight: bold !important;
   text-decoration: underline !important;
-  text-decoration-color: red !important;
+  text-decoration-color: white !important;
 }
 
-#navLogout {
-  color: red !important;
-  font-weight: 600;
-  cursor: pointer;
+/* Desktop Navigation Alignment */
+.navbar-nav.desktop-center {
+  margin-left: auto;
+  margin-right: auto;
+  align-items: flex-end;
+}
+
+.navbar-nav {
+  align-items: flex-end;
 }
 
 @media (max-width: 768px) {
@@ -252,15 +264,43 @@ const closeOffcanvas = () => {
     height: 101px;
   }
 
+  .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 101px);
+    position: relative;
+    padding: 1rem;
+  }
+
+  /* Mobile Navigation Alignment */
+  .navbar-nav.desktop-center {
+    margin: 0 !important;
+    align-items: flex-start !important;
+    width: 100%;
+  }
+
   .offcanvas .navbar-nav {
-    justify-content: start !important;
-    align-items: start !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    flex-grow: 1;
+    flex-wrap: nowrap;
   }
 
   .offcanvas .nav-link {
     text-align: left !important;
-    padding-left: 1rem;
+    padding-left: 0;
     padding-bottom: 1rem !important;
+    font-size: 20px !important;
+  }
+
+  #navLogout {
+    position: absolute !important;
+    bottom: 1rem !important;
+    left: 1.5rem !important;
+    font-size: 20px !important;
+    width: calc(100% - 2rem);
+    text-align: left;
+    padding-left: 0;
   }
 
   #navLogout:hover {
@@ -268,14 +308,19 @@ const closeOffcanvas = () => {
     text-decoration: underline !important;
     text-decoration-color: red !important;
   }
+}
 
-  #navLogout {
-    position: absolute !important;
-    bottom: 1rem !important;
-    left: 1.5rem !important;
-    font-size: 1rem !important;
-    width: calc(100% - 2rem);
-    text-align: left;
-  }
+.navbar-toggler {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0;
+}
+
+.navbar-toggler:focus {
+  box-shadow: none !important;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
 }
 </style>

@@ -128,14 +128,29 @@
           <div class="modal-header bg-danger text-white">
             <h5 class="modal-title" id="deleteConfirmationModalLabel">Remove School</h5>
           </div>
-          <div class="modal-body">Are you sure you want to delete this School from system?</div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this School from system?</p>
+
+            <div v-if="associatedTeachers.length > 0" class="alert alert-warning mt-3">
+              <p class="mb-2"><strong>Warning:</strong> This school has associated teachers:</p>
+              <ul class="list-group">
+                <li v-for="teacher in associatedTeachers" :key="teacher.id" class="list-group-item">
+                  {{ teacher.name }}
+                </li>
+              </ul>
+              <p class="mt-3 mb-0 text-danger">
+                <i class="bi bi-exclamation-triangle"></i> Cannot delete school with associated
+                teachers. Please reassign or remove teachers first.
+              </p>
+            </div>
+          </div>
           <div class="modal-footer">
             <button
               type="button"
               class="btn btn-light"
               style="border: 1px solid gray"
               id="cancelButton"
-              data-bs-dismiss="modal"
+              @click="handleCancelDelete"
             >
               Cancel
             </button>
@@ -145,6 +160,7 @@
               id="deleteButton"
               @click="deleteSchool"
               data-bs-dismiss="modal"
+              :disabled="associatedTeachers.length > 0"
             >
               Delete
             </button>
@@ -409,9 +425,8 @@
             <button
               type="button"
               class="btn btn-dark"
-              disabled
-              title="Coming soon"
               id="viewTeachers"
+              @click="navigateToTeachers(selectedSchool?.name)"
             >
               <i class="bi bi-arrow-return-right"></i> Teachers
             </button>
@@ -426,9 +441,8 @@
             <button
               type="button"
               class="btn btn-custom"
-              id="deleteTeacherButton"
-              data-bs-toggle="modal"
-              data-bs-target="#deleteConfirmationModal"
+              id="deleteSchoolButton"
+              @click="showDeleteConfirmation"
             >
               Delete
             </button>
@@ -488,6 +502,16 @@ interface Board {
   updated_at: string
 }
 
+interface Teacher {
+  id: number
+  name: string
+  email_id: string
+  contact_number: string
+  alternate_contact_number?: string
+  highest_qualification: string
+  status: boolean
+}
+
 interface School {
   id: number
   board_id: number
@@ -526,7 +550,7 @@ const boards = ref<Board[]>([])
 const selectedSchool = ref<DisplaySchool | null>(null)
 const schoolSearch = ref('')
 const boardSearch = ref('')
-const isLoading = ref(false)
+const associatedTeachers = ref<Teacher[]>([])
 
 // Initialize from route query if present
 onMounted(() => {
@@ -719,27 +743,12 @@ async function deleteSchool() {
   if (!selectedSchool.value) return
 
   try {
-    // Delete school-instruction-mediums
-    await fetch(getApiUrl(`/school-instruction-mediums/school/${selectedSchool.value.id}`), {
-      method: 'DELETE',
-    })
-
-    // Delete school-standards
-    await fetch(getApiUrl(`/school-standards/school/${selectedSchool.value.id}`), {
-      method: 'DELETE',
-    })
-
     // Delete school
     const response = await fetch(getApiUrl(`/schools/${selectedSchool.value.id}`), {
       method: 'DELETE',
     })
 
     if (!response.ok) throw new Error('Failed to delete school')
-
-    // Delete address
-    await fetch(getApiUrl(`/addresses/${selectedSchool.value.address_id}`), {
-      method: 'DELETE',
-    })
 
     // Refresh the schools list
     fetchSchools()
@@ -770,146 +779,59 @@ function navigateToEdit(schoolId?: number) {
   })
 }
 
-// Update the function to fetch school details more efficiently
-const fetchSchoolDetails = async (school: School): Promise<DisplaySchool | null> => {
+async function showDeleteConfirmation() {
+  if (!selectedSchool.value) return
+
   try {
-    console.log('\nProcessing school ID', school.id, ':', school)
+    // Close the view modal first
+    const viewModal = Modal.getInstance(document.getElementById('viewSchoolModal') as HTMLElement)
+    viewModal?.hide()
 
-    // Fetch board details
-    const boardResponse = await fetch(getApiUrl(`/boards/${school.board_id}`))
-    const board = await boardResponse.json()
-    console.log('Board details:', board)
-
-    // Fetch address details
-    console.log('Fetching address details for address_id:', school.address_id)
-    const addressResponse = await fetch(getApiUrl(`/addresses/${school.address_id}`))
-    const address = await addressResponse.json()
-    console.log('Address details:', address)
-
-    // Fetch city details
-    console.log('Fetching city details for city_id:', address.city_id)
-    const cityResponse = await fetch(getApiUrl(`/cities/${address.city_id}`))
-    const city = await cityResponse.json()
-    console.log('City details:', city)
-
-    // Fetch state details
-    console.log('Fetching state details for state_id:', city.state_id)
-    const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
-    const state = await stateResponse.json()
-    console.log('State details:', state)
-
-    // Fetch country details
-    console.log('Fetching country details for country_id:', state.country_id)
-    const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
-    const country = await countryResponse.json()
-    console.log('Country details:', country)
-
-    // Return school with details
-    return {
-      ...school,
-      board,
-      mediums: [],
-      standards: [],
-      address: {
-        ...address,
-        city: {
-          ...city,
-          state: {
-            ...state,
-            country,
-          },
-        },
-      },
-    }
-  } catch (error) {
-    console.error('Error fetching school details:', error)
-    return null
-  }
-}
-
-// Add new function to fetch school mediums and standards when needed
-const fetchSchoolMediumsAndStandards = async (schoolId: number) => {
-  try {
-    // Fetch school's mediums with their details
-    const schoolMediumsResponse = await fetch(
-      getApiUrl(`/school-instruction-mediums/school/${schoolId}`),
-    )
-    const schoolMediums = await schoolMediumsResponse.json()
-
-    // Get medium details for each medium
-    const mediums = await Promise.all(
-      schoolMediums.map(async (sm: { instruction_medium_id: number }) => {
-        const mediumResponse = await fetch(
-          getApiUrl(`/instruction-mediums/${sm.instruction_medium_id}`),
-        )
-        return mediumResponse.json()
-      }),
-    )
-
-    // Fetch school's standards with their details
-    const schoolStandardsResponse = await fetch(getApiUrl(`/school-standards/school/${schoolId}`))
-    const schoolStandards = await schoolStandardsResponse.json()
-
-    // Get standard details for each standard
-    const standards = await Promise.all(
-      schoolStandards.map(async (ss: { standard_id: number }) => {
-        const standardResponse = await fetch(getApiUrl(`/standards/${ss.standard_id}`))
-        return standardResponse.json()
-      }),
-    )
-
-    return {
-      mediums: mediums.map((m) => ({ id: m.id, name: m.instruction_medium })),
-      standards: standards.map((s) => ({ id: s.id, name: s.name })),
-    }
-  } catch (error) {
-    console.error('Error fetching school mediums and standards:', error)
-    return { mediums: [], standards: [] }
-  }
-}
-
-// Update the showSchoolDetails function to use the new approach
-const showSchoolDetails = async (school: School) => {
-  try {
-    selectedSchool.value = null
-    isLoading.value = true
-
-    // First fetch basic school details
-    const schoolWithDetails = await fetchSchoolDetails(school)
-    if (!schoolWithDetails) {
-      throw new Error('Failed to fetch school details')
+    // Fetch associated teachers
+    const response = await fetch(getApiUrl(`/users?schoolId=${selectedSchool.value.id}`))
+    if (!response.ok) {
+      throw new Error('Failed to fetch associated teachers')
     }
 
-    // Then fetch mediums and standards
-    const { mediums, standards } = await fetchSchoolMediumsAndStandards(school.id)
+    const teachers = await response.json()
+    associatedTeachers.value = teachers
 
-    // Update the selected school with all details
-    selectedSchool.value = {
-      ...schoolWithDetails,
-      mediums,
-      standards,
-    }
-
-    // Show the details modal
-    const modal = new Modal(document.getElementById('schoolDetailsModal') as HTMLElement)
+    // Show the confirmation modal
+    const modal = new Modal(document.getElementById('deleteConfirmationModal') as HTMLElement)
     modal.show()
   } catch (error) {
-    console.error('Error showing school details:', error)
-  } finally {
-    isLoading.value = false
+    console.error('Error fetching associated teachers:', error)
+    alert('Failed to check associated teachers. Please try again.')
   }
 }
 
-// Add function to handle school actions
-const handleSchoolAction = async (action: string, school: School) => {
-  switch (action) {
-    case 'view':
-      await showSchoolDetails(school)
-      break
-    // Add other cases as needed
-    default:
-      console.warn('Unknown action:', action)
-  }
+// Add function to handle cancel button click
+function handleCancelDelete() {
+  // Hide delete confirmation modal
+  const deleteModal = Modal.getInstance(
+    document.getElementById('deleteConfirmationModal') as HTMLElement,
+  )
+  deleteModal?.hide()
+
+  // Reopen the view modal
+  const viewModal = new Modal(document.getElementById('viewSchoolModal') as HTMLElement)
+  viewModal.show()
+}
+
+function navigateToTeachers(schoolName?: string) {
+  // Close the view modal first
+  cleanupModals()
+
+  // Navigate to teachers page with the school name as a query parameter
+  router.push({
+    name: 'TeacherDashboard',
+    query: { school: schoolName },
+  })
+}
+
+function cleanupModals() {
+  const viewModal = Modal.getInstance(document.getElementById('viewSchoolModal') as HTMLElement)
+  viewModal?.hide()
 }
 </script>
 
@@ -957,12 +879,6 @@ const handleSchoolAction = async (action: string, school: School) => {
     background-color: #dc3545 !important;
     color: white !important;
   }
-}
-
-#navSchool {
-  font-weight: bolder;
-  text-decoration: underline;
-  text-decoration-color: white;
 }
 
 @media (max-width: 768px) {

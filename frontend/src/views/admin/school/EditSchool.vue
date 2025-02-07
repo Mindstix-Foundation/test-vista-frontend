@@ -163,7 +163,7 @@ const handleSchoolUpdate = async (formData: SchoolFormData) => {
     isLoading.value = true
     console.log('Updating school with data:', formData)
 
-    // First, update the address
+    // Update address
     const addressResponse = await fetch(getApiUrl(`/addresses/${formData.address_id}`), {
       method: 'PUT',
       headers: {
@@ -173,8 +173,6 @@ const handleSchoolUpdate = async (formData: SchoolFormData) => {
         street: formData.address.street,
         postal_code: formData.address.postal_code,
         city_id: formData.address.city_id,
-        state_id: formData.address.state_id,
-        country_id: formData.address.country_id,
       }),
     })
 

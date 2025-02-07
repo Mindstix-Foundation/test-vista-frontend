@@ -22,6 +22,11 @@ const routes: RouteRecordRaw[] = [
         name: 'SchoolDashboard',
         component: () => import('../views/admin/school/SchoolDashboard.vue'),
       },
+      {
+        path: 'teacher',
+        name: 'TeacherDashboard',
+        component: () => import('../views/admin/teacher/TeacherDashboard.vue'),
+      },
     ],
   },
   {
@@ -43,6 +48,16 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/school/:id/edit',
     name: 'editSchool',
     component: () => import('@/views/admin/school/EditSchool.vue'),
+  },
+  {
+    path: '/admin/teacher/add',
+    name: 'addTeacher',
+    component: () => import('@/views/admin/teacher/AddTeacher.vue'),
+  },
+  {
+    path: '/admin/teacher/:id/edit',
+    name: 'editTeacher',
+    component: () => import('@/views/admin/teacher/EditTeacher.vue'),
   },
 ]
 

@@ -112,10 +112,31 @@
                 aria-label="Close"
               ></button>
             </div>
-            <div class="modal-body">Are you sure you want to delete this board?</div>
+            <div class="modal-body">
+              <template v-if="associatedSchools.length > 0">
+                <div class="alert alert-warning">
+                  <strong>Cannot delete this board!</strong>
+                  <p class="mb-2">The following schools are associated with this board:</p>
+                  <ul class="list-unstyled ms-3">
+                    <li v-for="school in associatedSchools" :key="school.id">
+                      - {{ school.name }}
+                    </li>
+                  </ul>
+                  <p class="mb-0">Please delete these schools first before deleting the board.</p>
+                </div>
+              </template>
+              <template v-else> Are you sure you want to delete this board? </template>
+            </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" @click="cleanupModals">Cancel</button>
-              <button type="button" class="btn btn-danger" @click="deleteBoard">Delete</button>
+              <button
+                type="button"
+                class="btn btn-danger"
+                @click="deleteBoard"
+                :disabled="associatedSchools.length > 0"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -318,6 +339,7 @@
                 id="deleteSchoolButton"
                 data-bs-toggle="modal"
                 data-bs-target="#deleteConfirmationModal"
+                @click="showDeleteConfirmation"
               >
                 Delete
               </button>
@@ -401,6 +423,7 @@ const selectedBoard = ref<BoardDetails | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const showInfoModal = ref(false)
+const associatedSchools = ref<Array<{ id: number; name: string }>>([])
 
 const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
   try {
@@ -540,63 +563,42 @@ const showBoardInfo = async (board: Board) => {
   }
 }
 
-const clearBoardFilter = () => {
-  searchQuery.value = ''
+const checkAssociatedSchools = async (boardId: number) => {
+  try {
+    const schoolsResponse = await fetch(getApiUrl(`/schools?boardId=${boardId}`))
+    if (!schoolsResponse.ok) {
+      throw new Error('Failed to check associated schools')
+    }
+    associatedSchools.value = await schoolsResponse.json()
+  } catch (error) {
+    console.error('Error checking associated schools:', error)
+    associatedSchools.value = []
+  }
 }
 
 const deleteBoard = async () => {
   if (!selectedBoard.value) return
 
   try {
-    // First fetch all associated data using board-specific endpoints
-    const [mediums, standards, subjects] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${selectedBoard.value.id}`)).then((r) =>
-        r.json(),
-      ),
-      fetch(getApiUrl(`/standards/board/${selectedBoard.value.id}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/subjects/board/${selectedBoard.value.id}`)).then((r) => r.json()),
-    ])
+    // If there are associated schools, the delete button will be disabled
+    // but we'll check again just to be safe
+    if (associatedSchools.value.length > 0) {
+      return
+    }
 
-    // Delete all associated data first
-    await Promise.all([
-      ...mediums.map((m: Medium) =>
-        fetch(getApiUrl(`/instruction-mediums/${m.id}`), { method: 'DELETE' }),
-      ),
-      ...standards.map((s: Standard) =>
-        fetch(getApiUrl(`/standards/${s.id}`), { method: 'DELETE' }),
-      ),
-      ...subjects.map((s: Subject) => fetch(getApiUrl(`/subjects/${s.id}`), { method: 'DELETE' })),
-    ])
-
-    // Get the address ID before deleting the board
-    const addressId = selectedBoard.value.address_id
-
-    // Delete the board
-    const boardResponse = await fetch(getApiUrl(`/boards/${selectedBoard.value.id}`), {
+    // Proceed with board deletion
+    const response = await fetch(getApiUrl(`/boards/${selectedBoard.value.id}`), {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
     })
 
-    if (!boardResponse.ok) {
+    if (!response.ok) {
       throw new Error('Failed to delete board')
     }
 
-    // Delete the address after board is deleted
-    if (addressId) {
-      const addressResponse = await fetch(getApiUrl(`/addresses/${addressId}`), {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!addressResponse.ok) {
-        console.error('Failed to delete board address')
-      }
-    }
-
+    // Update the local boards list
     boards.value = boards.value.filter((board) => board.id !== selectedBoard.value?.id)
     selectedBoard.value = null
 
@@ -605,6 +607,10 @@ const deleteBoard = async () => {
     console.error('Error deleting board:', error)
     alert('Failed to delete board. Please try again.')
   }
+}
+
+const clearBoardFilter = () => {
+  searchQuery.value = ''
 }
 
 const cleanupModals = () => {
@@ -660,6 +666,13 @@ const navigateToSchools = (boardName?: string) => {
     path: '/admin/school',
     query: { board: boardName },
   })
+}
+
+// Add this function to handle the delete button click
+const showDeleteConfirmation = async () => {
+  if (selectedBoard.value) {
+    await checkAssociatedSchools(selectedBoard.value.id)
+  }
 }
 
 // Add watcher for route changes

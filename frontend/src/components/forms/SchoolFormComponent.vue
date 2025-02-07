@@ -483,6 +483,7 @@
                 class="btn btn-dark"
                 :disabled="isSubmitting"
                 @click="handleSubmit"
+                @keydown="handleSaveKeydown"
               >
                 <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
                 Save
