@@ -78,11 +78,11 @@
 
       <!-- Email -->
       <div class="col col-12 col-sm-10 col-md-8">
-            <div class="form-floating">
-              <input
+        <div class="form-floating">
+          <input
             ref="emailInput"
             type="email"
-                class="form-control"
+            class="form-control"
             :class="{
               'is-valid': validationStates.emailId.valid && validationStates.emailId.touched,
               'is-invalid': !validationStates.emailId.valid && validationStates.emailId.touched,
@@ -92,25 +92,25 @@
             placeholder="Enter Email"
             @input="handleEmailInput"
             @keydown="handleKeyDown($event, 'contactNumber')"
-                required
-              />
+            required
+          />
           <label for="emailId">Email <span class="text-danger">*</span></label>
           <div
             class="invalid-feedback"
             v-if="!validationStates.emailId.valid && validationStates.emailId.touched"
           >
             {{ emailErrorMessage }}
-            </div>
           </div>
+        </div>
       </div>
 
       <!-- Contact Number -->
       <div class="col col-12 col-sm-10 col-md-8">
-            <div class="form-floating">
-              <input
+        <div class="form-floating">
+          <input
             ref="contactInput"
-                type="tel"
-                class="form-control"
+            type="tel"
+            class="form-control"
             :class="{
               'is-invalid':
                 !validationStates.contactNumber.valid && validationStates.contactNumber.touched,
@@ -245,8 +245,8 @@
                   class="btn btn-custom"
                   @click="removeStandardSubjects(standard.standardId)"
                 >
-                Remove
-              </button>
+                  Remove
+                </button>
               </div>
               <div class="ps-3">{{ standard.subjects.map((s) => s.name).join(', ') }}</div>
             </div>
@@ -254,53 +254,55 @@
         </ul>
       </div>
 
-  <!-- Subject Selection Modal -->
-  <div
-    class="modal fade"
-    id="subjectSelectModal"
-    tabindex="-1"
-    aria-labelledby="subjectSelectModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title" id="subjectSelectModalLabel">
+      <!-- Subject Selection Modal -->
+      <div
+        class="modal fade"
+        id="subjectSelectModal"
+        tabindex="-1"
+        aria-labelledby="subjectSelectModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="subjectSelectModalLabel">
                 Select Subjects for Standard {{ selectedStandard?.name || '' }}
-          </h4>
-        </div>
-        <div class="modal-body">
-          <div id="subjectSelectContainer" class="p-3 border rounded">
+              </h4>
+            </div>
+            <div class="modal-body">
+              <div id="subjectSelectContainer" class="p-3 border rounded">
                 <div v-for="subject in availableSubjects" :key="subject.id" class="form-check mb-2">
-              <input
-                class="form-check-input"
-                type="checkbox"
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
                     :id="'subject' + subject.id"
                     :value="subject.id"
-                v-model="selectedSubjects"
-              />
+                    v-model="selectedSubjects"
+                    @keydown.enter.prevent="toggleSubject(subject.id)"
+                    @keydown.space.prevent="toggleSubject(subject.id)"
+                  />
                   <label class="form-check-label fs-5" :for="'subject' + subject.id">
                     {{ subject.name }}
-              </label>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-light"
+                style="border: 1px solid gray"
+                @click="closeSubjectModal"
+              >
+                Close
+              </button>
+              <button type="button" class="btn btn-success" @click="addSubjects">
+                Add Subjects
+              </button>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-light"
-            style="border: 1px solid gray"
-                @click="closeSubjectModal"
-          >
-            Close
-          </button>
-              <button type="button" class="btn btn-success" @click="addSubjects">
-                Add Subjects
-          </button>
-        </div>
       </div>
-    </div>
-  </div>
 
       <!-- Save Confirmation Modal -->
       <div
@@ -1255,7 +1257,6 @@ onMounted(() => {
 const handleStandardSelect = async () => {
   if (!selectedStandard.value) {
     console.error('No standard selected')
-    // alert('Please select a standard')
     return
   }
 
@@ -1345,10 +1346,18 @@ const handleStandardSelect = async () => {
     }
 
     if (availableSubjects.value.length > 0) {
-  subjectModal?.show()
+      subjectModal?.show()
+      // Focus the first checkbox after modal is shown
+      setTimeout(() => {
+        const firstCheckbox = document.querySelector(
+          '#subjectSelectContainer .form-check-input',
+        ) as HTMLElement
+        if (firstCheckbox) {
+          firstCheckbox.focus()
+        }
+      }, 500)
     } else {
       console.error('No subjects found for this standard')
-      // alert('No subjects found for this standard')
     }
   } catch (error) {
     console.error('Error in handleStandardSelect:', error)
@@ -1582,13 +1591,23 @@ const handleQualificationInput = (event: Event) => {
   formData.highestQualification = target.value
   v$.value.highestQualification.$touch()
 }
+
+// Add these functions in the script section
+const toggleSubject = (subjectId: number) => {
+  const index = selectedSubjects.value.indexOf(subjectId)
+  if (index === -1) {
+    selectedSubjects.value.push(subjectId)
+  } else {
+    selectedSubjects.value.splice(index, 1)
+  }
+}
 </script>
 
 <style scoped>
 .form-control:focus,
 .form-select:focus {
-  border-color: #212529;
-  box-shadow: 0 0 0 0.2rem rgba(33, 37, 41, 0.25);
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
 .dropdown {
@@ -1665,19 +1684,19 @@ const handleQualificationInput = (event: Event) => {
 
 /* Desktop styles */
 @media (min-width: 577px) {
-.btn-custom {
-  border: 1px solid gray !important;
-  background-color: #f8f9fa;
-  color: black;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  .btn-custom {
+    border: 1px solid gray !important;
+    background-color: #f8f9fa;
+    color: black;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
     padding: 0.25rem 0.75rem;
     font-size: 0.875rem;
-}
+  }
 
-.btn-custom:hover {
-  border: 1px solid #dc3545 !important;
+  .btn-custom:hover {
+    border: 1px solid #dc3545 !important;
     background-color: #dc3545 !important;
     color: white !important;
   }

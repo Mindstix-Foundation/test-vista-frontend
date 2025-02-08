@@ -122,8 +122,19 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
     )
     const existingMediumsMap = new Map(existingMediums.map((m) => [m.id, m]))
 
-    // Find new mediums (ones without IDs)
-    const newMediums = formData.mediums.filter((m) => !m.id && m.name.trim())
+    // Find new mediums (ones without IDs and not already existing)
+    const newMediums = formData.mediums.filter((m) => {
+      // Must have no ID and a non-empty name
+      if (!m.id && m.name.trim()) {
+        // Check if a medium with this name already exists for this board
+        return !existingMediums.some(
+          (existing) =>
+            existing.instruction_medium?.toLowerCase() === m.name.toLowerCase() &&
+            existing.board_id === board.id,
+        )
+      }
+      return false
+    })
 
     // Create new mediums
     for (const medium of newMediums) {
@@ -141,10 +152,14 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       }
     }
 
-    // Find modified mediums
+    // Find modified mediums (case-insensitive comparison)
     const modifiedMediums = Array.from(formMediumsMap.values()).filter((formMedium) => {
-      const existingMedium = existingMediumsMap.get(formMedium.id!)
-      return existingMedium && existingMedium.instruction_medium !== formMedium.name
+      if (!formMedium.id) return false // Skip mediums without IDs
+      const existingMedium = existingMediumsMap.get(formMedium.id)
+      return (
+        existingMedium &&
+        existingMedium.instruction_medium?.toLowerCase() !== formMedium.name.toLowerCase()
+      )
     })
 
     // Update modified mediums
@@ -372,7 +387,6 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
     router.push('/admin/board')
   } catch (error) {
     console.error('Error updating board:', error)
-    alert('An error occurred while updating the board. Please try again.')
   }
 }
 </script>

@@ -910,6 +910,16 @@ const fetchSchoolStandards = async (schoolId: number) => {
   }
 }
 
+// Add scrollToSelectedItem function
+const scrollToSelectedItem = (type: 'board' | 'country' | 'state' | 'city') => {
+  nextTick(() => {
+    const activeItem = document.querySelector(`#${type}Name + .dropdown-menu .dropdown-item.active`)
+    if (activeItem) {
+      activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  })
+}
+
 // Update handleBoardKeydown function
 const handleBoardKeydown = async (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
@@ -931,6 +941,7 @@ const handleBoardKeydown = async (e: KeyboardEvent) => {
       e.preventDefault()
       showBoardDropdown.value = true
       selectedBoardIndex.value = 0
+      scrollToSelectedItem('board')
     }
     return
   }
@@ -1068,24 +1079,6 @@ const handleCityKeydown = async (e: KeyboardEvent) => {
     selectedCityIndex.value = Math.max(selectedCityIndex.value - 1, 0)
     scrollToSelectedItem('city')
   }
-}
-
-// Add helper function to scroll to selected item
-const scrollToSelectedItem = (type: 'board' | 'country' | 'state' | 'city') => {
-  nextTick(() => {
-    const container = document.querySelector(`#${type} + .dropdown-menu`)
-    const selectedItem = container?.querySelector('.active') as HTMLElement
-    if (container && selectedItem) {
-      const containerRect = container.getBoundingClientRect()
-      const selectedRect = selectedItem.getBoundingClientRect()
-
-      if (selectedRect.bottom > containerRect.bottom) {
-        container.scrollTop += selectedRect.bottom - containerRect.bottom
-      } else if (selectedRect.top < containerRect.top) {
-        container.scrollTop -= containerRect.top - selectedRect.top
-      }
-    }
-  })
 }
 
 // Update filter functions to reset selection index
@@ -1351,7 +1344,6 @@ const handleSubmit = async (e: Event) => {
     }
   } catch (error) {
     console.error('Error in form submission:', error)
-    alert('An error occurred while saving. Please try again.')
   } finally {
     isSubmitting.value = false
   }
@@ -1637,7 +1629,6 @@ const confirmAndSubmit = async () => {
     emit('submit', form.value)
   } catch (error) {
     console.error('Error submitting form:', error)
-    alert('An error occurred while saving the school. Please try again.')
   } finally {
     isSubmitting.value = false
   }
@@ -2237,5 +2228,28 @@ fieldset legend {
 #boardName + .dropdown-menu .dropdown-item:hover {
   background-color: #f8f9fa;
   color: #212529;
+}
+
+.dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 </style>

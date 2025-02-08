@@ -27,6 +27,11 @@ const routes: RouteRecordRaw[] = [
         name: 'TeacherDashboard',
         component: () => import('../views/admin/teacher/TeacherDashboard.vue'),
       },
+      {
+        path: 'syllabus',
+        name: 'SyllabusDashboard',
+        component: () => import('../views/admin/syllabus/SyllabusDashboard.vue'),
+      },
     ],
   },
   {
