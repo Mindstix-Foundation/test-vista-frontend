@@ -19,6 +19,57 @@
         </output>
       </div>
     </div>
+
+    <!-- Operation Result Modal -->
+    <div
+      class="modal fade"
+      id="operationResultModal"
+      tabindex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Operation Results</h5>
+          </div>
+          <div class="modal-body">
+            <ul class="list-group">
+              <li
+                v-for="(result, index) in operationResults"
+                :key="index"
+                class="list-group-item d-flex justify-content-between align-items-start"
+                :class="{
+                  'text-success': result.status === 'success',
+                  'text-danger': result.status === 'error',
+                }"
+              >
+                <div class="ms-2 me-auto">
+                  <div>{{ result.operation }}</div>
+                  <div v-if="result.status === 'error'" class="text-danger small">
+                    Error: {{ result.message }}
+                  </div>
+                </div>
+                <span
+                  class="badge rounded-pill"
+                  :class="{
+                    'bg-success': result.status === 'success',
+                    'bg-danger': result.status === 'error',
+                  }"
+                >
+                  {{ result.status }}
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-dark" @click="cleanupAndNavigate">
+              Go to Teacher List
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -28,6 +79,13 @@ import { useRouter, useRoute } from 'vue-router'
 import TeacherFormComponent from '@/components/forms/TeacherFormComponent.vue'
 import type { TeacherFormData } from '@/models/Teacher'
 import { getApiUrl } from '@/config/api'
+import * as bootstrap from 'bootstrap'
+
+interface OperationResult {
+  operation: string
+  status: 'success' | 'error'
+  message?: string
+}
 
 interface UserData {
   name: string
@@ -69,10 +127,8 @@ interface TeacherSubject {
   }
 }
 
-interface SubjectResponse {
+interface TeacherSubjectWithId {
   id: number
-  school_standard_id: number
-  medium_standard_subject_id: number
   school_standard: {
     id: number
     standard: {
@@ -83,12 +139,7 @@ interface SubjectResponse {
   medium_standard_subject: {
     id: number
     subject: {
-      id: number
       name: string
-    }
-    instruction_medium: {
-      id: number
-      instruction_medium: string
     }
   }
 }
@@ -96,6 +147,17 @@ interface SubjectResponse {
 const router = useRouter()
 const route = useRoute()
 const teacherData = ref<TeacherFormData | null>(null)
+const operationResults = ref<OperationResult[]>([])
+let operationResultModal: bootstrap.Modal | null = null
+
+const getErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const data = await response.json()
+    return data.message || data.error || 'Unknown error occurred'
+  } catch {
+    return 'Failed to parse error message'
+  }
+}
 
 const fetchTeacherData = async (id: string) => {
   try {
@@ -155,12 +217,12 @@ const fetchTeacherData = async (id: string) => {
     // Prepare form data
     teacherData.value = {
       name: userData.name,
-      boardId: activeSchool.school.board_id,
       emailId: userData.email_id,
       contactNumber: userData.contact_number.toString(),
       alternateContactNumber: userData.alternate_contact_number?.toString(),
       highestQualification: userData.highest_qualification || '',
       schoolId: activeSchool.school.id,
+      boardId: activeSchool.school.board_id,
       teacherSubjects: subjectsData.map((subject: TeacherSubject) => ({
         schoolStandardId: subject.school_standard.id,
         mediumStandardSubjectId: subject.medium_standard_subject.id,
@@ -189,9 +251,9 @@ onMounted(async () => {
   }
 
   await fetchTeacherData(teacherId)
+  operationResultModal = new bootstrap.Modal(document.getElementById('operationResultModal')!)
 })
 
-// Helper functions for API calls
 const updateUserData = async (userId: string, formData: TeacherFormData) => {
   const response = await fetch(getApiUrl(`/users/${userId}`), {
     method: 'PUT',
@@ -204,7 +266,10 @@ const updateUserData = async (userId: string, formData: TeacherFormData) => {
       highest_qualification: formData.highestQualification,
     }),
   })
-  if (!response.ok) throw new Error('Failed to update user data')
+  if (!response.ok) {
+    const errorMessage = await getErrorMessage(response)
+    throw new Error(errorMessage)
+  }
 }
 
 const updateSchoolAssignment = async (userId: string, schoolId: number) => {
@@ -222,7 +287,10 @@ const updateSchoolAssignment = async (userId: string, schoolId: number) => {
       body: JSON.stringify({ end_date: new Date().toISOString() }),
     },
   )
-  if (!endResponse.ok) throw new Error('Failed to end current school assignment')
+  if (!endResponse.ok) {
+    const errorMessage = await getErrorMessage(endResponse)
+    throw new Error(errorMessage)
+  }
 
   // Create new assignment
   const newResponse = await fetch(getApiUrl('/user-schools'), {
@@ -234,14 +302,20 @@ const updateSchoolAssignment = async (userId: string, schoolId: number) => {
       start_date: new Date().toISOString(),
     }),
   })
-  if (!newResponse.ok) throw new Error('Failed to create new school assignment')
+  if (!newResponse.ok) {
+    const errorMessage = await getErrorMessage(newResponse)
+    throw new Error(errorMessage)
+  }
 }
 
 const deleteSubject = async (subjectId: number) => {
   const response = await fetch(getApiUrl(`/teacher-subjects/${subjectId}`), {
     method: 'DELETE',
   })
-  if (!response.ok) throw new Error('Failed to delete subject assignment')
+  if (!response.ok) {
+    const errorMessage = await getErrorMessage(response)
+    throw new Error(errorMessage)
+  }
 }
 
 const addSubject = async (
@@ -258,41 +332,32 @@ const addSubject = async (
       medium_standard_subject_id: mediumStandardSubjectId,
     }),
   })
-  if (!response.ok) throw new Error('Failed to add subject assignment')
+  if (!response.ok) {
+    const errorMessage = await getErrorMessage(response)
+    throw new Error(errorMessage)
+  }
 }
 
-const updateSubjects = async (
-  userId: string,
-  currentSubjects: SubjectResponse[],
-  newSubjects: Array<{ schoolStandardId: number; mediumStandardSubjectId: number }>,
-) => {
-  // Handle removals
-  const removalPromises = currentSubjects
-    .filter(
-      (subject) =>
-        !newSubjects.some(
-          (ts) =>
-            ts.schoolStandardId === subject.school_standard_id &&
-            ts.mediumStandardSubjectId === subject.medium_standard_subject_id,
-        ),
-    )
-    .map((subject) => deleteSubject(subject.id))
+const cleanupAndNavigate = () => {
+  operationResultModal?.hide()
+  router.push('/admin/teacher')
+}
 
-  await Promise.all(removalPromises)
+// Add helper function to format operation messages
+const formatOperationMessage = (operation: string, isResult: boolean) => {
+  if (!isResult) return operation // Return as is for confirmation modal
 
-  // Handle additions
-  const additionPromises = newSubjects
-    .filter(
-      (subject) =>
-        !currentSubjects.some(
-          (s) =>
-            s.school_standard_id === subject.schoolStandardId &&
-            s.medium_standard_subject_id === subject.mediumStandardSubjectId,
-        ),
-    )
-    .map((subject) => addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId))
-
-  await Promise.all(additionPromises)
+  // Convert to past tense for result modal
+  if (operation.startsWith('Add ')) {
+    return operation.replace('Add ', 'Added ')
+  }
+  if (operation.startsWith('Remove ')) {
+    return operation.replace('Remove ', 'Removed ')
+  }
+  if (operation.startsWith('Update ')) {
+    return operation.replace('Update ', 'Updated ')
+  }
+  return operation
 }
 
 const handleSubmit = async (data: {
@@ -300,44 +365,138 @@ const handleSubmit = async (data: {
   changes: Array<{ type: string; message: string }>
 }) => {
   try {
-    console.log('EditTeacher: Starting form submission with data:', data)
+    operationResults.value = []
+    const userId = route.params.id as string
     const { formData, changes } = data
 
-    if (changes.length === 0) {
-      console.log('No changes detected, returning to dashboard')
-      router.push('/admin/teacher')
-      return
-    }
-
-    const userId = route.params.id as string
-
-    // Process basic info changes
+    // Only update user data if there are changes to basic information
     const hasBasicInfoChanges = changes.some((change) =>
       ['Name:', 'Email:', 'Contact Number:', 'Alternate Contact:', 'Qualification:'].some(
         (prefix) => change.message.startsWith(prefix),
       ),
     )
+
     if (hasBasicInfoChanges) {
-      await updateUserData(userId, formData)
+      try {
+        await updateUserData(userId, formData)
+        operationResults.value.push({
+          operation: formatOperationMessage('Update Teacher Information', true),
+          status: 'success',
+        })
+      } catch (error) {
+        operationResults.value.push({
+          operation: formatOperationMessage('Update Teacher Information', false),
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Failed to update teacher information',
+        })
+      }
     }
 
-    // Process school changes
-    const schoolChange = changes.find((change) => change.message.startsWith('School:'))
-    if (schoolChange) {
-      await updateSchoolAssignment(userId, formData.schoolId)
+    // Update school assignment if changed
+    if (formData.schoolId !== teacherData.value?.schoolId) {
+      try {
+        await updateSchoolAssignment(userId, formData.schoolId)
+        operationResults.value.push({
+          operation: formatOperationMessage('Update School Assignment', true),
+          status: 'success',
+        })
+      } catch (error) {
+        operationResults.value.push({
+          operation: formatOperationMessage('Update School Assignment', false),
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Failed to update school assignment',
+        })
+      }
     }
 
-    // Process subject changes
-    const hasSubjectChanges = changes.some(
-      (change) => change.message.includes('Subject') || change.message.includes('Standard'),
+    // Handle subject changes
+    const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
+    const subjectsData: TeacherSubjectWithId[] = await currentSubjects.json()
+    const newSubjects = formData.teacherSubjects
+
+    // Find subjects to remove
+    const subjectsToRemove = subjectsData.filter(
+      (current) =>
+        !newSubjects.some(
+          (newSubj) =>
+            newSubj.schoolStandardId === current.school_standard.id &&
+            newSubj.mediumStandardSubjectId === current.medium_standard_subject.id,
+        ),
     )
-    if (hasSubjectChanges) {
-      const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
-      const subjectsData: SubjectResponse[] = await currentSubjects.json()
-      await updateSubjects(userId, subjectsData, formData.teacherSubjects)
+
+    // Find subjects to add
+    const subjectsToAdd = newSubjects.filter(
+      (newSubj) =>
+        !subjectsData.some(
+          (current) =>
+            current.school_standard.id === newSubj.schoolStandardId &&
+            current.medium_standard_subject.id === newSubj.mediumStandardSubjectId,
+        ),
+    )
+
+    // Process removals
+    for (const subject of subjectsToRemove) {
+      try {
+        await deleteSubject(subject.id)
+        const standardName = subject.school_standard.standard.name
+        const subjectName = subject.medium_standard_subject.subject.name
+        const operation = `Remove "${subjectName}" from Standard ${standardName}`
+        operationResults.value.push({
+          operation: formatOperationMessage(operation, true),
+          status: 'success',
+        })
+      } catch (error) {
+        const standardName = subject.school_standard.standard.name
+        const subjectName = subject.medium_standard_subject.subject.name
+        const operation = `Remove "${subjectName}" from Standard ${standardName}`
+        operationResults.value.push({
+          operation: formatOperationMessage(operation, false),
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Failed to remove subject assignment',
+        })
+      }
     }
 
-    router.push('/admin/teacher')
+    // Process additions
+    for (const subject of subjectsToAdd) {
+      try {
+        await addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId)
+
+        // Find the school standard to get the standard name
+        const schoolStandard = await fetch(
+          getApiUrl(`/school-standards/${subject.schoolStandardId}`),
+        )
+        const schoolStandardData = await schoolStandard.json()
+        const standardName = schoolStandardData.standard.name
+
+        // Find the subject info
+        const subjectResponse = await fetch(
+          getApiUrl(`/medium-standard-subjects/${subject.mediumStandardSubjectId}`),
+        )
+        const subjectData = await subjectResponse.json()
+        const subjectName = subjectData.subject.name
+
+        const operation = `Add "${subjectName}" to Standard ${standardName}`
+        operationResults.value.push({
+          operation: formatOperationMessage(operation, true),
+          status: 'success',
+        })
+      } catch (error) {
+        operationResults.value.push({
+          operation: 'Add Subject',
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Failed to add subject assignment',
+        })
+      }
+    }
+
+    // Show the results modal if there were any operations
+    if (operationResults.value.length > 0) {
+      operationResultModal?.show()
+    } else {
+      // If no changes were made, just navigate back
+      router.push('/admin/teacher')
+    }
   } catch (error) {
     console.error('Error updating teacher:', error)
   }

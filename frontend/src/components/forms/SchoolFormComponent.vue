@@ -39,63 +39,49 @@
                     @blur="validationStates.name.touched = true"
                     placeholder="School Name"
                     required
-                    @keydown="(e) => handleEnterKey(e, 'board')"
+                    @keydown="(e) => handleEnterKey(e, 'boardName')"
                   />
                   <label for="schoolName">School Name <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a school name.</div>
+                  <div class="invalid-feedback">Please enter a school name</div>
                 </div>
               </div>
               <div class="col-12">
-                <div class="form-floating mb-3">
+                <div class="form-floating dropdown">
                   <input
                     type="text"
                     class="form-control"
-                    id="board"
-                    placeholder="Board"
-                    v-model="boardSearch"
-                    @input="handleBoardInput"
-                    @focus="handleShowBoardDropdown"
-                    @blur="handleBoardBlur"
-                    @keydown="handleBoardKeydown"
                     :class="{
-                      'is-invalid': boardTouched && !isValidBoard,
-                      'is-valid': boardTouched && isValidBoard,
+                      'is-invalid': !validationStates.board.valid && validationStates.board.touched,
+                      'is-valid': validationStates.board.valid,
                     }"
-                    ref="boardInput"
-                    autocomplete="off"
-                    aria-label="Board selection"
-                    :aria-invalid="boardTouched && !isValidBoard"
-                    :aria-expanded="showBoardList"
+                    id="boardName"
+                    v-model="boardSearch"
+                    @input="filterBoards"
+                    @focus="showBoardDropdown = true"
+                    @click="showBoardDropdown = true"
+                    placeholder="Search Board"
                     required
+                    autocomplete="off"
+                    @keydown="handleBoardKeydown"
                   />
-                  <label for="board" class="form-label"
-                    >Board <span class="text-danger">*</span></label
-                  >
                   <div
-                    class="dropdown-menu w-100"
-                    :class="{ show: showBoardList }"
-                    ref="boardDropdown"
-                    role="listbox"
-                    style="max-height: 200px; overflow-y: auto"
+                    class="dropdown-menu"
+                    :class="{ show: showBoardDropdown && filteredBoards.length > 0 }"
+                    style="position: absolute; width: 100%; z-index: 1000"
                   >
-                    <template v-if="filteredBoards.length > 0">
-                      <button
-                        v-for="(board, index) in filteredBoards"
-                        :key="board.id"
-                        class="dropdown-item"
-                        :class="{ active: selectedBoardIndex === index }"
-                        @mousedown.prevent="selectBoard(board)"
-                        role="option"
-                        :aria-selected="selectedBoardIndex === index"
-                      >
-                        {{ board.name }} ({{ board.abbreviation }})
-                      </button>
-                    </template>
-                    <div v-else class="dropdown-item text-muted">No boards found</div>
+                    <button
+                      v-for="(board, index) in filteredBoards"
+                      :key="board.id"
+                      class="dropdown-item"
+                      :class="{ active: index === selectedBoardIndex }"
+                      @click="selectBoard(board)"
+                      type="button"
+                    >
+                      {{ board.name }}
+                    </button>
                   </div>
-                  <div class="invalid-feedback" v-if="boardTouched && !isValidBoard">
-                    Please select a valid board
-                  </div>
+                  <label for="boardName">Board <span class="text-danger">*</span></label>
+                  <div class="invalid-feedback">Please select a board</div>
                 </div>
               </div>
             </div>
@@ -122,6 +108,7 @@
                     @focus="showCountryDropdown = true"
                     @click="showCountryDropdown = true"
                     placeholder="Search Country"
+                    required
                     autocomplete="new-password"
                     @keydown="handleCountryKeydown"
                   />
@@ -131,12 +118,12 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
-                      type="button"
                       v-for="(country, index) in filteredCountries"
                       :key="country.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedCountryIndex }"
                       @click="selectCountry(country)"
+                      type="button"
                     >
                       {{ country.name }}
                     </button>
@@ -163,6 +150,7 @@
                     @click="showStateDropdown = true"
                     placeholder="Search State"
                     :disabled="!form.address.country_id"
+                    required
                     autocomplete="new-password"
                     @keydown="handleStateKeydown"
                   />
@@ -172,12 +160,12 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
-                      type="button"
                       v-for="(state, index) in filteredStates"
                       :key="state.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedStateIndex }"
                       @click="selectState(state)"
+                      type="button"
                     >
                       {{ state.name }}
                     </button>
@@ -204,6 +192,7 @@
                     @click="showCityDropdown = true"
                     placeholder="Search City"
                     :disabled="!form.address.state_id"
+                    required
                     autocomplete="new-password"
                     @keydown="handleCityKeydown"
                   />
@@ -213,12 +202,12 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
-                      type="button"
                       v-for="(city, index) in filteredCities"
                       :key="city.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedCityIndex }"
                       @click="selectCity(city)"
+                      type="button"
                     >
                       {{ city.name }}
                     </button>
@@ -256,7 +245,10 @@
                     @keydown="(e) => handleEnterKey(e, 'postalCode')"
                   ></textarea>
                   <label for="address">Address <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter an address.</div>
+                  <div class="invalid-feedback">
+                    Please enter a valid address (minimum 10 characters, only letters, numbers,
+                    spaces, commas, dots, and hyphens allowed)
+                  </div>
                 </div>
               </div>
             </div>
@@ -288,7 +280,9 @@
                     @keydown="(e) => handleEnterKey(e, 'principalName')"
                   />
                   <label for="postalCode">Postal Code <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a postal code.</div>
+                  <div class="invalid-feedback">
+                    Please enter a valid postal code (letters, numbers, and hyphens allowed)
+                  </div>
                 </div>
               </div>
             </div>
@@ -327,7 +321,10 @@
                   <label for="principalName"
                     >Principal's Name <span class="text-danger">*</span></label
                   >
-                  <div class="invalid-feedback">Please enter a principal name.</div>
+                  <div class="invalid-feedback">
+                    Please enter a valid principal name (only letters and spaces, minimum 3
+                    characters)
+                  </div>
                 </div>
               </div>
 
@@ -350,7 +347,7 @@
                     @keydown="(e) => handleEnterKey(e, 'contactNo2')"
                   />
                   <label for="contactNo1">Contact Number <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a contact number.</div>
+                  <div class="invalid-feedback">Please enter a contact number</div>
                 </div>
               </div>
 
@@ -375,7 +372,7 @@
                     @keydown="(e) => handleEnterKey(e, 'email')"
                   />
                   <label for="contactNo2">Alternate Contact Number (Optional)</label>
-                  <div class="invalid-feedback">Please enter a valid contact number.</div>
+                  <div class="invalid-feedback">Please enter a valid contact number</div>
                 </div>
               </div>
 
@@ -388,14 +385,14 @@
                     placeholder="Enter Email"
                     v-model="form.email"
                     :class="{
+                      'is-valid': validationStates.email.valid && validationStates.email.touched,
                       'is-invalid': !validationStates.email.valid && validationStates.email.touched,
-                      'is-valid': validationStates.email.valid,
                     }"
                     @input="handleEmailInput"
                     @keydown="handleEmailEnter"
                   />
                   <label for="email">Email <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a valid email address.</div>
+                  <div class="invalid-feedback">Please enter a valid email address</div>
                 </div>
               </div>
             </div>
@@ -425,7 +422,12 @@
                       :id="'medium' + medium.id"
                       v-model="form.mediums"
                       :value="medium.id"
-                      @change="handleMediumChange"
+                      @change="
+                        () => {
+                          validationStates.mediums.touched = true
+                          validationStates.mediums.valid = form.mediums.length > 0
+                        }
+                      "
                       @keydown="(e) => handleCheckboxKeydown(e, 'medium', medium.id)"
                       tabindex="0"
                     />
@@ -436,7 +438,12 @@
                   <div v-if="availableMediums.length === 0" class="text-muted">
                     Please select a board to view available mediums
                   </div>
-                  <div class="invalid-feedback">Please select at least one medium.</div>
+                  <div
+                    class="invalid-feedback d-block"
+                    v-if="!validationStates.mediums.valid && validationStates.mediums.touched"
+                  >
+                    Please select at least one medium
+                  </div>
                 </fieldset>
               </div>
 
@@ -461,7 +468,12 @@
                       :id="'standard' + standard.id"
                       v-model="form.standards"
                       :value="standard.id"
-                      @change="handleStandardChange"
+                      @change="
+                        () => {
+                          validationStates.standards.touched = true
+                          validationStates.standards.valid = form.standards.length > 0
+                        }
+                      "
                       @keydown="(e) => handleCheckboxKeydown(e, 'standard', standard.id)"
                       tabindex="0"
                     />
@@ -472,7 +484,12 @@
                   <div v-if="availableStandards.length === 0" class="text-muted">
                     Please select a board to view available standards
                   </div>
-                  <div class="invalid-feedback">Please select at least one standard.</div>
+                  <div
+                    class="invalid-feedback d-block"
+                    v-if="!validationStates.standards.valid && validationStates.standards.touched"
+                  >
+                    Please select at least one standard
+                  </div>
                 </fieldset>
               </div>
             </div>
@@ -570,7 +587,7 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getApiUrl } from '@/config/api'
 import type { SchoolFormData, SchoolValidationStates } from '@/models/School'
-import * as bootstrap from 'bootstrap'
+import { Modal } from 'bootstrap'
 
 // Update interfaces based on Prisma schema
 interface Country {
@@ -640,13 +657,6 @@ const availableStandards = ref<{ id: number; name: string }[]>([])
 const boards = ref<Board[]>([])
 const boardSearch = ref('')
 const showBoardDropdown = ref(false)
-const filteredBoards = ref<Board[]>([])
-
-// Add these refs
-const showBoardList = ref(false)
-const boardTouched = ref(false)
-const boardInput = ref<HTMLInputElement | null>(null)
-const boardDropdown = ref<HTMLElement | null>(null)
 
 // Update capitalizeFirstLetter to handle multiple words
 const capitalizeWords = (str: string): string => {
@@ -734,24 +744,11 @@ const previousSelections = ref(
 const previousBoardId = ref<number | null>(null)
 
 // Update filtered items with proper types
-const filterBoards = () => {
-  const searchTerm = boardSearch.value.toLowerCase().trim()
-  filteredBoards.value =
-    searchTerm === ''
-      ? boards.value
-      : boards.value.filter(
-          (board) =>
-            board.name.toLowerCase().includes(searchTerm) ||
-            board.abbreviation.toLowerCase().includes(searchTerm),
-        )
-  selectedBoardIndex.value = -1
-  showBoardList.value = true
-  validationStates.value.board.touched = true
-  if (!boardSearch.value) {
-    form.value.board_id = 0
-    validationStates.value.board.valid = false
-  }
-}
+const filteredBoards = computed(() => {
+  if (!boardSearch.value) return boards.value
+  const search = boardSearch.value.toLowerCase()
+  return boards.value.filter((board) => board.name.toLowerCase().includes(search))
+})
 
 const filteredCountries = computed(() => {
   console.log('Filtering countries with search:', countrySearch.value)
@@ -857,8 +854,7 @@ const selectBoard = async (board: BoardListItem) => {
   // Update board selection
   boardSearch.value = board.name
   form.value.board_id = board.id
-  selectedBoard.value = board
-  showBoardList.value = false
+  showBoardDropdown.value = false
   validationStates.value.board.valid = true
   validationStates.value.board.touched = true
 
@@ -896,76 +892,124 @@ const selectBoard = async (board: BoardListItem) => {
 
     validationStates.value.mediums.touched = false
     validationStates.value.standards.touched = false
-
-    // Move focus to country field after board selection
-    const countryInput = document.getElementById('country')
-    if (countryInput) {
-      countryInput.focus()
-    }
-
-    // Add change tracking for board change
-    if (props.isEditMode && previousBoardId.value && previousBoardId.value !== board.id) {
-      const previousBoard = boards.value.find((b) => b.id === previousBoardId.value)
-      const newBoard = boards.value.find((b) => b.id === board.id)
-
-      addChange({
-        type: 'modify',
-        message: `Change board from "${previousBoard?.name || 'Unknown'}" to "${newBoard?.name || 'Unknown'}"`,
-        entity: 'board',
-        data: {
-          old: { id: previousBoardId.value, name: previousBoard?.name || 'Unknown' },
-          new: { id: board.id, name: newBoard?.name || 'Unknown' },
-        },
-      })
-    }
   } catch (error) {
     console.error('Error fetching board data:', error)
-    validationStates.value.board.valid = false
-    validationStates.value.board.touched = true
   }
 }
 
+// Update functions to fetch school mediums and standards with proper types
+const fetchSchoolMediums = async (schoolId: number) => {
+  try {
+    const url = getApiUrl(`/school-instruction-mediums/school/${schoolId}`)
+    console.log('Fetching mediums from URL:', url)
+    const response = await fetch(url)
+    console.log('Mediums response status:', response.status)
+
+    if (!response.ok) {
+      console.error('Failed to fetch school mediums. Status:', response.status)
+      const errorText = await response.text()
+      console.error('Error response:', errorText)
+      throw new Error('Failed to fetch school mediums')
+    }
+
+    const data = await response.json()
+    console.log('Raw mediums data:', data)
+
+    // Map the data to the required format
+    const mappedData = data.map((m: { instruction_medium: { id: number; name: string } }) => ({
+      id: m.instruction_medium.id,
+      name: m.instruction_medium.name,
+    }))
+    console.log('Mapped mediums data:', mappedData)
+    return mappedData
+  } catch (error) {
+    console.error('Error in fetchSchoolMediums:', error)
+    return []
+  }
+}
+
+const fetchSchoolStandards = async (schoolId: number) => {
+  try {
+    const url = getApiUrl(`/school-standards/school/${schoolId}`)
+    console.log('Fetching standards from URL:', url)
+    const response = await fetch(url)
+    console.log('Standards response status:', response.status)
+
+    if (!response.ok) {
+      console.error('Failed to fetch school standards. Status:', response.status)
+      const errorText = await response.text()
+      console.error('Error response:', errorText)
+      throw new Error('Failed to fetch school standards')
+    }
+
+    const data = await response.json()
+    console.log('Raw standards data:', data)
+
+    // Map the data to the required format
+    const mappedData = data.map((s: { standard: { id: number; name: string } }) => ({
+      id: s.standard.id,
+      name: s.standard.name,
+    }))
+    console.log('Mapped standards data:', mappedData)
+    return mappedData
+  } catch (error) {
+    console.error('Error in fetchSchoolStandards:', error)
+    return []
+  }
+}
+
+// Add scrollToSelectedItem function
+const scrollToSelectedItem = (type: 'board' | 'country' | 'state' | 'city') => {
+  nextTick(() => {
+    const activeItem = document.querySelector(`#${type}Name + .dropdown-menu .dropdown-item.active`)
+    if (activeItem) {
+      activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  })
+}
+
 // Update handleBoardKeydown function
-const handleBoardKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    if (showBoardList.value && filteredBoards.value.length > 0) {
-      if (selectedBoardIndex.value >= 0) {
-        const selectedBoard = filteredBoards.value[selectedBoardIndex.value]
-        selectBoard(selectedBoard)
-      } else if (filteredBoards.value.length === 1) {
-        // If there's only one option, select it
-        selectBoard(filteredBoards.value[0])
-      }
+const handleBoardKeydown = async (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    if (showBoardDropdown.value && filteredBoards.value.length && selectedBoardIndex.value >= 0) {
+      await selectBoard(filteredBoards.value[selectedBoardIndex.value])
     }
     return
   }
 
-  if (!showBoardList.value || filteredBoards.value.length === 0) return
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    showBoardDropdown.value = false
+    return
+  }
 
-  const dropdownMenu = boardDropdown.value
-  if (!dropdownMenu) return
+  if (!showBoardDropdown.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      showBoardDropdown.value = true
+      selectedBoardIndex.value = 0
+      scrollToSelectedItem('board')
+    }
+    return
+  }
 
-  if (event.key === 'ArrowDown') {
-    event.preventDefault()
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
     selectedBoardIndex.value = Math.min(
       selectedBoardIndex.value + 1,
       filteredBoards.value.length - 1,
     )
-    const selectedItem = dropdownMenu.children[selectedBoardIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
-  } else if (event.key === 'ArrowUp') {
-    event.preventDefault()
+    scrollToSelectedItem('board')
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
     selectedBoardIndex.value = Math.max(selectedBoardIndex.value - 1, 0)
-    const selectedItem = dropdownMenu.children[selectedBoardIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
-  } else if (event.key === 'Escape') {
-    showBoardList.value = false
+    scrollToSelectedItem('board')
   }
 }
 
 // Update handleCountryKeydown function
-const handleCountryKeydown = (e: KeyboardEvent) => {
+const handleCountryKeydown = async (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (
@@ -974,15 +1018,25 @@ const handleCountryKeydown = (e: KeyboardEvent) => {
       selectedCountryIndex.value >= 0
     ) {
       const selectedCountry = filteredCountries.value[selectedCountryIndex.value]
-      selectCountry(selectedCountry)
+      await selectCountry(selectedCountry)
     }
     return
   }
 
-  if (!showCountryDropdown.value || !filteredCountries.value.length) return
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    showCountryDropdown.value = false
+    return
+  }
 
-  const dropdownMenu = document.querySelector('#country + .dropdown-menu') as HTMLElement
-  if (!dropdownMenu) return
+  if (!showCountryDropdown.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      showCountryDropdown.value = true
+      selectedCountryIndex.value = 0
+    }
+    return
+  }
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -990,31 +1044,39 @@ const handleCountryKeydown = (e: KeyboardEvent) => {
       selectedCountryIndex.value + 1,
       filteredCountries.value.length - 1,
     )
-    const selectedItem = dropdownMenu.children[selectedCountryIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
+    scrollToSelectedItem('country')
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedCountryIndex.value = Math.max(selectedCountryIndex.value - 1, 0)
-    const selectedItem = dropdownMenu.children[selectedCountryIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
+    scrollToSelectedItem('country')
   }
 }
 
 // Update handleStateKeydown function
-const handleStateKeydown = (e: KeyboardEvent) => {
+const handleStateKeydown = async (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (showStateDropdown.value && filteredStates.value.length && selectedStateIndex.value >= 0) {
       const selectedState = filteredStates.value[selectedStateIndex.value]
-      selectState(selectedState)
+      await selectState(selectedState)
     }
     return
   }
 
-  if (!showStateDropdown.value || !filteredStates.value.length) return
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    showStateDropdown.value = false
+    return
+  }
 
-  const dropdownMenu = document.querySelector('#state + .dropdown-menu') as HTMLElement
-  if (!dropdownMenu) return
+  if (!showStateDropdown.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      showStateDropdown.value = true
+      selectedStateIndex.value = 0
+    }
+    return
+  }
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -1022,18 +1084,16 @@ const handleStateKeydown = (e: KeyboardEvent) => {
       selectedStateIndex.value + 1,
       filteredStates.value.length - 1,
     )
-    const selectedItem = dropdownMenu.children[selectedStateIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
+    scrollToSelectedItem('state')
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedStateIndex.value = Math.max(selectedStateIndex.value - 1, 0)
-    const selectedItem = dropdownMenu.children[selectedStateIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
+    scrollToSelectedItem('state')
   }
 }
 
 // Update handleCityKeydown function
-const handleCityKeydown = (e: KeyboardEvent) => {
+const handleCityKeydown = async (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (showCityDropdown.value && filteredCities.value.length && selectedCityIndex.value >= 0) {
@@ -1043,21 +1103,29 @@ const handleCityKeydown = (e: KeyboardEvent) => {
     return
   }
 
-  if (!showCityDropdown.value || !filteredCities.value.length) return
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    showCityDropdown.value = false
+    return
+  }
 
-  const dropdownMenu = document.querySelector('#city + .dropdown-menu') as HTMLElement
-  if (!dropdownMenu) return
+  if (!showCityDropdown.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      showCityDropdown.value = true
+      selectedCityIndex.value = 0
+    }
+    return
+  }
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedCityIndex.value = Math.min(selectedCityIndex.value + 1, filteredCities.value.length - 1)
-    const selectedItem = dropdownMenu.children[selectedCityIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
+    scrollToSelectedItem('city')
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedCityIndex.value = Math.max(selectedCityIndex.value - 1, 0)
-    const selectedItem = dropdownMenu.children[selectedCityIndex.value] as HTMLElement
-    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
+    scrollToSelectedItem('city')
   }
 }
 
@@ -1089,23 +1157,66 @@ const filterCities = () => {
   validationStates.value.city.touched = true
 }
 
-// Update handleEnterKey function
+// Update handleEnterKey function to handle tab order and keyboard navigation
 const handleEnterKey = (event: KeyboardEvent, nextElementId: string) => {
   if (event.key === 'Enter') {
     event.preventDefault() // Prevent form submission
     const nextElement = document.getElementById(nextElementId)
     if (nextElement) {
       nextElement.focus()
-      if (nextElementId === 'board') {
-        showBoardDropdown.value = true
-      }
     }
+  } else if (event.key === 'Tab') {
+    // Let default tab behavior work
+    return
+  } else if (event.key === 'Escape') {
+    // Close any open dropdowns
+    showBoardDropdown.value = false
+    showCountryDropdown.value = false
+    showStateDropdown.value = false
+    showCityDropdown.value = false
   }
 }
 
-// Add computed property for form validity
+// Update isFormValid computed
 const isFormValid = computed(() => {
-  return Object.values(validationStates.value).every((state) => state.valid)
+  console.log('Checking form validity')
+  console.log('Form values:', {
+    name: form.value.name,
+    board_id: form.value.board_id,
+    address: form.value.address,
+    principal_name: form.value.principal_name,
+    contact_number: form.value.contact_number,
+    email: form.value.email,
+    mediums: form.value.mediums,
+    standards: form.value.standards,
+  })
+
+  const addressValid =
+    form.value.address.street.trim() !== '' &&
+    form.value.address.country_id !== 0 &&
+    form.value.address.state_id !== 0 &&
+    form.value.address.city_id !== 0 &&
+    validatePostalCode(form.value.address.postal_code)
+
+  const contactValid = validateContactNumber(form.value.contact_number)
+  const alternateContactValid =
+    !form.value.alternate_contact_number ||
+    (form.value.alternate_contact_number &&
+      validateContactNumber(form.value.alternate_contact_number))
+
+  const isValid =
+    form.value.name.trim() !== '' &&
+    form.value.board_id !== 0 &&
+    addressValid &&
+    validatePrincipalName(form.value.principal_name) &&
+    contactValid &&
+    alternateContactValid &&
+    validateEmail(form.value.email) &&
+    form.value.mediums.length > 0 &&
+    form.value.standards.length > 0
+
+  console.log('Form validity result:', isValid)
+  return isValid
 })
 
 // Watch for initialData changes and update form
@@ -1229,9 +1340,9 @@ const handleContactNumberInput = (event: Event, isAlternate = false) => {
 
 // Update interface for change tracking
 interface Change {
-  type: 'add' | 'modify' | 'delete'
+  type: 'delete' | 'modify' | 'add'
   message: string
-  entity: 'medium' | 'standard' | 'school' | 'separator' | 'board'
+  entity: 'medium' | 'standard' | 'school' | 'separator'
   data: {
     id?: number
     name?: string
@@ -1354,7 +1465,9 @@ const handleMediumChanges = (currentMediums: SchoolMediumResponse[], formMediums
   currentMediums.forEach((medium) => {
     const mediumId = medium.instruction_medium_id || medium.id
     if (mediumId && !formMediums.includes(mediumId)) {
-      const mediumName = medium.instruction_medium?.name || medium.name
+      // Find the medium name from availableMediums
+      const mediumInfo = availableMediums.value.find((m) => m.id === mediumId)
+      const mediumName = mediumInfo?.name || 'Unknown Medium'
       addChange({
         type: 'delete',
         message: `Delete medium: ${mediumName}`,
@@ -1442,29 +1555,6 @@ const handleBasicInfoChanges = (schoolId: number) => {
   // Add other basic info changes here...
 }
 
-// Add these functions before calculateChanges
-const fetchSchoolMediums = async (schoolId: number) => {
-  try {
-    const response = await fetch(getApiUrl(`/school-instruction-mediums/school/${schoolId}`))
-    if (!response.ok) throw new Error('Failed to fetch school mediums')
-    return await response.json()
-  } catch (error) {
-    console.error('Error fetching school mediums:', error)
-    return []
-  }
-}
-
-const fetchSchoolStandards = async (schoolId: number) => {
-  try {
-    const response = await fetch(getApiUrl(`/school-standards/school/${schoolId}`))
-    if (!response.ok) throw new Error('Failed to fetch school standards')
-    return await response.json()
-  } catch (error) {
-    console.error('Error fetching school standards:', error)
-    return []
-  }
-}
-
 // Main calculateChanges function
 const calculateChanges = async () => {
   changes.value = []
@@ -1501,7 +1591,7 @@ const confirmAndSubmit = async () => {
 
     if (props.isEditMode) {
       // Close the confirmation modal if in edit mode
-      const modal = bootstrap.Modal.getInstance(
+      const modal = Modal.getInstance(
         document.getElementById('saveConfirmationModal') as HTMLElement,
       )
       modal?.hide()
@@ -1680,16 +1770,6 @@ const resetForm = () => {
   boardSearch.value = ''
 }
 
-const handleMediumChange = () => {
-  validationStates.value.mediums.touched = true
-  validationStates.value.mediums.valid = form.value.mediums.length > 0
-}
-
-const handleStandardChange = () => {
-  validationStates.value.standards.touched = true
-  validationStates.value.standards.valid = form.value.standards.length > 0
-}
-
 const handleCheckboxKeydown = (event: KeyboardEvent, type: 'medium' | 'standard', id: number) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
@@ -1700,7 +1780,8 @@ const handleCheckboxKeydown = (event: KeyboardEvent, type: 'medium' | 'standard'
       } else {
         form.value.mediums.splice(index, 1)
       }
-      handleMediumChange()
+      validationStates.value.mediums.touched = true
+      validationStates.value.mediums.valid = form.value.mediums.length > 0
     } else {
       const index = form.value.standards.indexOf(id)
       if (index === -1) {
@@ -1708,7 +1789,8 @@ const handleCheckboxKeydown = (event: KeyboardEvent, type: 'medium' | 'standard'
       } else {
         form.value.standards.splice(index, 1)
       }
-      handleStandardChange()
+      validationStates.value.standards.touched = true
+      validationStates.value.standards.valid = form.value.standards.length > 0
     }
   }
 }
@@ -1718,6 +1800,20 @@ const handleSaveKeydown = (event: KeyboardEvent) => {
     event.preventDefault()
     onSubmit(event)
   }
+}
+
+const filterBoards = () => {
+  showBoardDropdown.value = true
+  selectedBoardIndex.value = -1
+  if (!boardSearch.value) {
+    form.value.board_id = 0
+    // Clear mediums and standards when board is cleared
+    availableMediums.value = []
+    availableStandards.value = []
+    form.value.mediums = []
+    form.value.standards = []
+  }
+  validationStates.value.board.touched = true
 }
 
 // Add validation functions
@@ -1852,115 +1948,49 @@ defineExpose({
 // Rename handleSubmit to onSubmit for clarity
 const onSubmit = async (e: Event) => {
   e.preventDefault()
+  console.log('Form submission started')
 
-  if (!validateForm()) {
+  // Mark all fields as touched to trigger validation display
+  Object.keys(validationStates.value).forEach((key) => {
+    validationStates.value[key as keyof typeof validationStates.value].touched = true
+  })
+
+  // Update validation states for mediums and standards
+  validationStates.value.mediums.valid = form.value.mediums.length > 0
+  validationStates.value.standards.valid = form.value.standards.length > 0
+
+  // Check if form is valid
+  if (!isFormValid.value) {
+    console.log('Form validation failed')
+    const firstInvalidField = document.querySelector('.is-invalid') as HTMLElement
+    if (firstInvalidField) {
+      firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      firstInvalidField.focus()
+    }
     return
   }
 
+  console.log('Form is valid, proceeding with submission')
+
   try {
+    isSubmitting.value = true
+
     if (props.isEditMode) {
       // Calculate changes and show confirmation modal only in edit mode
       await calculateChanges()
-      const modalElement = document.getElementById('saveConfirmationModal')
-      if (modalElement) {
-        const modal = new bootstrap.Modal(modalElement)
-        modal.show()
-      }
+      const modal = new Modal(document.getElementById('saveConfirmationModal') as HTMLElement)
+      modal.show()
     } else {
       // In add mode, directly submit the form
-      await confirmAndSubmit()
+      console.log('Submitting form data:', form.value)
+      emit('submit', form.value)
     }
   } catch (error) {
     console.error('Error in form submission:', error)
+  } finally {
+    isSubmitting.value = false
   }
 }
-
-const ensureVisible = (element: HTMLElement, container: HTMLElement) => {
-  const containerRect = container.getBoundingClientRect()
-  const elementRect = element.getBoundingClientRect()
-
-  if (elementRect.bottom > containerRect.bottom) {
-    container.scrollTop += elementRect.bottom - containerRect.bottom
-  } else if (elementRect.top < containerRect.top) {
-    container.scrollTop -= containerRect.top - elementRect.top
-  }
-}
-
-// Add board validation function
-const validateBoard = () => {
-  if (!form.value.board_id) {
-    validationStates.value.board.valid = false
-    validationStates.value.board.touched = true
-    return false
-  }
-  return true
-}
-
-// Update form validation to include board validation
-const validateForm = () => {
-  let isValid = true
-
-  // Validate board
-  if (!validateBoard()) {
-    isValid = false
-  }
-
-  // Validate name
-  if (!form.value.name.trim()) {
-    validationStates.value.name.valid = false
-    validationStates.value.name.touched = true
-    isValid = false
-  }
-
-  // Rest of the validation logic...
-  return isValid
-}
-
-// Add these methods in the script section
-const handleShowBoardDropdown = () => {
-  showBoardList.value = true
-  boardTouched.value = true
-  filteredBoards.value = boards.value // Show all boards when focused
-  selectedBoardIndex.value = -1 // Reset selection index when showing dropdown
-}
-
-const handleBoardBlur = (event: FocusEvent) => {
-  // Only hide if the click wasn't on the dropdown
-  const relatedTarget = event.relatedTarget as HTMLElement
-  if (!relatedTarget || !relatedTarget.closest('.dropdown-menu')) {
-    setTimeout(() => {
-      showBoardList.value = false
-      // Validate board selection
-      validationStates.value.board.touched = true
-      validationStates.value.board.valid = !!form.value.board_id && !!selectedBoard.value
-
-      // If the input is empty or doesn't match any board, reset the selection
-      if (!boardSearch.value || !selectedBoard.value) {
-        form.value.board_id = 0
-        selectedBoard.value = null
-        validationStates.value.board.valid = false
-      }
-    }, 200)
-  }
-}
-
-const handleBoardInput = () => {
-  showBoardList.value = true
-  boardTouched.value = true
-  filterBoards()
-
-  // Reset validation if input doesn't match selected board
-  if (selectedBoard.value && boardSearch.value !== selectedBoard.value.name) {
-    selectedBoard.value = null
-    form.value.board_id = 0
-    validationStates.value.board.valid = false
-  }
-}
-
-// Add computed property for board validation
-const isValidBoard = computed(() => {
-  return !!selectedBoard.value
-})
 </script>
 
 <style scoped>
@@ -2030,23 +2060,59 @@ form {
 }
 
 .dropdown-item.active {
-  background-color: var(--bs-primary);
+  background-color: #212529;
   color: white;
 }
 
-.dropdown-item.active small {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Form select styles */
+.form-select {
+  appearance: auto;
+  background-image: none;
+  padding-right: 2rem;
 }
 
-.form-floating .dropdown-menu {
-  margin-top: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+.form-select option {
+  padding: 8px;
 }
 
-.form-text {
-  font-size: 0.875rem;
-  color: var(--bs-gray-600);
+.form-floating > .form-select {
+  padding-top: 1.625rem;
+  padding-bottom: 0.625rem;
+}
+
+/* Scrollbar styles for dropdowns */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Specific dropdown styles */
+#country + .dropdown-menu .dropdown-item.active,
+#state + .dropdown-menu .dropdown-item.active,
+#city + .dropdown-menu .dropdown-item.active,
+#boardName + .dropdown-menu .dropdown-item.active {
+  background-color: #212529;
+  color: white;
+}
+
+#country + .dropdown-menu .dropdown-item:hover,
+#state + .dropdown-menu .dropdown-item.hover,
+#city + .dropdown-menu .dropdown-item:hover,
+#boardName + .dropdown-menu .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #212529;
 }
 
 /* Custom breakpoint for when text might overflow */
