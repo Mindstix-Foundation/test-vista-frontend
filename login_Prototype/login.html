@@ -7,15 +7,16 @@
     <title>TEST-VISTA - Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-         body{
+        body {
             background-color: #ffffff;
         }
+
         /* Header styling */
         .header {
-            background-color: #ffffff;
+            background-color: #000000;
             height: 90px; /* Consistent height */
             display: flex;
-            color: rgb(0, 0, 0);
+            color: rgb(255, 255, 255);
             align-items: center; /* Center content vertically */
             justify-content: space-between; /* Space between title and login button */
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Add shadow for similar look */
@@ -24,15 +25,16 @@
         .header h2 {
             margin: 0;
             font-size: 1.5rem; /* Set appropriate size */
-            font-weight: normal; /* Remove bold */
+            font-weight: bold; /* Remove bold */
+            
         }
-
         /* Centering the container */
         .container {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: calc(100vh - 90px); /* Adjust height to account for header */
+            height: calc(100vh - 90px);
+            /* Adjust height to account for header */
         }
 
         /* Styling the card */
@@ -46,14 +48,25 @@
         .form-control {
             background-color: #FBFBFB;
         }
+
+        .btn-link {
+            text-decoration: none;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 0.875rem;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
 <body>
 
     <!-- Header -->
-    <header class="header">
-        <h2>TEST VISTA</h2>
+    <header class="header  ">
+        <h2 >TEST VISTA</h2>
     </header>
 
     <!-- Page Content -->
@@ -61,54 +74,76 @@
         <div class="card p-4" style="max-width: 400px; width: 100%;">
             <h3 class="card-title text-center">Log In</h3>
             <p class="text-center">Enter your email and password to continue.</p>
-    
+
             <div class="mb-3">
                 <label for="email" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="email" placeholder="Enter email">
+                <input type="email" class="form-control" id="email" placeholder="Enter email" required>
+                <div class="invalid-feedback">
+                    Please enter a valid email address.
+                </div>
             </div>
-    
+
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" placeholder="Enter password">
+                <input type="password" class="form-control" id="password" placeholder="Enter password" required>
             </div>
-    
+
             <button class="btn btn-primary w-100 mb-2" onclick="login()">Log In</button>
-            <button href="../Admin_prototype/index.html" class="btn btn-link text-decoration-none w-100" onclick="forgotPassword()">Forgot Password?</button>
+            <button class="btn btn-link text-decoration-none w-100" onclick="forgotPassword()">Forgot Password?</button>
+
+            <!-- Error message below login -->
+            <div id="error-message" class="error-message"></div>
         </div>
     </div>
-    
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-         function login() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        function login() {
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const errorMessage = document.getElementById('error-message');
 
-// Dummy login credentials
-const users = {
-    'admin@gmail.com': 'admin',          // Admin page
-    'teacher@gmail.com': 'teacher', // Teacher page
-    'adminuser@gmail.com': 'adminuser'  // Both pages
-};
+            // Clear previous error messages
+            errorMessage.textContent = '';
+            emailInput.classList.remove('is-invalid');
+            passwordInput.classList.remove('is-invalid');
 
-    if (users[email] && users[email] === password) {
-        // Redirect based on the email
-        if (email === 'admin@gmail.com') {
-            window.location.href = "../Admin_prototype/index.html"; // Admin page
-        } else if (email === 'teacher@gmail.com') {
-            window.location.href = "../Teacher_Prototype/index.html"; // Teacher page
-        } else if (email === 'adminuser@gmail.com') {
-            window.location.href = "#"; // Page for both
+            // Validate email format
+            if (!emailInput.checkValidity()) {
+                emailInput.classList.add('is-invalid');
+                errorMessage.textContent = 'Please enter a valid email address.';
+                return;
+            }
+
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            // Dummy login credentials
+            const users = {
+                'admin@gmail.com': 'admin',
+                'teacher@gmail.com': 'teacher',
+                'adminuser@gmail.com': 'adminuser'
+            };
+
+            if (users[email] && users[email] === password) {
+                // Redirect based on the email
+                if (email === 'admin@gmail.com') {
+                    window.location.href = "../Admin_prototype/index.html"; // Admin page
+                } else if (email === 'teacher@gmail.com') {
+                    window.location.href = "../Teacher_Prototype/index.html"; // Teacher page
+                } else if (email === 'adminuser@gmail.com') {
+                    window.location.href = "#"; // Page for both
+                }
+            } else {
+                // Show error message below login
+                errorMessage.textContent = 'Invalid email or password. Please try again.';
+            }
         }
-    } else {
-        alert('Invalid email or password. Please try again.');
-    }
-}
 
-    function forgotPassword() {
-        // Redirect to the forgotPassword.html page
-        window.location.href = 'forgetPassword.html';
-    }
+        function forgotPassword() {
+            // Redirect to the forgotPassword.html page
+            window.location.href = 'forgetPassword.html';
+        }
     </script>
 
 </body>

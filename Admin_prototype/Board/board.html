@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Link to common CSS -->
+    <link href="/Admin_prototype/commonPart/navbar.css" rel="stylesheet">
+    <link href="/Admin_prototype/School/school.css" rel="stylesheet">
+    <style>
+        #navBoard{
+            font-weight: bolder;
+      
+            text-decoration: underline;
+            text-decoration-color: white;
+            /*color: #ffc107 !important;*/
+        }
+        @media (max-width: 768px) {
+        #navBoard{
+          font-weight: bolder;
+          font-size: 1.1rem !important;
+
+            text-decoration: none !important;
+         
+      }
+      }
+
+    </style>
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <div class="container mt-4 mb-5 ">
+       
+        <div class="row p-2  g-2 mb-1">
+            <div class="row justify-content-center align-items-center g-2 mb-4">
+                <div class="col-12 col-sm-5  ">
+                    <h5 class="text-left m-0 fw-bolder text-uppercase">BOARD MANAGEMENT</h5>
+                </div>
+               
+                <div class="col-12 col-sm-5  dynamic-style text-end " >
+                    
+                     <a class="btn btn-success  stick-bottom" id="addButton" href="./form.html">Add Board</a>
+                   
+                </div>
+            </div>
+            
+            <hr >
+        </div>
+        
+       
+        <div class="row p-2 gy-2  justify-content-center">
+
+                   <!-- Filter Dropdown -->
+                   <div class="col-12 col-sm-10">
+                      <div class=" input-group">
+                          
+                      <div class="form-floating">
+                          <input type="text" class="form-control" id="boardFilter" placeholder="Search for Board" list="boardList"  >
+                          <label for="boardFilter"> <i class="bi bi-search text-secondary"></i> Search for  Board</label>
+                      </div>
+                      
+                      <datalist id="boardList">
+                        <option value="Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)">
+                        <option value="Central Board of Secondary Education (CBSE)">
+                        <option value="Council for the Indian School Certificate Examinations (CISCE)">
+                        <option value="National Institute of Open Schooling (NIOS)">
+                        <option value="International Baccalaureate (IB)">
+                        <option value="Gujarat Secondary and Higher Secondary Education Board (GSEB)">
+                        <option value="Madhya Pradesh Board of Secondary Education (MPBSE)">
+                        <option value="Goa Board of Secondary and Higher Secondary Education (GBSHSE)">
+                        <option value="Karnataka Secondary Education Examination Board (KSEEB)">
+                        <option value="Chhattisgarh Board of Secondary Education (CGBSE)">
+                        <option value="Board of Secondary Education, Telangana (BSET)">
+                        <option value="Board of Secondary Education, Andhra Pradesh (BSEAP)">
+                        <option value="Cambridge Assessment International Education (CAIE)">
+                      </datalist>
+                      <span class="input-group-text clear-icon">
+                          <i class="bi bi-x-lg"></i>
+                      </span>
+                      </div>
+                
+                    </div>
+        </div>
+      
+      
+         <!-- Table Section -->
+        <div id="table-container" class="row mt-4 p-2 justify-content-center">
+                        <div class="col col-12 col-sm-10 col-md-10">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-striped table-bordered">
+                                    <colgroup>
+                                        <col style="width: 10px;">
+                                        <col style="width: 100%;">
+                                        <col style="width: 20px;">
+                                    </colgroup>
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">Board</th>
+                                            <th scope="col">Manage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-group-divider" id="boardTable">
+                                        <tr>
+                                            <th scope="row">1</th>
+                                            <td>Board of Secondary Education, Andhra Pradesh (BSEAP)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">2</th>
+                                            <td>Board of Secondary Education, Telangana (BSET)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">3</th>
+                                            <td>Cambridge Assessment International Education (CAIE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">4</th>
+                                            <td>Central Board of Secondary Education (CBSE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">5</th>
+                                            <td>Chhattisgarh Board of Secondary Education (CGBSE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">6</th>
+                                            <td>Council for the Indian School Certificate Examinations (CISCE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">7</th>
+                                            <td>Goa Board of Secondary and Higher Secondary Education (GBSHSE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">8</th>
+                                            <td>Gujarat Secondary and Higher Secondary Education Board (GSEB)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">9</th>
+                                            <td>International Baccalaureate (IB)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">10</th>
+                                            <td>Karnataka Secondary Education Examination Board (KSEEB)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">11</th>
+                                            <td>Madhya Pradesh Board of Secondary Education (MPBSE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">12</th>
+                                            <td>Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">13</th>
+                                            <td>National Institute of Open Schooling (NIOS)</td>
+                                            <td class="text-center"><i class="bi bi-three-dots" data-bs-toggle="modal" data-bs-target="#boardInfoModal"></i></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+        </div>
+
+    </div>
+            
+  
+
+    <div class="container">
+        <div class="modal fade " id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true" >
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteConfirmationModalLabel">Remove Board</h5>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this board from system?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" style="border: 1px solid gray;" id="cancelButton" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="deleteButton" data-bs-dismiss="modal">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!--Board info modal-->
+<div class="modal fade" id="boardInfoModal" tabindex="-1" aria-labelledby="boardInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="boardInfoModalLabel">Board Information</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="container">
+                <div id="form-container" class="row mt-4" >
+                    <div class="col-12 p-3">
+                        <form>
+                            <div class="row g-3 ">
+                                <div class="row">
+                                    <label for="boardName"  class="col-form-label col-12 col-lg-3 fw-bold">Board Name:</label>
+                                    <div class="col-12 col-lg-9">
+                                        <textarea readonly class="form-control-plaintext" id="boardName"  style="white-space: pre-wrap;">Maharashtra State Board of Secondary and Higher Secondary Education (MSBSHSE)</textarea>
+                                    </div>
+                                </div>
+                              
+                               <div class="row">
+                                    <label for="boardAbbreviation" class="col-form-label col-12 col-lg-3 fw-bold">Board Abbreviation:</label>
+                                    <div class="col-12 col-lg-9">
+                                        <input type="text" class="form-control-plaintext" id="boardAbbreviation" value="MSBSHSE" readonly>
+                                    </div>
+                                </div>
+                                 
+
+                                <fieldset class="border p-2 rounded col col-12  ">
+                                    <legend class="float-none w-auto fs-5">Board Address </legend>
+
+                                    <div class="row">
+                                        <label for="address" class="col-form-label col-12 col-lg-3 fw-bold"> Address:</label>    
+                                        <div class="col-12 col-lg-9">
+                                            <textarea readonly class="form-control-plaintext" id="address"  style="white-space: pre-wrap;">604, Block-A, Ashar Belleza, Near Ashar IT Park,Road no.16, Wagle Estate, Thane.</textarea>
+                                        </div>
+                                        </div>
+
+                                       
+                                    <div class="row">
+                                        <label for="postalCode" class="col-form-label col-12 col-lg-3 fw-bold">Postal Code:</label>    
+                                        <div class="col-12 col-lg-9">
+                                            <input type="text" readonly class="form-control-plaintext " id="postalCode" value="600450"> 
+                                        </div>
+                                        </div> 
+
+                                    <div class="row">
+                                        <div class="col-12 col-lg-3">
+                                                <label for="country" class="col-form-label col-6 col-lg-6 fw-bold">Country:</label>    
+                                                <div class="col-12">
+                                                    <input type="text" readonly class="form-control-plaintext " id="country" value="India"> 
+                                                </div>
+                                           
+                                        </div>
+                                    
+                                        <div class="col-12 col-lg-3">
+                                            <label for="state" class="col-form-label col-6 col-lg-6 fw-bold">State:</label>    
+                                             <div class="col-12">
+                                                 <input type="text" readonly class="form-control-plaintext " id="state" value="Maharashtra"> 
+                                             </div>
+                                        </div>
+                                        <div class="col-12 col-lg-3">
+                                            <label for="city" class="col-form-label col-6 col-lg-6 fw-bold">City/Town:</label>    
+                                             <div class="col-12">
+                                                 <input type="text" readonly class="form-control-plaintext " id="city" value="Thane"> 
+                                             </div>
+                                        </div>
+                                    </div>                                      
+                                </fieldset>
+                                <div class="col col-12 text-center" >
+                                    <div class="row">
+                                        <label for="medium" class="col-form-label fw-bold">Mediums of Instruction :</label>
+                                        <ul class="list-group p-1" id="medium">
+                                            <li class="list-group-item">English</li>
+                                            <li class="list-group-item">Marathi</li>
+                                            <li class="list-group-item">Hindi</li>
+                                          </ul>
+                                    </div>     
+                                </div>
+                                <div class="col col-12 text-center" >
+                                    <div class="row  justify-content-between ">
+                                        <div class="col-12 col-lg-6 pe-sm-3">
+                                            <div class="row">
+                                                <label for="standard" class="col-form-label fw-bold">Standards Offered :</label>
+                                                <ul class="list-group p-1" id="standard">
+                                                    <li class="list-group-item">First</li>
+                                                    <li class="list-group-item">Second</li>
+                                                    <li class="list-group-item">Third</li>
+                                                    <li class="list-group-item">Fourth</li>
+                                                    <li class="list-group-item">Fifth</li>
+                                                    <li class="list-group-item">Sixth</li>
+                                                    <li class="list-group-item">Seventh</li>
+                                                    <li class="list-group-item">Eighth</li>
+                                                    <li class="list-group-item">Ninth</li>
+                                                    <li class="list-group-item">Tenth</li>
+                                                  </ul>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-lg-6 ps-sm-3">
+                                            <div class="row">
+                                                <label for="subjects" class="col-form-label fw-bold">Subjects Offered :</label>
+                                                <ul class="list-group p-1" id="subjects">
+                                                    <li class="list-group-item">Marathi</li>
+                                                    <li class="list-group-item">Hindi</li>
+                                                    <li class="list-group-item">English</li>
+                                                    <li class="list-group-item">Maths</li>
+                                                    <li class="list-group-item">Science</li>
+                                                    <li class="list-group-item">Social Science</li>
+                                                    <li class="list-group-item">Sanskrit</li>
+                                                    <li class="list-group-item">Health & Physical Education</li>
+                                                </ul>
+                                            </div>            
+                                        </div>             
+                                    </div> 
+
+                                </div>
+                              
+                  
+                           
+                            </div>
+                          </form>
+                    </div>
+                </div>
+            </div> 
+        </div>
+        <div class="modal-footer">
+            <a type="button" class="btn btn-dark" id="viewSchools" href="../School/school.html?board=Maharashtra%20State%20Board%20of%20Secondary%20and%20Higher%20Secondary%20Education%20(MSBSHSE)">
+                <i class="bi bi-arrow-return-right"></i> Schools
+            </a>            
+            <a type="button" class="btn btn-dark" id="editBoardButton" href="./editForm.html"> Edit</a>
+           <button type="button" class="btn btn-custom" id="deleteBoardButton" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete</button>
+       </div>
+      </div>
+    </div>
+  </div>
+  
+
+
+
+       
+       
+    <!-- Footer 
+    <div id="footer-container"></div>
+    -->
+
+    <!-- Load JavaScript files -->
+    <script src="/Admin_prototype/commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Link to your external JavaScript file -->
+    <script>
+         function filterBoardTable() {
+    const boardInput = document.getElementById("boardFilter").value.toLowerCase();
+    const table = document.getElementById("boardTable");
+    const rows = table.getElementsByTagName("tr");
+    let hasVisibleRow = false;
+
+    for (let i = 0; i < rows.length; i++) {
+        const boardCell = rows[i].getElementsByTagName("td")[0]; // Board column
+
+        if (boardCell) {
+            const boardText = boardCell.textContent || boardCell.innerText;
+
+            if (boardText.toLowerCase().indexOf(boardInput) > -1) {
+                rows[i].style.display = ""; // Show row
+                hasVisibleRow = true;
+            } else {
+                rows[i].style.display = "none"; // Hide row
+            }
+        }
+    }
+
+    const noResultRow = document.getElementById("noResultRow");
+    if (noResultRow) {
+        noResultRow.remove();
+    }
+
+    // Add "No matching results" row if no visible rows
+    if (!hasVisibleRow) {
+        const noMatchRow = table.insertRow(-1); // Add to the end of the table
+        noMatchRow.id = "noResultRow";
+        const noMatchCell = noMatchRow.insertCell(0);
+        noMatchCell.colSpan = 3; // Span across all columns
+        noMatchCell.textContent = "No matching results found.";
+        noMatchCell.style.textAlign = "center"; // Center the text
+    }
+}
+
+// Add event listener for filtering
+document.getElementById("boardFilter").addEventListener("input", filterBoardTable);
+
+// Optional: Clear filter input function
+function clearBoardFilter() {
+    document.getElementById("boardFilter").value = '';
+    filterBoardTable(); // Refresh the table
+}
+
+// Clear input functionality for the clear button
+document.querySelector(".clear-icon").addEventListener("click", clearBoardFilter);
+
+    </script>
+
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+        loadComponent('footer', '../commonPart/footer.html', 'footer-container');
+    </script>
+</body>
+</html>

@@ -63,13 +63,35 @@
             font-size: 1rem;
             /* Standard readable size */
         }
+         /* Header styling */
+         .header {
+            background-color: #000000;
+            height: 90px; /* Consistent height */
+            display: flex;
+            color: rgb(255, 255, 255);
+            align-items: center; /* Center content vertically */
+            justify-content: space-between; /* Space between title and login button */
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Add shadow for similar look */
+            padding: 0 20px; /* Add padding for spacing */
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 1.5rem; /* Set appropriate size */
+            font-weight: bold; /* Remove bold */
+            
+        }
     </style>
 </head>
 
 <body>
-    <!-- Load Navbar -->
-    <div id="navbar-container"></div> <!-- This is where the navbar will be loaded -->
 
+
+    <!-- Header TEST  -->
+    <header class="header  ">
+        <h2 >TEST VISTA</h2>
+        <button class="btn btn-success " onclick="redirectToLogin()">Login</button>
+    </header>
+   
     <!-- Main Content -->
     <div class="container">
         <!-- Organization Heading -->
@@ -96,19 +118,11 @@
             </p>
         </div>
     </div>
-
-    <!-- Footer -->
-    <div id="footer-container"></div>
-
-    <!-- Load JavaScript files -->
-    <script src="commonPart/loadComponents.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-
-    <!-- Load Navbar and Footer -->
     <script>
-        loadComponent('navbar', 'commonPart/navbar.html', 'navbar-container');
-        loadComponent('footer', 'commonPart/footer.html', 'footer-container');
+        function redirectToLogin() {
+        // Redirect to login.html
+        window.location.href = "login_Prototype/login.html";
+    }
     </script>
 </body>
 

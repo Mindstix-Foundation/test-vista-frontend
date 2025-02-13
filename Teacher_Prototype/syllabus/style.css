@@ -1,4 +1,13 @@
 /* Page 3 Specific Styles */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    /* Centers the container horizontally */
+    padding-left: 1rem;
+    /* Adds 1-column margin on the left */
+    padding-right: 1rem;
+    /* Adds 1-column margin on the right */
+}
 
 /* Header Styling */
 header {
@@ -11,6 +20,7 @@ header {
 header h1 {
     margin: 0;
 }
+
 /* Make Select Labels Bold */
 form label {
     font-weight: bold;
@@ -18,18 +28,26 @@ form label {
 
 /* Form Styles */
 form {
-    background-color: white; /* Changed form background color */
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
+    background-color: white;
+    /* Changed form background color */
+    padding: 16px;
+   
 }
+
 /* Ensure button retains blue color */
 form button#viewSyllabusBtn {
-    background-color: #0d6efd; /* Bootstrap primary blue color */
+    background-color: #0d6efd;
+    /* Bootstrap primary blue color */
     color: white;
     border: none;
 }
+
 form button#viewSyllabusBtn:hover:not(:disabled) {
-    background-color: #0b5ed7; /* Darker blue on hover */
+    background-color: #0b5ed7;
+    /* Darker blue on hover */
+}
+@media (max-width: 768px) {
+    #viewSyllabusBtn{
+        width: 100%;
+    }
 }

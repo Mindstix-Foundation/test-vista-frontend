@@ -6,181 +6,172 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        /* Custom width for the offcanvas in mobile view */
-        @media (max-width: 768px) {
-            #top-navbar.offcanvas-end {
-                width: 75% !important;
-                /* Adjust this percentage as needed */
-                max-width: 75% !important;
-            }
-        }
-
-        body,
-        html {
-            margin: 0;
-            /* Ensure no margin on body or html */
-            padding: 0;
-            /* Ensure no padding on body or html */
-        }
-
-        .navbar {
-            margin: 0 !important;
-            background-color: #000000 !important;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            /* Adds a solid shadow */
-            /* Set navbar color */
-        }
-
-        body {
-            background-color: #ffffff !important;
-            /* Set body background color */
-        }
-
-        .offcanvas {
-            color: #ffffff;
-            background-color: #000000;
-            /* Match the navbar color */
-        }
-
-        .navbar-brand {
-            color: rgb(255, 255, 255) !important;
-            /* Set text color to white */
-        }
-
-        .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
-        }
-
-
-        .offcanvas .nav-link {
-            font-size: 20px;
-            color: rgb(255, 255, 255) !important;
-            /* Set nav links to white */
-        }
-
-        .offcanvas .nav-link:hover {
-            color: #6c757d !important;
-            /* Change to golden color on hover */
-        }
-
-        .offcanvas-title {
-            display: flex;
-            justify-content: space-evenly;
-            align-items: center;
-        }
-
-        .offcanvas-title span {
-            color: black !important;
-            /* Set the color to black */
-        }
-
-        /* Style for the button group */
-        .btn-group .btn {
-            border-radius: 25px;
-            /* Rounded corners for toggle buttons */
-            font-size: 18px;
-            /* Adjust font size for better readability */
-            padding: 10px 20px;
-            /* Add padding for a more clickable area */
-            transition: all 0.3s ease;
-            /* Smooth transition for hover and active states */
-        }
-
-        /* Style for the checked button */
-        .btn-check:checked+.btn {
-            background-color: #0d6efd;
-            /* Bootstrap primary color for active state */
-            color: #fff;
-            /* White text for active button */
-
-            border-color: #0d6efd;
-            /* Match border to background */
-        }
-
-        /* Style for hover effects */
-        .btn:hover {
-            background-color: rgba(13, 110, 253, 0.1);
-            /* Light hover effect */
-            color: #0d6efd;
-            /* Bootstrap primary color for text */
-            border-color: #0d6efd;
-            /* Highlight border */
-        }
-
-        @media (max-width: 576px) {
-            .modal-dialog {
-                max-width: 90%;
-                /* Ensure modal fits well in mobile view */
-            }
-        }
-
-
-        /* Add spacing between buttons */
-        .btn+.btn {
-            margin-left: 5px;
-        }
-    </style>
+    <link href="navbar.css" rel="stylesheet">
+    
+<style>
+    /* General Styling */
+.navbar {
+    background-color: black !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    height: 100px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .navbar-brand {
+    color: white !important;
+    font-weight: bold;
+  }
+  
+  .nav-link {
+    font-size: 20px;
+    
+    color: white !important;
+    text-transform: uppercase;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+  }
+  
+  .nav-link:hover {
+    color: #ffc107 !important;
+    text-decoration: underline;
+    text-decoration-color: #ffc107;
+  }
+  
+  .navbar-toggler {
+    background-color: black;
+    font-size: 1.2rem;
+  }
+  
+  
+  .offcanvas {
+    background-color: black !important;
+  }
+  
+  
+  
+  .offcanvas-header {
+    border-bottom: 1px solid #495057;
+  }
+  .navbar-nav .nav-item {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+      
+  .navbar-toggler-icon {
+    
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E") !important;
+  }
+  #navLogout:hover{
+          
+      
+          
+    text-decoration: underline !important; /* Ensure underline is applied */
+    text-decoration-color: red !important; /* Change the underline color */
+  }
+  #navLogout{
+    
+    color: red !important;
+    font-weight: 600;
+  }
+  
+  
+  @media (max-width: 768px) {
+    #offcanvasNavbar.offcanvas-end {
+        width: 75% !important;  /* Adjust this percentage as needed */
+        max-width: 75% !important;
+    }
+    .offcanvas-header{
+        height: 101px;
+    }
+    /* Left-align nav links inside the offcanvas */
+    .offcanvas .navbar-nav {
+      justify-content: start !important; /* Override end alignment */
+      align-items: start !important;    /* Ensure links align to the left */
+  }
+  .offcanvas .nav-link {
+      text-align: left !important; /* Force left alignment for text */
+      padding-left: 1rem;          /* Add padding for spacing */
+      padding-bottom: 1rem !important;
+  }
+  
+  #navLogout:hover{
+      
+      
+      border-radius: 4px;
+      
+      text-decoration: underline !important; /* Ensure underline is applied */
+      text-decoration-color: red !important; /* Change the underline color */
+  }
+  /* Align logout link to the bottom-left */
+  #navLogout {
+      position: absolute !important;
+      bottom: 1rem !important; /* Adjust distance from the bottom */
+      left: 1.5rem !important; /* Align with other links' padding */
+      font-size: 1rem !important; /* Adjust size for visibility */
+      width: calc(100% - 2rem); /* Optional: Make it span across */
+      text-align: left;         /* Ensure left alignment */
+  }
+  }
+  
+</style>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg py-4 py-lg-0 ">
-        <div class="container px-4">
-            <h2 class="navbar-brand">TEST VISTA</h2>
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#top-navbar" aria-controls="top-navbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="offcanvas offcanvas-end" tabindex="-1" id="top-navbar" aria-labelledby="top-navbarLabel">
-                <div class="offcanvas-header">
-                    <h5 class="offcanvas-title" id="top-navbarLabel">
-                        <div class="btn-group ms-2" role="group" aria-label="Role Switch">
-                            <input type="radio" class="btn-check" name="roleSwitch" id="teacherRole" autocomplete="off"
-                                checked>
-                            <label class="btn btn-outline-primary" for="teacherRole">TEACHER</label>
-
-                            <input type="radio" class="btn-check" name="roleSwitch" id="adminRole" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="adminRole">ADMIN</label>
-                        </div>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container w-100 h-100 ">
+            <div class="row   w-100 h-100 align-items-end justify-content-center" style="margin-left: unset;">
+                <!-- Project Heading -->
+                <div class="col-8 col-lg-2  text-lg-start">
+                    <a class="navbar-brand" style="font-size: 27px;">TEST VISTA</a>
                 </div>
-                <div class="offcanvas-body">
-                    <ul class="navbar-nav ms-auto p-4 p-lg-0">
-                        <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link" href="../index.html">Home</a>
-                        </li>
-                        <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../createTestPaper/createTestPaper.html">Create
-                                Test Paper</a>
-                        </li>
-                        <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../previousTestPaper/previousTestPaper.html">Previous
-                                Test
-                                Papers</a>
-                        </li>
-                        <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../syllabus/syllabus.html">Syllabus</a>
-                        </li>
-                        <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link"
-                                href="../profile/profile.html">Profile</a>
-                        </li>
-                        <li class="nav-item px-3 px-lg-0 py-1 py-lg-4">
-                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
-                        </li>
-                    </ul>
+    
+                <!-- Toggler for Offcanvas -->
+                <div class="col-4 col-lg-8 ps-2 text-end">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
+                        <div class="offcanvas-header justify-content-end align-items-end ">
+                            
+                            <button type="button" class="btn-close btn-close-white text-reset fs-3" data-bs-dismiss="offcanvas"></button>
+                        </div>
+                        <div class="offcanvas-body">
+                            <ul class="navbar-nav justify-content-end align-items-end flex-grow-1 flex-nowrap">
+                               
+                                <li class="nav-item ">
+                                    <a class="nav-link  pb-0 " id="navSchool" href="/Teacher_Prototype/index.html">Home</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link  pb-0" id="navTeacher" href="/Teacher_Prototype/createTestPaper/createTestPaper.html">Create Test Paper</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link  pb-0"  id="navPattern" href="/Teacher_Prototype/previousTestPaper/previousTestPaper.html">Previous Test Paper</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link  pb-0"  id="navQuestion" href="/Teacher_Prototype/syllabus/syllabus.html">Syllabus</a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="nav-link  pb-0"  id="navSyllabus" href="/Teacher_Prototype/profile/profile.html">profile</a>
+                                </li>
+                                <li class="nav-item pe-0 ">
+                                    <a class="nav-link  pb-0 link-danger btn-danger "id="navLogout"  href="../../login_Prototype/login.html" data-bs-toggle="modal"
+                                        data-bs-target="#logoutModal">Logout   <strong><i class="bi bi-box-arrow-right "  ></i></strong></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
+    
+    
+
     <!-- Logout Confirmation Modal -->
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
@@ -190,29 +181,14 @@
                     Are you sure you want to logout?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light" style="border: 1px solid gray;" data-bs-dismiss="modal">Cancel</button>
                     <a href="../../login_Prototype/login.html" class="btn btn-danger">Logout</a>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- JavaScript -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const toggleRole = document.getElementById('toggleRole');
 
-            toggleRole.addEventListener('change', function () {
-                if (toggleRole.checked) {
-                    window.location.href = "#";
-                } else {
-                    window.location.href = "#";
-                }
-            });
-        });
-    </script>
-
-    <!-- Bootstrap JS -->
+    <!-- Optional JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

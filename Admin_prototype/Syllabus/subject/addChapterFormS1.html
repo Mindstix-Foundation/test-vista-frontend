@@ -1,0 +1,119 @@
+
+<!-- /teacher/teacher.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Managmenet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../commonPart/navbar.css" rel="stylesheet">
+    
+</head>
+<body>
+    <div class="container my-4">
+        <div class="container">
+            <div class="row g-2 justify-content-end">
+                <a class="btn btn-close" href="./scienceSyllabus.html" aria-label="Close"></a>
+              </div>
+              <div class="row justify-content-center align-items-center my-2">
+                <div class="col col-12 col-sm-5 ">
+                  <p class="text-muted text-start fs-5 m-0">
+                    <span class="col-12 col-md-auto">Maharashtra State Board |</span>  
+                    <span class="col-12 col-md-auto"> English Medium</span>
+                    
+                    </p>
+                  <h4 class="fw-bolder text-start text-dark m-0 ">
+                      Standard 10  
+                      <span class="d-block text-start text-secondary">Science Syllabus</span>
+                    </h4>
+                </div>
+                <div class="col col-12 col-sm-5 text-end align-self-end ">
+                  
+                <h3 class="text-left  fw-bolder text-uppercase  mb-2">Add New Chapter</h3>
+                </div>
+              </div>
+              <hr>
+        </div>
+        <div id="form-container" class="row mt-4 justify-content-center" >
+            
+               <form>
+                <div class="row g-3 justify-content-center">
+                    <div class="col col-12 col-sm-10 col-md-8">
+                        <div class="mb-3 form-floating">
+                          <input type="text" class="form-control" id="chapterName" placeholder="Enter Chapter Name">
+                          <label for="chapterName" class="form-label">Chapter Name</label>
+    
+                      </div>
+                    </div>
+
+                      <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-4">
+                        <legend class="float-none w-auto  ">Chapter Topics &nbsp;</legend>
+                  
+                        <div class="row g-2 justify-content-center" id="input-container">
+                          
+                            <div class="col col-12">
+                            <div class=" form-floating">
+                             <input type="text" class="form-control topic-input" id="topic" placeholder="Enter Topic"oninput="handleInput(this)">
+                             <label for="topic" class="form-label">Topic Name</label>
+                            </div>
+                            </div>
+                        </div>
+                        
+                     
+                    </fieldset>
+
+                    <div class="col col-12 col-sm-10 col-md-8 mt-4">
+                    <div class="text-center ">
+                      <a id="save_button" type="submit" class="btn btn-dark" href="./scienceSyllabus.html">Save</a>
+                  </div>
+                    </div>
+  
+                </div>
+
+               </form>
+            
+        </div>
+    </div>
+
+
+  
+    
+
+    <script >
+        function handleInput(inputElement) {
+  const container = document.getElementById("input-container");
+  const inputFields = container.querySelectorAll(".topic-input");
+
+  // Add a new input field when the last input field is filled
+  if (inputFields[inputFields.length - 1] === inputElement && inputElement.value.trim() !== "") {
+    const newInputDiv = document.createElement("div");
+    newInputDiv.classList.add("col", "col-12");
+
+    newInputDiv.innerHTML = `
+      <div class="form-floating">
+        <input
+          type="text"
+          class="form-control topic-input"
+          placeholder="Enter Topic"
+          oninput="handleInput(this)"
+        />
+        <label for="topic" class="form-label">Topic</label>
+      </div>
+    `;
+
+    container.appendChild(newInputDiv);
+  }
+
+  // Remove an input field if it is empty and not the last one
+  if (inputElement.value.trim() === "" && inputFields.length > 1) {
+    const parentDiv = inputElement.closest(".col");
+    parentDiv.remove();
+  }
+}
+    </script>
+</body>
+</html>
+    
+  

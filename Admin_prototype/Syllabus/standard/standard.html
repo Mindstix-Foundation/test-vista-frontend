@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Syllabus </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/Admin_prototype/commonPart/navbar.css" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <style>
+         #navSyllabus{
+            font-weight: bolder;
+            
+            text-decoration: underline;
+            text-decoration-color: white;
+            /*color: #ffc107 !important;*/
+        }
+        @media (max-width: 768px) {
+        #navSyllabus{
+          font-weight: bolder;
+          font-size: 1.1rem !important;
+            text-decoration: none !important;
+         
+      }
+      }
+         /* Styles for screens below 576px */
+  @media (max-width: 576px) {
+    .dynamic-style {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Small shadow */
+      padding: 1rem;
+      z-index: 1000;
+    }
+   #addSubjectButton{
+    width: 100%;
+   }
+  }
+    </style>
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <div class="container my-4">
+        <div class="container mb-3">
+            <div class="row g-2 justify-content-end">
+                <a class="btn btn-close" href="../syllabus.html" aria-label="Close"></a>
+              </div>
+              <div class="row justify-content-center align-items-center my-1">
+                <div class="col col-12 col-sm-5 ">
+                    <p class="text-muted text-start fs-5 m-0">
+                      <span class="col-12 col-md-auto">Maharashtra State Board |</span>  
+                      <span class="col-12 col-md-auto"> English Medium</span>
+                      
+                      </p>
+                    <h3 class="fw-bolder text-start text-dark m-0 ">
+                        Standard 10  
+                        
+                      </h3>
+                  </div>
+                  <div class="col col-12 col-sm-5 dynamic-style text-end align-self-end">
+                    <div class="row justify-content-end g-2">  
+                      <div class="col col-12 col-sm-auto text-end">
+                        <a id="addSubjectButton" class="btn btn-success  fw-bold stick-bottom" href="./addSubjectForm.html">Add Subject</a>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+              <hr>
+        </div>
+        
+        <div class="container mt-2 pt-3 mb-5 pb-3">
+               
+        <div class="row p-2 gy-2  justify-content-center">
+
+            <!-- Filter Dropdown -->
+            <div class="col-12 col-sm-10">
+               <div class=" input-group">
+                   
+               <div class="form-floating">
+                   <input type="text" class="form-control" id="subjectFilter" placeholder="Search for Board" list="subjectList"  >
+                   <label for="subjectFilter"> <i class="bi bi-search text-secondary"></i> Search for  Subject</label>
+               </div>
+               
+               <datalist id="subjectList">
+                 
+               </datalist>
+               <span class="input-group-text clear-icon" >
+                   <i class="bi bi-x-lg"></i>
+               </span>
+               </div>
+         
+             </div>
+ </div>
+
+<!-- Table Section -->
+<div id="table-container" class="row mt-4 p-2 justify-content-center">
+    <div class="col col-12 col-sm-10 col-md-10">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped table-bordered">
+                <colgroup>
+                    <col style="width: 10px;">
+                    <col style="width: 100%;">
+                    <col style="width: 20px;">
+                </colgroup>
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Manage</th>
+                    </tr>
+                </thead>
+                <tbody class="table-group-divider" id="subjectTable">
+                    <tr>
+                        <th scope="row">1</th>
+                        <td>Marathi [Second/Third]</td>
+                        <td class="text-center "><a href="../subject/scienceSyllabus.html"><i class="bi bi-three-dots  text-dark" ></i></a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Hindi [Second/Third]</td>
+                        <td class="text-center"><a href="../subject/scienceSyllabus.html"><i class="bi bi-three-dots text-dark" ></i></a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>English [First]</td>
+                        <td class="text-center"><a href="../subject/scienceSyllabus.html"><i class="bi bi-three-dots text-dark" ></i></a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">4</th>
+                        <td>Mathematics 1 [Algebra] <span class="badge rounded-pill bg-dark ">New</span></td>
+                        <td class="text-center"><a href="../subject/newSubject.html"><i class="bi bi-three-dots text-dark" ></i></a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">5</th>
+                        <td>Mathematics 2 [Geometry]</td>
+                        <td class="text-center"><a href="../subject/scienceSyllabus.html"><i class="bi bi-three-dots text-dark" ></i></a></i></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">6</th>
+                        <td>Science and Technology 1 (Physics, Chemistry)</td>
+                        <td class="text-center"><a href="../subject/scienceSyllabus.html"><i class="bi bi-three-dots text-dark" ></i></a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">7</th>
+                        <td>Science and Technology 2 (Biology) <span class="badge rounded-pill bg-dark ">New</span></td>
+                        <td class="text-center"><a href="../subject/newSubject.html"><i class="bi bi-three-dots text-dark" ></i></a></i></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">8</th>
+                        <td>History and Political Science <span class="badge rounded-pill bg-dark ">New</span></td>
+                        <td class="text-center"><a href="../subject/newSubject.html"><i class="bi bi-three-dots text-dark" ></i></a></i></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">9</th>
+                        <td>Geography and Economics <span class="badge rounded-pill bg-dark ">New</span></td>
+                        <td class="text-center"><a href="../subject/newSubject.html"><i class="bi bi-three-dots text-dark" ></i></a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+ 
+
+        </div>
+    </div>
+
+    <div class="container">
+      <div class="modal fade " id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true" >
+          <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <div class="modal-content">
+                  <div class="modal-header bg-danger text-white">
+                      <h5 class="modal-title" id="deleteConfirmationModalLabel">Remove Chapter</h5>
+                  </div>
+                  <div class="modal-body">
+                      Are you sure you want to delete this Chapter from Syllabus?
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-light" style="border: 1px solid gray;" id="cancelButton" data-bs-dismiss="modal">Cancel</button>
+                      <button type="button" class="btn btn-danger" id="deleteButton" data-bs-dismiss="modal">Delete</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- Load JavaScript files -->
+  <script src="../../commonPart/loadComponents.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+
+   <!-- Load Navbar and Footer -->
+   <script>
+    loadComponent('navbar', '/Admin_prototype/commonPart/navbar.html', 'navbar-container');
+ 
+</script>
+</body>
+</html>

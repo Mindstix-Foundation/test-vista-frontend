@@ -7,248 +7,170 @@
     <title>Create Test Paper</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet"> <!-- Link to your external CSS -->
-    <link href="../style.css" rel="stylesheet" >
-     <script src="../script.js"></script>
-</body>
+    <link href="../style.css" rel="stylesheet">
+    <script src="../script.js"></script>
+    </body>
 </head>
 
 <body>
     <div id="navbar-container"></div> <!-- Navbar will be loaded here -->
 
     <!-- Create Test Paper Form -->
-    <div class="container mt-5">
-        <div class="text-center mb-4">
-            <h3>Create Test Paper</h3>
+    <div class="container mt-4 mb-5 ">
+        <div class="row p-2  g-2 mb-1">
+            <div class="row justify-content-center align-items-center g-2 mb-4 " style="margin-left:4px">
+                <div class="col-12 col-sm-5  ">
+                    <h5 class="text-left m-0 fw-bolder text-uppercase">create test paper</h5>
+                </div>
+
+                <div class="col-12 col-sm-5  dynamic-style text-end ">
+
+                </div>
+            </div>
+
+            <hr>
         </div>
-        
-        <form id="createTestPaperForm" >
-            <div class="mb-3">
-                <!-- Board Selection -->
-                <label for="board" class="form-label">Board <span class="text-danger">*</span></label>
-                <select id="board" class="form-select" required>
-                    <option class="selectBoard"  value="">Select Board</option>
-                    <option value="maharashtra">Maharashtra Board</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <!-- Class Selection -->
-                <label for="class" class="form-label">Class <span class="text-danger">*</span></label>
-                <select id="class" class="form-select" required>
-                    <option value="">Select Class</option>
-                    <option value="9th">9th</option>
-                    <option value="10th">10th</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <!-- Subject Selection -->
-                <label for="subject" class="form-label">Subject <span class="text-danger">*</span></label>
-                <select id="subject" class="form-select" required>
-                    <option value="">Select Subject</option>
-                    <option value="science">Science</option>
-                    <option value="maths">Maths</option>
-                </select>
-            </div>
-
-            <div class="mb-3" id="chapterSelection" style="display: none;">
-                <!-- Chapter Selection (Initially Hidden) -->
-                <label class="form-label">Select Chapters</label>
-                <div id="chapterOptions" class="chapter-options-container">
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter1">Chapter 1</div>
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter2">Chapter 2</div>
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter3">Chapter 3</div>
-                    <div class="chapter-option p-2 border rounded" data-chapter="chapter4">Chapter 4</div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <!-- Total Marks Selection -->
-                <label for="totalMarks" class="form-label">Total Marks <span class="text-danger">*</span></label>
-                <select id="totalMarks" class="form-select" required>
-                    <option value="">Select Total Marks</option>
-                    <option value="20">20</option>
-                    <option value="40">40</option>
-                    <option value="80">80</option>
-                </select>
-            </div>
-
-
-            <!-- Weightage Section (Marks per Chapter) -->
-<div class="mb-3" id="weightageSection" style="display: none;">
-    <label class="form-label">Weightage - Marks per Chapter <span class="text-danger">*</span></label>
-    <div id="weightageInputs"></div>
-    <div class="mt-2">
-        <strong>Total Marks Entered: <span id="enteredTotal" class="total-box"></span></strong>
-    </div>
-</div>
-
-<script>
-    // Show weightage section after selecting total marks
-    document.getElementById('totalMarks').addEventListener('change', function() {
-        const totalMarks = parseInt(this.value);
-        const chapterOptions = document.querySelectorAll('.chapter-option.active');
-        
-        if (totalMarks && chapterOptions.length > 0) {
-            document.getElementById('weightageSection').style.display = 'block';
-            updateWeightageInputs(chapterOptions, totalMarks);
-        } else {
-            document.getElementById('weightageSection').style.display = 'none';
-        }
-    });
-
-    // Function to update weightage input fields based on selected chapters
-    function updateWeightageInputs(chapterOptions, totalMarks) {
-        const weightageInputs = document.getElementById('weightageInputs');
-        weightageInputs.innerHTML = '';
-        
-        if (chapterOptions.length > 0) {
-            // Calculate marks per chapter (divide total marks equally)
-            const marksPerChapter = Math.floor(totalMarks / chapterOptions.length);
-            const remainder = totalMarks % chapterOptions.length;
-
-            chapterOptions.forEach((chapter, index) => {
-                const chapterName = chapter.getAttribute('data-chapter');
-                const inputGroup = document.createElement('div');
-                inputGroup.classList.add('input-group', 'mb-2');
-
-                const label = document.createElement('span');
-                label.classList.add('input-group-text');
-                label.innerText = chapterName;
-
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.classList.add('form-control');
-                input.min = 0;
-                input.value = marksPerChapter + (index < remainder ? 1 : 0); // Distribute remaining marks
-                input.placeholder = `Enter marks for ${chapterName}`;
-                input.setAttribute('data-chapter', chapterName);  // Add data attribute for identification
-                input.addEventListener('input', () => onChapterMarksChange());
-
-                inputGroup.appendChild(label);
-                inputGroup.appendChild(input);
-                weightageInputs.appendChild(inputGroup);
-            });
-        }
-    }
-    function initializeTotalDisplay() {
-    const totalMarks = parseInt(document.getElementById('totalMarks').value) || 0;
-    const totalBox = document.getElementById('enteredTotal');
-
-    // Set initial total to match totalMarks
-    totalBox.innerText = totalMarks;
-
-    // Set color based on whether we have a matching total
-    if (totalMarks === 0) {
-        totalBox.classList.remove('text-success');
-        totalBox.classList.add('text-danger');
-    } else {
-        totalBox.classList.add('text-success');
-        totalBox.classList.remove('text-danger');
-    }
-}
-
-// Call initializeTotalDisplay on page load
-initializeTotalDisplay();
-
-// Also update it whenever totalMarks changes
-document.getElementById('totalMarks').addEventListener('input', initializeTotalDisplay);
-
-// Other related functions remain the same
-
-    // When a user changes marks for any chapter, recalculate the total and adjust the feedback
-    function onChapterMarksChange() {
-        const totalMarks = parseInt(document.getElementById('totalMarks').value);
-        const inputs = document.querySelectorAll('#weightageInputs input');
-        
-        let totalEntered = 0;
-
-        // Calculate the total entered marks
-        inputs.forEach(input => {
-            const value = parseInt(input.value) || 0;
-            totalEntered += value;
-        });
-
-        // Update the total marks entered and display it
-        const totalBox = document.getElementById('enteredTotal');
-        totalBox.innerText = totalEntered;
-
-        // Change color based on the total entered
-        if (totalEntered < totalMarks) {
-            totalBox.classList.add('text-danger');
-            totalBox.classList.remove('text-success');
-        } else if (totalEntered > totalMarks) {
-            totalBox.classList.add('text-danger');
-            totalBox.classList.remove('text-success');
-        } else {
-            totalBox.classList.add('text-success');
-            totalBox.classList.remove('text-danger');
-        }
-    }
-
-    // Toggle active class on selected chapters and update weightage inputs
-    document.querySelectorAll('.chapter-option').forEach(chapter => {
-        chapter.addEventListener('click', () => {
-            chapter.classList.toggle('active');
-            const totalMarks = parseInt(document.getElementById('totalMarks').value);
-            updateWeightageInputs(document.querySelectorAll('.chapter-option.active'), totalMarks);
-        });
-    });
-</script>
-
-<!-- CSS for total box colors -->
-<style>
-    .text-danger {
-        color: red !important;
-    }
-    .text-success {
-        color: green !important;
-    }
-    .total-box {
-        font-weight: bold;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-    }
-</style>
-
-
-
-<div class="mb-3">
-    <label for="pattern" class="form-label">Pattern <span class="text-danger">*</span></label>
-    <div class="d-flex flex-column">
-        <!-- Button for Select Pattern with custom background color -->
-        <button type="button" id="selectPatternBtn" class="form-control" data-bs-toggle="modal" data-bs-target="#patternModal">
-            Select Pattern
-        </button>
-    </div>
-</div>
-
-            <div class="mb-3">
-                <!-- Generate Test Paper Type -->
-                <label class="form-label">Generate Test Paper From <span class="text-danger">*</span></label>
-                <div class="d-flex flex-column">
-                    <div>
-                        <input type="radio" id="boardOnly" name="questionType" value="boardOnly" required>
-                        <label for="boardOnly">Board Questions Only</label>
+        <div class="row justify-content-center align-items-center g-2 mb-4">
+            <div class="col-md-8">
+                <form id="createTestPaperForm">
+                    <div class="mb-3 form-floating">
+                        <!-- Board Selection -->
+                        <select id="board" class="form-select" required>
+                            <option class="selectBoard" value="">Select Board</option>
+                            <option value="maharashtra">Maharashtra Board</option>
+                        </select>
+                        <label for="board">Board <span class="text-danger">*</span></label>
                     </div>
-                    <div>
-                        <input type="radio" id="otherOnly" name="questionType" value="otherOnly">
-                        <label for="otherOnly">Other Questions Only</label>
+                    <div class="mb-3 form-floating">
+                        <!-- Language of Instruction Selection -->
+                        <select id="language" class="form-select" required>
+                            <option value="">Select Language</option>
+                            <option value="english">English</option>
+                            <option value="marathi">Marathi</option>
+                            <option value="hindi">Hindi</option>
+                        </select>
+                        <label for="language">Medium of Instruction <span class="text-danger">*</span></label>
                     </div>
-                    <div>
-                        <input type="radio" id="both" name="questionType" value="both">
-                        <label for="both">Both Board and Other Questions</label>
+                    <div class="mb-3 form-floating">
+                        <!-- Class Selection -->
+                        <select id="class" class="form-select" required>
+                            <option value="">Select Class</option>
+                            <option value="9th">9th</option>
+                            <option value="10th">10th</option>
+                        </select>
+                        <label for="class">Class <span class="text-danger">*</span></label>
                     </div>
-                </div>
-            </div>
 
-            <!-- Create Test Paper Button -->
-            <div class="button-container text-center">
-                <button type="button" class="btn btn-primary mt-3" onclick="createTestPaper()">Create Test Paper</button>
+                    <div class="mb-3 form-floating">
+                        <!-- Subject Selection -->
+                        <select id="subject" class="form-select" required>
+                            <option value="">Select Subject</option>
+                            <option value="science">Science</option>
+                            <option value="maths">Maths</option>
+                        </select>
+                        <label for="subject">Subject <span class="text-danger">*</span></label>
+                    </div>
+
+                    <div class="mb-3" id="chapterSelection" style="display: none;">
+                        <!-- Chapter Selection (Initially Hidden) -->
+                        <div>Select Chapters</div>
+                        <div id="chapterOptions" class="chapter-options-container">
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter1"> Laws of Motion</div>
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter2">Force and Pressure
+                            </div>
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter3">Work and Energy</div>
+                            <div class="chapter-option p-2 border rounded" data-chapter="chapter4">Refraction of Light
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-floating">
+                        <!-- Total Marks Selection -->
+                        <select id="totalMarks" class="form-select" required>
+                            <option value="">Select Total Marks</option>
+                            <option value="20">20</option>
+                            <option value="40">40</option>
+                            <option value="80">80</option>
+                        </select>
+                        <label for="totalMarks">Total Marks <span class="text-danger">*</span></label>
+                    </div>
+
+                    <div class="mb-3" id="weightageSection" style="display: none;">
+                        <!-- Weightage Section (Marks per Chapter) -->
+                        <div>Weightage - Marks per Chapter <span class="text-danger">*</span></div>
+                        <div id="weightageInputs"></div>
+                        <div class="mt-2">
+                            <strong>Total Marks Entered: <span id="enteredTotal" class="total-box"></span></strong>
+                        </div>
+                    </div>
+
+
+                    <div class="mb-3">
+                        <label for="pattern" class="form-label">Pattern <span class="text-danger">*</span></label>
+                        <div class="d-flex flex-column">
+                            <!-- Button for Select Pattern with custom background color -->
+                            <button type="button" id="selectPatternBtn" class="btn btn-outline-dark"
+                                data-bs-toggle="modal" data-bs-target="#patternModal">
+                                Select Pattern
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <!-- Generate Test Paper Type -->
+                        <div>Generate Test Paper From <span class="text-danger">*</span></div>
+                        <div class="d-flex flex-column">
+                            <div>
+                                <input type="radio" id="boardOnly" name="questionType" value="boardOnly" required>
+                                <label for="boardOnly">Board Questions Only</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="otherOnly" name="questionType" value="otherOnly">
+                                <label for="otherOnly">Other Questions Only</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="both" name="questionType" value="both">
+                                <label for="both">Both Board and Other Questions</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="additionalFields" style="display: none;">
+                        <div class="mb-3 form-floating">
+                            <!-- Test Paper Name -->
+                            <input type="text" id="testPaperName" class="form-control"
+                                placeholder="Enter Test Paper Name" maxlength="35" required>
+                            <label for="testPaperName">Test Paper Name <span class="text-danger">*</span></label>
+                            <small id="charCount" class="text-muted">0/35 characters</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <!-- Select Total Time -->
+                            <div>Select Total Time <span class="text-danger">*</span></div>
+                            <div class="d-flex gap-2">
+                                <div class="form-floating" style="flex: 1;">
+                                    <input type="number" id="hours" class="form-control" min="0" max="23" value="0"
+                                        required style="padding-top: 1.5rem; height: 3.5rem;">
+                                    <label for="hours">Hours</label>
+                                </div>
+                                <div class="form-floating" style="flex: 1;">
+                                    <input type="number" id="minutes" class="form-control" min="0" max="59" value="0"
+                                        required style="padding-top: 1.5rem; height: 3.5rem;">
+                                    <label for="minutes">Minutes</label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Create Test Paper Button -->
+                    <div class="button-container text-center">
+                        <button id="create-test-paper-btn" type="button" class="btn btn-primary mt-3"
+                            onclick="createTestPaper()">Create Test Paper</button>
+                    </div>
+                </form>
             </div>
-            
-        </form>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -256,47 +178,179 @@ document.getElementById('totalMarks').addEventListener('input', initializeTotalD
 
     <!-- Modal for Pattern Selection -->
     <div class="modal fade" id="patternModal" tabindex="-1" aria-labelledby="patternModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="patternModalLabel">Select Pattern</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="text" id="patternSearch" class="form-control mb-3" placeholder="Search by Name or Description" onkeyup="filterPatterns()">
-                    
+                    <input type="text" id="patternSearch" class="form-control mb-3"
+                        placeholder="Search by Name or Description" onkeyup="filterPatterns()">
                     <div class="row" id="patternCardsContainer">
-                        <!-- Example Card -->
-                        <div class="col-md-6 mb-3">
-                            <div class="card pattern-card" onclick="selectPattern('Board Pattern', this)">
+                        <!-- Card 1 -->
+                        <div class="col-12 mb-4">
+                            <div class="card" onclick="selectPattern('SSC 2025', this)">
                                 <div class="card-body">
-                                    <h5 class="card-title">Board Pattern</h5>
+                                    <h5 class="card-title">SSC 2025</h5>
                                     <p class="card-text">
-                                        <strong>Type:</strong> Objective and Subjective<br>
-                                        <strong>Description:</strong> A comprehensive pattern with objective and subjective questions.
+                                        <strong>Type:</strong> Maharashtra State Board of Secondary and Higher Secondary
+                                        Education (MSBSHSE)<br>
+                                        <strong>Standard:</strong> Tenth<br>
+                                        <strong>Subject:</strong> Science (Part: 1)<br>
+                                        <strong>Marks:</strong> 40
                                     </p>
+                                    <div class="collapse mt-3" id="stateTenthScience1">
+                                        <table class="table table-sm table-striped table-bordered">
+                                            <tbody>
+                                                <tr class="table-dark">
+                                                    <th>Type of Questions</th>
+                                                    <th>Number of Questions</th>
+                                                    <th>Total Marks Allotted</th>
+                                                </tr>
+                                                <tr>
+                                                    <td>1 Mark Questions</td>
+                                                    <td>10</td>
+                                                    <td>10</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>2 Marks Questions</td>
+                                                    <td>5</td>
+                                                    <td>10</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>3 Marks Questions</td>
+                                                    <td>5</td>
+                                                    <td>15</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>5 Marks Questions</td>
+                                                    <td>1</td>
+                                                    <td>5</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary d-flex align-items-center"
+                                            data-bs-toggle="collapse" data-bs-target="#stateTenthScience1"
+                                            aria-expanded="false" aria-controls="stateTenthScience1"
+                                            onclick="toggleChevron(this, event);">
+                                            <span>View Details</span>
+                                            <i class="bi bi-chevron-down ms-2"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card pattern-card" onclick="selectPattern('Pattern 1', this)">
+
+                        <!-- Card 2 -->
+                        <div class="col-12 mb-4">
+                            <div class="card" onclick="selectPattern('MCQ 2025', this)">
                                 <div class="card-body">
-                                    <h5 class="card-title">Pattern 1</h5>
+                                    <h5 class="card-title">MCQ 2025</h5>
                                     <p class="card-text">
-                                        <strong>Type:</strong> Objective<br>
-                                        <strong>Description:</strong> Focused on multiple-choice questions.
+                                        <strong>Type:</strong> Maharashtra State Board of Secondary and Higher Secondary
+                                        Education (MSBSHSE)<br>
+                                        <strong>Standard:</strong> Tenth<br>
+                                        <strong>Subject:</strong> Science (Part: 2)<br>
+                                        <strong>Marks:</strong> 40
                                     </p>
+                                    <div class="collapse mt-3" id="stateTenthScience2">
+                                        <table class="table table-sm table-striped table-bordered">
+                                            <tbody>
+                                                <tr class="table-dark">
+                                                    <th>Type of Questions</th>
+                                                    <th>Number of Questions</th>
+                                                    <th>Total Marks Allotted</th>
+                                                </tr>
+                                                <tr>
+                                                    <td>1 Mark Questions</td>
+                                                    <td>10</td>
+                                                    <td>10</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>2 Marks Questions</td>
+                                                    <td>5</td>
+                                                    <td>10</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>3 Marks Questions</td>
+                                                    <td>5</td>
+                                                    <td>15</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>5 Marks Questions</td>
+                                                    <td>1</td>
+                                                    <td>5</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary d-flex align-items-center"
+                                            data-bs-toggle="collapse" data-bs-target="#stateTenthScience2"
+                                            aria-expanded="false" aria-controls="stateTenthScience2"
+                                            onclick="toggleChevron(this, event);">
+                                            <span>View Details</span>
+                                            <i class="bi bi-chevron-down ms-2"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card pattern-card" onclick="selectPattern('Pattern 2', this)">
+
+                        <!-- Card 3 -->
+                        <div class="col-12 mb-4">
+                            <div class="card" onclick="selectPattern('Unit Test 2024', this)">
                                 <div class="card-body">
-                                    <h5 class="card-title">Pattern 2</h5>
+                                    <h5 class="card-title">Unit Test 2024</h5>
                                     <p class="card-text">
-                                        <strong>Type:</strong> Subjective<br>
-                                        <strong>Description:</strong> Composed of short-answer and essay questions.
+                                        <strong>Type:</strong> Central Board of Secondary Education (CBSE)<br>
+                                        <strong>Standard:</strong> Tenth<br>
+                                        <strong>Subject:</strong> Science (Part: 1)<br>
+                                        <strong>Marks:</strong> 20
                                     </p>
+                                    <div class="collapse mt-3" id="cbseTenthScience1">
+                                        <table class="table table-sm table-striped table-bordered">
+                                            <tbody>
+                                                <tr class="table-dark">
+                                                    <th>Type of Questions</th>
+                                                    <th>Number of Questions</th>
+                                                    <th>Total Marks Allotted</th>
+                                                </tr>
+                                                <tr>
+                                                    <td>1 Mark Questions</td>
+                                                    <td>10</td>
+                                                    <td>10</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>2 Marks Questions</td>
+                                                    <td>5</td>
+                                                    <td>10</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>3 Marks Questions</td>
+                                                    <td>5</td>
+                                                    <td>15</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>5 Marks Questions</td>
+                                                    <td>1</td>
+                                                    <td>5</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary d-flex align-items-center"
+                                            data-bs-toggle="collapse" data-bs-target="#cbseTenthScience1"
+                                            aria-expanded="false" aria-controls="cbseTenthScience1"
+                                            onclick="toggleChevron(this, event);">
+                                            <span>View Details</span>
+                                            <i class="bi bi-chevron-down ms-2"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -304,6 +358,17 @@ document.getElementById('totalMarks').addEventListener('input', initializeTotalD
                 </div>
             </div>
         </div>
+    </div>
+    <script>
+        function selectPattern(patternName, element) {
+            // Select the pattern card when clicked
+            console.log("Pattern Selected: " + patternName);
+        }
+    </script>
+    </div>
+    </div>
+    </div>
+    </div>
     </div>
 
     <!-- Load JavaScript files -->

@@ -1,34 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Science Test Paper</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="style2.css">
 </head>
+
 <body>
- <!-- Button Container for Print, Save, and Exit Option (Top Corners) -->
-<div class="container-fluid position-fixed top-0 start-0 end-0 p-3 z-index-1030" style="background-color: white;">
-    <div class="d-flex justify-content-between w-100">
-        <div class="d-flex">
-            <button class="btn btn-primary me-2" onclick="printPage()">Print</button>
-            <button class="btn btn-success" onclick="savePage()">Save</button>
+    <!-- Button Container for Print, Save, and Exit Option (Top Corners) -->
+    <div class="container-fluid position-fixed top-0 start-0 end-0 p-3 z-index-1030" style="background-color: white;">
+        <div class="d-flex justify-content-between w-100">
+            <div class="d-flex">
+                <button class="btn btn-primary me-2" onclick="printPage()">Print</button>
+                <button class="btn btn-success" onclick="savePage()">Save</button>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" onclick="exitPage()"></button>
         </div>
-        <button type="button" class="btn-close" aria-label="Close" onclick="exitPage()"></button>
     </div>
-</div>
 
 
     <!-- Main content container -->
     <div class="container">
 
         <!-- School and Test Information -->
-        <div class="title">TMC School Thane</div>
-        <div class="details">
-            <p>Subject: Science 1 | Class: 10th CBSE</p>
-            <p>Time: 11:00 AM - 12:00 PM | Total Marks: 40</p>
+        <div>
+            <h2 style="text-align: center;"><strong>TMC School Thane</strong></h2>
+            <div style="text-align: center; margin-top: 10px;">
+                <h3>End Term Paper</h3>
+                <p style="margin-bottom: 5px;"><strong>Subject:</strong> Science 1 | <strong>Class:</strong> 10th CBSE</p>
+                <p style="margin-top: 5px;"><strong>Time:</strong> 1 hour | <strong>Total Marks:</strong> 40</p>
+            </div>
         </div>
+        
+        <hr>
+        
 
         <!-- Questions Section -->
         <div id="section">
@@ -36,339 +45,8 @@
                 <span>1. Objective Type Questions</span>
                 <span class="marks">[20 Marks]</span>
             </div>
-        
-        
-        <div id="questions">
-            <div class="question" id="question-1">
-                <div class="marks-container">
-                    <span>1. Which of the following is a non-renewable resource?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Wind <br>
-                    B) Solar <br>
-                    C) Coal <br>
-                    D) Geothermal <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(0)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-2">
-                <div class="marks-container">
-                    <span>2. What is the SI unit of power?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Watt <br>
-                    B) Joule <br>
-                    C) Volt <br>
-                    D) Ampere <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(1)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-3">
-                <div class="marks-container">
-                    <span>3. The chemical formula of methane is:</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) CH₄ <br>
-                    B) CO₂ <br>
-                    C) C₂H₆ <br>
-                    D) CH₃OH <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(2)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-4">
-                <div class="marks-container">
-                    <span>4. What does DNA stand for?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Deoxyribonucleic Acid <br>
-                    B) Dioxyribonucleic Acid <br>
-                    C) Deoxyribose Nucleic Acid <br>
-                    D) Dioxyribose Nucleic Acid <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(3)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-5">
-                <div class="marks-container">
-                    <span>5. Which of the following is a greenhouse gas?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Oxygen <br>
-                    B) Nitrogen <br>
-                    C) Carbon dioxide <br>
-                    D) Helium <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(4)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-6">
-                <div class="marks-container">
-                    <span>6. What is the process of converting liquid into gas called?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Freezing <br>
-                    B) Melting <br>
-                    C) Evaporation <br>
-                    D) Condensation <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(5)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-7">
-                <div class="marks-container">
-                    <span>7. Which part of the plant is responsible for photosynthesis?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Roots <br>
-                    B) Stem <br>
-                    C) Leaves <br>
-                    D) Flowers <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(6)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-8">
-                <div class="marks-container">
-                    <span>8. Which of the following is an example of a chemical change?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Melting ice <br>
-                    B) Dissolving salt in water <br>
-                    C) Burning wood <br>
-                    D) Boiling water <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(7)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-9">
-                <div class="marks-container">
-                    <span>9. Which of the following is a non-metal?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Copper <br>
-                    B) Iron <br>
-                    C) Sulfur <br>
-                    D) Zinc <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(8)">Change Question</button>
-                </div>
-            </div>
-        
-            <div class="question" id="question-10">
-                <div class="marks-container">
-                    <span>10. Which gas is primarily responsible for global warming?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Oxygen <br>
-                    B) Nitrogen <br>
-                    C) Carbon dioxide <br>
-                    D) Argon <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-            <div class="question" id="question-11">
-                <div class="marks-container">
-                    <span>11. The process of nuclear fusion occurs in the:</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Earth <br>
-                    B) Sun <br>
-                    C) Moon <br>
-                    D) Stars <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-12">
-                <div class="marks-container">
-                    <span>12. Which of the following is the source of energy for the water cycle?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Wind <br>
-                    B) Sun <br>
-                    C) Earth's core <br>
-                    D) Tidal waves <br>
-                    <div class="shuffle-container">
-                        <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                    </div>
-                </div>
-            </div>
-    
-            <div class="question" id="question-13">
-                <div class="marks-container">
-                    <span>13. Which gas is released during respiration?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Oxygen <br>
-                    B) Nitrogen <br>
-                    C) Carbon dioxide <br>
-                    D) Hydrogen <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-14">
-                <div class="marks-container">
-                    <span>14. Which of the following elements is a halogen?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Fluorine <br>
-                    B) Argon <br>
-                    C) Sodium <br>
-                    D) Magnesium <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-15">
-                <div class="marks-container">
-                    <span>15. Which of the following is a vector quantity?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Speed <br>
-                    B) Distance <br>
-                    C) Force <br>
-                    D) Time <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-16">
-                <div class="marks-container">
-                    <span>16. Which cell organelle is responsible for protein synthesis?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Nucleus <br>
-                    B) Ribosome <br>
-                    C) Mitochondria <br>
-                    D) Chloroplast <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-17">
-                <div class="marks-container">
-                    <span>17. What is the pH value of neutral water?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) 7 <br>
-                    B) 0 <br>
-                    C) 14 <br>
-                    D) 10 <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-18">
-                <div class="marks-container">
-                    <span>18. Which of the following is used to measure electric current?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Voltmeter <br>
-                    B) Ammeter <br>
-                    C) Thermometer <br>
-                    D) Barometer <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-19">
-                <div class="marks-container">
-                    <span>19. What is the atomic number of carbon?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) 6 <br>
-                    B) 12 <br>
-                    C) 14 <br>
-                    D) 8 <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-20">
-                <div class="marks-container">
-                    <span>20. Which of the following planets is known as the Red Planet?</span>
-                    <span class="marks">[1 Mark]</span>
-                </div>
-                <div class="options">
-                    A) Venus <br>
-                    B) Mars <br>
-                    C) Jupiter <br>
-                    D) Saturn <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(9)">Change Question</button>
-                </div>
-            </div>
-            <!-- Add more questions following the same format as needed -->
-        </div>
 
 
-
-        <div id="section-a">
-            <div class="section-title">Section A: Objective Type Questions (1 mark each)</div>
-            <div class="marks-container">
-                <span>1. Objective Type Questions</span>
-                <span class="marks">[20 Marks]</span>
-            </div>
-    
             <div id="questions">
                 <div class="question" id="question-1">
                     <div class="marks-container">
@@ -382,125 +60,485 @@
                         D) Geothermal <br>
                     </div>
                     <div class="shuffle-container">
-                        <button class="btn btn-secondary" onclick="shuffleQuestion(0)">Change Question</button>
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(0)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
                     </div>
                 </div>
-    
-                <!-- Repeat similar structure for additional objective questions here -->
+
+                <div class="question" id="question-2">
+                    <div class="marks-container">
+                        <span>2. What is the SI unit of power?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Watt <br>
+                        B) Joule <br>
+                        C) Volt <br>
+                        D) Ampere <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(1)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-3">
+                    <div class="marks-container">
+                        <span>3. The chemical formula of methane is:</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) CH₄ <br>
+                        B) CO₂ <br>
+                        C) C₂H₆ <br>
+                        D) CH₃OH <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(2)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-4">
+                    <div class="marks-container">
+                        <span>4. What does DNA stand for?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Deoxyribonucleic Acid <br>
+                        B) Dioxyribonucleic Acid <br>
+                        C) Deoxyribose Nucleic Acid <br>
+                        D) Dioxyribose Nucleic Acid <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(3)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-5">
+                    <div class="marks-container">
+                        <span>5. Which of the following is a greenhouse gas?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Oxygen <br>
+                        B) Nitrogen <br>
+                        C) Carbon dioxide <br>
+                        D) Helium <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(4)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-6">
+                    <div class="marks-container">
+                        <span>6. What is the process of converting liquid into gas called?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Freezing <br>
+                        B) Melting <br>
+                        C) Evaporation <br>
+                        D) Condensation <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(5)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-7">
+                    <div class="marks-container">
+                        <span>7. Which part of the plant is responsible for photosynthesis?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Roots <br>
+                        B) Stem <br>
+                        C) Leaves <br>
+                        D) Flowers <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(6)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-8">
+                    <div class="marks-container">
+                        <span>8. Which of the following is an example of a chemical change?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Melting ice <br>
+                        B) Dissolving salt in water <br>
+                        C) Burning wood <br>
+                        D) Boiling water <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(7)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-9">
+                    <div class="marks-container">
+                        <span>9. Which of the following is a non-metal?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Copper <br>
+                        B) Iron <br>
+                        C) Sulfur <br>
+                        D) Zinc <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(8)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-10">
+                    <div class="marks-container">
+                        <span>10. Which gas is primarily responsible for global warming?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Oxygen <br>
+                        B) Nitrogen <br>
+                        C) Carbon dioxide <br>
+                        D) Argon <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+                <div class="question" id="question-11">
+                    <div class="marks-container">
+                        <span>11. The process of nuclear fusion occurs in the:</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Earth <br>
+                        B) Sun <br>
+                        C) Moon <br>
+                        D) Stars <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-12">
+                    <div class="marks-container">
+                        <span>12. Which of the following is the source of energy for the water cycle?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Wind <br>
+                        B) Sun <br>
+                        C) Earth's core <br>
+                        D) Tidal waves <br>
+                        <div class="shuffle-container">
+                            <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                    class="bi bi-arrow-clockwise"></i> Change Question</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="question-13">
+                    <div class="marks-container">
+                        <span>13. Which gas is released during respiration?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Oxygen <br>
+                        B) Nitrogen <br>
+                        C) Carbon dioxide <br>
+                        D) Hydrogen <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-14">
+                    <div class="marks-container">
+                        <span>14. Which of the following elements is a halogen?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Fluorine <br>
+                        B) Argon <br>
+                        C) Sodium <br>
+                        D) Magnesium <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-15">
+                    <div class="marks-container">
+                        <span>15. Which of the following is a vector quantity?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Speed <br>
+                        B) Distance <br>
+                        C) Force <br>
+                        D) Time <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-16">
+                    <div class="marks-container">
+                        <span>16. Which cell organelle is responsible for protein synthesis?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Nucleus <br>
+                        B) Ribosome <br>
+                        C) Mitochondria <br>
+                        D) Chloroplast <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-17">
+                    <div class="marks-container">
+                        <span>17. What is the pH value of neutral water?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) 7 <br>
+                        B) 0 <br>
+                        C) 14 <br>
+                        D) 10 <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-18">
+                    <div class="marks-container">
+                        <span>18. Which of the following is used to measure electric current?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Voltmeter <br>
+                        B) Ammeter <br>
+                        C) Thermometer <br>
+                        D) Barometer <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-19">
+                    <div class="marks-container">
+                        <span>19. What is the atomic number of carbon?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) 6 <br>
+                        B) 12 <br>
+                        C) 14 <br>
+                        D) 8 <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-20">
+                    <div class="marks-container">
+                        <span>20. Which of the following planets is known as the Red Planet?</span>
+                        <span class="marks">[1 Mark]</span>
+                    </div>
+                    <div class="options">
+                        A) Venus <br>
+                        B) Mars <br>
+                        C) Jupiter <br>
+                        D) Saturn <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(9)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+                <!-- Add more questions following the same format as needed -->
             </div>
-        </div>
-    
-        <!-- Section B: Short Answer Questions -->
-        <div id="section-b">
-            <div class="section-title">Section B: Short Answer Questions (2 marks each)</div>
-    
-            <div class="question" id="question-1">
-                <div class="marks-container">
-                    <span>1. What is the difference between renewable and non-renewable resources?</span>
-                    <span class="marks">[2 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(1)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-2">
-                <div class="marks-container">
-                    <span>2. Explain the role of the diaphragm in human respiration.</span>
-                    <span class="marks">[2 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(2)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-3">
-                <div class="marks-container">
-                    <span>3. What is refraction of light? Explain with an example.</span>
-                    <span class="marks">[2 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(3)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-4">
-                <div class="marks-container">
-                    <span>4. What are the different types of chemical reactions? Give one example of each.</span>
-                    <span class="marks">[2 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(4)">Change Question</button>
-                </div>
-            </div>
-        </div>
-    
-        <!-- Section C: Long Answer Questions -->
-        <div id="section-c">
-            <div class="section-title">Section C: Long Answer Questions (3 marks each)</div>
-    
-            <div class="question" id="question-1">
-                <div class="marks-container">
-                    <span>1. Explain the process of digestion in humans, including the role of enzymes.</span>
-                    <span class="marks">[3 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(5)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-2">
-                <div class="marks-container">
-                    <span>2. Describe the structure of an atom with the help of a diagram.</span>
-                    <span class="marks">[3 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(6)">Change Question</button>
-                </div>
-            </div>
-    
-            <div class="question" id="question-3">
-                <div class="marks-container">
-                    <span>3. What is the greenhouse effect? How does it contribute to global warming?</span>
-                    <span class="marks">[3 Marks]</span>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(7)">Change Question</button>
-                </div>
-            </div>
-        </div>
-    
-        <!-- Section D: Case Study-based Question -->
-        <div id="section-d">
-            <div class="section-title">Section D: Case Study-based Question (5 marks)</div>
-    
-            <div class="question" id="case-study">
-                <div class="question-text">
-                    Read the following case study and answer the questions below:
-                    <p>In a school science experiment, a group of students was asked to investigate the effect of light intensity on the rate of photosynthesis in plants. They used a plant in a beaker of water, with a lamp placed at different distances from the plant. The students observed the number of oxygen bubbles released as a measure of the photosynthesis rate.</p>
-                </div>
-                <div class="marks-container">
-                    <span>Questions:</span>
-                    <span class="marks">[5 Marks]</span>
-                </div>
-                <div class="options">
-                    1. What is the independent variable in this experiment? <br>
-                    2. What would be the expected result if the light intensity is increased? <br>
-                    3. Why is oxygen production used as an indicator of photosynthesis? <br>
-                    4. What are the factors affecting the rate of photosynthesis? <br>
-                    5. How would the experiment change if the temperature was increased? <br>
-                </div>
-                <div class="shuffle-container">
-                    <button class="btn btn-secondary" onclick="shuffleQuestion(8)">Change Question</button>
-                </div>
-            </div>
-        </div>
 
 
-        
+
+            <div id="section-a">
+                <div class="section-title">Section A: Objective Type Questions (1 mark each)</div>
+                <div class="marks-container">
+                    <span>1. Objective Type Questions</span>
+                    <span class="marks">[20 Marks]</span>
+                </div>
+
+                <div id="questions">
+                    <div class="question" id="question-1">
+                        <div class="marks-container">
+                            <span>1. Which of the following is a non-renewable resource?</span>
+                            <span class="marks">[1 Mark]</span>
+                        </div>
+                        <div class="options">
+                            A) Wind <br>
+                            B) Solar <br>
+                            C) Coal <br>
+                            D) Geothermal <br>
+                        </div>
+                        <div class="shuffle-container">
+                            <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(0)"><i
+                                    class="bi bi-arrow-clockwise"></i> Change Question</button>
+                        </div>
+                    </div>
+
+                    <!-- Repeat similar structure for additional objective questions here -->
+                </div>
+            </div>
+
+            <!-- Section B: Short Answer Questions -->
+            <div id="section-b">
+                <div class="section-title">Section B: Short Answer Questions (2 marks each)</div>
+
+                <div class="question" id="question-1">
+                    <div class="marks-container">
+                        <span>1. What is the difference between renewable and non-renewable resources?</span>
+                        <span class="marks">[2 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(1)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-2">
+                    <div class="marks-container">
+                        <span>2. Explain the role of the diaphragm in human respiration.</span>
+                        <span class="marks">[2 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(2)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-3">
+                    <div class="marks-container">
+                        <span>3. What is refraction of light? Explain with an example.</span>
+                        <span class="marks">[2 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(3)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-4">
+                    <div class="marks-container">
+                        <span>4. What are the different types of chemical reactions? Give one example of each.</span>
+                        <span class="marks">[2 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(4)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section C: Long Answer Questions -->
+            <div id="section-c">
+                <div class="section-title">Section C: Long Answer Questions (3 marks each)</div>
+
+                <div class="question" id="question-1">
+                    <div class="marks-container">
+                        <span>1. Explain the process of digestion in humans, including the role of enzymes.</span>
+                        <span class="marks">[3 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(5)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-2">
+                    <div class="marks-container">
+                        <span>2. Describe the structure of an atom with the help of a diagram.</span>
+                        <span class="marks">[3 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(6)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+
+                <div class="question" id="question-3">
+                    <div class="marks-container">
+                        <span>3. What is the greenhouse effect? How does it contribute to global warming?</span>
+                        <span class="marks">[3 Marks]</span>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(7)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section D: Case Study-based Question -->
+            <div id="section-d">
+                <div class="section-title">Section D: Case Study-based Question (5 marks)</div>
+
+                <div class="question" id="case-study">
+                    <div class="question-text">
+                        Read the following case study and answer the questions below:
+                        <p>In a school science experiment, a group of students was asked to investigate the effect of
+                            light intensity on the rate of photosynthesis in plants. They used a plant in a beaker of
+                            water, with a lamp placed at different distances from the plant. The students observed the
+                            number of oxygen bubbles released as a measure of the photosynthesis rate.</p>
+                    </div>
+                    <div class="marks-container">
+                        <span>Questions:</span>
+                        <span class="marks">[5 Marks]</span>
+                    </div>
+                    <div class="options">
+                        1. What is the independent variable in this experiment? <br>
+                        2. What would be the expected result if the light intensity is increased? <br>
+                        3. Why is oxygen production used as an indicator of photosynthesis? <br>
+                        4. What are the factors affecting the rate of photosynthesis? <br>
+                        5. How would the experiment change if the temperature was increased? <br>
+                    </div>
+                    <div class="shuffle-container">
+                        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(8)"><i
+                                class="bi bi-arrow-clockwise"></i> Change Question</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <i id="backToTop" class="bi bi-arrow-up"></i>
     </div>
-        </div>
-
     </div>
 
     <!-- Footer -->
@@ -510,4 +548,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

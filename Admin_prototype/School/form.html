@@ -65,7 +65,7 @@
                     
 
                     <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-2">
-                      <legend class="float-none w-auto  ">School Address :</legend>
+                      <legend class="float-none w-auto  ">School Address &nbsp;</legend>
                 
                       <div class="row g-2 justify-content-center">
                         
@@ -88,7 +88,7 @@
                           <div class="col col-12 col-md-4">
                             <div class="form-floating">
                               <input type="text" class="form-control" id="cityName" placeholder="Search for City" list="cityList" >
-                              <label for="cityName">Search for City</label>
+                              <label for="cityName">Search for City/Town</label>
                             </div>
                             <datalist id="cityList"></datalist>
                           </div>
@@ -96,15 +96,15 @@
                          
                           <div class="col col-12">    
                           <div class="form-floating">
-                            <textarea class="form-control" id="address" rows="2" placeholder="Enetr Address"></textarea>
+                            <textarea class="form-control" id="address" rows="2" placeholder="Enetr Address" oninput="autoResize(this)"></textarea>
                             <label for="address">Address</label>
                           </div>
                         </div>
                         
                           <div class="col col-12">
                           <div class=" form-floating">
-                           <input type="text" class="form-control" id="pinCode" placeholder="Enter School PINcode">
-                           <label for="zipCode" class="form-label">Pincode / Zipcode</label>
+                           <input type="text" class="form-control" id="postalCode" placeholder="Enter School Postal code">
+                           <label for="postalCode" class="form-label">Postal Code</label>
                           </div>
                           </div>
                       </div>
@@ -113,7 +113,7 @@
                   </fieldset>
 
                   <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-2">
-                    <legend class="float-none w-auto  ">Principal's Information :</legend>
+                    <legend class="float-none w-auto  ">Principal's Information &nbsp;</legend>
                     <div class="row g-2 justify-content-center">
                       <div class="col col-12">
                         <div class="form-floating">
@@ -286,7 +286,18 @@
     </div>
 
 
-  
+    <script>
+      function autoResize(textarea) {
+        textarea.style.height = ''; // Reset the height
+        textarea.style.height = textarea.scrollHeight + 'px'; // Set the height to fit the content
+      }
+    
+      // Automatically resize any pre-filled textareas on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        const textareas = document.querySelectorAll("textarea");
+        textareas.forEach(autoResize); // Apply autoResize to each textarea
+      });
+    </script>
     
     <!-- Link to your external JavaScript file -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

@@ -806,7 +806,7 @@ function openVerifyConfirmationModal(questionIndex) {
                         You want to add this question in the Question Bank?
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" id="cancelButton">Cancel</button>
+                        <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" id="cancelButton">Cancel</button>
                         <button type="button" class="btn btn-success" id="verifyButton">Yes</button>
                     </div>
                 </div>
@@ -850,7 +850,7 @@ function openDeleteConfirmationModal(questionIndex) {
                         Are you sure you want to delete this question from the Question Bank?
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" id="cancelButton">Cancel</button>
+                        <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" id="cancelButton">Cancel</button>
                         <button type="button" class="btn btn-danger" id="deleteButton">Delete</button>
                     </div>
                 </div>
@@ -896,7 +896,7 @@ function openRemoveConfirmationModal(questionIndex) {
                         Are you sure you want to remove this question from this Chapter?
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" id="cancelButton">Cancel</button>
+                        <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" id="cancelButton">Cancel</button>
                         <button type="button" class="btn btn-warning" id="deleteButton">Remove</button>
                     </div>
                 </div>

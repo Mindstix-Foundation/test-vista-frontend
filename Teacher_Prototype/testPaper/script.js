@@ -40,10 +40,29 @@ function shuffleQuestion(questionIndex) {
             ${newQuestion.options}
         </div>
         <div class="shuffle-container">
-            <button class="shuffle-button" onclick="shuffleQuestion(${questionIndex})">Change Question</button>
+        <button class="btn btn-outline-primary shuffle-button" onclick="shuffleQuestion(${questionIndex})">
+                        <i class="bi bi-arrow-clockwise"></i> Change Question
+                    </button>
         </div>
     `;
 }
+document.addEventListener('DOMContentLoaded', function () {
+    const backToTopButton = document.getElementById('backToTop');
+
+    // Show/hide button based on scroll position
+    window.addEventListener('scroll', function () {
+        if (document.documentElement.scrollTop > 200) {
+            backToTopButton.style.display = 'block';
+        } else {
+            backToTopButton.style.display = 'none';
+        }
+    });
+
+    // Scroll to top
+    backToTopButton.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+});
 
 // Function to print the page
 function printPage() {

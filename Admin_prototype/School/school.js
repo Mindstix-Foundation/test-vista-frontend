@@ -44,3 +44,35 @@ function clearInput(inputId) {
     document.getElementById(inputId).value = '';
     filterTable(); // Optional: Refresh the table.
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Get the query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const boardName = urlParams.get('board');
+
+    if (boardName) {
+        // Set the search bar value
+        const boardFilterInput = document.getElementById("boardFilter");
+        boardFilterInput.value = boardName;
+
+        // Trigger the filtering logic
+        filterBoardTable(boardName);
+    }
+});
+
+// Update the filterBoardTable function to handle external triggers
+function filterBoardTable(boardName = '') {
+    const boardInput = boardName || document.getElementById("boardFilter").value.toLowerCase();
+    const table = document.getElementById("schoolTable");
+    const rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        const boardCell = rows[i].getElementsByTagName("td")[1]; // Board column
+
+        if (boardCell) {
+            const boardText = boardCell.textContent || boardCell.innerText;
+            rows[i].style.display = boardText.toLowerCase().includes(boardInput.toLowerCase()) ? "" : "none";
+        }
+    }
+}

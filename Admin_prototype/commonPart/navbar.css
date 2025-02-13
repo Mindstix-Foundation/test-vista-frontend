@@ -1,92 +1,104 @@
 /* General Styling */
 .navbar {
-  background-color: black; /* White background */
+  background-color: black !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: 100px;
+  padding-left: 0;
+  padding-right: 0;
 }
 
-.navbar img {
-  width: 50px; /* Adjust thumbnail width */
-  height: auto;
-  
-}
-
-.navbar h2 {
-  font-size: 1.5rem;
+.navbar-brand {
+  color: white !important;
   font-weight: bold;
-  margin: 0;
-  color: white;
-  display: inline-block;
-  vertical-align: middle;
-  text-align: left;
 }
 
 .nav-link {
-  font-size: 1rem;
-  font-weight: 500;
-  color: white;
+  font-size: 20px;
+  
+  color: white !important;
   text-transform: uppercase;
   transition: color 0.3s ease;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
-  color: #ff6f61; /* Soft Coral */
+  color: #ffc107 !important;
   text-decoration: underline;
+  text-decoration-color: #ffc107;
 }
 
 .navbar-toggler {
- 
+  background-color: black;
   font-size: 1.2rem;
 }
 
-.offcanvas-title {
-  font-size: 1.2rem;
-  font-weight: bold;
- 
+
+.offcanvas {
+  background-color: black !important;
 }
 
 
 
-/* Responsive Styling */
-@media (max-width: 576px) { /* Small Screens */
-  .navbar h2 {
-    font-size: 1.2rem;
-  }
-  .navbar-nav .nav-link {
-    font-size: 0.9rem;
-  }
+.offcanvas-header {
+  border-bottom: 1px solid #495057;
+}
+.navbar-nav .nav-item {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+    
+.navbar-toggler-icon {
+  
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='white' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E") !important;
+}
+#navLogout:hover{
+        
+    
+        
+  text-decoration: underline !important; /* Ensure underline is applied */
+  text-decoration-color: red !important; /* Change the underline color */
+}
+#navLogout{
+  
+  color: red !important;
+  font-weight: 600;
 }
 
-@media (min-width: 576px) and (max-width: 992px) { /* Medium Screens */
-  .navbar h2 {
-    font-size: 1.3rem;
+
+@media (max-width: 768px) {
+  #offcanvasNavbar.offcanvas-end {
+      width: 75% !important;  /* Adjust this percentage as needed */
+      max-width: 75% !important;
   }
-  .navbar-nav .nav-link {
-    font-size: 1rem;
+  .offcanvas-header{
+      height: 101px;
   }
+  /* Left-align nav links inside the offcanvas */
+  .offcanvas .navbar-nav {
+    justify-content: start !important; /* Override end alignment */
+    align-items: start !important;    /* Ensure links align to the left */
+}
+.offcanvas .nav-link {
+    text-align: left !important; /* Force left alignment for text */
+    padding-left: 1rem;          /* Add padding for spacing */
+    padding-bottom: 1rem !important;
 }
 
-@media (min-width: 992px) { /* Large Screens */
-  .navbar h2 {
-    font-size: 1.5rem;
-  }
-  .navbar-nav .nav-link {
-    font-size: 1.1rem;
-  }
-  .navbar-nav .nav-item {
-    padding-left: 15px;
-    padding-right: 15px;
-  }
+#navLogout:hover{
+    
+    
+    border-radius: 4px;
+    
+    text-decoration: underline !important; /* Ensure underline is applied */
+    text-decoration-color: red !important; /* Change the underline color */
 }
-
-#top-navbar.offcanvas {
-  background-color: white;
-  width: 75%;
-  max-width: 75%;
+/* Align logout link to the bottom-left */
+#navLogout {
+    position: absolute !important;
+    bottom: 1rem !important; /* Adjust distance from the bottom */
+    left: 1.5rem !important; /* Align with other links' padding */
+    font-size: 1rem !important; /* Adjust size for visibility */
+    width: calc(100% - 2rem); /* Optional: Make it span across */
+    text-align: left;         /* Ensure left alignment */
 }
-
-/* Medium screens - 50% width */
-@media (min-width: 768px) { /* Bootstrap’s "md" breakpoint */
-  #top-navbar.offcanvas {
-    width: 50%;
-    max-width: 50%;
-  }
 }
