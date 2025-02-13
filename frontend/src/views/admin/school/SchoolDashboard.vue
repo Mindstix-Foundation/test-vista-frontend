@@ -605,6 +605,32 @@ function highlightText(text: string, search: string): string {
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
+// Add these helper functions before fetchSchools
+async function fetchStateAndCountry(cityId: number) {
+  try {
+    // First get the city to get state_id
+    const cityResponse = await fetch(getApiUrl(`/cities/${cityId}`))
+    const city = await cityResponse.json()
+
+    // Get state data using state_id from city
+    const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
+    const state = await stateResponse.json()
+
+    // Get country data using country_id from state
+    const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
+    const country = await countryResponse.json()
+
+    return {
+      city: { id: city.id, state_id: city.state_id, name: city.name },
+      state: { id: state.id, country_id: state.country_id, name: state.name },
+      country: { id: country.id, name: country.name },
+    }
+  } catch (error) {
+    console.error('Error fetching location data:', error)
+    return null
+  }
+}
+
 async function fetchSchools() {
   try {
     console.log('Starting fetchSchools...')
@@ -613,9 +639,14 @@ async function fetchSchools() {
     const schoolsData = (await schoolsResponse.json()) as ApiSchool[]
     console.log('Schools data:', schoolsData)
 
-    schools.value = schoolsData
-      .map((school): DisplaySchool => {
-        // Transform the data to match DisplaySchool interface
+    // Process schools with location data
+    const processedSchools = await Promise.all(
+      schoolsData.map(async (school): Promise<DisplaySchool> => {
+        // Fetch complete location data for each school
+        const locationData = school.address?.city_id
+          ? await fetchStateAndCountry(school.address.city_id)
+          : null
+
         return {
           ...school,
           board: {
@@ -630,9 +661,9 @@ async function fetchSchools() {
           },
           address: {
             ...school.address!,
-            city: school.address?.city || { id: 0, state_id: 0, name: '' },
-            state: school.address?.state || { id: 0, country_id: 0, name: '' },
-            country: school.address?.country || { id: 0, name: '' },
+            city: locationData?.city || { id: 0, state_id: 0, name: '' },
+            state: locationData?.state || { id: 0, country_id: 0, name: '' },
+            country: locationData?.country || { id: 0, name: '' },
           },
           mediums:
             school.School_Instruction_Medium?.map((medium) => ({
@@ -645,12 +676,14 @@ async function fetchSchools() {
               name: standard.standard.name,
             })) || [],
         }
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.created_at).getTime()
-        const dateB = new Date(b.created_at).getTime()
-        return dateA - dateB
-      })
+      }),
+    )
+
+    schools.value = processedSchools.sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime()
+      const dateB = new Date(b.created_at).getTime()
+      return dateA - dateB
+    })
 
     console.log('Processed schools:', schools.value)
   } catch (error) {

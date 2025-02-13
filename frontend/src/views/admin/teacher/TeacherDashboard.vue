@@ -339,6 +339,12 @@
         <div class="modal-content">
           <div class="modal-header bg-danger text-white">
             <h5 class="modal-title">Remove Teacher</h5>
+            <button
+              type="button"
+              class="btn-close"
+              @click="handleCancelDelete"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">Are you sure you want to delete this Teacher from system?</div>
           <div class="modal-footer">
@@ -346,7 +352,7 @@
               type="button"
               class="btn btn-light"
               style="border: 1px solid gray"
-              data-bs-dismiss="modal"
+              @click="handleCancelDelete"
             >
               Cancel
             </button>
@@ -726,6 +732,17 @@ function handleAccessCancel() {
   viewModal.show()
 }
 
+// Show delete confirmation
+function showDeleteConfirmation() {
+  // Close the view modal first
+  const viewModal = Modal.getInstance(document.getElementById('viewTeacherModal') as HTMLElement)
+  viewModal?.hide()
+
+  // Show the confirmation modal
+  const modal = new Modal(document.getElementById('deleteConfirmationModal') as HTMLElement)
+  modal.show()
+}
+
 // Delete teacher
 async function deleteTeacher() {
   if (!selectedTeacher.value) return
@@ -745,24 +762,38 @@ async function deleteTeacher() {
       throw new Error('Failed to delete teacher')
     }
 
+    // Refresh the teachers list
     await fetchTeachers()
 
-    const viewModal = Modal.getInstance(document.getElementById('viewTeacherModal') as HTMLElement)
+    // Close the delete confirmation modal
     const deleteModal = Modal.getInstance(
       document.getElementById('deleteConfirmationModal') as HTMLElement,
     )
-    viewModal?.hide()
     deleteModal?.hide()
+
+    // Remove backdrop manually
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove())
+
+    // Remove modal-open class and inline styles from body
+    document.body.classList.remove('modal-open')
+    document.body.style.removeProperty('padding-right')
   } catch (error) {
     console.error('Error deleting teacher:', error)
     alert('Failed to delete teacher. Please try again.')
   }
 }
 
-// Show delete confirmation
-function showDeleteConfirmation() {
-  const modal = new Modal(document.getElementById('deleteConfirmationModal') as HTMLElement)
-  modal.show()
+// Add function to handle cancel button in delete confirmation modal
+function handleCancelDelete() {
+  // Hide delete confirmation modal
+  const deleteModal = Modal.getInstance(
+    document.getElementById('deleteConfirmationModal') as HTMLElement,
+  )
+  deleteModal?.hide()
+
+  // Reopen the view modal
+  const viewModal = new Modal(document.getElementById('viewTeacherModal') as HTMLElement)
+  viewModal.show()
 }
 
 // Computed properties for confirmation modal

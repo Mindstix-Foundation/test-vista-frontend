@@ -210,35 +210,86 @@
                           </div>
                         </div>
 
-                        <div class="row">
-                          <label for="address" class="col-form-label col-12 col-lg-3 fw-bold"
-                            >Address:</label
-                          >
-                          <div class="col-12 col-lg-9">
-                            <textarea
-                              readonly
-                              class="form-control-plaintext"
-                              id="address"
-                              style="white-space: pre-wrap"
-                              :value="selectedBoard?.address?.street"
-                            ></textarea>
+                        <!-- Board Address -->
+                        <fieldset class="border p-2 rounded col col-12">
+                          <legend class="float-none w-auto fs-5">Board Address</legend>
+                          <div class="row">
+                            <label for="address" class="col-form-label col-12 col-lg-3 fw-bold"
+                              >Address:</label
+                            >
+                            <div class="col-12 col-lg-9">
+                              <textarea
+                                readonly
+                                class="form-control-plaintext"
+                                id="address"
+                                style="white-space: pre-wrap"
+                                :value="selectedBoard?.address?.street"
+                              ></textarea>
+                            </div>
                           </div>
-                        </div>
 
-                        <div class="row">
-                          <label for="postalCode" class="col-form-label col-12 col-lg-3 fw-bold"
-                            >Postal Code:</label
-                          >
-                          <div class="col-12 col-lg-9">
-                            <input
-                              type="text"
-                              readonly
-                              class="form-control-plaintext"
-                              id="postalCode"
-                              :value="selectedBoard?.address?.postal_code"
-                            />
+                          <div class="row">
+                            <div class="col-12 col-lg-3">
+                              <label for="country" class="col-form-label col-6 col-lg-6 fw-bold"
+                                >Country:</label
+                              >
+                              <div class="col-12">
+                                <input
+                                  type="text"
+                                  readonly
+                                  class="form-control-plaintext"
+                                  id="country"
+                                  :value="selectedBoard?.address?.country?.name"
+                                />
+                              </div>
+                            </div>
+
+                            <div class="col-12 col-lg-3">
+                              <label for="state" class="col-form-label col-6 col-lg-6 fw-bold"
+                                >State:</label
+                              >
+                              <div class="col-12">
+                                <input
+                                  type="text"
+                                  readonly
+                                  class="form-control-plaintext"
+                                  id="state"
+                                  :value="selectedBoard?.address?.state?.name"
+                                />
+                              </div>
+                            </div>
+
+                            <div class="col-12 col-lg-3">
+                              <label for="city" class="col-form-label col-6 col-lg-6 fw-bold"
+                                >City/Town:</label
+                              >
+                              <div class="col-12">
+                                <input
+                                  type="text"
+                                  readonly
+                                  class="form-control-plaintext"
+                                  id="city"
+                                  :value="selectedBoard?.address?.city?.name"
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
+
+                          <div class="row">
+                            <label for="postalCode" class="col-form-label col-12 col-lg-3 fw-bold"
+                              >Postal Code:</label
+                            >
+                            <div class="col-12 col-lg-9">
+                              <input
+                                type="text"
+                                readonly
+                                class="form-control-plaintext"
+                                id="postalCode"
+                                :value="selectedBoard?.address?.postal_code"
+                              />
+                            </div>
+                          </div>
+                        </fieldset>
 
                         <!-- Mediums of Instruction -->
                         <div class="col-12">
@@ -351,6 +402,20 @@ interface BoardDetails {
     street: string
     created_at: string
     updated_at: string
+    city: {
+      id: number
+      state_id: number
+      name: string
+    }
+    state: {
+      id: number
+      country_id: number
+      name: string
+    }
+    country: {
+      id: number
+      name: string
+    }
   }
   mediums: Array<{
     id: number
@@ -386,6 +451,31 @@ const error = ref<string | null>(null)
 const showInfoModal = ref(false)
 const associatedSchools = ref<Array<{ id: number; name: string }>>([])
 
+async function fetchLocationData(cityId: number) {
+  try {
+    // First get the city to get state_id
+    const cityResponse = await fetch(getApiUrl(`/cities/${cityId}`))
+    const city = await cityResponse.json()
+
+    // Get state data using state_id from city
+    const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
+    const state = await stateResponse.json()
+
+    // Get country data using country_id from state
+    const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
+    const country = await countryResponse.json()
+
+    return {
+      city: { id: city.id, state_id: city.state_id, name: city.name },
+      state: { id: state.id, country_id: state.country_id, name: state.name },
+      country: { id: country.id, name: country.name },
+    }
+  } catch (error) {
+    console.error('Error fetching location data:', error)
+    return null
+  }
+}
+
 const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
   try {
     console.log('Fetching board details for ID:', boardId)
@@ -395,13 +485,23 @@ const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
     const boardData = await response.json()
     console.log('Board data received:', boardData)
 
+    // Fetch location data if address exists
+    const locationData = boardData.address?.city_id
+      ? await fetchLocationData(boardData.address.city_id)
+      : null
+
     // Transform the data to match our interface
     const boardDetails: BoardDetails = {
       id: boardData.id,
       name: boardData.name,
       abbreviation: boardData.abbreviation,
       address_id: boardData.address_id,
-      address: boardData.address,
+      address: {
+        ...boardData.address,
+        city: locationData?.city || { id: 0, state_id: 0, name: '' },
+        state: locationData?.state || { id: 0, country_id: 0, name: '' },
+        country: locationData?.country || { id: 0, name: '' },
+      },
       mediums: boardData.instruction_mediums,
       standards: boardData.standards,
       subjects: boardData.subjects,

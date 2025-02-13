@@ -62,14 +62,26 @@ export interface School {
 }
 
 export interface SchoolAddress {
-  id: number
+  id?: number
   street: string
   postal_code: string
   city_id: number
-  created_at: string
-  updated_at: string
-  created_by: number
-  updated_by: number
+  state_id: number
+  country_id: number
+  city: {
+    id: number
+    state_id: number
+    name: string
+  }
+  state: {
+    id: number
+    country_id: number
+    name: string
+  }
+  country: {
+    id: number
+    name: string
+  }
 }
 
 export interface SchoolMedium {
