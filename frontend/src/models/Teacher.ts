@@ -1,5 +1,6 @@
 export interface TeacherFormData {
   name: string
+  boardId: number
   schoolId: number
   emailId: string
   contactNumber: string

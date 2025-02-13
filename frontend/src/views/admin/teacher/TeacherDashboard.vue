@@ -16,7 +16,7 @@
     </div>
 
     <!-- Search Section -->
-    <div class="row p-2 gy-2 g-3 justify-content-center">
+    <div class="row p-2 gy-2 justify-content-center">
       <!-- Search Teacher -->
       <div class="col-12 col-sm-5">
         <div class="input-group">
@@ -79,11 +79,11 @@
             style="width: 100%"
           >
             <colgroup>
-              <col style="width: 20px" />
+              <col style="width: 10px" />
               <col style="width: 35%" />
-              <col style="width: 65%" />
-              <col style="width: 95px" />
-              <col style="width: 70px" />
+              <col style="width: 55%" />
+              <col style="width: 10%" />
+              <col style="width: 20px" />
             </colgroup>
             <thead class="table-dark">
               <tr>
@@ -100,7 +100,10 @@
                         v-for="status in ['All', 'Grant', 'Revoke']"
                         :key="status"
                         class="btn btn-sm"
-                        :class="{ 'btn-light': selectedStatus === status }"
+                        :class="{
+                          'btn-light': selectedStatus === status,
+                          'btn-outline-light': selectedStatus !== status,
+                        }"
                         @click="filterByStatus(status)"
                       >
                         {{ status }}
@@ -114,9 +117,9 @@
             <tbody class="table-group-divider">
               <tr v-if="loading">
                 <td colspan="5" class="text-center">
-                  <div class="spinner-border" role="status">
+                  <output class="spinner-border">
                     <span class="visually-hidden">Loading...</span>
-                  </div>
+                  </output>
                 </td>
               </tr>
               <template v-else>
@@ -170,10 +173,13 @@
                   <form>
                     <div class="row g-3">
                       <div class="row">
-                        <label class="col-12 col-lg-3 col-form-label fw-bold">Teacher Name:</label>
+                        <label class="col-12 col-lg-3 col-form-label fw-bold" for="teacherName">
+                          Teacher Name:
+                        </label>
                         <div class="col-12 col-lg-9">
                           <input
                             type="text"
+                            id="teacherName"
                             readonly
                             class="form-control-plaintext"
                             :value="selectedTeacher.name"
@@ -181,10 +187,13 @@
                         </div>
                       </div>
                       <div class="row">
-                        <label class="col-12 col-lg-3 col-form-label fw-bold">School Name:</label>
+                        <label class="col-12 col-lg-3 col-form-label fw-bold" for="schoolName">
+                          School Name:
+                        </label>
                         <div class="col-12 col-lg-9">
                           <input
                             type="text"
+                            id="schoolName"
                             readonly
                             class="form-control-plaintext"
                             :value="selectedTeacher.school?.name"
@@ -194,12 +203,16 @@
                       <div class="row">
                         <div class="col-12 col-lg-6">
                           <div class="row">
-                            <label class="col-12 col-lg-6 col-form-label fw-bold"
-                              >Contact Number:</label
+                            <label
+                              class="col-12 col-lg-6 col-form-label fw-bold"
+                              for="contactNumber"
                             >
+                              Contact Number:
+                            </label>
                             <div class="col-12 col-lg-6">
                               <input
                                 type="text"
+                                id="contactNumber"
                                 readonly
                                 class="form-control-plaintext"
                                 :value="selectedTeacher.contactNumber"
@@ -209,12 +222,16 @@
                         </div>
                         <div class="col-12 col-lg-6">
                           <div class="row">
-                            <label class="col-12 col-lg-6 col-form-label fw-bold"
-                              >Alternate Number:</label
+                            <label
+                              class="col-12 col-lg-6 col-form-label fw-bold"
+                              for="alternateContactNumber"
                             >
+                              Alternate Number:
+                            </label>
                             <div class="col-12 col-lg-6">
                               <input
                                 type="text"
+                                id="alternateContactNumber"
                                 readonly
                                 class="form-control-plaintext"
                                 :value="selectedTeacher.alternateContactNumber"
@@ -224,10 +241,13 @@
                         </div>
                       </div>
                       <div class="row">
-                        <label class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
+                        <label class="col-12 col-lg-3 col-form-label fw-bold" for="emailId">
+                          Email Id:
+                        </label>
                         <div class="col-12 col-lg-9">
                           <input
                             type="text"
+                            id="emailId"
                             readonly
                             class="form-control-plaintext"
                             :value="selectedTeacher.emailId"
@@ -235,12 +255,16 @@
                         </div>
                       </div>
                       <div class="row">
-                        <label class="col-12 col-lg-3 col-form-label fw-bold"
-                          >Highest Qualification:</label
+                        <label
+                          class="col-12 col-lg-3 col-form-label fw-bold"
+                          for="highestQualification"
                         >
+                          Highest Qualification:
+                        </label>
                         <div class="col-12 col-lg-9">
                           <input
                             type="text"
+                            id="highestQualification"
                             readonly
                             class="form-control-plaintext"
                             :value="selectedTeacher.highestQualification"
@@ -278,9 +302,9 @@
           </div>
           <div class="modal-footer">
             <button
-              class="btn btn-toggle position-relative"
+              class="btn btn-light"
+              style="border: 1px solid gray"
               @click="toggleTeacherStatus"
-              :data-status="selectedTeacher.status ? 'granted' : 'revoked'"
             >
               <span
                 class="status-indicator"
@@ -353,7 +377,7 @@
               type="button"
               class="btn btn-light"
               style="border: 1px solid gray"
-              data-bs-dismiss="modal"
+              @click="handleAccessCancel"
             >
               Cancel
             </button>
@@ -645,8 +669,13 @@ async function openViewModal(teacher: Teacher) {
 function toggleTeacherStatus() {
   if (!selectedTeacher.value) return
 
-  const modal = new Modal(document.getElementById('accessConfirmationModal') as HTMLElement)
-  modal.show()
+  // Close the view modal first
+  const viewModal = Modal.getInstance(document.getElementById('viewTeacherModal') as HTMLElement)
+  viewModal?.hide()
+
+  // Show the confirmation modal
+  const confirmModal = new Modal(document.getElementById('accessConfirmationModal') as HTMLElement)
+  confirmModal.show()
 }
 
 // Update teacher status
@@ -670,13 +699,31 @@ async function updateTeacherStatus() {
     selectedTeacher.value.status = newStatus
     await fetchTeachers()
 
-    const modal = Modal.getInstance(
+    // Hide confirmation modal
+    const confirmModal = Modal.getInstance(
       document.getElementById('accessConfirmationModal') as HTMLElement,
     )
-    modal?.hide()
+    confirmModal?.hide()
+
+    // Reopen the view modal
+    const viewModal = new Modal(document.getElementById('viewTeacherModal') as HTMLElement)
+    viewModal.show()
   } catch (error) {
     console.error('Error updating teacher status:', error)
   }
+}
+
+// Add function to handle cancel button in confirmation modal
+function handleAccessCancel() {
+  // Hide confirmation modal
+  const confirmModal = Modal.getInstance(
+    document.getElementById('accessConfirmationModal') as HTMLElement,
+  )
+  confirmModal?.hide()
+
+  // Reopen the view modal
+  const viewModal = new Modal(document.getElementById('viewTeacherModal') as HTMLElement)
+  viewModal.show()
 }
 
 // Delete teacher
@@ -864,11 +911,10 @@ const groupedTeacherSubjects = computed(() => {
 
 /* Toggle Button Styling */
 .btn-toggle {
-  display: flex;
+  display: grid !important;
   align-items: center;
   justify-content: center;
   width: 100px;
-  display: grid !important;
   border-radius: 30px;
   background-color: #f5f5f5;
   color: #333;
@@ -907,4 +953,19 @@ const groupedTeacherSubjects = computed(() => {
   margin-left: 20px;
   transition: color 0.3s ease;
 }
+
+/* Status Indicator Styling */
+.status-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-text {
+  font-weight: 500;
+}
+
+/* Remove the old toggle button styles */
 </style>

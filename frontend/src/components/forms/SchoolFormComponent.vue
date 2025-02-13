@@ -13,7 +13,7 @@
     <hr />
 
     <div id="form-container" class="row mt-4 justify-content-center">
-      <form @submit.prevent="handleSubmit">
+      <form @submit.prevent="onSubmit">
         <div class="row g-3 justify-content-center">
           <!-- School Details Section -->
           <div class="col-12 col-sm-10 col-md-8 mb-4">
@@ -42,7 +42,7 @@
                     @keydown="(e) => handleEnterKey(e, 'boardName')"
                   />
                   <label for="schoolName">School Name <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a school name</div>
+                  <div class="invalid-feedback">Please enter a school name.</div>
                 </div>
               </div>
               <div class="col-12">
@@ -54,14 +54,13 @@
                       'is-invalid': !validationStates.board.valid && validationStates.board.touched,
                       'is-valid': validationStates.board.valid,
                     }"
-                    id="boardName"
+                    id="board"
                     v-model="boardSearch"
                     @input="filterBoards"
                     @focus="showBoardDropdown = true"
                     @click="showBoardDropdown = true"
                     placeholder="Search Board"
-                    required
-                    autocomplete="off"
+                    autocomplete="new-password"
                     @keydown="handleBoardKeydown"
                   />
                   <div
@@ -70,17 +69,17 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
+                      type="button"
                       v-for="(board, index) in filteredBoards"
                       :key="board.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedBoardIndex }"
                       @click="selectBoard(board)"
-                      type="button"
                     >
                       {{ board.name }}
                     </button>
                   </div>
-                  <label for="boardName">Board <span class="text-danger">*</span></label>
+                  <label for="board">Board <span class="text-danger">*</span></label>
                   <div class="invalid-feedback">Please select a board</div>
                 </div>
               </div>
@@ -108,7 +107,6 @@
                     @focus="showCountryDropdown = true"
                     @click="showCountryDropdown = true"
                     placeholder="Search Country"
-                    required
                     autocomplete="new-password"
                     @keydown="handleCountryKeydown"
                   />
@@ -118,12 +116,12 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
+                      type="button"
                       v-for="(country, index) in filteredCountries"
                       :key="country.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedCountryIndex }"
                       @click="selectCountry(country)"
-                      type="button"
                     >
                       {{ country.name }}
                     </button>
@@ -150,7 +148,6 @@
                     @click="showStateDropdown = true"
                     placeholder="Search State"
                     :disabled="!form.address.country_id"
-                    required
                     autocomplete="new-password"
                     @keydown="handleStateKeydown"
                   />
@@ -160,12 +157,12 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
+                      type="button"
                       v-for="(state, index) in filteredStates"
                       :key="state.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedStateIndex }"
                       @click="selectState(state)"
-                      type="button"
                     >
                       {{ state.name }}
                     </button>
@@ -192,7 +189,6 @@
                     @click="showCityDropdown = true"
                     placeholder="Search City"
                     :disabled="!form.address.state_id"
-                    required
                     autocomplete="new-password"
                     @keydown="handleCityKeydown"
                   />
@@ -202,12 +198,12 @@
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
+                      type="button"
                       v-for="(city, index) in filteredCities"
                       :key="city.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedCityIndex }"
                       @click="selectCity(city)"
-                      type="button"
                     >
                       {{ city.name }}
                     </button>
@@ -245,10 +241,7 @@
                     @keydown="(e) => handleEnterKey(e, 'postalCode')"
                   ></textarea>
                   <label for="address">Address <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">
-                    Please enter a valid address (minimum 10 characters, only letters, numbers,
-                    spaces, commas, dots, and hyphens allowed)
-                  </div>
+                  <div class="invalid-feedback">Please enter an address.</div>
                 </div>
               </div>
             </div>
@@ -280,9 +273,7 @@
                     @keydown="(e) => handleEnterKey(e, 'principalName')"
                   />
                   <label for="postalCode">Postal Code <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">
-                    Please enter a valid postal code (letters, numbers, and hyphens allowed)
-                  </div>
+                  <div class="invalid-feedback">Please enter a postal code.</div>
                 </div>
               </div>
             </div>
@@ -321,10 +312,7 @@
                   <label for="principalName"
                     >Principal's Name <span class="text-danger">*</span></label
                   >
-                  <div class="invalid-feedback">
-                    Please enter a valid principal name (only letters and spaces, minimum 3
-                    characters)
-                  </div>
+                  <div class="invalid-feedback">Please enter a principal name.</div>
                 </div>
               </div>
 
@@ -347,7 +335,7 @@
                     @keydown="(e) => handleEnterKey(e, 'contactNo2')"
                   />
                   <label for="contactNo1">Contact Number <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a contact number</div>
+                  <div class="invalid-feedback">Please enter a contact number.</div>
                 </div>
               </div>
 
@@ -372,7 +360,7 @@
                     @keydown="(e) => handleEnterKey(e, 'email')"
                   />
                   <label for="contactNo2">Alternate Contact Number (Optional)</label>
-                  <div class="invalid-feedback">Please enter a valid contact number</div>
+                  <div class="invalid-feedback">Please enter a valid contact number.</div>
                 </div>
               </div>
 
@@ -385,14 +373,14 @@
                     placeholder="Enter Email"
                     v-model="form.email"
                     :class="{
-                      'is-valid': validationStates.email.valid && validationStates.email.touched,
                       'is-invalid': !validationStates.email.valid && validationStates.email.touched,
+                      'is-valid': validationStates.email.valid,
                     }"
                     @input="handleEmailInput"
                     @keydown="handleEmailEnter"
                   />
                   <label for="email">Email <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a valid email address</div>
+                  <div class="invalid-feedback">Please enter a valid email address.</div>
                 </div>
               </div>
             </div>
@@ -433,7 +421,7 @@
                   <div v-if="availableMediums.length === 0" class="text-muted">
                     Please select a board to view available mediums
                   </div>
-                  <div class="invalid-feedback">Please select at least one medium</div>
+                  <div class="invalid-feedback">Please select at least one medium.</div>
                 </fieldset>
               </div>
 
@@ -469,7 +457,7 @@
                   <div v-if="availableStandards.length === 0" class="text-muted">
                     Please select a board to view available standards
                   </div>
-                  <div class="invalid-feedback">Please select at least one standard</div>
+                  <div class="invalid-feedback">Please select at least one standard.</div>
                 </fieldset>
               </div>
             </div>
@@ -482,7 +470,7 @@
                 type="submit"
                 class="btn btn-dark"
                 :disabled="isSubmitting"
-                @click="handleSubmit"
+                @click="onSubmit"
                 @keydown="handleSaveKeydown"
               >
                 <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
@@ -602,7 +590,7 @@ interface BoardListItem {
 }
 
 // Add interfaces for the API responses
-interface SchoolMedium {
+interface SchoolMediumResponse {
   id?: number
   instruction_medium_id?: number
   instruction_medium?: {
@@ -612,7 +600,7 @@ interface SchoolMedium {
   name?: string
 }
 
-interface SchoolStandard {
+interface SchoolStandardResponse {
   id?: number
   standard_id?: number
   standard?: {
@@ -709,6 +697,20 @@ const selectedCountry = ref<Country | null>(null)
 const selectedState = ref<State | null>(null)
 const selectedCity = ref<City | null>(null)
 
+// Add refs for tracking previous selections
+const previousSelections = ref(
+  new Map<
+    number,
+    {
+      mediums: number[]
+      standards: number[]
+    }
+  >(),
+)
+
+// Add ref for tracking the previous board ID
+const previousBoardId = ref<number | null>(null)
+
 // Update filtered items with proper types
 const filteredBoards = computed(() => {
   if (!boardSearch.value) return boards.value
@@ -802,9 +804,22 @@ const selectCity = (city: City) => {
   })
 }
 
-// Update board selection to properly set validation
+// Update board selection to handle previous selections
 const selectBoard = async (board: BoardListItem) => {
   console.log('Selecting board:', board)
+
+  // Store current selections if we have a previous board
+  if (form.value.board_id && form.value.board_id !== board.id) {
+    previousSelections.value.set(form.value.board_id, {
+      mediums: [...form.value.mediums],
+      standards: [...form.value.standards],
+    })
+  }
+
+  // Store the previous board ID
+  previousBoardId.value = form.value.board_id
+
+  // Update board selection
   boardSearch.value = board.name
   form.value.board_id = board.id
   showBoardDropdown.value = false
@@ -831,22 +846,23 @@ const selectBoard = async (board: BoardListItem) => {
       name: s.name,
     }))
 
-    // Reset selections
-    form.value.mediums = []
-    form.value.standards = []
+    // Check if we're returning to a previous board
+    const previousSelection = previousSelections.value.get(board.id)
+    if (previousSelection) {
+      // Restore previous selections
+      form.value.mediums = previousSelection.mediums
+      form.value.standards = previousSelection.standards
+    } else {
+      // Reset selections for new board
+      form.value.mediums = []
+      form.value.standards = []
+    }
+
     validationStates.value.mediums.touched = false
     validationStates.value.standards.touched = false
-
-    console.log('Updated available mediums:', availableMediums.value)
-    console.log('Updated available standards:', availableStandards.value)
   } catch (error) {
     console.error('Error fetching board data:', error)
-    // Don't clear existing data if fetch fails
   }
-
-  // Move focus to country field
-  const countryInput = document.getElementById('country')
-  if (countryInput) countryInput.focus()
 }
 
 // Update functions to fetch school mediums and standards with proper types
@@ -910,41 +926,21 @@ const fetchSchoolStandards = async (schoolId: number) => {
   }
 }
 
-// Add scrollToSelectedItem function
-const scrollToSelectedItem = (type: 'board' | 'country' | 'state' | 'city') => {
-  nextTick(() => {
-    const activeItem = document.querySelector(`#${type}Name + .dropdown-menu .dropdown-item.active`)
-    if (activeItem) {
-      activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
-  })
-}
-
 // Update handleBoardKeydown function
-const handleBoardKeydown = async (e: KeyboardEvent) => {
+const handleBoardKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (showBoardDropdown.value && filteredBoards.value.length && selectedBoardIndex.value >= 0) {
-      await selectBoard(filteredBoards.value[selectedBoardIndex.value])
+      const selectedBoard = filteredBoards.value[selectedBoardIndex.value]
+      selectBoard(selectedBoard)
     }
     return
   }
 
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    showBoardDropdown.value = false
-    return
-  }
+  if (!showBoardDropdown.value || !filteredBoards.value.length) return
 
-  if (!showBoardDropdown.value) {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      showBoardDropdown.value = true
-      selectedBoardIndex.value = 0
-      scrollToSelectedItem('board')
-    }
-    return
-  }
+  const dropdownMenu = document.querySelector('#board + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -952,16 +948,18 @@ const handleBoardKeydown = async (e: KeyboardEvent) => {
       selectedBoardIndex.value + 1,
       filteredBoards.value.length - 1,
     )
-    scrollToSelectedItem('board')
+    const selectedItem = dropdownMenu.children[selectedBoardIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedBoardIndex.value = Math.max(selectedBoardIndex.value - 1, 0)
-    scrollToSelectedItem('board')
+    const selectedItem = dropdownMenu.children[selectedBoardIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
 // Update handleCountryKeydown function
-const handleCountryKeydown = async (e: KeyboardEvent) => {
+const handleCountryKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (
@@ -970,25 +968,15 @@ const handleCountryKeydown = async (e: KeyboardEvent) => {
       selectedCountryIndex.value >= 0
     ) {
       const selectedCountry = filteredCountries.value[selectedCountryIndex.value]
-      await selectCountry(selectedCountry)
+      selectCountry(selectedCountry)
     }
     return
   }
 
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    showCountryDropdown.value = false
-    return
-  }
+  if (!showCountryDropdown.value || !filteredCountries.value.length) return
 
-  if (!showCountryDropdown.value) {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      showCountryDropdown.value = true
-      selectedCountryIndex.value = 0
-    }
-    return
-  }
+  const dropdownMenu = document.querySelector('#country + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -996,39 +984,31 @@ const handleCountryKeydown = async (e: KeyboardEvent) => {
       selectedCountryIndex.value + 1,
       filteredCountries.value.length - 1,
     )
-    scrollToSelectedItem('country')
+    const selectedItem = dropdownMenu.children[selectedCountryIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedCountryIndex.value = Math.max(selectedCountryIndex.value - 1, 0)
-    scrollToSelectedItem('country')
+    const selectedItem = dropdownMenu.children[selectedCountryIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
 // Update handleStateKeydown function
-const handleStateKeydown = async (e: KeyboardEvent) => {
+const handleStateKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (showStateDropdown.value && filteredStates.value.length && selectedStateIndex.value >= 0) {
       const selectedState = filteredStates.value[selectedStateIndex.value]
-      await selectState(selectedState)
+      selectState(selectedState)
     }
     return
   }
 
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    showStateDropdown.value = false
-    return
-  }
+  if (!showStateDropdown.value || !filteredStates.value.length) return
 
-  if (!showStateDropdown.value) {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      showStateDropdown.value = true
-      selectedStateIndex.value = 0
-    }
-    return
-  }
+  const dropdownMenu = document.querySelector('#state + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -1036,16 +1016,18 @@ const handleStateKeydown = async (e: KeyboardEvent) => {
       selectedStateIndex.value + 1,
       filteredStates.value.length - 1,
     )
-    scrollToSelectedItem('state')
+    const selectedItem = dropdownMenu.children[selectedStateIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedStateIndex.value = Math.max(selectedStateIndex.value - 1, 0)
-    scrollToSelectedItem('state')
+    const selectedItem = dropdownMenu.children[selectedStateIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
 // Update handleCityKeydown function
-const handleCityKeydown = async (e: KeyboardEvent) => {
+const handleCityKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     e.preventDefault()
     if (showCityDropdown.value && filteredCities.value.length && selectedCityIndex.value >= 0) {
@@ -1055,29 +1037,21 @@ const handleCityKeydown = async (e: KeyboardEvent) => {
     return
   }
 
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    showCityDropdown.value = false
-    return
-  }
+  if (!showCityDropdown.value || !filteredCities.value.length) return
 
-  if (!showCityDropdown.value) {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      showCityDropdown.value = true
-      selectedCityIndex.value = 0
-    }
-    return
-  }
+  const dropdownMenu = document.querySelector('#city + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedCityIndex.value = Math.min(selectedCityIndex.value + 1, filteredCities.value.length - 1)
-    scrollToSelectedItem('city')
+    const selectedItem = dropdownMenu.children[selectedCityIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedCityIndex.value = Math.max(selectedCityIndex.value - 1, 0)
-    scrollToSelectedItem('city')
+    const selectedItem = dropdownMenu.children[selectedCityIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
@@ -1129,46 +1103,9 @@ const handleEnterKey = (event: KeyboardEvent, nextElementId: string) => {
   }
 }
 
-// Update isFormValid computed
+// Add computed property for form validity
 const isFormValid = computed(() => {
-  console.log('Checking form validity')
-  console.log('Form values:', {
-    name: form.value.name,
-    board_id: form.value.board_id,
-    address: form.value.address,
-    principal_name: form.value.principal_name,
-    contact_number: form.value.contact_number,
-    email: form.value.email,
-    mediums: form.value.mediums,
-    standards: form.value.standards,
-  })
-
-  const addressValid =
-    form.value.address.street.trim() !== '' &&
-    form.value.address.country_id !== 0 &&
-    form.value.address.state_id !== 0 &&
-    form.value.address.city_id !== 0 &&
-    validatePostalCode(form.value.address.postal_code)
-
-  const contactValid = validateContactNumber(form.value.contact_number)
-  const alternateContactValid =
-    !form.value.alternate_contact_number ||
-    (form.value.alternate_contact_number &&
-      validateContactNumber(form.value.alternate_contact_number))
-
-  const isValid =
-    form.value.name.trim() !== '' &&
-    form.value.board_id !== 0 &&
-    addressValid &&
-    validatePrincipalName(form.value.principal_name) &&
-    contactValid &&
-    alternateContactValid &&
-    validateEmail(form.value.email) &&
-    form.value.mediums.length > 0 &&
-    form.value.standards.length > 0
-
-  console.log('Form validity result:', isValid)
-  return isValid
+  return Object.values(validationStates.value).every((state) => state.valid)
 })
 
 // Watch for initialData changes and update form
@@ -1306,310 +1243,232 @@ interface Change {
 // Add ref for tracking changes
 const changes = ref<Change[]>([])
 
-// Modify handleSubmit to show confirmation modal only in edit mode
-const handleSubmit = async (e: Event) => {
-  e.preventDefault()
-  console.log('Form submission started')
+// Helper functions for change tracking
+const addChange = (change: Change) => {
+  changes.value.push(change)
+}
 
-  // Mark all fields as touched to trigger validation display
-  Object.keys(validationStates.value).forEach((key) => {
-    validationStates.value[key as keyof typeof validationStates.value].touched = true
+const handleBoardChange = (
+  oldBoardId: number,
+  newBoardId: number,
+  currentMediums: SchoolMediumResponse[],
+  currentStandards: SchoolStandardResponse[],
+) => {
+  const oldBoard = boards.value.find((b) => b.id === oldBoardId)
+  const newBoard = boards.value.find((b) => b.id === newBoardId)
+
+  addChange({
+    type: 'modify',
+    message: `Change board: ${oldBoard?.name || ''} → ${newBoard?.name || ''}`,
+    entity: 'school',
+    data: {
+      old: { id: oldBoardId, name: oldBoard?.name || '' },
+      new: { id: newBoardId, name: newBoard?.name || '' },
+    },
   })
 
-  // Check if form is valid
-  if (!isFormValid.value) {
-    console.log('Form validation failed')
-    const firstInvalidField = document.querySelector('.is-invalid') as HTMLElement
-    if (firstInvalidField) {
-      firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      firstInvalidField.focus()
-    }
-    return
+  // Handle deletions for board change
+  handleBoardChangeDeletes(currentMediums, currentStandards)
+  // Handle additions for board change
+  handleBoardChangeAdditions()
+}
+
+const handleBoardChangeDeletes = (
+  currentMediums: SchoolMediumResponse[],
+  currentStandards: SchoolStandardResponse[],
+) => {
+  // Delete current mediums
+  if (currentMediums?.length > 0) {
+    currentMediums.forEach((medium) => {
+      const mediumId = medium.instruction_medium_id || medium.id
+      const mediumName = medium.instruction_medium?.name || medium.name
+      if (mediumId) {
+        addChange({
+          type: 'delete',
+          message: `Delete medium (board change): ${mediumName}`,
+          entity: 'medium',
+          data: { id: mediumId, name: mediumName },
+        })
+      }
+    })
   }
 
-  console.log('Form is valid, proceeding with submission')
-
-  try {
-    isSubmitting.value = true
-
-    if (props.isEditMode) {
-      // Calculate changes and show confirmation modal only in edit mode
-      await calculateChanges()
-      const modal = new Modal(document.getElementById('saveConfirmationModal') as HTMLElement)
-      modal.show()
-    } else {
-      // In add mode, directly submit the form
-      console.log('Submitting form data:', form.value)
-      emit('submit', form.value)
-    }
-  } catch (error) {
-    console.error('Error in form submission:', error)
-  } finally {
-    isSubmitting.value = false
+  // Delete current standards
+  if (currentStandards?.length > 0) {
+    currentStandards.forEach((standard) => {
+      const standardId = standard.standard_id || standard.id
+      const standardName = standard.standard?.name || standard.name
+      if (standardId) {
+        addChange({
+          type: 'delete',
+          message: `Delete standard (board change): ${standardName}`,
+          entity: 'standard',
+          data: { id: standardId, name: standardName },
+        })
+      }
+    })
   }
 }
 
-// Update the calculateChanges function with proper types
+const handleBoardChangeAdditions = () => {
+  // Add new mediums
+  form.value.mediums.forEach((mediumId) => {
+    const medium = availableMediums.value.find((m) => m.id === mediumId)
+    if (medium) {
+      addChange({
+        type: 'add',
+        message: `Add medium (new board): ${medium.name}`,
+        entity: 'medium',
+        data: { id: medium.id, name: medium.name },
+      })
+    }
+  })
+
+  // Add new standards
+  form.value.standards.forEach((standardId) => {
+    const standard = availableStandards.value.find((s) => s.id === standardId)
+    if (standard) {
+      addChange({
+        type: 'add',
+        message: `Add standard (new board): ${standard.name}`,
+        entity: 'standard',
+        data: { id: standard.id, name: standard.name },
+      })
+    }
+  })
+}
+
+const handleNormalChanges = (
+  currentMediums: SchoolMediumResponse[],
+  currentStandards: SchoolStandardResponse[],
+) => {
+  const formMediums = form.value.mediums.filter((id) => id > 0)
+  const formStandards = form.value.standards.filter((id) => id > 0)
+
+  handleMediumChanges(currentMediums, formMediums)
+  handleStandardChanges(currentStandards, formStandards)
+}
+
+const handleMediumChanges = (currentMediums: SchoolMediumResponse[], formMediums: number[]) => {
+  // Handle deleted mediums
+  currentMediums.forEach((medium) => {
+    const mediumId = medium.instruction_medium_id || medium.id
+    if (mediumId && !formMediums.includes(mediumId)) {
+      const mediumName = medium.instruction_medium?.name || medium.name
+      addChange({
+        type: 'delete',
+        message: `Delete medium: ${mediumName}`,
+        entity: 'medium',
+        data: { id: mediumId, name: mediumName },
+      })
+    }
+  })
+
+  // Handle added mediums
+  formMediums.forEach((mediumId) => {
+    const exists = currentMediums.some((m) => {
+      const existingId = m.instruction_medium_id || m.id
+      return existingId === mediumId
+    })
+
+    if (!exists) {
+      const medium = availableMediums.value.find((m) => m.id === mediumId)
+      if (medium) {
+        addChange({
+          type: 'add',
+          message: `Add medium: ${medium.name}`,
+          entity: 'medium',
+          data: { id: medium.id, name: medium.name },
+        })
+      }
+    }
+  })
+}
+
+const handleStandardChanges = (
+  currentStandards: SchoolStandardResponse[],
+  formStandards: number[],
+) => {
+  // Handle deleted standards
+  currentStandards.forEach((standard) => {
+    const standardId = standard.standard_id || standard.id
+    if (standardId && !formStandards.includes(standardId)) {
+      const standardName = standard.standard?.name || standard.name
+      addChange({
+        type: 'delete',
+        message: `Delete standard: ${standardName}`,
+        entity: 'standard',
+        data: { id: standardId, name: standardName },
+      })
+    }
+  })
+
+  // Handle added standards
+  formStandards.forEach((standardId) => {
+    const exists = currentStandards.some((s) => {
+      const existingId = s.standard_id || s.id
+      return existingId === standardId
+    })
+
+    if (!exists) {
+      const standard = availableStandards.value.find((s) => s.id === standardId)
+      if (standard) {
+        addChange({
+          type: 'add',
+          message: `Add standard: ${standard.name}`,
+          entity: 'standard',
+          data: { id: standard.id, name: standard.name },
+        })
+      }
+    }
+  })
+}
+
+const handleBasicInfoChanges = (schoolId: number) => {
+  if (!props.initialData) return
+
+  if (form.value.name !== props.initialData.name) {
+    addChange({
+      type: 'modify',
+      message: `Modify school name: ${props.initialData.name} → ${form.value.name}`,
+      entity: 'school',
+      data: {
+        old: { id: schoolId, name: props.initialData.name },
+        new: { name: form.value.name },
+      },
+    })
+  }
+
+  // Add other basic info changes here...
+}
+
+// Main calculateChanges function
 const calculateChanges = async () => {
   changes.value = []
 
-  if (props.isEditMode && props.schoolId) {
-    const schoolId = parseInt(props.schoolId)
+  if (!props.isEditMode || !props.schoolId) return
 
-    // Get current data
-    const [currentMediums, currentStandards] = await Promise.all([
-      fetchSchoolMediums(schoolId),
-      fetchSchoolStandards(schoolId),
-    ])
+  const schoolId = parseInt(props.schoolId)
+  const [currentMediums, currentStandards] = await Promise.all([
+    fetchSchoolMediums(schoolId),
+    fetchSchoolStandards(schoolId),
+  ])
 
-    // Check for name change
-    if (props.initialData && form.value.name !== props.initialData.name) {
-      changes.value.push({
-        type: 'modify',
-        message: `Modify school name: ${props.initialData.name} → ${form.value.name}`,
-        entity: 'school',
-        data: {
-          old: { id: schoolId, name: props.initialData.name },
-          new: { name: form.value.name },
-        },
-      })
-    }
-
-    // Check for board change
-    if (props.initialData && form.value.board_id !== props.initialData.board_id) {
-      const [oldBoard, newBoard] = await Promise.all([
-        fetch(getApiUrl(`/boards/${props.initialData.board_id}`)).then((r) => r.json()),
-        fetch(getApiUrl(`/boards/${form.value.board_id}`)).then((r) => r.json()),
-      ])
-      changes.value.push({
-        type: 'modify',
-        message: `Modify board: ${oldBoard.name} → ${newBoard.name}`,
-        entity: 'school',
-        data: {
-          old: { id: oldBoard.id, name: oldBoard.name },
-          new: { id: newBoard.id, name: newBoard.name },
-        },
-      })
-    }
-
-    // Check for address changes
-    if (props.initialData && props.initialData.address_id) {
-      const addressResponse = await fetch(getApiUrl(`/addresses/${props.initialData.address_id}`))
-      if (addressResponse.ok) {
-        const currentAddress = await addressResponse.json()
-        const addressChanges = []
-
-        // Check street change
-        if (currentAddress.street?.trim() !== form.value.address.street?.trim()) {
-          addressChanges.push(
-            `Street: ${currentAddress.street || ''} → ${form.value.address.street || ''}`,
-          )
-        }
-
-        // Check postal code change
-        if (currentAddress.postal_code?.trim() !== form.value.address.postal_code?.trim()) {
-          addressChanges.push(
-            `Postal Code: ${currentAddress.postal_code || ''} → ${form.value.address.postal_code || ''}`,
-          )
-        }
-
-        // Compare city IDs as numbers
-        const currentCityId = parseInt(String(currentAddress.city_id))
-        const newCityId = parseInt(String(form.value.address.city_id))
-        if (currentCityId !== newCityId) {
-          try {
-            const [oldCity, newCity] = await Promise.all([
-              fetch(getApiUrl(`/cities/${currentAddress.city_id}`)).then((r) => r.json()),
-              fetch(getApiUrl(`/cities/${form.value.address.city_id}`)).then((r) => r.json()),
-            ])
-            addressChanges.push(`City: ${oldCity.name || ''} → ${newCity.name || ''}`)
-          } catch (error) {
-            console.error('Error fetching city details:', error)
-          }
-        }
-
-        // Compare state IDs as numbers
-        const currentStateId = parseInt(String(currentAddress.state_id))
-        const newStateId = parseInt(String(form.value.address.state_id))
-        if (currentStateId && newStateId && currentStateId !== newStateId) {
-          try {
-            const [oldState, newState] = await Promise.all([
-              fetch(getApiUrl(`/states/${currentAddress.state_id}`)).then((r) => r.json()),
-              fetch(getApiUrl(`/states/${form.value.address.state_id}`)).then((r) => r.json()),
-            ])
-            addressChanges.push(`State: ${oldState.name || ''} → ${newState.name || ''}`)
-          } catch (error) {
-            console.error('Error fetching state details:', error)
-          }
-        }
-
-        // Compare country IDs as numbers
-        const currentCountryId = parseInt(String(currentAddress.country_id))
-        const newCountryId = parseInt(String(form.value.address.country_id))
-        if (currentCountryId && newCountryId && currentCountryId !== newCountryId) {
-          try {
-            const [oldCountry, newCountry] = await Promise.all([
-              fetch(getApiUrl(`/countries/${currentAddress.country_id}`)).then((r) => r.json()),
-              fetch(getApiUrl(`/countries/${form.value.address.country_id}`)).then((r) => r.json()),
-            ])
-            addressChanges.push(`Country: ${oldCountry.name || ''} → ${newCountry.name || ''}`)
-          } catch (error) {
-            console.error('Error fetching country details:', error)
-          }
-        }
-
-        if (addressChanges.length > 0) {
-          changes.value.push({
-            type: 'modify',
-            message: 'School address details modified:\n' + addressChanges.join('\n'),
-            entity: 'school',
-            data: {
-              old: { id: props.initialData.address_id, name: 'Previous Address' },
-              new: { name: 'New Address' },
-            },
-          })
-        }
-      }
-    }
-
-    // Add a separator if there are basic info changes
-    if (changes.value.length > 0) {
-      changes.value.push({
-        type: 'modify',
-        message: '---',
-        entity: 'separator',
-        data: {},
-      })
-    }
-
-    // Check mediums changes
-    const formMediums = form.value.mediums.filter((id) => id > 0)
-
-    // Find deleted mediums
-    currentMediums.forEach((medium: SchoolMedium) => {
-      const mediumId = medium.instruction_medium_id || medium.id
-      if (mediumId && !formMediums.includes(mediumId)) {
-        // Find the medium name from availableMediums
-        const mediumInfo = availableMediums.value.find((m) => m.id === mediumId)
-        if (mediumInfo) {
-          changes.value.push({
-            type: 'delete',
-            message: `Delete medium: ${mediumInfo.name}`,
-            entity: 'medium',
-            data: { id: mediumId, name: mediumInfo.name },
-          })
-        }
-      }
-    })
-
-    // Find added mediums
-    formMediums.forEach((mediumId) => {
-      const exists = currentMediums.some((m: SchoolMedium) => {
-        return m.instruction_medium_id === mediumId || m.id === mediumId
-      })
-
-      if (!exists) {
-        const medium = availableMediums.value.find((m) => m.id === mediumId)
-        if (medium) {
-          changes.value.push({
-            type: 'add',
-            message: `Add medium: ${medium.name}`,
-            entity: 'medium',
-            data: { id: medium.id, name: medium.name },
-          })
-        }
-      }
-    })
-
-    // Check standards changes
-    const formStandards = form.value.standards.filter((id) => id > 0)
-
-    // Find deleted standards
-    currentStandards.forEach((standard: SchoolStandard) => {
-      const standardId = standard.standard_id || standard.id
-      if (standardId && !formStandards.includes(standardId)) {
-        // Find the standard name from availableStandards
-        const standardInfo = availableStandards.value.find((s) => s.id === standardId)
-        if (standardInfo) {
-          changes.value.push({
-            type: 'delete',
-            message: `Delete standard: ${standardInfo.name}`,
-            entity: 'standard',
-            data: { id: standardId, name: standardInfo.name },
-          })
-        }
-      }
-    })
-
-    // Find added standards
-    formStandards.forEach((standardId) => {
-      const exists = currentStandards.some((s: SchoolStandard) => {
-        return s.standard_id === standardId || s.id === standardId
-      })
-
-      if (!exists) {
-        const standard = availableStandards.value.find((s) => s.id === standardId)
-        if (standard) {
-          changes.value.push({
-            type: 'add',
-            message: `Add standard: ${standard.name}`,
-            entity: 'standard',
-            data: { id: standard.id, name: standard.name },
-          })
-        }
-      }
-    })
-
-    // Add basic info changes if modified
-    if (props.initialData) {
-      if (form.value.principal_name !== props.initialData.principal_name) {
-        changes.value.push({
-          type: 'modify',
-          message: `Modify principal name: ${props.initialData.principal_name} → ${form.value.principal_name}`,
-          entity: 'school',
-          data: {
-            old: { id: schoolId, name: props.initialData.principal_name },
-            new: { name: form.value.principal_name },
-          },
-        })
-      }
-
-      if (form.value.email !== props.initialData.email) {
-        changes.value.push({
-          type: 'modify',
-          message: `Modify email: ${props.initialData.email} → ${form.value.email}`,
-          entity: 'school',
-          data: {
-            old: { id: schoolId, name: props.initialData.email },
-            new: { name: form.value.email },
-          },
-        })
-      }
-
-      if (form.value.contact_number !== props.initialData.contact_number) {
-        changes.value.push({
-          type: 'modify',
-          message: `Modify contact number: ${props.initialData.contact_number} → ${form.value.contact_number}`,
-          entity: 'school',
-          data: {
-            old: { id: schoolId, name: props.initialData.contact_number },
-            new: { name: form.value.contact_number },
-          },
-        })
-      }
-
-      if (form.value.alternate_contact_number !== props.initialData.alternate_contact_number) {
-        const oldValue = props.initialData.alternate_contact_number || 'None'
-        const newValue = form.value.alternate_contact_number || 'None'
-        changes.value.push({
-          type: 'modify',
-          message: `Modify alternate contact: ${oldValue} → ${newValue}`,
-          entity: 'school',
-          data: { old: { id: schoolId, name: oldValue }, new: { name: newValue } },
-        })
-      }
-    }
+  if (props.initialData && form.value.board_id !== props.initialData.board_id) {
+    // Handle board change
+    handleBoardChange(
+      props.initialData.board_id,
+      form.value.board_id,
+      currentMediums,
+      currentStandards,
+    )
+  } else {
+    // Handle normal changes
+    handleNormalChanges(currentMediums, currentStandards)
   }
+
+  // Handle basic info changes
+  handleBasicInfoChanges(schoolId)
 }
 
 // Update confirmAndSubmit to handle both add and edit modes
@@ -1824,22 +1683,18 @@ const handleCheckboxKeydown = (event: KeyboardEvent, type: 'medium' | 'standard'
 const handleSaveKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter' && !isSubmitting.value && isFormValid.value) {
     event.preventDefault()
-    handleSubmit(event)
+    onSubmit(event)
   }
 }
 
 const filterBoards = () => {
   showBoardDropdown.value = true
   selectedBoardIndex.value = -1
+  validationStates.value.board.touched = true
   if (!boardSearch.value) {
     form.value.board_id = 0
-    // Clear mediums and standards when board is cleared
-    availableMediums.value = []
-    availableStandards.value = []
-    form.value.mediums = []
-    form.value.standards = []
+    validationStates.value.board.valid = false
   }
-  validationStates.value.board.touched = true
 }
 
 // Add validation functions
@@ -1970,6 +1825,58 @@ defineExpose({
   availableStandards,
   boardSearch,
 })
+
+// Rename handleSubmit to onSubmit for clarity
+const onSubmit = async (e: Event) => {
+  e.preventDefault()
+
+  // Mark all fields as touched to trigger validation display
+  Object.keys(validationStates.value).forEach((key) => {
+    validationStates.value[key as keyof typeof validationStates.value].touched = true
+  })
+
+  // Force a DOM update before checking for invalid fields
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  // Check if form is valid
+  if (!isFormValid.value) {
+    const firstInvalidField = document.querySelector('.is-invalid') as HTMLElement
+    if (firstInvalidField) {
+      firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      firstInvalidField.focus()
+
+      // If it's a checkbox group, focus on the first checkbox
+      if (firstInvalidField.classList.contains('form-check')) {
+        const checkbox = firstInvalidField.querySelector('input[type="checkbox"]') as HTMLElement
+        if (checkbox) {
+          checkbox.focus()
+        }
+      }
+    }
+    return
+  }
+
+  if (props.isEditMode) {
+    // Calculate changes and show confirmation modal only in edit mode
+    await calculateChanges()
+    const modal = new Modal(document.getElementById('saveConfirmationModal') as HTMLElement)
+    modal.show()
+  } else {
+    // In add mode, directly submit the form
+    await confirmAndSubmit()
+  }
+}
+
+const ensureVisible = (element: HTMLElement, container: HTMLElement) => {
+  const containerRect = container.getBoundingClientRect()
+  const elementRect = element.getBoundingClientRect()
+
+  if (elementRect.bottom > containerRect.bottom) {
+    container.scrollTop += elementRect.bottom - containerRect.bottom
+  } else if (elementRect.top < containerRect.top) {
+    container.scrollTop -= containerRect.top - elementRect.top
+  }
+}
 </script>
 
 <style scoped>
@@ -2002,132 +1909,10 @@ form {
 
 /* Ensure dropdowns don't cause horizontal scrolling */
 .dropdown-menu {
-  max-width: 100%;
-  width: 100%;
-}
-
-/* Force scrollbar to always show to prevent layout shift */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Basic form-floating styles */
-.form-floating {
-  position: relative;
-}
-
-.form-floating > .form-select {
-  height: calc(3.5rem + 2px);
-  padding-top: 1.625rem;
-  padding-bottom: 0.625rem;
-  line-height: 1.25;
-}
-
-.form-floating > label {
   position: absolute;
-  top: 0;
+  top: 100%;
   left: 0;
-  width: 100%;
-  height: 100%;
-  padding: 1rem 0.75rem;
-  overflow: hidden;
-  text-align: start;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: none;
-  border: 1px solid transparent;
-  transform-origin: 0 0;
-  transition:
-    opacity 0.1s ease-in-out,
-    transform 0.1s ease-in-out;
-}
-
-.form-floating > .form-select:focus ~ label,
-.form-floating > .form-select:not([value='']) ~ label {
-  opacity: 0.65;
-  transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-}
-
-.form-floating > .form-select:focus ~ label {
-  color: #86b7fe;
-}
-
-.form-select:disabled {
-  background-color: #e9ecef;
-  cursor: not-allowed;
-}
-
-fieldset {
-  background-color: white;
-}
-
-fieldset legend {
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 0 0.5rem;
-}
-
-/* Custom breakpoint for when text might overflow */
-@media (max-width: 1200px) {
-  .col-12 {
-    margin-bottom: 0.5rem;
-  }
-
-  .col-12:last-child {
-    margin-bottom: 0;
-  }
-
-  .row + .row {
-    margin-top: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .form-floating > .form-control,
-  .form-floating > .form-select {
-    height: calc(3rem + 2px);
-    font-size: 0.9rem;
-  }
-
-  .form-floating > label {
-    font-size: 0.9rem;
-  }
-}
-
-.form-select {
-  appearance: auto;
-  background-image: none;
-  padding-right: 2rem;
-}
-
-.form-select option {
-  padding: 8px;
-}
-
-.form-floating > .form-select {
-  padding-top: 1.625rem;
-  padding-bottom: 0.625rem;
-}
-
-.dropdown {
-  position: relative;
-}
-
-.dropdown-menu {
+  z-index: 1000;
   display: none;
   max-height: 200px;
   overflow-y: auto;
@@ -2157,85 +1942,31 @@ fieldset legend {
 
 .dropdown-item:hover {
   background-color: #f8f9fa;
+  color: #212529;
 }
 
 .dropdown-item.active {
-  background-color: #212529;
-  color: white;
+  background-color: #212529 !important;
+  color: white !important;
 }
 
-.form-floating .dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 1000;
+/* Form select styles */
+.form-select {
+  appearance: auto;
+  background-image: none;
+  padding-right: 2rem;
 }
 
-.board-dropdown-menu,
-.board-dropdown-item {
-  background-color: white;
-  color: #212529;
-  border-color: rgba(0, 0, 0, 0.15);
+.form-select option {
+  padding: 8px;
 }
 
-.board-dropdown-item:hover {
-  background-color: #f8f9fa;
-  color: #212529;
+.form-floating > .form-select {
+  padding-top: 1.625rem;
+  padding-bottom: 0.625rem;
 }
 
-.is-valid {
-  border-color: #198754;
-}
-
-.is-invalid {
-  border-color: #dc3545;
-}
-
-.text-primary.border-primary {
-  border-color: #0d6efd;
-  color: #0d6efd;
-}
-
-.valid-feedback {
-  display: none;
-}
-
-.invalid-feedback {
-  display: none;
-  width: 100%;
-  margin-top: 0.25rem;
-  font-size: 0.875em;
-  color: #dc3545;
-}
-
-.form-control.is-invalid ~ .invalid-feedback,
-.form-check.is-invalid .invalid-feedback {
-  display: block;
-}
-
-/* Add new styles for location dropdowns */
-#country + .dropdown-menu .dropdown-item.active,
-#state + .dropdown-menu .dropdown-item.active,
-#city + .dropdown-menu .dropdown-item.active,
-#boardName + .dropdown-menu .dropdown-item.active {
-  background-color: #212529;
-  color: white;
-}
-
-#country + .dropdown-menu .dropdown-item:hover,
-#state + .dropdown-menu .dropdown-item:hover,
-#city + .dropdown-menu .dropdown-item:hover,
-#boardName + .dropdown-menu .dropdown-item:hover {
-  background-color: #f8f9fa;
-  color: #212529;
-}
-
-.dropdown-menu {
-  max-height: 200px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-
+/* Scrollbar styles for dropdowns */
 .dropdown-menu::-webkit-scrollbar {
   width: 6px;
 }
@@ -2251,5 +1982,47 @@ fieldset legend {
 
 .dropdown-menu::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Specific dropdown styles */
+#country + .dropdown-menu .dropdown-item.active,
+#state + .dropdown-menu .dropdown-item.active,
+#city + .dropdown-menu .dropdown-item.active {
+  background-color: #212529;
+  color: white;
+}
+
+#country + .dropdown-menu .dropdown-item:hover,
+#state + .dropdown-menu .dropdown-item:hover,
+#city + .dropdown-menu .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #212529;
+}
+
+/* Custom breakpoint for when text might overflow */
+@media (max-width: 1200px) {
+  .col-12 {
+    margin-bottom: 0.5rem;
+  }
+
+  .col-12:last-child {
+    margin-bottom: 0;
+  }
+
+  .row + .row {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-floating > .form-control,
+  .form-floating > .form-select {
+    height: calc(3rem + 2px);
+    font-size: 0.9rem;
+  }
+
+  .form-floating > label {
+    font-size: 0.9rem;
+  }
 }
 </style>

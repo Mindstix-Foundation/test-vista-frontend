@@ -14,9 +14,9 @@
     <div id="form-container" class="row mt-4 justify-content-center">
       <TeacherFormComponent v-if="teacherData" :initial-data="teacherData" @submit="handleSubmit" />
       <div v-else class="text-center">
-        <div class="spinner-border" role="status">
+        <output class="spinner-border">
           <span class="visually-hidden">Loading...</span>
-        </div>
+        </output>
       </div>
     </div>
   </div>
@@ -155,6 +155,7 @@ const fetchTeacherData = async (id: string) => {
     // Prepare form data
     teacherData.value = {
       name: userData.name,
+      boardId: activeSchool.school.board_id,
       emailId: userData.email_id,
       contactNumber: userData.contact_number.toString(),
       alternateContactNumber: userData.alternate_contact_number?.toString(),
@@ -190,6 +191,110 @@ onMounted(async () => {
   await fetchTeacherData(teacherId)
 })
 
+// Helper functions for API calls
+const updateUserData = async (userId: string, formData: TeacherFormData) => {
+  const response = await fetch(getApiUrl(`/users/${userId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: formData.name,
+      email_id: formData.emailId,
+      contact_number: formData.contactNumber,
+      alternate_contact_number: formData.alternateContactNumber,
+      highest_qualification: formData.highestQualification,
+    }),
+  })
+  if (!response.ok) throw new Error('Failed to update user data')
+}
+
+const updateSchoolAssignment = async (userId: string, schoolId: number) => {
+  const currentSchool = await fetch(getApiUrl(`/user-schools/user/${userId}`))
+  const schoolData = await currentSchool.json()
+
+  if (!schoolData[0]) return
+
+  // End current assignment
+  const endResponse = await fetch(
+    getApiUrl(`/user-schools/user/${userId}/school/${schoolData[0].school_id}`),
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ end_date: new Date().toISOString() }),
+    },
+  )
+  if (!endResponse.ok) throw new Error('Failed to end current school assignment')
+
+  // Create new assignment
+  const newResponse = await fetch(getApiUrl('/user-schools'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      school_id: schoolId,
+      start_date: new Date().toISOString(),
+    }),
+  })
+  if (!newResponse.ok) throw new Error('Failed to create new school assignment')
+}
+
+const deleteSubject = async (subjectId: number) => {
+  const response = await fetch(getApiUrl(`/teacher-subjects/${subjectId}`), {
+    method: 'DELETE',
+  })
+  if (!response.ok) throw new Error('Failed to delete subject assignment')
+}
+
+const addSubject = async (
+  userId: string,
+  schoolStandardId: number,
+  mediumStandardSubjectId: number,
+) => {
+  const response = await fetch(getApiUrl('/teacher-subjects'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      school_standard_id: schoolStandardId,
+      medium_standard_subject_id: mediumStandardSubjectId,
+    }),
+  })
+  if (!response.ok) throw new Error('Failed to add subject assignment')
+}
+
+const updateSubjects = async (
+  userId: string,
+  currentSubjects: SubjectResponse[],
+  newSubjects: Array<{ schoolStandardId: number; mediumStandardSubjectId: number }>,
+) => {
+  // Handle removals
+  const removalPromises = currentSubjects
+    .filter(
+      (subject) =>
+        !newSubjects.some(
+          (ts) =>
+            ts.schoolStandardId === subject.school_standard_id &&
+            ts.mediumStandardSubjectId === subject.medium_standard_subject_id,
+        ),
+    )
+    .map((subject) => deleteSubject(subject.id))
+
+  await Promise.all(removalPromises)
+
+  // Handle additions
+  const additionPromises = newSubjects
+    .filter(
+      (subject) =>
+        !currentSubjects.some(
+          (s) =>
+            s.school_standard_id === subject.schoolStandardId &&
+            s.medium_standard_subject_id === subject.mediumStandardSubjectId,
+        ),
+    )
+    .map((subject) => addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId))
+
+  await Promise.all(additionPromises)
+}
+
 const handleSubmit = async (data: {
   formData: TeacherFormData
   changes: Array<{ type: string; message: string }>
@@ -198,142 +303,38 @@ const handleSubmit = async (data: {
     console.log('EditTeacher: Starting form submission with data:', data)
     const { formData, changes } = data
 
-    // If no changes detected, just redirect
     if (changes.length === 0) {
       console.log('No changes detected, returning to dashboard')
       router.push('/admin/teacher')
       return
     }
 
-    const userId = route.params.id
+    const userId = route.params.id as string
 
-    // 1. Update user information if basic details changed
-    const hasBasicInfoChanges = changes.some(
-      (change) =>
-        change.message.startsWith('Name:') ||
-        change.message.startsWith('Email:') ||
-        change.message.startsWith('Contact Number:') ||
-        change.message.startsWith('Alternate Contact:') ||
-        change.message.startsWith('Qualification:'),
+    // Process basic info changes
+    const hasBasicInfoChanges = changes.some((change) =>
+      ['Name:', 'Email:', 'Contact Number:', 'Alternate Contact:', 'Qualification:'].some(
+        (prefix) => change.message.startsWith(prefix),
+      ),
     )
-
     if (hasBasicInfoChanges) {
-      console.log('Updating user basic information')
-      const userResponse = await fetch(getApiUrl(`/users/${userId}`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email_id: formData.emailId,
-          contact_number: formData.contactNumber,
-          alternate_contact_number: formData.alternateContactNumber,
-          highest_qualification: formData.highestQualification,
-        }),
-      })
-
-      if (!userResponse.ok) {
-        throw new Error('Failed to update user data')
-      }
+      await updateUserData(userId, formData)
     }
 
-    // 2. Update school assignment if school changed
+    // Process school changes
     const schoolChange = changes.find((change) => change.message.startsWith('School:'))
     if (schoolChange) {
-      // Get current school assignment
-      const currentSchool = await fetch(getApiUrl(`/user-schools/user/${userId}`))
-      const schoolData = await currentSchool.json()
-
-      if (schoolData[0]) {
-        // End current school assignment
-        const endResponse = await fetch(
-          getApiUrl(`/user-schools/user/${userId}/school/${schoolData[0].school_id}`),
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              end_date: new Date().toISOString(),
-            }),
-          },
-        )
-        if (!endResponse.ok) {
-          throw new Error('Failed to end current school assignment')
-        }
-
-        // Create new school assignment
-        const newSchoolResponse = await fetch(getApiUrl('/user-schools'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            school_id: formData.schoolId,
-            start_date: new Date().toISOString(),
-          }),
-        })
-        if (!newSchoolResponse.ok) {
-          throw new Error('Failed to create new school assignment')
-        }
-      }
+      await updateSchoolAssignment(userId, formData.schoolId)
     }
 
-    // 3. Update subject assignments if subjects changed
-    const subjectChanges = changes.filter(
+    // Process subject changes
+    const hasSubjectChanges = changes.some(
       (change) => change.message.includes('Subject') || change.message.includes('Standard'),
     )
-
-    if (subjectChanges.length > 0) {
-      // Get current subjects
+    if (hasSubjectChanges) {
       const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
       const subjectsData: SubjectResponse[] = await currentSubjects.json()
-
-      // Handle removed subjects
-      for (const subject of subjectsData) {
-        if (
-          !formData.teacherSubjects.some(
-            (ts) =>
-              ts.schoolStandardId === subject.school_standard_id &&
-              ts.mediumStandardSubjectId === subject.medium_standard_subject_id,
-          )
-        ) {
-          const deleteResponse = await fetch(getApiUrl(`/teacher-subjects/${subject.id}`), {
-            method: 'DELETE',
-          })
-          if (!deleteResponse.ok) {
-            throw new Error('Failed to delete subject assignment')
-          }
-        }
-      }
-
-      // Add new subjects
-      for (const subject of formData.teacherSubjects) {
-        if (
-          !subjectsData.some(
-            (s) =>
-              s.school_standard_id === subject.schoolStandardId &&
-              s.medium_standard_subject_id === subject.mediumStandardSubjectId,
-          )
-        ) {
-          const addResponse = await fetch(getApiUrl('/teacher-subjects'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              user_id: userId,
-              school_standard_id: subject.schoolStandardId,
-              medium_standard_subject_id: subject.mediumStandardSubjectId,
-            }),
-          })
-          if (!addResponse.ok) {
-            throw new Error('Failed to add subject assignment')
-          }
-        }
-      }
+      await updateSubjects(userId, subjectsData, formData.teacherSubjects)
     }
 
     router.push('/admin/teacher')

@@ -116,13 +116,20 @@
               <template v-if="associatedSchools.length > 0">
                 <div class="alert alert-warning">
                   <strong>Cannot delete this board!</strong>
-                  <p class="mb-2">The following schools are associated with this board:</p>
-                  <ul class="list-unstyled ms-3">
-                    <li v-for="school in associatedSchools" :key="school.id">
-                      - {{ school.name }}
-                    </li>
-                  </ul>
-                  <p class="mb-0">Please delete these schools first before deleting the board.</p>
+                  <template v-if="associatedSchools.some((s) => s.id !== -1)">
+                    <p class="mb-2">The following schools are associated with this board:</p>
+                    <ul class="list-unstyled ms-3">
+                      <li
+                        v-for="school in associatedSchools.filter((s) => s.id !== -1)"
+                        :key="school.id"
+                      >
+                        - {{ school.name }}
+                      </li>
+                    </ul>
+                  </template>
+                  <template v-if="associatedSchools.some((s) => s.id === -1)">
+                    <p class="mb-0">{{ associatedSchools.find((s) => s.id === -1)?.name }}</p>
+                  </template>
                 </div>
               </template>
               <template v-else> Are you sure you want to delete this board? </template>
@@ -171,9 +178,12 @@
                     <form autocomplete="on">
                       <div class="row g-3">
                         <div class="row">
-                          <label class="col-form-label col-12 col-lg-3 fw-bold">Board Name:</label>
+                          <label class="col-form-label col-12 col-lg-3 fw-bold" for="boardName">
+                            Board Name:
+                          </label>
                           <div class="col-12 col-lg-9">
                             <textarea
+                              id="boardName"
                               readonly
                               class="form-control-plaintext"
                               style="white-space: pre-wrap"
@@ -183,13 +193,17 @@
                         </div>
 
                         <div class="row">
-                          <label class="col-form-label col-12 col-lg-3 fw-bold"
-                            >Board Abbreviation:</label
+                          <label
+                            class="col-form-label col-12 col-lg-3 fw-bold"
+                            for="boardAbbreviation"
                           >
+                            Board Abbreviation:
+                          </label>
                           <div class="col-12 col-lg-9">
                             <input
                               type="text"
                               class="form-control-plaintext"
+                              id="boardAbbreviation"
                               :value="selectedBoard?.abbreviation"
                               readonly
                             />
@@ -226,44 +240,11 @@
                           </div>
                         </div>
 
-                        <div class="row">
-                          <div class="col-12 col-lg-4">
-                            <label for="country" class="col-form-label fw-bold">Country:</label>
-                            <input
-                              type="text"
-                              readonly
-                              class="form-control-plaintext"
-                              id="country"
-                              :value="selectedBoard?.address?.country?.name || ''"
-                            />
-                          </div>
-
-                          <div class="col-12 col-lg-4">
-                            <label for="state" class="col-form-label fw-bold">State:</label>
-                            <input
-                              type="text"
-                              readonly
-                              class="form-control-plaintext"
-                              id="state"
-                              :value="selectedBoard?.address?.state?.name || ''"
-                            />
-                          </div>
-
-                          <div class="col-12 col-lg-4">
-                            <label for="city" class="col-form-label fw-bold">City:</label>
-                            <input
-                              type="text"
-                              readonly
-                              class="form-control-plaintext"
-                              id="city"
-                              :value="selectedBoard?.address?.city?.name || ''"
-                            />
-                          </div>
-                        </div>
-
                         <!-- Mediums of Instruction -->
                         <div class="col-12">
-                          <label class="col-form-label fw-bold">Mediums of Instruction:</label>
+                          <label class="col-form-label fw-bold" for="mediumOfInstruction">
+                            Mediums of Instruction:
+                          </label>
                           <ul class="list-group">
                             <li
                               v-for="medium in selectedBoard?.mediums"
@@ -280,8 +261,8 @@
 
                         <!-- Standards -->
                         <div class="col-12">
-                          <label class="col-form-label fw-bold">Standards:</label>
-                          <ul class="list-group">
+                          <label class="col-form-label fw-bold" for="standards">Standards:</label>
+                          <ul id="standardsList" class="list-group">
                             <li
                               v-for="standard in selectedBoard?.standards"
                               :key="standard.id"
@@ -290,14 +271,14 @@
                               {{ standard.name }}
                             </li>
                             <li v-if="!selectedBoard?.standards?.length" class="list-group-item">
-                              No standards specified
+                              No standards available.
                             </li>
                           </ul>
                         </div>
 
                         <!-- Subjects -->
                         <div class="col-12">
-                          <label class="col-form-label fw-bold">Subjects:</label>
+                          <label class="col-form-label fw-bold" for="subjects">Subjects:</label>
                           <ul class="list-group">
                             <li
                               v-for="subject in selectedBoard?.subjects"
@@ -358,60 +339,40 @@ import { useRouter, useRoute } from 'vue-router'
 import { getApiUrl } from '@/config/api'
 import * as bootstrap from 'bootstrap'
 
-interface Address {
-  id: number
-  street: string
-  postal_code: string
-  city_id: number
-  city?: City
-  state?: State
-  country?: Country
-}
-
-interface City {
-  id: number
-  name: string
-  state_id: number
-}
-
-interface State {
-  id: number
-  name: string
-  country_id: number
-}
-
-interface Country {
-  id: number
-  name: string
-}
-
-interface Medium {
-  id: number
-  instruction_medium: string
-  board_id: number
-}
-
-interface Standard {
-  id: number
-  name: string
-  board_id: number
-}
-
-interface Subject {
-  id: number
-  name: string
-  board_id: number
-}
-
 interface BoardDetails {
   id: number
   name: string
   abbreviation: string
   address_id?: number
-  address?: Address
-  mediums: Medium[]
-  standards: Standard[]
-  subjects: Subject[]
+  address?: {
+    id: number
+    city_id: number
+    postal_code: string
+    street: string
+    created_at: string
+    updated_at: string
+  }
+  mediums: Array<{
+    id: number
+    board_id: number
+    instruction_medium: string
+    created_at: string
+    updated_at: string
+  }>
+  standards: Array<{
+    id: number
+    board_id: number
+    name: string
+    created_at: string
+    updated_at: string
+  }>
+  subjects: Array<{
+    id: number
+    board_id: number
+    name: string
+    created_at: string
+    updated_at: string
+  }>
 }
 
 const router = useRouter()
@@ -428,82 +389,25 @@ const associatedSchools = ref<Array<{ id: number; name: string }>>([])
 const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
   try {
     console.log('Fetching board details for ID:', boardId)
+    const response = await fetch(getApiUrl(`/boards/${boardId}`))
+    if (!response.ok) throw new Error('Failed to fetch board')
 
-    // Fetch board data
-    const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (!boardResponse.ok) throw new Error('Failed to fetch board')
-    const boardData = await boardResponse.json()
+    const boardData = await response.json()
     console.log('Board data received:', boardData)
 
-    // Fetch address details and related location data
-    let address: Address | undefined
-    let city: City | undefined
-    let state: State | undefined
-    let country: Country | undefined
-
-    if (boardData.address_id) {
-      // Fetch address
-      const addressResponse = await fetch(getApiUrl(`/addresses/${boardData.address_id}`))
-      if (addressResponse.ok) {
-        address = await addressResponse.json()
-
-        // Fetch city
-        if (address?.city_id) {
-          const cityResponse = await fetch(getApiUrl(`/cities/${address.city_id}`))
-          if (cityResponse.ok) {
-            city = await cityResponse.json()
-
-            // Fetch state
-            if (city?.state_id) {
-              const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
-              if (stateResponse.ok) {
-                state = await stateResponse.json()
-
-                // Fetch country
-                if (state?.country_id) {
-                  const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
-                  if (countryResponse.ok) {
-                    country = await countryResponse.json()
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+    // Transform the data to match our interface
+    const boardDetails: BoardDetails = {
+      id: boardData.id,
+      name: boardData.name,
+      abbreviation: boardData.abbreviation,
+      address_id: boardData.address_id,
+      address: boardData.address,
+      mediums: boardData.instruction_mediums,
+      standards: boardData.standards,
+      subjects: boardData.subjects,
     }
 
-    // Fetch mediums, standards, and subjects using board-specific endpoints
-    const [mediums, standards, subjects] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${boardId}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/standards/board/${boardId}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/subjects/board/${boardId}`)).then((r) => r.json()),
-    ])
-
-    console.log('Related data received:', {
-      mediums,
-      standards,
-      subjects,
-    })
-
-    // Log the final combined data
-    const finalData: BoardDetails = {
-      ...boardData,
-      address: address
-        ? {
-            ...address,
-            city,
-            state,
-            country,
-          }
-        : undefined,
-      mediums,
-      standards,
-      subjects,
-    }
-    console.log('Final board info data:', finalData)
-
-    return finalData
+    return boardDetails
   } catch (error) {
     console.error('Error in fetchBoardDetails:', error)
     throw error
@@ -565,13 +469,59 @@ const showBoardInfo = async (board: Board) => {
 
 const checkAssociatedSchools = async (boardId: number) => {
   try {
+    let hasSyllabus = false
+
+    // First check for associated schools
     const schoolsResponse = await fetch(getApiUrl(`/schools?boardId=${boardId}`))
     if (!schoolsResponse.ok) {
       throw new Error('Failed to check associated schools')
     }
-    associatedSchools.value = await schoolsResponse.json()
+    const schools = await schoolsResponse.json()
+
+    // Check for syllabus assignments - only need to check mediums
+    const mediumsResponse = await fetch(getApiUrl(`/instruction-mediums/board/${boardId}`))
+    if (!mediumsResponse.ok) {
+      throw new Error('Failed to fetch board mediums')
+    }
+    const mediums = await mediumsResponse.json()
+
+    // Check if any medium has syllabus data
+    for (const medium of mediums) {
+      const syllabusResponse = await fetch(
+        getApiUrl(`/medium-standard-subjects?instruction_medium_id=${medium.id}`),
+      )
+      if (syllabusResponse.ok) {
+        const syllabusData = await syllabusResponse.json()
+        if (syllabusData && syllabusData.length > 0) {
+          hasSyllabus = true
+          break // Exit loop as soon as we find any syllabus data
+        }
+      }
+    }
+
+    // Set the appropriate message based on conditions
+    if (schools.length > 0 && hasSyllabus) {
+      associatedSchools.value = [
+        ...schools,
+        {
+          id: -1,
+          name: 'This board also has syllabus data assigned to it. Please delete the syllabus first.',
+        },
+      ]
+    } else if (schools.length > 0) {
+      associatedSchools.value = schools
+    } else if (hasSyllabus) {
+      associatedSchools.value = [
+        {
+          id: -1,
+          name: 'This board has syllabus data assigned to it. Please delete the syllabus first.',
+        },
+      ]
+    } else {
+      associatedSchools.value = []
+    }
   } catch (error) {
-    console.error('Error checking associated schools:', error)
+    console.error('Error checking associations:', error)
     associatedSchools.value = []
   }
 }

@@ -13,7 +13,7 @@
     <hr />
 
     <div id="form-container" class="row mt-4 justify-content-center">
-      <form @submit.prevent="handleSubmit">
+      <form @submit.prevent="handleSubmit" novalidate>
         <div class="row g-4 justify-content-center">
           <!-- Board Details Section -->
           <div class="col-12 col-sm-10 col-md-8 mb-4">
@@ -34,7 +34,6 @@
                     @input="handleNameInput"
                     @blur="handleNameBlur"
                     placeholder="Board Name"
-                    required
                     @keydown="(e) => handleEnterKey(e, 'boardAbbreviation')"
                   />
                   <label for="boardName">Board Name <span class="text-danger">*</span></label>
@@ -64,7 +63,6 @@
                     @input="handleAbbreviationInput"
                     @blur="handleAbbreviationBlur"
                     placeholder="Board Abbreviation"
-                    required
                     @keydown="(e) => handleEnterKey(e, 'country')"
                   />
                   <label for="boardAbbreviation"
@@ -103,7 +101,6 @@
                     @focus="showCountryDropdown = true"
                     @click="showCountryDropdown = true"
                     placeholder="Search Country"
-                    required
                     autocomplete="new-password"
                     @keydown="handleCountryKeydown"
                   />
@@ -145,7 +142,6 @@
                     @click="handleStateFocus"
                     placeholder="Search State"
                     :disabled="!form.address.country_id"
-                    required
                     autocomplete="new-password"
                     @keydown="handleStateKeydown"
                   />
@@ -187,7 +183,6 @@
                     @click="handleCityFocus"
                     placeholder="Search City"
                     :disabled="!form.address.state_id"
-                    required
                     autocomplete="new-password"
                     @keydown="handleCityKeydown"
                   />
@@ -228,11 +223,11 @@
                     v-model="form.address.street"
                     placeholder="Address"
                     style="min-height: 100px; overflow-y: hidden"
-                    required
                     @input="
                       (e) => {
                         autoResizeTextarea(e)
                         validationStates.address.touched = true
+                        validationStates.address.valid = form.address.street.trim().length > 0
                       }
                     "
                     @keydown="(e) => handleEnterKey(e, 'postalCode')"
@@ -258,8 +253,13 @@
                     id="postalCode"
                     placeholder="Postal Code"
                     v-model="form.address.postal_code"
-                    required
-                    @input="validationStates.postalCode.touched = true"
+                    @input="
+                      (e) => {
+                        validationStates.postalCode.touched = true
+                        validationStates.postalCode.valid =
+                          form.address.postal_code.trim().length > 0
+                      }
+                    "
                     @keydown="(e) => handleEnterKey(e, 'medium0')"
                   />
                   <label for="postalCode">Postal Code <span class="text-danger">*</span></label>
@@ -549,28 +549,26 @@ export interface BoardSubject {
   updated_by?: number
 }
 
+interface AddressData {
+  street: string
+  postal_code: string
+  city_id: number
+  state_id: number
+  country_id: number
+}
+
 interface BoardFormData {
   name: string
   abbreviation: string
-  address: {
-    street: string
-    country_id: string
-    state_id: string
-    city_id: string
-    postal_code: string
-  }
-  mediums: { id?: number; name: string; board_id: number }[]
-  standards: { id?: number; name: string; board_id: number }[]
-  subjects: { id?: number; name: string; board_id: number }[]
+  address: AddressData
+  mediums: { id?: number; name: string; board_id?: number }[]
+  standards: { id?: number; name: string; board_id?: number }[]
+  subjects: { id?: number; name: string; board_id?: number }[]
 }
 
 // Export the interface for use in other components
 export type BoardForm = {
-  address: {
-    street: string
-    postal_code: string
-    city_id: number
-  }
+  address: AddressData
   board: {
     name: string
     abbreviation: string
@@ -595,10 +593,10 @@ const form = ref<BoardFormData>({
   abbreviation: '',
   address: {
     street: '',
-    country_id: '',
-    state_id: '',
-    city_id: '',
     postal_code: '',
+    city_id: 0,
+    state_id: 0,
+    country_id: 0,
   },
   mediums: [{ id: undefined, name: '', board_id: 0 }],
   standards: [{ id: undefined, name: '', board_id: 0 }],
@@ -661,6 +659,33 @@ interface Change {
 // Add ref for tracking changes
 const changes = ref<Change[]>([])
 
+// Add these interfaces near the top with other interfaces
+interface BaseItem {
+  id: number
+  name?: string
+  instruction_medium?: string
+}
+
+interface FormItem {
+  id?: number
+  name: string
+}
+
+// Add this function before compareLocationIds
+const fetchLocationDetails = async (
+  id: number,
+  type: 'city' | 'state' | 'country',
+): Promise<string> => {
+  try {
+    const response = await fetch(getApiUrl(`/${type}s/${id}`))
+    const data = await response.json()
+    return data.name || ''
+  } catch (error) {
+    console.error(`Error fetching ${type} details:`, error)
+    return ''
+  }
+}
+
 // Update updateLocationData function to use proper typing
 const updateLocationData = async (addressData: { city_id: string | number }) => {
   const cityResponse = await fetch(getApiUrl(`/cities/${addressData.city_id}`))
@@ -689,79 +714,80 @@ const updateLocationData = async (addressData: { city_id: string | number }) => 
   }
 }
 
-// Update fetchBoardData with proper types
+interface BoardApiResponse {
+  id: number
+  name: string
+  abbreviation: string
+  address?: {
+    id: number
+    city_id: number
+    postal_code: string
+    street: string
+  }
+  instruction_mediums: Array<{
+    id: number
+    instruction_medium: string
+    board_id: number
+  }>
+  standards: Array<{
+    id: number
+    name: string
+    board_id: number
+  }>
+  subjects: Array<{
+    id: number
+    name: string
+    board_id: number
+  }>
+}
+
 const fetchBoardData = async (boardId: number) => {
   try {
     isLoading.value = true
     console.log('Fetching board data for ID:', boardId)
 
-    // Fetch board details
     const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
     if (!boardResponse.ok) throw new Error('Failed to fetch board')
-    const boardData: { name: string; abbreviation: string; address_id?: number } =
-      await boardResponse.json()
+    const boardData: BoardApiResponse = await boardResponse.json()
     console.log('Board data received:', boardData)
 
-    // Fetch address details
-    if (boardData.address_id) {
-      const addressResponse = await fetch(getApiUrl(`/addresses/${boardData.address_id}`))
-      if (!addressResponse.ok) throw new Error('Failed to fetch address')
-      const addressData = await addressResponse.json()
-
-      // Fetch location data
-      if (addressData.city_id) {
-        await updateLocationData(addressData)
-      }
-
-      // Update form with address data
-      form.value.address = {
-        street: addressData.street,
-        postal_code: addressData.postal_code,
-        city_id: addressData.city_id,
-        state_id: form.value.address.state_id,
-        country_id: form.value.address.country_id,
-      }
-    }
-
-    // Fetch board-specific data using new endpoints
-    const [mediums, standards, subjects] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${boardId}`)).then((r) => r.json()) as Promise<
-        MediumOfInstruction[]
-      >,
-      fetch(getApiUrl(`/standards/board/${boardId}`)).then((r) => r.json()) as Promise<
-        BoardStandard[]
-      >,
-      fetch(getApiUrl(`/subjects/board/${boardId}`)).then((r) => r.json()) as Promise<
-        BoardSubject[]
-      >,
-    ])
-
-    // Update form with fetched data
+    // Update form with board data, ensuring proper type conversion
     form.value = {
       name: boardData.name,
       abbreviation: boardData.abbreviation,
-      address: form.value.address,
-      mediums: mediums.map((m) => ({
+      address: {
+        street: boardData.address?.street || '',
+        postal_code: boardData.address?.postal_code || '',
+        city_id: boardData.address?.city_id ? Number(boardData.address.city_id) : 0,
+        state_id: 0, // Will be set by updateLocationData
+        country_id: 0, // Will be set by updateLocationData
+      },
+      mediums: boardData.instruction_mediums.map((m) => ({
         id: m.id,
         name: m.instruction_medium,
-        board_id: boardId,
+        board_id: Number(boardId),
       })),
-      standards: standards.map((s) => ({
+      standards: boardData.standards.map((s) => ({
         id: s.id,
         name: s.name,
-        board_id: boardId,
+        board_id: Number(boardId),
       })),
-      subjects: subjects.map((s) => ({
+      subjects: boardData.subjects.map((s) => ({
         id: s.id,
         name: s.name,
-        board_id: boardId,
+        board_id: Number(boardId),
       })),
     }
 
-    // Add empty item at the end of each array for new entries
-    form.value.mediums.push({ name: '', board_id: boardId })
-    form.value.standards.push({ name: '', board_id: boardId })
-    form.value.subjects.push({ name: '', board_id: boardId })
+    // Add empty items with proper number types
+    form.value.mediums.push({ name: '', board_id: Number(boardId) })
+    form.value.standards.push({ name: '', board_id: Number(boardId) })
+    form.value.subjects.push({ name: '', board_id: Number(boardId) })
+
+    // Update location data with proper type conversion
+    if (boardData.address?.city_id) {
+      await updateLocationData({ city_id: Number(boardData.address.city_id) })
+    }
 
     // Update validation states
     Object.keys(validationStates.value).forEach((key) => {
@@ -783,17 +809,15 @@ onMounted(async () => {
   }
 })
 
-// Update handleCountryChange function
+// Update handleCountryChange to ensure number types
 const handleCountryChange = async () => {
-  // Reset dependent fields
-  form.value.address.state_id = ''
-  form.value.address.city_id = ''
+  form.value.address.state_id = 0
+  form.value.address.city_id = 0
   stateSearch.value = ''
   citySearch.value = ''
   validationStates.value.state.valid = false
   validationStates.value.city.valid = false
 
-  // Fetch states for selected country using query parameter
   if (form.value.address.country_id) {
     try {
       const response = await fetch(getApiUrl(`/states?countryId=${form.value.address.country_id}`))
@@ -811,7 +835,7 @@ const handleCountryChange = async () => {
 // Update handleStateChange function
 const handleStateChange = async () => {
   // Reset city
-  form.value.address.city_id = ''
+  form.value.address.city_id = 0
   citySearch.value = ''
   validationStates.value.city.valid = false
 
@@ -883,7 +907,7 @@ const filteredCountries = computed(() => {
 
 const selectCountry = (country: Country) => {
   countrySearch.value = country.name
-  form.value.address.country_id = country.id
+  form.value.address.country_id = Number(country.id)
   showCountryDropdown.value = false
   validationStates.value.country.valid = true
   validationStates.value.country.touched = true
@@ -891,8 +915,8 @@ const selectCountry = (country: Country) => {
   // Reset dependent fields
   stateSearch.value = ''
   citySearch.value = ''
-  form.value.address.state_id = ''
-  form.value.address.city_id = ''
+  form.value.address.state_id = 0
+  form.value.address.city_id = 0
   validationStates.value.state.valid = false
   validationStates.value.city.valid = false
 
@@ -905,23 +929,23 @@ const selectCountry = (country: Country) => {
 const filterCountries = () => {
   showCountryDropdown.value = true
   selectedCountryIndex.value = -1
+  validationStates.value.country.touched = true
   if (!countrySearch.value) {
-    form.value.address.country_id = ''
+    form.value.address.country_id = 0
     validationStates.value.country.valid = false
   }
-  validationStates.value.country.touched = true
 }
 
 const selectState = (state: State) => {
   stateSearch.value = state.name
-  form.value.address.state_id = state.id
+  form.value.address.state_id = Number(state.id)
   showStateDropdown.value = false
   validationStates.value.state.valid = true
   validationStates.value.state.touched = true
 
   // Reset dependent field
   citySearch.value = ''
-  form.value.address.city_id = ''
+  form.value.address.city_id = 0
   validationStates.value.city.valid = false
 
   handleStateChange().then(() => {
@@ -932,7 +956,7 @@ const selectState = (state: State) => {
 
 const selectCity = (city: City) => {
   citySearch.value = city.name
-  form.value.address.city_id = city.id
+  form.value.address.city_id = Number(city.id)
   showCityDropdown.value = false
   validationStates.value.city.valid = true
   validationStates.value.city.touched = true
@@ -945,29 +969,21 @@ const selectCity = (city: City) => {
 const filterStates = () => {
   showStateDropdown.value = true
   selectedStateIndex.value = -1
-  if (!stateSearch.value) {
-    form.value.address.state_id = ''
-    validationStates.value.state.valid = false
-    // Show all states when input is empty and focused
-    if (form.value.address.country_id) {
-      showStateDropdown.value = true
-    }
-  }
   validationStates.value.state.touched = true
+  if (!stateSearch.value) {
+    form.value.address.state_id = 0
+    validationStates.value.state.valid = false
+  }
 }
 
 const filterCities = () => {
   showCityDropdown.value = true
   selectedCityIndex.value = -1
-  if (!citySearch.value) {
-    form.value.address.city_id = ''
-    validationStates.value.city.valid = false
-    // Show all cities when input is empty and focused
-    if (form.value.address.state_id) {
-      showCityDropdown.value = true
-    }
-  }
   validationStates.value.city.touched = true
+  if (!citySearch.value) {
+    form.value.address.city_id = 0
+    validationStates.value.city.valid = false
+  }
 }
 
 // Add new functions to handle focus events
@@ -1011,16 +1027,18 @@ const handleCityFocus = async () => {
 watch(
   () => form.value.address.street,
   (newValue) => {
-    validationStates.value.address.valid = newValue.trim().length > 0
-    validationStates.value.address.touched = true
+    if (validationStates.value.address.touched) {
+      validationStates.value.address.valid = newValue.trim().length > 0
+    }
   },
 )
 
 watch(
   () => form.value.address.postal_code,
   (newValue) => {
-    validationStates.value.postalCode.valid = newValue.trim().length > 0
-    validationStates.value.postalCode.touched = true
+    if (validationStates.value.postalCode.touched) {
+      validationStates.value.postalCode.valid = newValue.trim().length > 0
+    }
   },
 )
 
@@ -1029,7 +1047,7 @@ watch(
   (newValue) => {
     if (!newValue.trim()) {
       validationStates.value.country.valid = false
-      form.value.address.country_id = ''
+      form.value.address.country_id = 0
     }
     validationStates.value.country.touched = true
   },
@@ -1040,7 +1058,7 @@ watch(
   (newValue) => {
     if (!newValue.trim()) {
       validationStates.value.state.valid = false
-      form.value.address.state_id = ''
+      form.value.address.state_id = 0
     }
     validationStates.value.state.touched = true
   },
@@ -1051,7 +1069,7 @@ watch(
   (newValue) => {
     if (!newValue.trim()) {
       validationStates.value.city.valid = false
-      form.value.address.city_id = ''
+      form.value.address.city_id = 0
     }
     validationStates.value.city.touched = true
   },
@@ -1245,15 +1263,22 @@ const handleCountryKeydown = (e: KeyboardEvent) => {
 
   if (!showCountryDropdown.value || !filteredCountries.value.length) return
 
+  const dropdownMenu = document.querySelector('#country + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
+
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedCountryIndex.value = Math.min(
       selectedCountryIndex.value + 1,
       filteredCountries.value.length - 1,
     )
+    const selectedItem = dropdownMenu.children[selectedCountryIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedCountryIndex.value = Math.max(selectedCountryIndex.value - 1, 0)
+    const selectedItem = dropdownMenu.children[selectedCountryIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
@@ -1270,15 +1295,22 @@ const handleStateKeydown = (e: KeyboardEvent) => {
 
   if (!showStateDropdown.value || !filteredStates.value.length) return
 
+  const dropdownMenu = document.querySelector('#state + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
+
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedStateIndex.value = Math.min(
       selectedStateIndex.value + 1,
       filteredStates.value.length - 1,
     )
+    const selectedItem = dropdownMenu.children[selectedStateIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedStateIndex.value = Math.max(selectedStateIndex.value - 1, 0)
+    const selectedItem = dropdownMenu.children[selectedStateIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
@@ -1295,12 +1327,19 @@ const handleCityKeydown = (e: KeyboardEvent) => {
 
   if (!showCityDropdown.value || !filteredCities.value.length) return
 
+  const dropdownMenu = document.querySelector('#city + .dropdown-menu') as HTMLElement
+  if (!dropdownMenu) return
+
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedCityIndex.value = Math.min(selectedCityIndex.value + 1, filteredCities.value.length - 1)
+    const selectedItem = dropdownMenu.children[selectedCityIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedCityIndex.value = Math.max(selectedCityIndex.value - 1, 0)
+    const selectedItem = dropdownMenu.children[selectedCityIndex.value] as HTMLElement
+    if (selectedItem) ensureVisible(selectedItem, dropdownMenu)
   }
 }
 
@@ -1309,8 +1348,8 @@ const handleNameInput = (e: Event) => {
   const value = (e.target as HTMLInputElement).value
   form.value.name = capitalizeFirstLetter(value)
   validationStates.value.name.touched = true
+  validationStates.value.name.valid = value.trim().length > 0
   isDuplicateName.value = false // Reset duplicate status while typing
-  validationStates.value.name.valid = value.trim().length > 0 // Set to valid while typing
 }
 
 const handleNameBlur = () => {
@@ -1323,8 +1362,8 @@ const handleAbbreviationInput = (e: Event) => {
   const value = (e.target as HTMLInputElement).value
   form.value.abbreviation = value.toUpperCase()
   validationStates.value.abbreviation.touched = true
+  validationStates.value.abbreviation.valid = value.trim().length > 0
   isDuplicateAbbreviation.value = false // Reset duplicate status while typing
-  validationStates.value.abbreviation.valid = value.trim().length > 0 // Set to valid while typing
 }
 
 const handleAbbreviationBlur = () => {
@@ -1348,19 +1387,13 @@ const fetchCountries = async () => {
 const handleSubmit = async (e: Event) => {
   e.preventDefault()
 
-  // Only proceed if it's a click event or an Enter keypress on the save button
-  if (
-    e instanceof KeyboardEvent &&
-    e.key === 'Enter' &&
-    (e.target as HTMLElement)?.tagName !== 'BUTTON'
-  ) {
-    return
-  }
-
   // Mark all fields as touched to trigger validation display
   Object.keys(validationStates.value).forEach((key) => {
     validationStates.value[key as keyof typeof validationStates.value].touched = true
   })
+
+  // Force a DOM update before checking for invalid fields
+  await new Promise((resolve) => setTimeout(resolve, 0))
 
   // Check if form is valid
   if (!isFormValid.value) {
@@ -1383,264 +1416,195 @@ const handleSubmit = async (e: Event) => {
   }
 }
 
-// Update the calculateChanges function to include board name and address changes
-const calculateChanges = async () => {
-  changes.value = []
+const fetchCurrentBoardData = async (boardId: number) => {
+  const [mediums, standards, subjects] = await Promise.all([
+    fetch(getApiUrl(`/instruction-mediums/board/${boardId}`)).then((r) => r.json()),
+    fetch(getApiUrl(`/standards/board/${boardId}`)).then((r) => r.json()),
+    fetch(getApiUrl(`/subjects/board/${boardId}`)).then((r) => r.json()),
+  ])
+  return { mediums, standards, subjects }
+}
 
-  if (props.isEditMode && props.boardId) {
-    const boardId = parseInt(props.boardId)
+const compareLocationIds = async (
+  currentId: number,
+  newId: number,
+  type: 'city' | 'state' | 'country',
+): Promise<string | null> => {
+  if (currentId === newId) return null
+  if (type !== 'city' && (!currentId || !newId)) return null
 
-    // Get current data
-    const [currentMediums, currentStandards, currentSubjects] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${boardId}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/standards/board/${boardId}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/subjects/board/${boardId}`)).then((r) => r.json()),
-    ])
+  const [oldName, newName] = await Promise.all([
+    fetchLocationDetails(currentId, type),
+    fetchLocationDetails(newId, type),
+  ])
 
-    // Add board basic info changes if modified
-    const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (boardResponse.ok) {
-      const currentBoard = await boardResponse.json()
+  return `${type.charAt(0).toUpperCase() + type.slice(1)}: ${oldName} → ${newName}`
+}
 
-      // Check for name change - use trim() to avoid whitespace issues
-      if (currentBoard.name && form.value.name.trim() !== currentBoard.name.trim()) {
-        changes.value.push({
+const compareAddressChanges = async (
+  currentAddress: AddressData,
+  formAddress: typeof form.value.address,
+): Promise<string[]> => {
+  const changes: string[] = []
+
+  if (currentAddress.street !== formAddress.street) {
+    changes.push(`Street: ${currentAddress.street} → ${formAddress.street}`)
+  }
+  if (currentAddress.postal_code !== formAddress.postal_code) {
+    changes.push(`Postal Code: ${currentAddress.postal_code} → ${formAddress.postal_code}`)
+  }
+
+  const locationChanges = await Promise.all([
+    compareLocationIds(currentAddress.city_id, formAddress.city_id, 'city'),
+    compareLocationIds(currentAddress.state_id, formAddress.state_id, 'state'),
+    compareLocationIds(currentAddress.country_id, formAddress.country_id, 'country'),
+  ])
+
+  return [...changes, ...locationChanges.filter((change): change is string => change !== null)]
+}
+
+const compareBasicBoardInfo = (
+  currentBoard: { name?: string; abbreviation?: string },
+  formData: typeof form.value,
+  boardId: number,
+): Change[] => {
+  const changes: Change[] = []
+
+  // Compare name
+  if (currentBoard.name && formData.name.trim() !== currentBoard.name.trim()) {
+    changes.push({
+      type: 'modify',
+      message: `Modify board name: ${currentBoard.name} → ${formData.name}`,
+      entity: 'board',
+      data: { old: { id: boardId, name: currentBoard.name }, new: { name: formData.name } },
+    })
+  }
+
+  // Compare abbreviation
+  if (
+    currentBoard.abbreviation &&
+    formData.abbreviation.trim() !== currentBoard.abbreviation.trim()
+  ) {
+    changes.push({
+      type: 'modify',
+      message: `Modify board abbreviation: ${currentBoard.abbreviation} → ${formData.abbreviation}`,
+      entity: 'board',
+      data: {
+        old: { id: boardId, name: currentBoard.abbreviation },
+        new: { name: formData.abbreviation },
+      },
+    })
+  }
+
+  return changes
+}
+
+const compareItems = <T extends BaseItem>(
+  currentItems: T[],
+  formItems: FormItem[],
+  entityType: 'medium' | 'standard' | 'subject',
+): Change[] => {
+  const changes: Change[] = []
+  const validFormItems = formItems.filter((item) => item.name.trim())
+
+  // Find deleted items
+  currentItems.forEach((currentItem) => {
+    const formItem = validFormItems.find((item) => item.id === currentItem.id)
+    if (!formItem) {
+      changes.push({
+        type: 'delete',
+        message: `Delete ${entityType}: ${currentItem.instruction_medium || currentItem.name || ''}`,
+        entity: entityType,
+        data: currentItem,
+      })
+    }
+  })
+
+  // Find modified and added items
+  validFormItems.forEach((formItem) => {
+    const currentItem = currentItems.find((item) => item.id === formItem.id)
+    if (currentItem) {
+      const currentName = currentItem.instruction_medium || currentItem.name || ''
+      if (currentName !== formItem.name) {
+        changes.push({
           type: 'modify',
-          message: `Modify board name: ${currentBoard.name} → ${form.value.name}`,
-          entity: 'board',
-          data: { old: { id: boardId, name: currentBoard.name }, new: { name: form.value.name } },
-        })
-      }
-
-      // Check for abbreviation change - use trim() to avoid whitespace issues
-      if (
-        currentBoard.abbreviation &&
-        form.value.abbreviation.trim() !== currentBoard.abbreviation.trim()
-      ) {
-        changes.value.push({
-          type: 'modify',
-          message: `Modify board abbreviation: ${currentBoard.abbreviation} → ${form.value.abbreviation}`,
-          entity: 'board',
+          message: `Modify ${entityType}: ${currentName} → ${formItem.name}`,
+          entity: entityType,
           data: {
-            old: { id: boardId, name: currentBoard.abbreviation },
-            new: { name: form.value.abbreviation },
+            old: { id: currentItem.id, name: currentName },
+            new: { id: formItem.id, name: formItem.name },
           },
         })
       }
-
-      // Check for address changes
-      if (currentBoard.address_id) {
-        const addressResponse = await fetch(getApiUrl(`/addresses/${currentBoard.address_id}`))
-        if (addressResponse.ok) {
-          const currentAddress = await addressResponse.json()
-
-          // More detailed comparison of address fields
-          const addressChanges = []
-
-          if (currentAddress.street?.trim() !== form.value.address.street?.trim()) {
-            addressChanges.push(
-              `Street: ${currentAddress.street || ''} → ${form.value.address.street || ''}`,
-            )
-          }
-
-          if (currentAddress.postal_code?.trim() !== form.value.address.postal_code?.trim()) {
-            addressChanges.push(
-              `Postal Code: ${currentAddress.postal_code || ''} → ${form.value.address.postal_code || ''}`,
-            )
-          }
-
-          // Compare city IDs as numbers
-          const currentCityId = parseInt(String(currentAddress.city_id))
-          const newCityId = parseInt(String(form.value.address.city_id))
-          if (currentCityId !== newCityId) {
-            try {
-              const [oldCity, newCity] = await Promise.all([
-                fetch(getApiUrl(`/cities/${currentAddress.city_id}`)).then((r) => r.json()),
-                fetch(getApiUrl(`/cities/${form.value.address.city_id}`)).then((r) => r.json()),
-              ])
-              addressChanges.push(`City: ${oldCity.name || ''} → ${newCity.name || ''}`)
-            } catch (error) {
-              console.error('Error fetching city details:', error)
-            }
-          }
-
-          // Compare state IDs as numbers
-          const currentStateId = parseInt(String(currentAddress.state_id))
-          const newStateId = parseInt(String(form.value.address.state_id))
-          if (currentStateId && newStateId && currentStateId !== newStateId) {
-            try {
-              const [oldState, newState] = await Promise.all([
-                fetch(getApiUrl(`/states/${currentAddress.state_id}`)).then((r) => r.json()),
-                fetch(getApiUrl(`/states/${form.value.address.state_id}`)).then((r) => r.json()),
-              ])
-              addressChanges.push(`State: ${oldState.name || ''} → ${newState.name || ''}`)
-            } catch (error) {
-              console.error('Error fetching state details:', error)
-            }
-          }
-
-          // Compare country IDs as numbers
-          const currentCountryId = parseInt(String(currentAddress.country_id))
-          const newCountryId = parseInt(String(form.value.address.country_id))
-          if (currentCountryId && newCountryId && currentCountryId !== newCountryId) {
-            try {
-              const [oldCountry, newCountry] = await Promise.all([
-                fetch(getApiUrl(`/countries/${currentAddress.country_id}`)).then((r) => r.json()),
-                fetch(getApiUrl(`/countries/${form.value.address.country_id}`)).then((r) =>
-                  r.json(),
-                ),
-              ])
-              addressChanges.push(`Country: ${oldCountry.name || ''} → ${newCountry.name || ''}`)
-            } catch (error) {
-              console.error('Error fetching country details:', error)
-            }
-          }
-
-          if (addressChanges.length > 0) {
-            changes.value.push({
-              type: 'modify',
-              message: 'Board address details modified:\n' + addressChanges.join('\n'),
-              entity: 'board',
-              data: {
-                old: { id: currentBoard.address_id, name: 'Previous Address' },
-                new: { name: 'New Address' },
-              },
-            })
-          }
-        }
-      }
-    }
-
-    // Add a separator in changes if there are basic info changes
-    if (changes.value.length > 0) {
-      changes.value.push({
-        type: 'modify',
-        message: '---',
-        entity: 'separator',
-        data: {},
+    } else {
+      changes.push({
+        type: 'add',
+        message: `Add ${entityType}: ${formItem.name}`,
+        entity: entityType,
+        data: formItem,
       })
     }
+  })
 
-    // Check mediums changes
-    const formMediums = form.value.mediums.filter((m) => m.name.trim())
+  return changes
+}
 
-    // Find deleted mediums
-    currentMediums.forEach((medium: { id: number; instruction_medium: string }) => {
-      const formMedium = formMediums.find((m) => m.id === medium.id)
-      if (!formMedium) {
+const calculateChanges = async () => {
+  changes.value = []
+
+  if (!props.isEditMode || !props.boardId) return
+
+  const boardId = parseInt(props.boardId)
+
+  // Get current data
+  const { mediums, standards, subjects } = await fetchCurrentBoardData(boardId)
+  const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
+
+  if (!boardResponse.ok) return
+
+  const currentBoard = await boardResponse.json()
+
+  // Compare basic board info
+  const boardChanges = compareBasicBoardInfo(currentBoard, form.value, boardId)
+  changes.value.push(...boardChanges)
+
+  // Compare address if it exists
+  if (currentBoard.address_id) {
+    const addressResponse = await fetch(getApiUrl(`/addresses/${currentBoard.address_id}`))
+    if (addressResponse.ok) {
+      const currentAddress = await addressResponse.json()
+      const addressChanges = await compareAddressChanges(currentAddress, form.value.address)
+
+      if (addressChanges.length > 0) {
         changes.value.push({
-          type: 'delete',
-          message: `Delete medium: ${medium.instruction_medium}`,
-          entity: 'medium',
-          data: medium,
+          type: 'modify',
+          message: 'Board address details modified:\n' + addressChanges.join('\n'),
+          entity: 'board',
+          data: {
+            old: { id: currentBoard.address_id, name: 'Previous Address' },
+            new: { name: 'New Address' },
+          },
         })
       }
-    })
+    }
+  }
 
-    // Find modified and added mediums
-    formMediums.forEach((medium) => {
-      const currentMedium = currentMediums.find(
-        (m: { id: number; instruction_medium: string }) => m.id === medium.id,
-      )
-      if (currentMedium) {
-        if (currentMedium.instruction_medium !== medium.name) {
-          changes.value.push({
-            type: 'modify',
-            message: `Modify medium: ${currentMedium.instruction_medium} → ${medium.name}`,
-            entity: 'medium',
-            data: { old: currentMedium, new: medium },
-          })
-        }
-      } else {
-        changes.value.push({
-          type: 'add',
-          message: `Add medium: ${medium.name}`,
-          entity: 'medium',
-          data: medium,
-        })
-      }
-    })
-
-    // Check standards changes
-    const formStandards = form.value.standards.filter((s) => s.name.trim())
-
-    // Find deleted standards
-    currentStandards.forEach((standard: { id: number; name: string }) => {
-      const formStandard = formStandards.find((s) => s.id === standard.id)
-      if (!formStandard) {
-        changes.value.push({
-          type: 'delete',
-          message: `Delete standard: ${standard.name}`,
-          entity: 'standard',
-          data: standard,
-        })
-      }
-    })
-
-    // Find modified and added standards
-    formStandards.forEach((standard) => {
-      const currentStandard = currentStandards.find(
-        (s: { id: number; name: string }) => s.id === standard.id,
-      )
-      if (currentStandard) {
-        if (currentStandard.name !== standard.name) {
-          changes.value.push({
-            type: 'modify',
-            message: `Modify standard: ${currentStandard.name} → ${standard.name}`,
-            entity: 'standard',
-            data: { old: currentStandard, new: standard },
-          })
-        }
-      } else {
-        changes.value.push({
-          type: 'add',
-          message: `Add standard: ${standard.name}`,
-          entity: 'standard',
-          data: standard,
-        })
-      }
-    })
-
-    // Check subjects changes
-    const formSubjects = form.value.subjects.filter((s) => s.name.trim())
-
-    // Find deleted subjects
-    currentSubjects.forEach((subject: { id: number; name: string }) => {
-      const formSubject = formSubjects.find((s) => s.id === subject.id)
-      if (!formSubject) {
-        changes.value.push({
-          type: 'delete',
-          message: `Delete subject: ${subject.name}`,
-          entity: 'subject',
-          data: subject,
-        })
-      }
-    })
-
-    // Find modified and added subjects
-    formSubjects.forEach((subject) => {
-      const currentSubject = currentSubjects.find(
-        (s: { id: number; name: string }) => s.id === subject.id,
-      )
-      if (currentSubject) {
-        if (currentSubject.name !== subject.name) {
-          changes.value.push({
-            type: 'modify',
-            message: `Modify subject: ${currentSubject.name} → ${subject.name}`,
-            entity: 'subject',
-            data: { old: currentSubject, new: subject },
-          })
-        }
-      } else {
-        changes.value.push({
-          type: 'add',
-          message: `Add subject: ${subject.name}`,
-          entity: 'subject',
-          data: subject,
-        })
-      }
+  // Add separator if there are changes
+  if (changes.value.length > 0) {
+    changes.value.push({
+      type: 'modify',
+      message: '---',
+      entity: 'separator',
+      data: {},
     })
   }
+
+  // Compare related items
+  changes.value.push(
+    ...compareItems(mediums, form.value.mediums, 'medium'),
+    ...compareItems(standards, form.value.standards, 'standard'),
+    ...compareItems(subjects, form.value.subjects, 'subject'),
+  )
 }
 
 // Update confirmAndSubmit to handle both add and edit modes
@@ -1659,7 +1623,7 @@ const confirmAndSubmit = async () => {
     const formattedAddress = {
       street: form.value.address.street?.trim() || '',
       postal_code: form.value.address.postal_code?.trim() || '',
-      city_id: parseInt(String(form.value.address.city_id))
+      city_id: parseInt(String(form.value.address.city_id)),
     }
 
     let addressId: number | undefined
@@ -1727,7 +1691,7 @@ const confirmAndSubmit = async () => {
         .filter((m) => m.name.trim())
         .map((m) => ({
           name: m.name.trim(),
-          board_id: props.boardId ? parseInt(props.boardId) : 0
+          board_id: props.boardId ? parseInt(props.boardId) : 0,
         })),
       standards: form.value.standards
         .filter((s) => s.name.trim())
@@ -1813,6 +1777,17 @@ const checkDuplicateAbbreviation = async (abbreviation: string) => {
     console.error('Error checking duplicate abbreviation:', error)
   }
 }
+
+const ensureVisible = (element: HTMLElement, container: HTMLElement) => {
+  const containerRect = container.getBoundingClientRect()
+  const elementRect = element.getBoundingClientRect()
+
+  if (elementRect.bottom > containerRect.bottom) {
+    container.scrollTop += elementRect.bottom - containerRect.bottom
+  } else if (elementRect.top < containerRect.top) {
+    container.scrollTop -= containerRect.top - elementRect.top
+  }
+}
 </script>
 
 <style scoped>
@@ -1847,25 +1822,15 @@ form {
 .dropdown-menu {
   max-width: 100%;
   width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
-/* Force scrollbar to always show to prevent layout shift */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.dropdown-menu .dropdown-item {
+  white-space: normal;
+  word-wrap: break-word;
+  padding: 0.5rem 1rem;
 }
 
 /* Dropdown styles for black highlight */

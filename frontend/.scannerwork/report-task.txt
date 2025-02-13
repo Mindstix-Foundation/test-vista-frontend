@@ -1,0 +1,6 @@
+projectKey=test-vista
+serverUrl=http://localhost:9000
+serverVersion=25.2.0.102705
+dashboardUrl=http://localhost:9000/dashboard?id=test-vista
+ceTaskId=3d545410-7d5d-4b03-99da-c1799263e48a
+ceTaskUrl=http://localhost:9000/api/ce/task?id=3d545410-7d5d-4b03-99da-c1799263e48a

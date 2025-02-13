@@ -122,44 +122,44 @@
       tabindex="-1"
       aria-labelledby="deleteConfirmationModalLabel"
       aria-hidden="true"
+      data-bs-backdrop="static"
     >
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title" id="deleteConfirmationModalLabel">Remove School</h5>
-          </div>
-          <div class="modal-body">
-            <p>Are you sure you want to delete this School from system?</p>
-
-            <div v-if="associatedTeachers.length > 0" class="alert alert-warning mt-3">
-              <p class="mb-2"><strong>Warning:</strong> This school has associated teachers:</p>
-              <ul class="list-group">
-                <li v-for="teacher in associatedTeachers" :key="teacher.id" class="list-group-item">
-                  {{ teacher.name }}
-                </li>
-              </ul>
-              <p class="mt-3 mb-0 text-danger">
-                <i class="bi bi-exclamation-triangle"></i> Cannot delete school with associated
-                teachers. Please reassign or remove teachers first.
-              </p>
-            </div>
-          </div>
-          <div class="modal-footer">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Delete</h5>
             <button
               type="button"
-              class="btn btn-light"
-              style="border: 1px solid gray"
-              id="cancelButton"
+              class="btn-close"
               @click="handleCancelDelete"
-            >
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <template v-if="associatedTeachers.length > 0">
+              <div class="alert alert-warning">
+                <strong>Cannot delete this school!</strong>
+                <p class="mb-2">The following teachers are associated with this school:</p>
+                <ul class="list-unstyled ms-3">
+                  <li v-for="teacher in associatedTeachers" :key="teacher.id">
+                    - {{ teacher.name }}
+                  </li>
+                </ul>
+                <p class="mb-0">
+                  Please reassign or remove these teachers first before deleting the school.
+                </p>
+              </div>
+            </template>
+            <template v-else> Are you sure you want to delete this school? </template>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="handleCancelDelete">
               Cancel
             </button>
             <button
               type="button"
               class="btn btn-danger"
-              id="deleteButton"
               @click="deleteSchool"
-              data-bs-dismiss="modal"
               :disabled="associatedTeachers.length > 0"
             >
               Delete
@@ -542,6 +542,25 @@ interface DisplaySchool extends School {
   standards: Array<{ id: number; name: string }>
 }
 
+interface SchoolInstructionMedium {
+  instruction_medium: {
+    id: number
+    instruction_medium: string
+  }
+}
+
+interface SchoolStandard {
+  standard: {
+    id: number
+    name: string
+  }
+}
+
+interface ApiSchool extends School {
+  School_Instruction_Medium: SchoolInstructionMedium[]
+  School_Standard: SchoolStandard[]
+}
+
 const route = useRoute()
 const router = useRouter()
 
@@ -590,112 +609,50 @@ async function fetchSchools() {
   try {
     console.log('Starting fetchSchools...')
 
-    // Fetch schools with all related data in a single request
     const schoolsResponse = await fetch(getApiUrl('/schools'))
-    const schoolsData = (await schoolsResponse.json()) as School[]
-    console.log('Initial schools data:', schoolsData)
+    const schoolsData = (await schoolsResponse.json()) as ApiSchool[]
+    console.log('Schools data:', schoolsData)
 
-    // For each school, fetch its complete details
-    const schoolsWithDetails = await Promise.all(
-      schoolsData.map(async (school: School) => {
-        console.log(`\nProcessing school ID ${school.id}:`, school)
-
-        // Fetch board details
-        const boardResponse = await fetch(getApiUrl(`/boards/${school.board_id}`))
-        const board = await boardResponse.json()
-        console.log('Board details:', board)
-
-        // Fetch complete address details with city, state, and country
-        console.log(`Fetching address details for address_id: ${school.address_id}`)
-        const addressResponse = await fetch(getApiUrl(`/addresses/${school.address_id}`))
-        const address = await addressResponse.json()
-        console.log('Address details:', address)
-
-        // Fetch city details
-        console.log(`Fetching city details for city_id: ${address.city_id}`)
-        const cityResponse = await fetch(getApiUrl(`/cities/${address.city_id}`))
-        const city = await cityResponse.json()
-        console.log('City details:', city)
-
-        // Fetch state details
-        console.log(`Fetching state details for state_id: ${city.state_id}`)
-        const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
-        const state = await stateResponse.json()
-        console.log('State details:', state)
-
-        // Fetch country details
-        console.log(`Fetching country details for country_id: ${state.country_id}`)
-        const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
-        const country = await countryResponse.json()
-        console.log('Country details:', country)
-
-        // Fetch school's mediums with their details
-        console.log(`Fetching mediums for school ID: ${school.id}`)
-        const schoolMediumsResponse = await fetch(
-          getApiUrl(`/school-instruction-mediums/school/${school.id}`),
-        )
-        const schoolMediums = await schoolMediumsResponse.json()
-        console.log('School mediums:', schoolMediums)
-
-        // Get medium details for each medium
-        const mediums = await Promise.all(
-          schoolMediums.map(async (sm: { instruction_medium_id: number }) => {
-            const mediumResponse = await fetch(
-              getApiUrl(`/instruction-mediums/${sm.instruction_medium_id}`),
-            )
-            const medium = await mediumResponse.json()
-            return { id: medium.id, name: medium.instruction_medium }
-          }),
-        )
-        console.log('Processed mediums:', mediums)
-
-        // Fetch school's standards with their details
-        console.log(`Fetching standards for school ID: ${school.id}`)
-        const schoolStandardsResponse = await fetch(
-          getApiUrl(`/school-standards/school/${school.id}`),
-        )
-        const schoolStandards = await schoolStandardsResponse.json()
-        console.log('School standards:', schoolStandards)
-
-        // Get standard details for each standard
-        const standards = await Promise.all(
-          schoolStandards.map(async (ss: { standard_id: number }) => {
-            const standardResponse = await fetch(getApiUrl(`/standards/${ss.standard_id}`))
-            const standard = await standardResponse.json()
-            return { id: standard.id, name: standard.name }
-          }),
-        )
-        console.log('Processed standards:', standards)
-
-        // Construct the complete school object with all details
-        const completeSchool = {
+    schools.value = schoolsData
+      .map((school): DisplaySchool => {
+        // Transform the data to match DisplaySchool interface
+        return {
           ...school,
-          board,
-          address: {
-            ...address,
-            city,
-            state,
-            country,
+          board: {
+            id: school.board_id,
+            name: school.board?.name || '',
+            abbreviation: school.board?.abbreviation || '',
+            address_id: school.board?.address_id || 0,
+            created_by: school.board?.created_by || 0,
+            created_at: school.board?.created_at || '',
+            updated_by: school.board?.updated_by || 0,
+            updated_at: school.board?.updated_at || '',
           },
-          mediums,
-          standards,
-        } as DisplaySchool
+          address: {
+            ...school.address!,
+            city: school.address?.city || { id: 0, state_id: 0, name: '' },
+            state: school.address?.state || { id: 0, country_id: 0, name: '' },
+            country: school.address?.country || { id: 0, name: '' },
+          },
+          mediums:
+            school.School_Instruction_Medium?.map((medium) => ({
+              id: medium.instruction_medium.id,
+              name: medium.instruction_medium.instruction_medium,
+            })) || [],
+          standards:
+            school.School_Standard?.map((standard) => ({
+              id: standard.standard.id,
+              name: standard.standard.name,
+            })) || [],
+        }
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime()
+        const dateB = new Date(b.created_at).getTime()
+        return dateA - dateB
+      })
 
-        console.log('Complete school object:', completeSchool)
-        console.log('Address structure:', completeSchool.address)
-        return completeSchool
-      }),
-    )
-
-    // Sort schools by created_at timestamp before assigning to schools.value
-    schools.value = schoolsWithDetails.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime()
-      const dateB = new Date(b.created_at).getTime()
-      return dateA - dateB
-    })
-
-    console.log('\nFinal schools array:', schools.value)
-    console.log('Sample school address data:', schools.value[0]?.address)
+    console.log('Processed schools:', schools.value)
   } catch (error) {
     console.error('Error in fetchSchools:', error)
     if (error instanceof Error) {

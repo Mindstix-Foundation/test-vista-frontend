@@ -39,33 +39,34 @@ onMounted(async () => {
     const school = await response.json()
     console.log('Fetched school data:', school)
 
-    // Get board mediums and standards
-    const [boardMediums, boardStandards, schoolMediums, schoolStandards] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${school.board_id}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/standards/board/${school.board_id}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/school-instruction-mediums/school/${schoolId.value}`)).then((r) =>
-        r.json(),
-      ),
-      fetch(getApiUrl(`/school-standards/school/${schoolId.value}`)).then((r) => r.json()),
-    ])
-
-    // Map board mediums and standards to the format expected by the form
-    const mappedBoardMediums = boardMediums.map(
-      (m: { id: number; instruction_medium: string }) => ({
-        id: m.id,
-        name: m.instruction_medium,
-      }),
+    // Map the nested data directly
+    const mappedBoardMediums = await fetch(
+      getApiUrl(`/instruction-mediums/board/${school.board_id}`),
     )
-    const mappedBoardStandards = boardStandards.map((s: { id: number; name: string }) => ({
-      id: s.id,
-      name: s.name,
-    }))
+      .then((r) => r.json())
+      .then((mediums) =>
+        mediums.map((m: { id: number; instruction_medium: string }) => ({
+          id: m.id,
+          name: m.instruction_medium,
+        })),
+      )
 
-    // Get the IDs of the school's selected mediums and standards
-    const selectedMediumIds = schoolMediums.map(
+    const mappedBoardStandards = await fetch(getApiUrl(`/standards/board/${school.board_id}`))
+      .then((r) => r.json())
+      .then((standards) =>
+        standards.map((s: { id: number; name: string }) => ({
+          id: s.id,
+          name: s.name,
+        })),
+      )
+
+    // Get the IDs of the school's selected mediums and standards from nested data
+    const selectedMediumIds = school.School_Instruction_Medium.map(
       (m: { instruction_medium_id: number }) => m.instruction_medium_id,
     )
-    const selectedStandardIds = schoolStandards.map((s: { standard_id: number }) => s.standard_id)
+    const selectedStandardIds = school.School_Standard.map(
+      (s: { standard_id: number }) => s.standard_id,
+    )
 
     // Construct form data
     schoolData.value = {
@@ -91,7 +92,7 @@ onMounted(async () => {
     if (schoolFormRef.value) {
       schoolFormRef.value.availableMediums = mappedBoardMediums
       schoolFormRef.value.availableStandards = mappedBoardStandards
-      schoolFormRef.value.boardSearch = school.name
+      schoolFormRef.value.boardSearch = school.board.name
     }
 
     console.log('Constructed initial data:', schoolData.value)
