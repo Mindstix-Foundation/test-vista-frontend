@@ -16,7 +16,7 @@
             v-model="formData.name"
             placeholder="Enter Teacher Name"
             @input="handleNameInput"
-            @keydown="handleKeyDown($event, 'schoolName')"
+            @keydown="handleKeyDown($event, 'board')"
             required
           />
           <label for="teacherName">Teacher Name <span class="text-danger">*</span></label>
@@ -29,9 +29,55 @@
         </div>
       </div>
 
+      <!-- Board Selection -->
+      <div class="col col-12 col-sm-10 col-md-8">
+        <div class="form-floating dropdown board-dropdown">
+          <input
+            ref="boardInput"
+            type="text"
+            class="form-control"
+            :class="{
+              'is-invalid': !validationStates.boardId.valid && validationStates.boardId.touched,
+              'is-valid': validationStates.boardId.valid && validationStates.boardId.touched,
+            }"
+            id="board"
+            v-model="boardSearch"
+            @input="filterBoards"
+            @focus="showBoardDropdown = true"
+            @click="showBoardDropdown = true"
+            placeholder="Search Board"
+            autocomplete="off"
+            @keydown="handleBoardKeydown"
+            required
+          />
+          <div
+            class="dropdown-menu"
+            :class="{ show: showBoardDropdown && filteredBoards.length > 0 }"
+          >
+            <button
+              type="button"
+              v-for="(board, index) in filteredBoards"
+              :key="board.id"
+              class="dropdown-item"
+              :class="{ active: index === selectedBoardIndex }"
+              @click="selectBoard(board)"
+            >
+              {{ board.name }}
+            </button>
+          </div>
+          <label for="board">Board <span class="text-danger">*</span></label>
+          <div
+            class="invalid-feedback"
+            v-if="!validationStates.boardId.valid && validationStates.boardId.touched"
+          >
+            Please select a board
+          </div>
+        </div>
+      </div>
+
       <!-- School Selection -->
       <div class="col col-12 col-sm-10 col-md-8">
-        <div class="form-floating dropdown">
+        <div class="form-floating dropdown school-dropdown">
           <input
             ref="schoolInput"
             type="text"
@@ -40,38 +86,52 @@
               'is-invalid': !validationStates.schoolId.valid && validationStates.schoolId.touched,
               'is-valid': validationStates.schoolId.valid && validationStates.schoolId.touched,
             }"
-            id="schoolName"
+            id="school"
             v-model="schoolSearch"
             @input="filterSchools"
             @focus="showSchoolDropdown = true"
             @click="showSchoolDropdown = true"
-            placeholder="School"
-            required
+            placeholder="Search School"
             autocomplete="off"
             @keydown="handleSchoolKeydown"
+            :disabled="!formData.boardId"
+            required
           />
           <div
             class="dropdown-menu"
-            :class="{ show: showSchoolDropdown && filteredSchools.length > 0 }"
-            style="position: absolute; width: 100%; z-index: 1000"
+            :class="{
+              show:
+                showSchoolDropdown &&
+                (filteredSchools.length > 0 || (formData.boardId && schools.length === 0)),
+            }"
           >
+            <div v-if="formData.boardId && schools.length === 0" class="dropdown-item no-schools">
+              This board doesn't have any schools
+            </div>
             <button
+              v-else
+              type="button"
               v-for="(school, index) in filteredSchools"
               :key="school.id"
               class="dropdown-item"
               :class="{ active: index === selectedSchoolIndex }"
               @click="selectSchool(school)"
-              type="button"
             >
               {{ school.name }}
             </button>
           </div>
-          <label for="schoolName">School <span class="text-danger">*</span></label>
+          <label for="school">School <span class="text-danger">*</span></label>
           <div
             class="invalid-feedback"
             v-if="!validationStates.schoolId.valid && validationStates.schoolId.touched"
           >
-            Please select a valid school
+            {{
+              !formData.boardId
+                ? 'Please select a board first'
+                : formData.boardId && schools.length === 0
+                  ? 'This board has no schools'
+                  : 'Please select a school'
+            }}
           </div>
         </div>
       </div>
@@ -215,8 +275,11 @@
             id="standardSelect"
             v-model="selectedStandard"
             @change="handleStandardSelect"
+            :disabled="!formData.schoolId"
           >
-            <option value="">Select Standard</option>
+            <option value="">
+              {{ !formData.schoolId ? 'Select school first' : 'Select Standard' }}
+            </option>
             <option v-for="standard in standards" :key="standard.id" :value="standard">
               {{ standard.name }}
             </option>
@@ -271,7 +334,15 @@
             </div>
             <div class="modal-body">
               <div id="subjectSelectContainer" class="p-3 border rounded">
-                <div v-for="subject in availableSubjects" :key="subject.id" class="form-check mb-2">
+                <div v-if="availableSubjects.length === 0" class="text-center text-muted py-3">
+                  This standard doesn't have any subjects
+                </div>
+                <div
+                  v-else
+                  v-for="subject in availableSubjects"
+                  :key="subject.id"
+                  class="form-check mb-2"
+                >
                   <input
                     class="form-check-input"
                     type="checkbox"
@@ -296,7 +367,12 @@
               >
                 Close
               </button>
-              <button type="button" class="btn btn-success" @click="addSubjects">
+              <button
+                type="button"
+                class="btn btn-success"
+                @click="addSubjects"
+                :disabled="availableSubjects.length === 0"
+              >
                 Add Subjects
               </button>
             </div>
@@ -465,11 +541,13 @@ const capitalizeWords = (str: string) => {
 // Validation States
 const validationStates = reactive({
   name: { touched: false, valid: false },
+  boardId: { touched: false, valid: false },
   emailId: { touched: false, valid: false },
   contactNumber: { touched: false, valid: false },
   alternateContactNumber: { touched: false, valid: false },
   highestQualification: { touched: false, valid: false },
   schoolId: { touched: false, valid: false },
+  teacherSubjects: { touched: false, valid: false },
 })
 
 // State
@@ -514,7 +592,6 @@ const availableSubjects = ref<
 >([])
 const isSubmitting = ref(false)
 const selectedSchoolBoard = ref<{ id: number; name: string } | null>(null)
-const schoolMediums = ref<Array<{ id: number; name: string }>>([])
 const schoolStandards = ref<
   Array<{
     id: number // This is the school_standard_id
@@ -538,11 +615,14 @@ interface Change {
 const changes = ref<Change[]>([])
 let saveConfirmationModal: Modal | null = null
 
+// Add this with other refs
+const initialSchoolId = ref<number | null>(null)
+
 // Form Data with proper types for validation
 interface FormDataType {
   name: string
-  schoolId: number
   boardId: number
+  schoolId: number
   emailId: string
   contactNumber: string
   alternateContactNumber: string
@@ -570,8 +650,8 @@ interface FormDataType {
 // Form Data
 const formData = reactive<FormDataType>({
   name: '',
-  schoolId: 0,
   boardId: 0,
+  schoolId: 0,
   emailId: '',
   contactNumber: '',
   alternateContactNumber: '',
@@ -590,6 +670,10 @@ const rules = {
     validName: helpers.withMessage('Name can only contain letters and spaces', (value: string) =>
       /^[a-zA-Z\s]*$/.test(value),
     ),
+  },
+  boardId: {
+    required: helpers.withMessage('Board selection is required', required),
+    validBoard: helpers.withMessage('Please select a valid board', (value: number) => value !== 0),
   },
   schoolId: {
     required: helpers.withMessage('School selection is required', required),
@@ -628,6 +712,12 @@ const rules = {
       (value: string) => value.length >= 2,
     ),
   },
+  teacherSubjects: {
+    required: helpers.withMessage(
+      'Please select at least one standard with subjects',
+      (value: TeacherSubject[]) => value.length > 0,
+    ),
+  },
 }
 
 const v$ = useVuelidate(rules, formData)
@@ -648,13 +738,16 @@ const handleKeyDown = (event: KeyboardEvent, nextField: string) => {
     const nextElement = document.getElementById(nextField)
     if (nextElement) {
       nextElement.focus()
+      if (nextElement instanceof HTMLInputElement) {
+        nextElement.select()
+      }
     }
   }
 }
 
 // Update school keyboard navigation
 const handleSchoolKeydown = (event: KeyboardEvent) => {
-  if (!filteredSchools.value.length) return
+  if (!formData.boardId || !filteredSchools.value.length) return
 
   switch (event.key) {
     case 'ArrowDown':
@@ -702,52 +795,11 @@ watch(
   async (newData) => {
     console.log('[Validation] Watch triggered with initialData:', newData)
     if (newData) {
-      console.log('[Validation] Current states:', JSON.stringify(validationStates))
+      // Store the initial school ID
+      initialSchoolId.value = newData.schoolId
+      console.log('[Validation] Stored initial school ID:', initialSchoolId.value)
 
-      // Update form data
-      Object.assign(formData, newData)
-      console.log('[Validation] Form data updated:', formData)
-
-      // First mark all fields as touched
-      Object.keys(validationStates).forEach((key) => {
-        validationStates[key as keyof typeof validationStates].touched = true
-      })
-
-      // Then validate each field and store results
-      const nameValid = newData.name.length >= 3 && /^[a-zA-Z\s]*$/.test(newData.name)
-      const emailValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(newData.emailId)
-      const contactValid = validateContactNumber(newData.contactNumber)
-      const alternateContactValid =
-        !newData.alternateContactNumber ||
-        (validateContactNumber(newData.alternateContactNumber) &&
-          newData.alternateContactNumber !== newData.contactNumber)
-      const qualificationValid = newData.highestQualification.length >= 2
-      const schoolValid = newData.schoolId !== 0
-
-      // Update all validation states at once
-      validationStates.name.valid = nameValid
-      validationStates.emailId.valid = emailValid
-      validationStates.contactNumber.valid = contactValid
-      validationStates.alternateContactNumber.valid = alternateContactValid
-      validationStates.highestQualification.valid = qualificationValid
-      validationStates.schoolId.valid = schoolValid
-
-      // Log validation results
-      console.log('[Validation] Results:', {
-        name: { value: newData.name, valid: nameValid },
-        email: { value: newData.emailId, valid: emailValid },
-        contact: { value: newData.contactNumber, valid: contactValid },
-        alternateContact: { value: newData.alternateContactNumber, valid: alternateContactValid },
-        qualification: { value: newData.highestQualification, valid: qualificationValid },
-        school: { value: newData.schoolId, valid: schoolValid },
-      })
-
-      // Trigger vuelidate validation
-      console.log('[Validation] Triggering vuelidate...')
-      await v$.value.$touch()
-      console.log('[Validation] Vuelidate result:', v$.value)
-
-      // If we have a schoolId, fetch the school details
+      // First fetch school details to get board information
       if (newData.schoolId) {
         try {
           const schoolResponse = await fetch(getApiUrl(`/schools/${newData.schoolId}`))
@@ -755,8 +807,30 @@ watch(
           const schoolData = await schoolResponse.json()
           console.log('[Validation] School data fetched:', schoolData)
 
+          // Update form data first, but preserve the board ID we're about to set
+          const boardId = schoolData.board_id
+          Object.assign(formData, newData)
+          formData.boardId = boardId // Ensure boardId is set correctly
+
+          // Fetch boards and set board name
+          await fetchBoards()
+          const board = boards.value.find((b) => b.id === boardId)
+          if (board) {
+            boardSearch.value = board.name
+            validationStates.boardId.valid = true
+            validationStates.boardId.touched = true
+          }
+
           // Set school name
           schoolSearch.value = schoolData.name
+          validationStates.schoolId.valid = true
+          validationStates.schoolId.touched = true
+
+          // Store board info for later use
+          selectedSchoolBoard.value = { id: boardId, name: schoolData.board.name }
+
+          // Fetch schools for this board
+          await fetchSchools()
 
           // Fetch standards for this school
           const standardsResponse = await fetch(
@@ -776,27 +850,55 @@ watch(
               standard: item.standard,
             }),
           )
-
-          // Store board info for later use
-          selectedSchoolBoard.value = { id: schoolData.board_id, name: schoolData.board.name }
         } catch (error) {
           console.error('Error fetching school details:', error)
         }
+      } else {
+        // If no schoolId, just update form data
+        Object.assign(formData, newData)
       }
 
-      // Ensure validation states are properly set after all operations
+      // First mark all fields as touched
       Object.keys(validationStates).forEach((key) => {
-        const field = key as keyof typeof validationStates
-        validationStates[field].touched = true
+        validationStates[key as keyof typeof validationStates].touched = true
       })
 
-      // Re-validate all fields to ensure proper state
+      // Then validate each field and store results
+      const nameValid = newData.name.length >= 3 && /^[a-zA-Z\s]*$/.test(newData.name)
+      const emailValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(newData.emailId)
+      const contactValid = validateContactNumber(newData.contactNumber)
+      const alternateContactValid =
+        !newData.alternateContactNumber ||
+        (validateContactNumber(newData.alternateContactNumber) &&
+          newData.alternateContactNumber !== newData.contactNumber)
+      const qualificationValid = newData.highestQualification.length >= 2
+      const schoolValid = newData.schoolId !== 0
+      const boardValid = formData.boardId !== 0
+
+      // Update all validation states at once
       validationStates.name.valid = nameValid
       validationStates.emailId.valid = emailValid
       validationStates.contactNumber.valid = contactValid
       validationStates.alternateContactNumber.valid = alternateContactValid
       validationStates.highestQualification.valid = qualificationValid
       validationStates.schoolId.valid = schoolValid
+      validationStates.boardId.valid = boardValid
+
+      // Log validation results
+      console.log('[Validation] Results:', {
+        name: { value: newData.name, valid: nameValid },
+        email: { value: newData.emailId, valid: emailValid },
+        contact: { value: newData.contactNumber, valid: contactValid },
+        alternateContact: { value: newData.alternateContactNumber, valid: alternateContactValid },
+        qualification: { value: newData.highestQualification, valid: qualificationValid },
+        school: { value: newData.schoolId, valid: schoolValid },
+        board: { value: formData.boardId, valid: boardValid },
+      })
+
+      // Trigger vuelidate validation
+      console.log('[Validation] Triggering vuelidate...')
+      await v$.value.$touch()
+      console.log('[Validation] Vuelidate result:', v$.value)
 
       console.log('[Validation] Final states:', JSON.stringify(validationStates))
     }
@@ -832,10 +934,13 @@ watch(
 async function fetchSchools() {
   try {
     console.log('Fetching schools...')
-    const url = selectedSchoolBoard.value
-      ? getApiUrl(`/schools?boardId=${selectedSchoolBoard.value.id}`)
-      : getApiUrl('/schools')
+    if (!formData.boardId) {
+      console.log('No board selected, skipping school fetch')
+      schools.value = []
+      return
+    }
 
+    const url = getApiUrl(`/schools?boardId=${formData.boardId}`)
     const response = await fetch(url, {
       headers: {
         Accept: 'application/json',
@@ -874,6 +979,23 @@ const handleSubmit = async () => {
     validationStates[key as keyof typeof validationStates].touched = true
   })
 
+  // Check if at least one standard-subject pair is selected
+  if (formData.teacherSubjects.length === 0) {
+    validationStates.teacherSubjects.valid = false
+    // Show error message
+    const standardSelect = document.getElementById('standardSelect')
+    if (standardSelect) {
+      standardSelect.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      standardSelect.focus()
+    }
+    return
+  }
+
+  // Ensure boardId is set from the school's board
+  if (selectedSchoolBoard.value) {
+    formData.boardId = selectedSchoolBoard.value.id
+  }
+
   // Trigger validation
   const isValid = await v$.value.$validate()
   console.log('[Submit Validation] Vuelidate validation result:', isValid)
@@ -883,32 +1005,23 @@ const handleSubmit = async () => {
 
     // Define the order of fields to check (matching the actual input IDs)
     const fieldOrder = [
-      'teacherName',
-      'schoolName',
-      'emailId',
-      'contactNumber',
-      'highestQualification',
+      { id: 'teacherName', key: 'name' },
+      { id: 'board', key: 'boardId' },
+      { id: 'school', key: 'schoolId' },
+      { id: 'emailId', key: 'emailId' },
+      { id: 'contactNumber', key: 'contactNumber' },
+      { id: 'highestQualification', key: 'highestQualification' },
     ]
 
     // Find the first invalid field based on our preferred order
-    const firstInvalidField =
-      fieldOrder.find((fieldId) => {
-        // Map the field IDs to the validation keys
-        const validationKey = {
-          teacherName: 'name',
-          schoolName: 'schoolId',
-          emailId: 'emailId',
-          contactNumber: 'contactNumber',
-          highestQualification: 'highestQualification',
-        }[fieldId]
-
-        const field = v$.value[validationKey as keyof typeof v$.value]
-        return field?.$error
-      }) || Object.keys(v$.value).find((key) => v$.value[key as keyof typeof v$.value].$error)
+    const firstInvalidField = fieldOrder.find((field) => {
+      const validationField = v$.value[field.key]
+      return validationField && validationField.$error
+    })
 
     // Focus the first invalid field
     if (firstInvalidField) {
-      const element = document.getElementById(firstInvalidField)
+      const element = document.getElementById(firstInvalidField.id)
       if (element) {
         element.focus()
         // Scroll the element into view if needed
@@ -1126,24 +1239,29 @@ const calculateChanges = async () => {
   console.log('[Calculate Changes] Final changes:', changes.value)
 }
 
-const handleConfirm = () => {
-  // Emit form data and changes
-  emit('submit', {
-    formData: {
-      name: formData.name,
-      emailId: formData.emailId,
-      contactNumber: formData.contactNumber,
-      alternateContactNumber: formData.alternateContactNumber,
-      highestQualification: formData.highestQualification,
-      schoolId: formData.schoolId,
-      boardId: formData.boardId,
-      teacherSubjects: formData.teacherSubjects,
-    },
-    changes: changes.value,
-  })
+const handleConfirm = async () => {
+  try {
+    // Emit form data and changes
+    emit('submit', {
+      formData: {
+        name: formData.name,
+        emailId: formData.emailId,
+        contactNumber: formData.contactNumber,
+        alternateContactNumber: formData.alternateContactNumber,
+        highestQualification: formData.highestQualification,
+        schoolId: formData.schoolId,
+        boardId: formData.boardId,
+        teacherSubjects: formData.teacherSubjects,
+      },
+      changes: changes.value,
+    })
 
-  // Close modal
-  saveConfirmationModal?.hide()
+    // Close modal
+    saveConfirmationModal?.hide()
+  } catch (error) {
+    console.error('Error in handleConfirm:', error)
+    alert('Failed to update teacher information. Please try again.')
+  }
 }
 
 // Filter schools based on search
@@ -1151,9 +1269,19 @@ const filterSchools = () => {
   console.log('Filtering schools with search:', schoolSearch.value)
   console.log('Current schools list:', schools.value)
 
+  // If no board is selected, don't proceed
+  if (!formData.boardId) {
+    console.log('No board selected, skipping school filter')
+    return
+  }
+
+  // Mark the field as touched when user starts typing
+  validationStates.schoolId.touched = true
+
   if (!schoolSearch.value) {
     console.log('Empty search, showing all schools')
     filteredSchools.value = schools.value
+    validationStates.schoolId.valid = false
   } else {
     filteredSchools.value = schools.value.filter((school) =>
       school.name.toLowerCase().includes(schoolSearch.value.toLowerCase()),
@@ -1161,27 +1289,27 @@ const filterSchools = () => {
     console.log('Filtered schools:', filteredSchools.value)
   }
   selectedSchoolIndex.value = -1
-  console.log('showSchoolDropdown:', showSchoolDropdown.value)
-  console.log('filteredSchools.length:', filteredSchools.value.length)
 }
 
 // Handle school selection
 const selectSchool = async (school: { id: number; name: string }) => {
+  // Check if school has changed
+  const hasSchoolChanged = formData.schoolId !== school.id
+
   formData.schoolId = school.id
   schoolSearch.value = school.name
   showSchoolDropdown.value = false
 
-  // Trigger validation immediately
-  validationStates.schoolId.touched = true
-  validationStates.schoolId.valid = true
-  await v$.value.$touch()
-  await v$.value.schoolId.$touch()
-
-  // Clear previous selections when school changes
-  formData.teacherSubjects = []
-  standards.value = []
+  // Reset standard selection
   selectedStandard.value = null
-  schoolStandards.value = [] // Clear stored school standards
+  standards.value = []
+
+  // If school has changed, clear all standard-subject pairs
+  if (hasSchoolChanged) {
+    formData.teacherSubjects = []
+    formData.groupedSubjects = []
+    console.log('[School Change] Cleared all standard-subject pairs due to school change')
+  }
 
   try {
     // Get school details
@@ -1206,37 +1334,42 @@ const selectSchool = async (school: { id: number; name: string }) => {
       }),
     )
 
-    // Fetch school's instruction mediums
-    const mediumsResponse = await fetch(
-      getApiUrl(`/school-instruction-mediums/school/${school.id}`),
-    )
-    if (!mediumsResponse.ok) throw new Error('Failed to fetch school mediums')
-    schoolMediums.value = await mediumsResponse.json()
-
     // Store board info for later use
     selectedSchoolBoard.value = { id: schoolData.board_id, name: schoolData.board.name }
+
+    // Update validation
+    validationStates.schoolId.touched = true
+    validationStates.schoolId.valid = true
+    await v$.value.$touch()
+    await v$.value.schoolId.$touch()
+
+    // Focus email field after selection
+    const emailInput = document.getElementById('emailId')
+    if (emailInput) {
+      emailInput.focus()
+    }
   } catch (error) {
     console.error('Error fetching school details:', error)
-    // alert('Failed to fetch school details. Please try again.')
+    validationStates.schoolId.valid = false
   }
 }
 
-// Add watch for school selection
-watch(
-  () => formData.schoolId,
-  (newValue) => {
-    if (validationStates.schoolId.touched) {
-      validationStates.schoolId.valid = newValue !== 0
-      v$.value.schoolId.$touch()
-    }
-  },
-)
+// Add watch for school search to validate empty field
+watch(schoolSearch, (newValue) => {
+  if (!newValue && validationStates.schoolId.touched) {
+    validationStates.schoolId.valid = false
+  }
+})
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
   console.log('Click outside event target:', target)
-  if (!target.closest('.dropdown')) {
+  if (!target.closest('.board-dropdown')) {
+    console.log('Closing board dropdown')
+    showBoardDropdown.value = false
+  }
+  if (!target.closest('.school-dropdown')) {
     console.log('Closing school dropdown')
     showSchoolDropdown.value = false
   }
@@ -1257,13 +1390,15 @@ watch(
 onMounted(() => {
   console.log('Component mounted')
   document.addEventListener('click', handleClickOutside)
-  console.log('Starting to fetch schools...')
-  fetchSchools()
+  console.log('Starting to fetch boards...')
+  fetchBoards()
     .then(() => {
-      console.log('Schools fetch complete')
-      console.log('Schools loaded:', schools.value)
+      console.log('Boards fetch complete')
+      if (formData.boardId) {
+        return fetchSchools()
+      }
     })
-    .catch((error) => console.error('Error in schools fetch:', error))
+    .catch((error) => console.error('Error in initial data fetch:', error))
 
   const modalElement = document.getElementById('subjectSelectModal')
   if (modalElement) {
@@ -1291,8 +1426,8 @@ onMounted(() => {
 
 // Handle standard selection
 const handleStandardSelect = async () => {
-  if (!selectedStandard.value) {
-    console.error('No standard selected')
+  if (!selectedStandard.value || !formData.schoolId) {
+    console.error('No standard or school selected')
     return
   }
 
@@ -1314,10 +1449,7 @@ const handleStandardSelect = async () => {
     console.log('[Subject Selection] Found school standard:', schoolStandard)
 
     if (!schoolStandard) {
-      console.error('School standard not found. This may be because:')
-      console.error('- The standard ID does not match')
-      console.error('- schoolStandards is empty')
-      console.error('- The standard is not associated with the school')
+      console.error('School standard not found')
       throw new Error('School standard not found')
     }
 
@@ -1381,23 +1513,19 @@ const handleStandardSelect = async () => {
       console.log('[Subject Selection] Pre-selected subjects:', selectedSubjects.value)
     }
 
-    if (availableSubjects.value.length > 0) {
-      subjectModal?.show()
-      // Focus the first checkbox after modal is shown
-      setTimeout(() => {
-        const firstCheckbox = document.querySelector(
-          '#subjectSelectContainer .form-check-input',
-        ) as HTMLElement
-        if (firstCheckbox) {
-          firstCheckbox.focus()
-        }
-      }, 500)
-    } else {
-      console.error('No subjects found for this standard')
-    }
+    // Show modal even if there are no subjects
+    subjectModal?.show()
+    // Focus the first checkbox after modal is shown (if there are subjects)
+    setTimeout(() => {
+      const firstCheckbox = document.querySelector(
+        '#subjectSelectContainer .form-check-input',
+      ) as HTMLElement
+      if (firstCheckbox) {
+        firstCheckbox.focus()
+      }
+    }, 500)
   } catch (error) {
     console.error('Error in handleStandardSelect:', error)
-    // alert('Failed to fetch subjects. Please try again.')
   }
 }
 
@@ -1411,7 +1539,6 @@ const addSubjects = () => {
 
   if (!selectedStandard.value) {
     console.error('No standard selected')
-    // alert('Please select a standard')
     return
   }
 
@@ -1423,7 +1550,6 @@ const addSubjects = () => {
 
   if (!schoolStandard) {
     console.error('School standard not found')
-    // alert('Please select a standard')
     return
   }
 
@@ -1435,11 +1561,19 @@ const addSubjects = () => {
   )
   console.log('[Add Subjects] Existing pairs for other standards:', otherStandardsPairs)
 
-  // Create new pairs for selected subjects
-  const newPairs = selectedSubjects.value.map((subjectId) => ({
-    schoolStandardId,
-    mediumStandardSubjectId: subjectId,
-  }))
+  // Create new pairs for selected subjects using the correct medium standard subject ID
+  const newPairs = selectedSubjects.value.map((selectedId) => {
+    const subject = availableSubjects.value.find((s) => s.id === selectedId)
+    console.log('[Add Subjects] Creating pair for subject:', {
+      selectedId,
+      foundSubject: subject,
+      schoolStandardId,
+    })
+    return {
+      schoolStandardId,
+      mediumStandardSubjectId: subject?.id || selectedId, // Use the correct ID from availableSubjects
+    }
+  })
   console.log('[Add Subjects] New subject pairs:', newPairs)
 
   // Update form data with combined pairs
@@ -1449,13 +1583,13 @@ const addSubjects = () => {
   // Get selected subjects with their full information
   const selectedSubjectsInfo = selectedSubjects.value.map((subjectId) => {
     const subject = availableSubjects.value.find((s) => s.id === subjectId)
-    console.log('[Add Subjects] Processing subject:', {
+    console.log('[Add Subjects] Processing subject info:', {
       subjectId,
       foundSubject: subject,
       availableSubjects: availableSubjects.value,
     })
     return {
-      id: subjectId,
+      id: subject?.id || subjectId,
       name: subject?.name || 'Unknown Subject',
     }
   })
@@ -1483,7 +1617,17 @@ const addSubjects = () => {
     formData.groupedSubjects = otherStandards
   }
 
-  console.log('[Add Subjects] Final formData.groupedSubjects:', formData.groupedSubjects)
+  console.log('[Add Subjects] Final formData:', {
+    teacherSubjects: formData.teacherSubjects,
+    groupedSubjects: formData.groupedSubjects,
+  })
+
+  // After updating formData.teacherSubjects and formData.groupedSubjects
+  // Update validation state
+  validationStates.teacherSubjects.touched = true
+  validationStates.teacherSubjects.valid = formData.teacherSubjects.length > 0
+  v$.value.teacherSubjects.$touch()
+
   closeSubjectModal()
 }
 
@@ -1526,6 +1670,11 @@ const removeStandardSubjects = (standardId: number) => {
 
   console.log('[Remove Subjects] Updated teacherSubjects:', formData.teacherSubjects)
   console.log('[Remove Subjects] Updated groupedSubjects:', formData.groupedSubjects)
+
+  // After removing subjects, update validation state
+  validationStates.teacherSubjects.touched = true
+  validationStates.teacherSubjects.valid = formData.teacherSubjects.length > 0
+  v$.value.teacherSubjects.$touch()
 }
 
 // Update input handlers to only set touched state and trigger validation
@@ -1637,6 +1786,159 @@ const toggleSubject = (subjectId: number) => {
     selectedSubjects.value.splice(index, 1)
   }
 }
+
+// Add board-related state
+const boards = ref<Array<{ id: number; name: string }>>([])
+const boardSearch = ref('')
+const showBoardDropdown = ref(false)
+const selectedBoardIndex = ref(-1)
+const filteredBoards = ref<Array<{ id: number; name: string }>>([])
+const boardInput = ref<HTMLInputElement | null>(null)
+
+// Add after fetchSchools function
+async function fetchBoards() {
+  try {
+    console.log('Fetching boards...')
+    const response = await fetch(getApiUrl('/boards'), {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+    console.log('Boards API response status:', response.status)
+    if (!response.ok) throw new Error('Failed to fetch boards')
+    const data = await response.json()
+    console.log('Fetched boards:', data)
+    boards.value = data
+    console.log('Updated boards.value:', boards.value)
+
+    // If we have initial data, set the board name after boards are loaded
+    if (props.initialData?.boardId) {
+      const board = boards.value.find((b) => b.id === props.initialData?.boardId)
+      if (board) {
+        boardSearch.value = board.name
+        validationStates.boardId.valid = true
+        validationStates.boardId.touched = true
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching boards:', error)
+  }
+}
+
+// Add board filtering function
+const filterBoards = () => {
+  console.log('Filtering boards with search:', boardSearch.value)
+  console.log('Current boards list:', boards.value)
+
+  validationStates.boardId.touched = true
+
+  if (!boardSearch.value) {
+    console.log('Empty search, showing all boards')
+    filteredBoards.value = boards.value
+    validationStates.boardId.valid = false
+  } else {
+    filteredBoards.value = boards.value.filter((board) =>
+      board.name.toLowerCase().includes(boardSearch.value.toLowerCase()),
+    )
+    console.log('Filtered boards:', filteredBoards.value)
+  }
+  selectedBoardIndex.value = -1
+}
+
+// Add board keyboard navigation
+const handleBoardKeydown = (event: KeyboardEvent) => {
+  if (!filteredBoards.value.length) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      selectedBoardIndex.value = Math.min(
+        selectedBoardIndex.value + 1,
+        filteredBoards.value.length - 1,
+      )
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      selectedBoardIndex.value = Math.max(selectedBoardIndex.value - 1, 0)
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (selectedBoardIndex.value >= 0) {
+        selectBoard(filteredBoards.value[selectedBoardIndex.value])
+        // Focus school field after selection
+        const schoolInput = document.getElementById('school')
+        if (schoolInput) {
+          schoolInput.focus()
+        }
+      } else if (filteredBoards.value.length === 1) {
+        selectBoard(filteredBoards.value[0])
+        // Focus school field after selection
+        const schoolInput = document.getElementById('school')
+        if (schoolInput) {
+          schoolInput.focus()
+        }
+      }
+      break
+    case 'Escape':
+      showBoardDropdown.value = false
+      break
+    case 'Tab':
+      showBoardDropdown.value = false
+      break
+  }
+}
+
+// Add board selection function
+const selectBoard = async (board: { id: number; name: string }) => {
+  formData.boardId = board.id
+  boardSearch.value = board.name
+  showBoardDropdown.value = false
+
+  // Reset school and standard related fields
+  formData.schoolId = 0
+  schoolSearch.value = ''
+  schools.value = []
+  validationStates.schoolId.valid = false
+  validationStates.schoolId.touched = false
+
+  // Reset standard selection
+  selectedStandard.value = null
+  standards.value = []
+
+  // Validate board selection
+  validationStates.boardId.touched = true
+  validationStates.boardId.valid = true
+  await v$.value.$touch()
+  await v$.value.boardId.$touch()
+
+  // Fetch schools for selected board
+  await fetchSchools()
+
+  // Focus school field after selection
+  const schoolInput = document.getElementById('school')
+  if (schoolInput) {
+    schoolInput.focus()
+  }
+}
+
+// Add watch for board search to validate empty field
+watch(boardSearch, (newValue) => {
+  if (!newValue && validationStates.boardId.touched) {
+    validationStates.boardId.valid = false
+  }
+})
+
+// Initialize filtered boards
+watch(
+  boards,
+  (newBoards) => {
+    console.log('Boards watch triggered with:', newBoards)
+    filteredBoards.value = newBoards
+    console.log('Updated filteredBoards:', filteredBoards.value)
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
@@ -1761,5 +2063,92 @@ const toggleSubject = (subjectId: number) => {
 
 .list-group-item .btn-custom {
   min-width: 80px;
+}
+
+/* Add specific styling for school dropdown */
+.school-dropdown .dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0;
+  width: 100%;
+}
+
+.school-dropdown .dropdown-item {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  display: block;
+  color: #212529;
+}
+
+.school-dropdown .dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.school-dropdown .dropdown-item.active {
+  background-color: #212529;
+  color: white;
+}
+
+/* Add board dropdown specific styles */
+.board-dropdown .dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0;
+  width: 100%;
+}
+
+.board-dropdown .dropdown-item {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  display: block;
+  color: #212529;
+}
+
+.board-dropdown .dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.board-dropdown .dropdown-item.active {
+  background-color: #212529;
+  color: white;
+}
+
+/* Add no-schools message styling */
+.dropdown-item.no-schools {
+  color: #6c757d;
+  font-style: italic;
+  cursor: default;
+  pointer-events: none;
+  text-align: center;
+  padding: 1rem;
+}
+
+.dropdown-item.no-schools:hover {
+  background-color: transparent;
+}
+
+/* Add style for disabled Add Subjects button */
+.btn-success:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
 }
 </style>

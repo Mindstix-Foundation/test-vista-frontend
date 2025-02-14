@@ -14,7 +14,7 @@
 
     <div id="form-container" class="row mt-4 justify-content-center">
       <form @submit.prevent="onSubmit">
-        <div class="row g-3 justify-content-center">
+        <div class="row justify-content-center">
           <!-- School Details Section -->
           <div class="col-12 col-sm-10 col-md-8 mb-4">
             <div class="row g-3">
@@ -63,10 +63,11 @@
                     required
                     autocomplete="off"
                     @keydown="handleBoardKeydown"
+                    :disabled="isEditMode"
                   />
                   <div
                     class="dropdown-menu"
-                    :class="{ show: showBoardDropdown && filteredBoards.length > 0 }"
+                    :class="{ show: showBoardDropdown && filteredBoards.length > 0 && !isEditMode }"
                     style="position: absolute; width: 100%; z-index: 1000"
                   >
                     <button
@@ -74,7 +75,12 @@
                       :key="board.id"
                       class="dropdown-item"
                       :class="{ active: index === selectedBoardIndex }"
-                      @click="selectBoard(board)"
+                      @click="
+                        async () => {
+                          selectedBoardIndex = index
+                          await selectBoard(board)
+                        }
+                      "
                       type="button"
                     >
                       {{ board.name }}
@@ -892,8 +898,16 @@ const selectBoard = async (board: BoardListItem) => {
 
     validationStates.value.mediums.touched = false
     validationStates.value.standards.touched = false
+
+    // Focus on the next field (country) after selection
+    nextTick(() => {
+      const countryInput = document.getElementById('country')
+      if (countryInput) {
+        countryInput.focus()
+      }
+    })
   } catch (error) {
-    console.error('Error fetching board data:', error)
+    console.error('Error in selectBoard:', error)
   }
 }
 
@@ -974,6 +988,9 @@ const handleBoardKeydown = async (e: KeyboardEvent) => {
     e.preventDefault()
     if (showBoardDropdown.value && filteredBoards.value.length && selectedBoardIndex.value >= 0) {
       await selectBoard(filteredBoards.value[selectedBoardIndex.value])
+    } else if (filteredBoards.value.length === 1) {
+      // If there's only one board, select it
+      await selectBoard(filteredBoards.value[0])
     }
     return
   }

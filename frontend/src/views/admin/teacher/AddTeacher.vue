@@ -83,7 +83,8 @@ const handleSubmit = async (data: {
       body: JSON.stringify({
         user_id: userId,
         school_id: data.formData.schoolId,
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: new Date().toISOString(),
+        end_date: null,
       }),
     })
 

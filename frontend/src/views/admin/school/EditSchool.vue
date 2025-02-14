@@ -476,3 +476,28 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
   }
 }
 </script>
+
+<style scoped>
+.list-group-item {
+  transition: all 0.2s ease-in-out;
+  border-left-width: 4px;
+}
+
+.list-group-item.text-success {
+  border-left-color: #198754;
+  color: #198754 !important;
+}
+
+.list-group-item.text-danger {
+  border-left-color: #dc3545;
+  color: #dc3545 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+</style>

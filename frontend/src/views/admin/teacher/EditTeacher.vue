@@ -273,37 +273,49 @@ const updateUserData = async (userId: string, formData: TeacherFormData) => {
 }
 
 const updateSchoolAssignment = async (userId: string, schoolId: number) => {
+  // Get current school assignments
   const currentSchool = await fetch(getApiUrl(`/user-schools/user/${userId}`))
   const schoolData = await currentSchool.json()
 
-  if (!schoolData[0]) return
+  // Find the active school assignment (one without an end_date)
+  const activeSchool = schoolData.find((s: { end_date: string | null }) => !s.end_date)
+  if (!activeSchool) return
 
-  // End current assignment
+  console.log('Current active school:', activeSchool)
+
+  // Create new assignment with null end_date first
+  const newAssignmentPayload = {
+    user_id: userId,
+    school_id: schoolId,
+    start_date: new Date().toISOString(),
+    end_date: null,
+  }
+  console.log('Creating new school assignment with payload:', newAssignmentPayload)
+
+  const newResponse = await fetch(getApiUrl('/user-schools'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newAssignmentPayload),
+  })
+  if (!newResponse.ok) {
+    const errorMessage = await getErrorMessage(newResponse)
+    throw new Error(errorMessage)
+  }
+
+  // End current assignment with current date
+  const endCurrentPayload = { end_date: new Date().toISOString() }
+  console.log('Ending current assignment with payload:', endCurrentPayload)
+
   const endResponse = await fetch(
-    getApiUrl(`/user-schools/user/${userId}/school/${schoolData[0].school_id}`),
+    getApiUrl(`/user-schools/user/${userId}/school/${activeSchool.school.id}`),
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ end_date: new Date().toISOString() }),
+      body: JSON.stringify(endCurrentPayload),
     },
   )
   if (!endResponse.ok) {
     const errorMessage = await getErrorMessage(endResponse)
-    throw new Error(errorMessage)
-  }
-
-  // Create new assignment
-  const newResponse = await fetch(getApiUrl('/user-schools'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_id: userId,
-      school_id: schoolId,
-      start_date: new Date().toISOString(),
-    }),
-  })
-  if (!newResponse.ok) {
-    const errorMessage = await getErrorMessage(newResponse)
     throw new Error(errorMessage)
   }
 }
@@ -360,11 +372,41 @@ const formatOperationMessage = (operation: string, isResult: boolean) => {
   return operation
 }
 
+// Update the getSubjectDetails function
+const getSubjectDetails = async (mediumStandardSubjectId: number) => {
+  console.log('[getSubjectDetails] Starting with mediumStandardSubjectId:', mediumStandardSubjectId)
+
+  try {
+    // First get the medium-standard-subject details
+    const response = await fetch(getApiUrl(`/medium-standard-subjects/${mediumStandardSubjectId}`))
+    if (!response.ok) {
+      const errorMessage = await getErrorMessage(response)
+      throw new Error(errorMessage)
+    }
+    const data = await response.json()
+    console.log('[getSubjectDetails] Response data:', data)
+
+    // Extract the subject and standard names from the response
+    return {
+      name: data.subject?.name || 'Unknown Subject',
+      standardName: data.standard?.name || 'Unknown Standard',
+    }
+  } catch (error) {
+    console.error('[getSubjectDetails] Error:', error)
+    // Return default values if we can't get the details
+    return {
+      name: 'Unknown Subject',
+      standardName: 'Unknown Standard',
+    }
+  }
+}
+
 const handleSubmit = async (data: {
   formData: TeacherFormData
   changes: Array<{ type: string; message: string }>
 }) => {
   try {
+    console.log('[handleSubmit] Starting with formData:', data.formData)
     operationResults.value = []
     const userId = route.params.id as string
     const { formData, changes } = data
@@ -400,6 +442,40 @@ const handleSubmit = async (data: {
           operation: formatOperationMessage('Update School Assignment', true),
           status: 'success',
         })
+
+        // After successful school change, handle subject changes
+        const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
+        const subjectsData: TeacherSubjectWithId[] = await currentSubjects.json()
+
+        // Remove all existing subject assignments as school has changed
+        for (const subject of subjectsData) {
+          try {
+            await deleteSubject(subject.id)
+          } catch (error) {
+            console.error('[handleSubmit] Error removing old subject:', error)
+          }
+        }
+
+        // Add new subject assignments
+        for (const subject of formData.teacherSubjects) {
+          try {
+            const subjectDetails = await getSubjectDetails(subject.mediumStandardSubjectId)
+            await addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId)
+            operationResults.value.push({
+              operation: formatOperationMessage(
+                `Add "${subjectDetails.name}" to Standard ${subjectDetails.standardName}`,
+                true,
+              ),
+              status: 'success',
+            })
+          } catch (error) {
+            operationResults.value.push({
+              operation: 'Add Subject',
+              status: 'error',
+              message: error instanceof Error ? error.message : 'Failed to add subject assignment',
+            })
+          }
+        }
       } catch (error) {
         operationResults.value.push({
           operation: formatOperationMessage('Update School Assignment', false),
@@ -407,86 +483,77 @@ const handleSubmit = async (data: {
           message: error instanceof Error ? error.message : 'Failed to update school assignment',
         })
       }
-    }
+    } else {
+      // If school hasn't changed, handle only subject changes
+      const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
+      const subjectsData: TeacherSubjectWithId[] = await currentSubjects.json()
 
-    // Handle subject changes
-    const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
-    const subjectsData: TeacherSubjectWithId[] = await currentSubjects.json()
-    const newSubjects = formData.teacherSubjects
+      // Find subjects to remove
+      const subjectsToRemove = subjectsData.filter(
+        (current) =>
+          !formData.teacherSubjects.some(
+            (newSubj) =>
+              newSubj.schoolStandardId === current.school_standard.id &&
+              newSubj.mediumStandardSubjectId === current.medium_standard_subject.id,
+          ),
+      )
 
-    // Find subjects to remove
-    const subjectsToRemove = subjectsData.filter(
-      (current) =>
-        !newSubjects.some(
-          (newSubj) =>
-            newSubj.schoolStandardId === current.school_standard.id &&
-            newSubj.mediumStandardSubjectId === current.medium_standard_subject.id,
-        ),
-    )
+      // Find subjects to add
+      const subjectsToAdd = formData.teacherSubjects.filter(
+        (newSubj) =>
+          !subjectsData.some(
+            (current) =>
+              current.school_standard.id === newSubj.schoolStandardId &&
+              current.medium_standard_subject.id === newSubj.mediumStandardSubjectId,
+          ),
+      )
 
-    // Find subjects to add
-    const subjectsToAdd = newSubjects.filter(
-      (newSubj) =>
-        !subjectsData.some(
-          (current) =>
-            current.school_standard.id === newSubj.schoolStandardId &&
-            current.medium_standard_subject.id === newSubj.mediumStandardSubjectId,
-        ),
-    )
-
-    // Process removals
-    for (const subject of subjectsToRemove) {
-      try {
-        await deleteSubject(subject.id)
-        const standardName = subject.school_standard.standard.name
-        const subjectName = subject.medium_standard_subject.subject.name
-        const operation = `Remove "${subjectName}" from Standard ${standardName}`
-        operationResults.value.push({
-          operation: formatOperationMessage(operation, true),
-          status: 'success',
-        })
-      } catch (error) {
-        const standardName = subject.school_standard.standard.name
-        const subjectName = subject.medium_standard_subject.subject.name
-        const operation = `Remove "${subjectName}" from Standard ${standardName}`
-        operationResults.value.push({
-          operation: formatOperationMessage(operation, false),
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Failed to remove subject assignment',
-        })
+      // Process removals
+      for (const subject of subjectsToRemove) {
+        try {
+          await deleteSubject(subject.id)
+          const standardName = subject.school_standard.standard.name
+          const subjectName = subject.medium_standard_subject.subject.name
+          operationResults.value.push({
+            operation: formatOperationMessage(
+              `Remove "${subjectName}" from Standard ${standardName}`,
+              true,
+            ),
+            status: 'success',
+          })
+        } catch (error) {
+          const standardName = subject.school_standard.standard.name
+          const subjectName = subject.medium_standard_subject.subject.name
+          operationResults.value.push({
+            operation: formatOperationMessage(
+              `Remove "${subjectName}" from Standard ${standardName}`,
+              false,
+            ),
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Failed to remove subject assignment',
+          })
+        }
       }
-    }
 
-    // Process additions
-    for (const subject of subjectsToAdd) {
-      try {
-        await addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId)
-
-        // Find the school standard to get the standard name
-        const schoolStandard = await fetch(
-          getApiUrl(`/school-standards/${subject.schoolStandardId}`),
-        )
-        const schoolStandardData = await schoolStandard.json()
-        const standardName = schoolStandardData.standard.name
-
-        // Find the subject info
-        const subjectResponse = await fetch(
-          getApiUrl(`/medium-standard-subjects/${subject.mediumStandardSubjectId}`),
-        )
-        const subjectData = await subjectResponse.json()
-        const subjectName = subjectData.subject.name
-
-        const operation = `Add "${subjectName}" to Standard ${standardName}`
-        operationResults.value.push({
-          operation: formatOperationMessage(operation, true),
-          status: 'success',
-        })
-      } catch (error) {
-        operationResults.value.push({
-          operation: 'Add Subject',
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Failed to add subject assignment',
-        })
+      // Process additions
+      for (const subject of subjectsToAdd) {
+        try {
+          const subjectDetails = await getSubjectDetails(subject.mediumStandardSubjectId)
+          await addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId)
+          operationResults.value.push({
+            operation: formatOperationMessage(
+              `Add "${subjectDetails.name}" to Standard ${subjectDetails.standardName}`,
+              true,
+            ),
+            status: 'success',
+          })
+        } catch (error) {
+          operationResults.value.push({
+            operation: 'Add Subject',
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Failed to add subject assignment',
+          })
+        }
       }
     }
 
@@ -498,7 +565,7 @@ const handleSubmit = async (data: {
       router.push('/admin/teacher')
     }
   } catch (error) {
-    console.error('Error updating teacher:', error)
+    console.error('[handleSubmit] Error in handleSubmit:', error)
   }
 }
 </script>
@@ -506,5 +573,28 @@ const handleSubmit = async (data: {
 <style scoped>
 .container {
   max-width: 1200px;
+}
+
+.list-group-item {
+  transition: all 0.2s ease-in-out;
+  border-left-width: 4px;
+}
+
+.list-group-item.text-success {
+  border-left-color: #198754;
+  color: #198754 !important;
+}
+
+.list-group-item.text-danger {
+  border-left-color: #dc3545;
+  color: #dc3545 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
 }
 </style>

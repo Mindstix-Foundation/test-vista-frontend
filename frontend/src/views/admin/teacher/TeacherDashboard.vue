@@ -343,7 +343,7 @@
               type="button"
               class="btn btn-light"
               style="border: 1px solid gray"
-              data-bs-dismiss="modal"
+              @click="handleDeleteCancel"
             >
               Cancel
             </button>
@@ -723,6 +723,17 @@ function handleAccessCancel() {
   viewModal.show()
 }
 
+// Show delete confirmation
+function showDeleteConfirmation() {
+  // Close the view modal first
+  const viewModal = Modal.getInstance(document.getElementById('viewTeacherModal') as HTMLElement)
+  viewModal?.hide()
+
+  // Show the delete confirmation modal
+  const deleteModal = new Modal(document.getElementById('deleteConfirmationModal') as HTMLElement)
+  deleteModal.show()
+}
+
 // Delete teacher
 async function deleteTeacher() {
   if (!selectedTeacher.value) return
@@ -744,11 +755,10 @@ async function deleteTeacher() {
 
     await fetchTeachers()
 
-    const viewModal = Modal.getInstance(document.getElementById('viewTeacherModal') as HTMLElement)
+    // Close the delete confirmation modal
     const deleteModal = Modal.getInstance(
       document.getElementById('deleteConfirmationModal') as HTMLElement,
     )
-    viewModal?.hide()
     deleteModal?.hide()
   } catch (error) {
     console.error('Error deleting teacher:', error)
@@ -756,10 +766,17 @@ async function deleteTeacher() {
   }
 }
 
-// Show delete confirmation
-function showDeleteConfirmation() {
-  const modal = new Modal(document.getElementById('deleteConfirmationModal') as HTMLElement)
-  modal.show()
+// Add function to handle cancel button in delete confirmation modal
+function handleDeleteCancel() {
+  // Hide delete confirmation modal
+  const deleteModal = Modal.getInstance(
+    document.getElementById('deleteConfirmationModal') as HTMLElement,
+  )
+  deleteModal?.hide()
+
+  // Reopen the view modal
+  const viewModal = new Modal(document.getElementById('viewTeacherModal') as HTMLElement)
+  viewModal.show()
 }
 
 // Computed properties for confirmation modal
@@ -965,4 +982,25 @@ const groupedTeacherSubjects = computed(() => {
 }
 
 /* Remove the old toggle button styles */
+
+.btn-group .btn {
+  color: #fff;
+  background-color: #343a40;
+  border-color: #6c757d;
+}
+
+.btn-group .btn:hover {
+  background-color: #fff;
+  color: #343a40;
+}
+
+.btn-group .btn.btn-light {
+  background-color: #fff;
+  color: #343a40;
+  border-color: #fff;
+}
+
+.btn-group .btn.btn-light:hover {
+  background-color: #e9ecef;
+}
 </style>

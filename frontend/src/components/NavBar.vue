@@ -3,7 +3,7 @@
     <div class="container-fluid px-4">
       <!-- Project Heading -->
       <router-link class="navbar-brand d-flex align-items-center" to="/">
-        <img src="@/assets/logo.png" alt="Test Vista Logo" class="brand-logo" />
+        <img src="@/assets/Test.jpg" alt="Test Vista Logo" class="brand-logo" />
       </router-link>
 
       <!-- Toggler for Offcanvas -->
@@ -185,11 +185,11 @@ const closeOffcanvas = () => {
 }
 
 .brand-logo {
-  height: 62.5px;
+  height: 40px;
   width: auto;
   object-fit: contain;
   margin-bottom: 0;
-  margin-top: 40px;
+  margin-top: 50px;
 }
 
 .navbar-brand {
@@ -215,6 +215,26 @@ const closeOffcanvas = () => {
   transition: color 0.3s ease;
   white-space: nowrap;
   padding: 0 10px;
+}
+
+/* Add spacing between nav links for larger screens */
+@media (min-width: 1200px) {
+  .nav-item {
+    margin: 0 7px; /* Add horizontal margin to create gaps */
+  }
+
+  .nav-link {
+    padding: 0 5px; /* Adjust padding for better spacing */
+  }
+
+  /* Remove margin from the first and last items to maintain alignment */
+  .nav-item:first-child {
+    margin-left: 0;
+  }
+
+  .nav-item:last-child {
+    margin-right: 0;
+  }
 }
 
 .nav-link:hover {

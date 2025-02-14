@@ -5,7 +5,7 @@
     </div>
     <div class="row justify-content-center align-items-center my-4">
       <div class="col col-12 col-sm-10 col-md-8">
-        <h4 class="text-left fw-bolder text-uppercase mb-3">
+        <h4 class="text-left fw-bolder text-uppercase">
           {{ isEditMode ? 'Edit Board' : 'Add New Board' }}
         </h4>
       </div>
@@ -14,9 +14,9 @@
 
     <div id="form-container" class="row mt-4 justify-content-center">
       <form @submit.prevent="handleSubmit" novalidate>
-        <div class="row g-4 justify-content-center">
+        <div class="row gx-2 justify-content-center">
           <!-- Board Details Section -->
-          <div class="col-12 col-sm-10 col-md-8 mb-4">
+          <div class="col-12 col-sm-10 col-md-8 mb-2">
             <div class="row g-3">
               <div class="col-12">
                 <div class="form-floating">
@@ -81,7 +81,7 @@
           </div>
 
           <!-- Address Section -->
-          <fieldset class="border p-3 rounded col col-12 col-sm-10 col-md-8 mb-4">
+          <fieldset class="border p-3 rounded col col-12 col-sm-10 col-md-8 mb-2">
             <legend class="float-none w-auto px-2">Board Address &nbsp;</legend>
             <div class="row g-3 justify-content-center">
               <!-- Country -->
@@ -1820,43 +1820,47 @@ form {
 
 /* Ensure dropdowns don't cause horizontal scrolling */
 .dropdown-menu {
-  max-width: 100%;
-  width: 100%;
-  max-height: 300px;
+  display: none;
+  max-height: 200px;
   overflow-y: auto;
-  scroll-behavior: smooth;
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0;
+  width: 100%;
 }
 
-.dropdown-menu .dropdown-item {
-  white-space: normal;
-  word-wrap: break-word;
+.dropdown-menu.show {
+  display: block !important;
+}
+
+.dropdown-item {
+  cursor: pointer;
   padding: 0.5rem 1rem;
-}
-
-/* Dropdown styles for black highlight */
-#country + .dropdown-menu .dropdown-item.active,
-#state + .dropdown-menu .dropdown-item.active,
-#city + .dropdown-menu .dropdown-item.active {
-  background-color: #212529;
-  color: white;
-}
-
-#country + .dropdown-menu .dropdown-item:hover,
-#state + .dropdown-menu .dropdown-item:hover,
-#city + .dropdown-menu .dropdown-item:hover {
-  background-color: #f8f9fa;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  display: block;
   color: #212529;
-}
-
-/* Override any existing blue highlight */
-.dropdown-item.active {
-  background-color: #212529 !important;
-  color: white !important;
 }
 
 .dropdown-item:hover {
   background-color: #f8f9fa;
-  color: #212529;
+}
+
+.dropdown-item.active {
+  background-color: #212529;
+  color: white;
+}
+
+.form-floating .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
 }
 
 /* Rest of your existing styles... */
