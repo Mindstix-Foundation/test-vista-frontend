@@ -16,7 +16,7 @@
     </div>
 
     <!-- Search Section -->
-    <div class="row p-2 gy-2 justify-content-center">
+    <div class="row p-2 gy-2 g-3 justify-content-center">
       <!-- School Search -->
       <div class="col-12 col-sm-5">
         <div class="input-group">
@@ -126,8 +126,8 @@
     >
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Delete</h5>
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteConfirmationModalLabel">Delete School</h5>
             <button
               type="button"
               class="btn-close"
@@ -136,21 +136,36 @@
             ></button>
           </div>
           <div class="modal-body">
-            <template v-if="associatedTeachers.length > 0">
+            <div v-if="associatedTeachers.length > 0">
               <div class="alert alert-warning">
-                <strong>Cannot delete this school!</strong>
-                <p class="mb-2">The following teachers are associated with this school:</p>
+                <p class="mb-2">This school has the following associated teachers:</p>
                 <ul class="list-unstyled ms-3">
                   <li v-for="teacher in associatedTeachers" :key="teacher.id">
                     - {{ teacher.name }}
                   </li>
                 </ul>
-                <p class="mb-0">
-                  Please reassign or remove these teachers first before deleting the school.
-                </p>
               </div>
-            </template>
-            <template v-else> Are you sure you want to delete this school? </template>
+              <p class="mb-3">
+                Deleting this school will also delete all associated teachers and other connected
+                data.
+              </p>
+            </div>
+            <p class="mb-3">
+              Are you sure you want to delete this school? This action cannot be undone.
+              <span v-if="associatedTeachers.length > 0" class="text-danger">
+                All associated teachers and data will also be deleted!
+              </span>
+            </p>
+            <div class="form-group">
+              <label for="confirmText" class="form-label">Type "sure" to confirm deletion:</label>
+              <input
+                type="text"
+                class="form-control"
+                id="confirmText"
+                v-model="confirmationText"
+                placeholder="Type 'sure' here"
+              />
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="handleCancelDelete">
@@ -160,7 +175,7 @@
               type="button"
               class="btn btn-danger"
               @click="deleteSchool"
-              :disabled="associatedTeachers.length > 0"
+              :disabled="confirmationText !== 'sure'"
             >
               Delete
             </button>
@@ -458,6 +473,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import { getApiUrl } from '@/config/api'
+import { useToastStore } from '@/store/toast'
 
 // Types
 interface Country {
@@ -563,6 +579,7 @@ interface ApiSchool extends School {
 
 const route = useRoute()
 const router = useRouter()
+const toastStore = useToastStore()
 
 const schools = ref<DisplaySchool[]>([])
 const boards = ref<Board[]>([])
@@ -570,6 +587,7 @@ const selectedSchool = ref<DisplaySchool | null>(null)
 const schoolSearch = ref('')
 const boardSearch = ref('')
 const associatedTeachers = ref<Teacher[]>([])
+const confirmationText = ref('')
 
 // Initialize from route query if present
 onMounted(() => {
@@ -729,10 +747,15 @@ function openViewModal(school: DisplaySchool) {
   modal.show()
 }
 
-async function deleteSchool() {
+const deleteSchool = async () => {
   if (!selectedSchool.value) return
 
   try {
+    // Check for confirmation text
+    if (confirmationText.value !== 'sure') {
+      return
+    }
+
     // Delete school
     const response = await fetch(getApiUrl(`/schools/${selectedSchool.value.id}`), {
       method: 'DELETE',
@@ -746,9 +769,20 @@ async function deleteSchool() {
     // Close the view modal
     const viewModal = Modal.getInstance(document.getElementById('viewSchoolModal') as HTMLElement)
     viewModal?.hide()
+
+    // Show success toast
+    toastStore.showToast({
+      title: 'Success',
+      message: 'School deleted successfully',
+      type: 'success',
+    })
   } catch (error) {
     console.error('Error deleting school:', error)
-    alert('Failed to delete school. Please try again.')
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to delete school. Please try again.',
+      type: 'error',
+    })
   }
 }
 
@@ -795,17 +829,10 @@ async function showDeleteConfirmation() {
   }
 }
 
-// Add function to handle cancel button click
-function handleCancelDelete() {
-  // Hide delete confirmation modal
-  const deleteModal = Modal.getInstance(
-    document.getElementById('deleteConfirmationModal') as HTMLElement,
-  )
-  deleteModal?.hide()
-
-  // Reopen the view modal
-  const viewModal = new Modal(document.getElementById('viewSchoolModal') as HTMLElement)
-  viewModal.show()
+const handleCancelDelete = () => {
+  confirmationText.value = ''
+  const modal = Modal.getInstance(document.getElementById('deleteConfirmationModal')!)
+  modal?.hide()
 }
 
 function navigateToTeachers(schoolName?: string) {

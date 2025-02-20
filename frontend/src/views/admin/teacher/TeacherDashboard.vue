@@ -332,22 +332,44 @@
       aria-hidden="true"
       data-bs-backdrop="static"
     >
-      <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">Remove Teacher</h5>
-          </div>
-          <div class="modal-body">Are you sure you want to delete this Teacher from system?</div>
-          <div class="modal-footer">
+            <h5 class="modal-title">Delete Teacher</h5>
             <button
               type="button"
-              class="btn btn-light"
-              style="border: 1px solid gray"
+              class="btn-close"
               @click="handleDeleteCancel"
-            >
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-3">
+              Are you sure you want to delete this teacher? This action cannot be undone.
+            </p>
+            <div class="form-group">
+              <label for="confirmText" class="form-label">Type "sure" to confirm deletion:</label>
+              <input
+                type="text"
+                class="form-control"
+                id="confirmText"
+                v-model="confirmationText"
+                placeholder="Type 'sure' here"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="handleDeleteCancel">
               Cancel
             </button>
-            <button type="button" class="btn btn-danger" @click="deleteTeacher">Delete</button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              @click="deleteTeacher"
+              :disabled="confirmationText !== 'sure'"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -399,6 +421,7 @@ import { useRoute } from 'vue-router'
 import { Modal } from 'bootstrap'
 import type { Teacher } from '@/models/Teacher'
 import { getApiUrl } from '@/config/api'
+import { useToastStore } from '@/store/toast'
 
 interface SubjectResponse {
   id: number
@@ -444,6 +467,8 @@ const schoolSearch = ref('')
 const selectedTeacher = ref<Teacher | null>(null)
 const showFilter = ref(false)
 const selectedStatus = ref('All')
+const toastStore = useToastStore()
+const confirmationText = ref('')
 
 // Initialize from route query if present
 onMounted(async () => {
@@ -739,6 +764,11 @@ async function deleteTeacher() {
   if (!selectedTeacher.value) return
 
   try {
+    // Check for confirmation text
+    if (confirmationText.value !== 'sure') {
+      return
+    }
+
     const response = await fetch(getApiUrl(`/users/${selectedTeacher.value.id}`), {
       method: 'DELETE',
       headers: {
@@ -760,14 +790,29 @@ async function deleteTeacher() {
       document.getElementById('deleteConfirmationModal') as HTMLElement,
     )
     deleteModal?.hide()
+
+    // Show success toast
+    toastStore.showToast({
+      title: 'Success',
+      message: `Teacher "${selectedTeacher.value.name}" has been deleted successfully.`,
+      type: 'success',
+    })
   } catch (error) {
     console.error('Error deleting teacher:', error)
-    alert('Failed to delete teacher. Please try again.')
+    // Show error toast
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to delete teacher. Please try again.',
+      type: 'error',
+    })
   }
 }
 
 // Add function to handle cancel button in delete confirmation modal
 function handleDeleteCancel() {
+  // Reset confirmation text
+  confirmationText.value = ''
+
   // Hide delete confirmation modal
   const deleteModal = Modal.getInstance(
     document.getElementById('deleteConfirmationModal') as HTMLElement,

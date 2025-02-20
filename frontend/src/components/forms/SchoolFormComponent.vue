@@ -238,7 +238,7 @@
                     id="address"
                     v-model="form.address.street"
                     placeholder="Address"
-                    style="min-height: 100px; overflow-y: hidden"
+                    style="min-height: 100px"
                     required
                     @input="
                       (e) => {
@@ -248,13 +248,9 @@
                         validationStates.address.touched = true
                       }
                     "
-                    @keydown="(e) => handleEnterKey(e, 'postalCode')"
                   ></textarea>
                   <label for="address">Address <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">
-                    Please enter a valid address (minimum 10 characters, only letters, numbers,
-                    spaces, commas, dots, and hyphens allowed)
-                  </div>
+                  <div class="invalid-feedback">Please enter an address</div>
                 </div>
               </div>
             </div>
@@ -2013,9 +2009,7 @@ const onSubmit = async (e: Event) => {
 <style scoped>
 /* Main container styles */
 .container-fluid {
-  height: 100vh;
-  max-height: 100vh;
-  overflow-y: auto;
+  min-height: 100%;
   padding-bottom: 2rem;
   display: flex;
   flex-direction: column;
@@ -2023,7 +2017,6 @@ const onSubmit = async (e: Event) => {
 
 .form-container {
   flex: 1;
-  overflow-y: auto;
   padding: 1rem;
 }
 

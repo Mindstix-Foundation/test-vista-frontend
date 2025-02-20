@@ -56,8 +56,15 @@
   font-weight: normal;
 }
 
+html,
 body {
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
   color: var(--color-text);
   background: var(--color-background);
   transition:

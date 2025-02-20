@@ -38,6 +38,22 @@
             </li>
             <li class="nav-item">
               <router-link
+                to="/admin/syllabus"
+                class="nav-link pb-0"
+                id="navSyllabus"
+                @click="closeOffcanvas"
+              >
+                Syllabus
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link pb-0 disabled" id="navPattern" href="#">Pattern</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link pb-0 disabled" id="navQuestion" href="#">Question Bank</a>
+            </li>
+            <li class="nav-item">
+              <router-link
                 to="/admin/school"
                 class="nav-link pb-0"
                 id="navSchool"
@@ -55,22 +71,6 @@
               >
                 Teacher
               </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                to="/admin/syllabus"
-                class="nav-link pb-0"
-                id="navSyllabus"
-                @click="closeOffcanvas"
-              >
-                Syllabus
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link pb-0 disabled" id="navQuestion" href="#">Question Bank</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link pb-0 disabled" id="navPattern" href="#">Pattern</a>
             </li>
             <li class="nav-item">
               <a class="nav-link pb-0 disabled" id="navProfile" href="#">Profile</a>

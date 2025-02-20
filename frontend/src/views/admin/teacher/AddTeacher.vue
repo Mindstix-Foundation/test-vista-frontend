@@ -22,8 +22,10 @@ import { useRouter } from 'vue-router'
 import TeacherFormComponent from '@/components/forms/TeacherFormComponent.vue'
 import type { TeacherFormData } from '@/models/Teacher'
 import { getApiUrl } from '@/config/api'
+import { useToastStore } from '@/store/toast'
 
 const router = useRouter()
+const toastStore = useToastStore()
 
 const handleSubmit = async (data: {
   formData: TeacherFormData
@@ -104,10 +106,19 @@ const handleSubmit = async (data: {
     }
 
     console.log('AddTeacher: Form submission completed successfully')
+    toastStore.showToast({
+      title: 'Success',
+      message: `Teacher "${data.formData.name}" has been created successfully.`,
+      type: 'success',
+    })
     router.push('/admin/teacher')
   } catch (error) {
     console.error('AddTeacher: Error in form submission:', error)
-    alert('Failed to create teacher. Please try again.')
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to create teacher. Please try again.',
+      type: 'error',
+    })
   }
 }
 </script>

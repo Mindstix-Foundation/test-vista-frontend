@@ -103,8 +103,8 @@
       >
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Delete</h5>
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title" id="deleteConfirmationModalLabel">Delete Board</h5>
               <button
                 type="button"
                 class="btn-close"
@@ -115,7 +115,6 @@
             <div class="modal-body">
               <template v-if="associatedSchools.length > 0">
                 <div class="alert alert-warning">
-                  <strong>Cannot delete this board!</strong>
                   <template v-if="associatedSchools.some((s) => s.id !== -1)">
                     <p class="mb-2">The following schools are associated with this board:</p>
                     <ul class="list-unstyled ms-3">
@@ -132,7 +131,22 @@
                   </template>
                 </div>
               </template>
-              <template v-else> Are you sure you want to delete this board? </template>
+              <p class="mb-3">
+                Are you sure you want to delete this board? This action cannot be undone.
+                <span v-if="associatedSchools.length > 0" class="text-danger">
+                  All associated schools and data will also be deleted!
+                </span>
+              </p>
+              <div class="form-group">
+                <label for="confirmText" class="form-label">Type "sure" to confirm deletion:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="confirmText"
+                  v-model="confirmationText"
+                  placeholder="Type 'sure' here"
+                />
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" @click="cleanupModals">Cancel</button>
@@ -140,7 +154,7 @@
                 type="button"
                 class="btn btn-danger"
                 @click="deleteBoard"
-                :disabled="associatedSchools.length > 0"
+                :disabled="confirmationText !== 'sure'"
               >
                 Delete
               </button>
@@ -168,7 +182,6 @@
                 data-bs-dismiss="modal"
                 @click="cleanupModals"
                 aria-label="Close"
-                ref="closeModalButton"
               ></button>
             </div>
             <div class="modal-body">
@@ -389,6 +402,7 @@ import type { Board } from '@/models/Board'
 import { useRouter, useRoute } from 'vue-router'
 import { getApiUrl } from '@/config/api'
 import * as bootstrap from 'bootstrap'
+import { useToastStore } from '@/store/toast'
 
 interface BoardDetails {
   id: number
@@ -450,6 +464,7 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 const showInfoModal = ref(false)
 const associatedSchools = ref<Array<{ id: number; name: string }>>([])
+const confirmationText = ref('')
 
 async function fetchLocationData(cityId: number) {
   try {
@@ -630,9 +645,8 @@ const deleteBoard = async () => {
   if (!selectedBoard.value) return
 
   try {
-    // If there are associated schools, the delete button will be disabled
-    // but we'll check again just to be safe
-    if (associatedSchools.value.length > 0) {
+    // Proceed with board deletion if user has typed "sure"
+    if (confirmationText.value !== 'sure') {
       return
     }
 
@@ -650,12 +664,26 @@ const deleteBoard = async () => {
 
     // Update the local boards list
     boards.value = boards.value.filter((board) => board.id !== selectedBoard.value?.id)
-    selectedBoard.value = null
 
+    // Show success toast
+    const toastStore = useToastStore()
+    toastStore.showToast({
+      type: 'success',
+      title: 'Success',
+      message: `Board "${selectedBoard.value.name}" has been deleted successfully.`,
+    })
+
+    selectedBoard.value = null
     cleanupModals()
   } catch (error) {
     console.error('Error deleting board:', error)
-    alert('Failed to delete board. Please try again.')
+    // Show error toast instead of alert
+    const toastStore = useToastStore()
+    toastStore.showToast({
+      type: 'error',
+      title: 'Error',
+      message: 'Failed to delete board. Please try again.',
+    })
   }
 }
 
@@ -664,47 +692,13 @@ const clearBoardFilter = () => {
 }
 
 const cleanupModals = () => {
-  // First move focus out of the modal
-  const mainContainer = document.querySelector('.container') as HTMLElement
-  if (mainContainer) {
-    mainContainer.focus()
-  }
-
-  // Then hide the delete confirmation modal
-  const deleteModal = document.getElementById('deleteConfirmationModal')
-  if (deleteModal) {
-    const deleteModalInstance = bootstrap.Modal.getInstance(deleteModal)
-    if (deleteModalInstance) {
-      deleteModalInstance.hide()
-    }
-  }
-
-  // Then hide the board info modal
-  const boardInfoModal = document.getElementById('boardInfoModal')
-  if (boardInfoModal) {
-    const boardInfoModalInstance = bootstrap.Modal.getInstance(boardInfoModal)
-    if (boardInfoModalInstance) {
-      boardInfoModalInstance.hide()
-    }
-  }
-
-  showInfoModal.value = false
-
-  // Force cleanup of all modal-related elements
-  const cleanup = () => {
-    // Remove all modal backdrops
-    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
-      backdrop.remove()
-    })
-
-    // Reset body styles
-    document.body.classList.remove('modal-open')
-    document.body.style.removeProperty('padding-right')
-    document.body.style.overflow = ''
-  }
-
-  // Run cleanup after modal animation
-  setTimeout(cleanup, 300)
+  confirmationText.value = ''
+  const deleteModal = bootstrap.Modal.getInstance(
+    document.getElementById('deleteConfirmationModal')!,
+  )
+  deleteModal?.hide()
+  const viewModal = bootstrap.Modal.getInstance(document.getElementById('boardInfoModal')!)
+  viewModal?.hide()
 }
 
 const navigateToSchools = (boardName?: string) => {

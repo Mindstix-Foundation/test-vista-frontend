@@ -2,12 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import BoardDashboard from '@/views/admin/board/BoardDashboard.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import FormLayout from '@/layouts/FormLayout.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     redirect: '/admin/board',
   },
+  // Dashboard routes with navbar
   {
     path: '/admin',
     component: AdminLayout,
@@ -32,37 +34,59 @@ const routes: RouteRecordRaw[] = [
         name: 'SyllabusDashboard',
         component: () => import('../views/admin/syllabus/SyllabusDashboard.vue'),
       },
+      {
+        path: 'syllabus/standard',
+        name: 'syllabusStandard',
+        component: () => import('@/views/admin/syllabus/Standard/StandardDashboard.vue'),
+      },
+      {
+        path: 'syllabus/subject/:id',
+        name: 'subjectSyllabus',
+        component: () => import('@/views/admin/syllabus/subject/SubjectDashboard.vue'),
+      },
     ],
   },
+  // Form routes without navbar
   {
-    path: '/admin/board/add',
-    name: 'addBoard',
-    component: () => import('@/views/admin/board/AddBoard.vue'),
-  },
-  {
-    path: '/admin/board/:id/edit',
-    name: 'editBoard',
-    component: () => import('@/views/admin/board/EditBoard.vue'),
-  },
-  {
-    path: '/admin/school/add',
-    name: 'addSchool',
-    component: () => import('@/views/admin/school/AddSchool.vue'),
-  },
-  {
-    path: '/admin/school/:id/edit',
-    name: 'editSchool',
-    component: () => import('@/views/admin/school/EditSchool.vue'),
-  },
-  {
-    path: '/admin/teacher/add',
-    name: 'addTeacher',
-    component: () => import('@/views/admin/teacher/AddTeacher.vue'),
-  },
-  {
-    path: '/admin/teacher/:id/edit',
-    name: 'editTeacher',
-    component: () => import('@/views/admin/teacher/EditTeacher.vue'),
+    path: '/admin',
+    component: FormLayout,
+    children: [
+      {
+        path: 'board/add',
+        name: 'addBoard',
+        component: () => import('@/views/admin/board/AddBoard.vue'),
+      },
+      {
+        path: 'board/:id/edit',
+        name: 'editBoard',
+        component: () => import('@/views/admin/board/EditBoard.vue'),
+      },
+      {
+        path: 'school/add',
+        name: 'addSchool',
+        component: () => import('@/views/admin/school/AddSchool.vue'),
+      },
+      {
+        path: 'school/:id/edit',
+        name: 'editSchool',
+        component: () => import('@/views/admin/school/EditSchool.vue'),
+      },
+      {
+        path: 'teacher/add',
+        name: 'addTeacher',
+        component: () => import('@/views/admin/teacher/AddTeacher.vue'),
+      },
+      {
+        path: 'teacher/:id/edit',
+        name: 'editTeacher',
+        component: () => import('@/views/admin/teacher/EditTeacher.vue'),
+      },
+      {
+        path: 'syllabus/subject/:id/add-chapter',
+        name: 'addChapter',
+        component: () => import('@/views/admin/syllabus/subject/AddChapter.vue'),
+      },
+    ],
   },
 ]
 

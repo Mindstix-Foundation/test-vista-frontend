@@ -8,6 +8,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BoardFormComponent from '@/components/forms/BoardFormComponent.vue'
+import { useToastStore } from '@/store/toast'
 import { getApiUrl } from '@/config/api'
 import type {
   CreateBoardDto,
@@ -18,6 +19,7 @@ import type {
 } from '@/models/Board'
 
 const router = useRouter()
+const toastStore = useToastStore()
 const isSubmitting = ref(false)
 
 interface ApiErrorResponse {
@@ -113,11 +115,24 @@ const handleBoardSubmit = async (formData: {
       ),
     ])
 
-    // Navigate back to board list on success
-    router.push('/admin/board')
+    // Navigate immediately
+    await router.push('/admin/board')
+
+    // Show success toast after navigation
+    toastStore.showToast({
+      title: 'Success',
+      message: 'Board created successfully!',
+      type: 'success',
+    })
   } catch (error) {
     console.error('Error creating board:', error)
-    alert(error instanceof Error ? error.message : 'Failed to create board. Please try again.')
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to create board. Please try again.'
+    toastStore.showToast({
+      title: 'Error',
+      message: errorMessage,
+      type: 'error',
+    })
   } finally {
     isSubmitting.value = false
   }

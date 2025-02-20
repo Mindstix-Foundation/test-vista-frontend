@@ -13,8 +13,10 @@ import { useRouter } from 'vue-router'
 import SchoolFormComponent from '@/components/forms/SchoolFormComponent.vue'
 import type { SchoolFormData } from '@/models/School'
 import { getApiUrl } from '@/config/api'
+import { useToastStore } from '@/store/toast'
 
 const router = useRouter()
+const toastStore = useToastStore()
 
 const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
   try {
@@ -27,7 +29,7 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
       body: JSON.stringify({
         street: schoolData.address.street,
         postal_code: schoolData.address.postal_code,
-        city_id: schoolData.address.city_id
+        city_id: schoolData.address.city_id,
       }),
     })
 
@@ -67,59 +69,19 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
 
     const createdSchool = await schoolResponse.json()
     console.log('School created successfully:', createdSchool)
-
-    // Step 3: Create school-instruction-medium mappings
-    const mediumPromises = schoolData.mediums.map(async (mediumId) => {
-      const mediumDto = {
-        school_id: createdSchool.id,
-        instruction_medium_id: parseInt(mediumId.toString()),
-      }
-      const response = await fetch(getApiUrl('/school-instruction-mediums'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(mediumDto),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to create school-instruction-medium mapping')
-      }
-      return response.json()
+    toastStore.showToast({
+      title: 'Success',
+      message: `School "${schoolData.name}" has been created successfully.`,
+      type: 'success',
     })
-
-    // Step 4: Create school-standard mappings
-    const standardPromises = schoolData.standards.map(async (standardId) => {
-      const standardDto = {
-        school_id: createdSchool.id,
-        standard_id: parseInt(standardId.toString()),
-      }
-      const response = await fetch(getApiUrl('/school-standards'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(standardDto),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to create school-standard mapping')
-      }
-      return response.json()
-    })
-
-    // Wait for all mappings to be created
-    await Promise.all([...mediumPromises, ...standardPromises])
-    console.log('All school relationships created successfully')
-
-    // Navigate back to the schools list after successful creation
     router.push('/admin/school')
   } catch (error) {
     console.error('Error creating school:', error)
-    // Show a more descriptive error message to the user
-    if (error instanceof Error) {
-      alert(error.message)
-    } else {
-      alert('Failed to create school. Please try again.')
-    }
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to create school. Please try again.',
+      type: 'error',
+    })
   }
 }
 </script>

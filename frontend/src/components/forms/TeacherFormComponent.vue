@@ -1942,6 +1942,19 @@ watch(
 </script>
 
 <style scoped>
+/* Main container styles */
+.container-fluid {
+  min-height: 100%;
+  padding-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-container {
+  flex: 1;
+  padding: 1rem;
+}
+
 .form-control:focus,
 .form-select:focus {
   border-color: #0d6efd;

@@ -2,109 +2,126 @@
   <div class="container mt-4 mb-5">
     <!-- Header Section -->
     <div class="row p-2 g-2 mb-1">
-      <div class="row justify-content-center align-items-center g-2 mb-4">
-        <div class="col-12 col-sm-5">
-          <h5 class="text-left m-0 fw-bolder text-uppercase">SYLLABUS MANAGEMENT</h5>
+      <div class="row g-2 justify-content-center align-items-center mb-4">
+        <div class="col-12 col-sm-10">
+          <h5 class="text-left fw-bolder text-uppercase m-0">SYLLABUS MANAGEMENT</h5>
         </div>
       </div>
       <hr />
     </div>
 
-    <!-- Selection Form -->
-    <div class="row p-2 gy-2 justify-content-center">
-      <div class="col-12 col-sm-10 col-md-8">
-        <form @submit.prevent="handleSubmit" class="needs-validation" novalidate>
+    <!-- Form Section -->
+    <div class="row gy-2 g-3 justify-content-center">
+      <form @submit.prevent="handleSubmit" id="viewSyllabusForm">
+        <div class="row gy-2 justify-content-center">
           <!-- Board Selection -->
-          <div class="form-floating mb-3">
-            <select
-              class="form-select"
-              id="boardSelect"
-              v-model="selectedBoard"
-              @change="handleBoardChange"
-              required
-            >
-              <option value="" disabled selected>Select a board</option>
-              <option v-for="board in boards" :key="board.id" :value="board.id">
-                {{ board.name }}
-              </option>
-            </select>
-            <label for="boardSelect">Select Board</label>
-          </div>
-
-          <!-- Medium Selection (enabled only if board is selected) -->
-          <div class="form-floating mb-3">
-            <select
-              class="form-select"
-              id="mediumSelect"
-              v-model="selectedMedium"
-              :disabled="!selectedBoard"
-              required
-            >
-              <option value="" disabled selected>Select a medium</option>
-              <option v-for="medium in mediums" :key="medium.id" :value="medium.id">
-                {{ medium.instruction_medium }}
-              </option>
-            </select>
-            <label for="mediumSelect">Select Medium</label>
-          </div>
-
-          <!-- Standard Selection (enabled only if board is selected) -->
-          <div class="form-floating mb-3">
-            <select
-              class="form-select"
-              id="standardSelect"
-              v-model="selectedStandard"
-              :disabled="!selectedBoard"
-              required
-            >
-              <option value="" disabled selected>Select a standard</option>
-              <option v-for="standard in standards" :key="standard.id" :value="standard.id">
-                {{ standard.name }}
-              </option>
-            </select>
-            <label for="standardSelect">Select Standard</label>
-          </div>
-
-          <!-- Subjects Checkboxes (shown only if board is selected) -->
-          <div v-if="selectedBoard" class="card mt-4">
-            <div class="card-header">
-              <h6 class="mb-0">Select Subjects</h6>
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div v-for="subject in subjects" :key="subject.id" class="col-md-6">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      :id="'subject' + subject.id"
-                      v-model="selectedSubjects"
-                      :value="subject.id"
-                    />
-                    <label class="form-check-label" :for="'subject' + subject.id">
-                      {{ subject.name }}
-                    </label>
-                  </div>
+          <div class="col-12 col-sm-10 col-md-8">
+            <div class="mb-3">
+              <div class="form-floating dropdown">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="filterBoard"
+                  placeholder="Search for Board"
+                  v-model="boardSearch"
+                  @input="filterBoards"
+                  @focus="showBoardDropdown = true"
+                  @click="showBoardDropdown = true"
+                  autocomplete="off"
+                  required
+                  @keydown="handleBoardKeydown"
+                />
+                <div
+                  class="dropdown-menu"
+                  :class="{ show: showBoardDropdown && filteredBoards.length > 0 }"
+                  style="position: absolute; width: 100%; z-index: 1000"
+                >
+                  <button
+                    v-for="(board, index) in filteredBoards"
+                    :key="board.id"
+                    class="dropdown-item"
+                    :class="{ active: index === selectedBoardIndex }"
+                    @click="selectBoard(board)"
+                    type="button"
+                  >
+                    {{ board.name }}
+                  </button>
                 </div>
+                <label for="filterBoard">Board <span class="text-danger">*</span></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Medium Selection -->
+          <div class="col-12 col-sm-10 col-md-8">
+            <div class="mb-3">
+              <div class="form-floating">
+                <select
+                  id="filterMedium"
+                  class="form-select"
+                  required
+                  v-model="selectedMediumId"
+                  :disabled="!selectedBoard"
+                >
+                  <option value="">Select Medium</option>
+                  <option v-for="medium in boardMediums" :key="medium.id" :value="medium.id">
+                    {{ medium.instruction_medium }}
+                  </option>
+                </select>
+                <label for="filterMedium" class="form-label">
+                  Medium <span class="text-danger">*</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Standard Selection -->
+          <div class="col-12 col-sm-10 col-md-8">
+            <div class="mb-3">
+              <div class="form-floating">
+                <select
+                  id="filterClass"
+                  class="form-select"
+                  required
+                  v-model="selectedStandardId"
+                  :disabled="!selectedBoard"
+                >
+                  <option value="">Select Standard</option>
+                  <option
+                    v-for="standard in boardStandards"
+                    :key="standard.id"
+                    :value="standard.id"
+                  >
+                    Standard {{ standard.name }}
+                  </option>
+                </select>
+                <label for="filterClass" class="form-label">
+                  Standard <span class="text-danger">*</span>
+                </label>
               </div>
             </div>
           </div>
 
           <!-- Submit Button -->
-          <div class="d-grid gap-2 mt-4">
-            <button type="submit" class="btn btn-primary" :disabled="!isFormValid || isLoading">
-              <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-              Continue
+          <div class="col-12 col-sm-10 col-md-8 text-end">
+            <button
+              type="submit"
+              class="btn btn-dark mt-3"
+              id="viewSyllabusBtn"
+              :disabled="!selectedBoard || !selectedMediumId || !selectedStandardId"
+            >
+              Manage Syllabus
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getApiUrl } from '@/config/api'
 
 interface Board {
@@ -113,233 +130,237 @@ interface Board {
   abbreviation: string
 }
 
-interface Medium {
+interface InstructionMedium {
   id: number
-  instruction_medium: string
   board_id: number
+  instruction_medium: string
 }
 
 interface Standard {
   id: number
-  name: string
   board_id: number
-}
-
-interface Subject {
-  id: number
   name: string
-  board_id: number
 }
 
-interface MediumStandardSubject {
-  id: number
-  instruction_medium_id: number
-  standard_id: number
-  subject_id: number
+interface BoardDetails extends Board {
+  instruction_mediums: InstructionMedium[]
+  standards: Standard[]
 }
 
-// State
+const router = useRouter()
+const boardDropdownRef = ref<HTMLElement | null>(null)
+
+// Form data
+const boardSearch = ref('')
+const selectedBoard = ref<BoardDetails | null>(null)
+const selectedMediumId = ref('')
+const selectedStandardId = ref('')
+const showBoardDropdown = ref(false)
+const selectedBoardIndex = ref(-1)
+
+// Data lists
 const boards = ref<Board[]>([])
-const mediums = ref<Medium[]>([])
-const standards = ref<Standard[]>([])
-const subjects = ref<Subject[]>([])
-const initialSubjectMappings = ref<MediumStandardSubject[]>([])
+const boardMediums = computed(() => selectedBoard.value?.instruction_mediums || [])
+const boardStandards = computed(() => selectedBoard.value?.standards || [])
 
-const selectedBoard = ref<number | ''>('')
-const selectedMedium = ref<number | ''>('')
-const selectedStandard = ref<number | ''>('')
-const selectedSubjects = ref<number[]>([])
-const isLoading = ref(false)
-
-// Computed
-const isFormValid = computed(() => {
-  return (
-    selectedBoard.value &&
-    selectedMedium.value &&
-    selectedStandard.value &&
-    selectedSubjects.value.length > 0
+// Computed property for filtered boards
+const filteredBoards = computed(() => {
+  const search = boardSearch.value.toLowerCase()
+  return boards.value.filter(
+    (board) =>
+      board.name.toLowerCase().includes(search) ||
+      board.abbreviation.toLowerCase().includes(search),
   )
 })
 
-// Methods
-const fetchBoards = async () => {
+// Handle click outside board dropdown
+const handleClickOutside = (event: MouseEvent) => {
+  if (boardDropdownRef.value && !boardDropdownRef.value.contains(event.target as Node)) {
+    showBoardDropdown.value = false
+  }
+}
+
+// Fetch boards on component mount
+onMounted(async () => {
   try {
     const response = await fetch(getApiUrl('/boards'))
     if (!response.ok) throw new Error('Failed to fetch boards')
     boards.value = await response.json()
+    document.addEventListener('click', handleClickOutside)
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+// Filter boards based on search input
+const filterBoards = () => {
+  showBoardDropdown.value = true
 }
 
-const handleBoardChange = async () => {
-  if (!selectedBoard.value) return
+// Handle board keyboard navigation
+const handleBoardKeydown = (event: KeyboardEvent) => {
+  if (!showBoardDropdown.value) return
 
-  try {
-    isLoading.value = true
-    // Reset selections
-    selectedMedium.value = ''
-    selectedStandard.value = ''
-    selectedSubjects.value = []
-    initialSubjectMappings.value = []
-
-    // Fetch mediums, standards, and subjects for selected board
-    const [mediumsResponse, standardsResponse, subjectsResponse] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${selectedBoard.value}`)),
-      fetch(getApiUrl(`/standards/board/${selectedBoard.value}`)),
-      fetch(getApiUrl(`/subjects/board/${selectedBoard.value}`)),
-    ])
-
-    if (!mediumsResponse.ok) throw new Error('Failed to fetch mediums')
-    if (!standardsResponse.ok) throw new Error('Failed to fetch standards')
-    if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects')
-
-    mediums.value = await mediumsResponse.json()
-    standards.value = await standardsResponse.json()
-    subjects.value = await subjectsResponse.json()
-  } catch (error) {
-    console.error('Error fetching board data:', error)
-  } finally {
-    isLoading.value = false
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      selectedBoardIndex.value = Math.min(
+        selectedBoardIndex.value + 1,
+        filteredBoards.value.length - 1,
+      )
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      selectedBoardIndex.value = Math.max(selectedBoardIndex.value - 1, -1)
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (selectedBoardIndex.value >= 0 && filteredBoards.value[selectedBoardIndex.value]) {
+        selectBoard(filteredBoards.value[selectedBoardIndex.value])
+      }
+      break
+    case 'Escape':
+      event.preventDefault()
+      showBoardDropdown.value = false
+      break
   }
 }
 
-const loadExistingMappings = async () => {
-  if (!selectedMedium.value || !selectedStandard.value || !selectedBoard.value) return
-
+// Select board and fetch its details
+const selectBoard = async (board: Board) => {
   try {
-    isLoading.value = true
-    const response = await fetch(
-      getApiUrl(
-        `/medium-standard-subjects/medium/${selectedMedium.value}/standard/${selectedStandard.value}?board_id=${selectedBoard.value}`,
-      ),
-    )
+    // Reset dependent selections
+    selectedMediumId.value = ''
+    selectedStandardId.value = ''
+    boardSearch.value = board.name
+    showBoardDropdown.value = false
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch existing mappings')
-    }
-
-    const mappings: MediumStandardSubject[] = await response.json()
-    console.log('Loaded existing mappings:', mappings)
-    initialSubjectMappings.value = mappings
-    selectedSubjects.value = mappings.map((m) => m.subject_id)
+    // Fetch board details
+    const response = await fetch(getApiUrl(`/boards/${board.id}`))
+    if (!response.ok) throw new Error('Failed to fetch board details')
+    const boardDetails = await response.json()
+    selectedBoard.value = boardDetails
   } catch (error) {
-    console.error('Error loading existing mappings:', error)
-  } finally {
-    isLoading.value = false
+    console.error('Error fetching board details:', error)
   }
 }
 
-const handleSubmit = async () => {
-  if (!isFormValid.value) return
-
-  try {
-    isLoading.value = true
-    console.log('Starting submit with selections:', {
-      medium: selectedMedium.value,
-      standard: selectedStandard.value,
-      subjects: selectedSubjects.value,
-      initialMappings: initialSubjectMappings.value,
+// Form submission handler
+const handleSubmit = () => {
+  if (selectedBoard.value) {
+    router.push({
+      name: 'syllabusStandard',
+      query: {
+        board: selectedBoard.value.id,
+        medium: selectedMediumId.value,
+        standard: selectedStandardId.value,
+      },
     })
-
-    // Find mappings that were initially selected but are now unchecked
-    const mappingsToDelete = initialSubjectMappings.value.filter(
-      (mapping) => !selectedSubjects.value.includes(mapping.subject_id),
-    )
-
-    // Delete only the unchecked mappings
-    for (const mapping of mappingsToDelete) {
-      console.log(`Deleting mapping for subject ${mapping.subject_id} that was unchecked`)
-      const deleteResponse = await fetch(getApiUrl(`/medium-standard-subjects/${mapping.id}`), {
-        method: 'DELETE',
-      })
-      if (!deleteResponse.ok) {
-        throw new Error(`Failed to delete mapping for subject ${mapping.subject_id}`)
-      }
-    }
-
-    // Find subjects that are newly checked
-    const existingSubjectIds = initialSubjectMappings.value.map((m) => m.subject_id)
-    const newlySelectedSubjects = selectedSubjects.value.filter(
-      (subjectId) => !existingSubjectIds.includes(subjectId),
-    )
-
-    // Create mappings only for newly checked subjects
-    for (const subjectId of newlySelectedSubjects) {
-      console.log(`Creating new mapping for subject ${subjectId}`)
-      const createResponse = await fetch(getApiUrl('/medium-standard-subjects'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          instruction_medium_id: selectedMedium.value,
-          standard_id: selectedStandard.value,
-          subject_id: subjectId,
-        }),
-      })
-
-      if (!createResponse.ok) {
-        throw new Error(`Failed to create mapping for subject ${subjectId}`)
-      }
-    }
-
-    // Show success message
-    alert('Syllabus mappings updated successfully!')
-
-    // Reset form and initial mappings
-    selectedSubjects.value = []
-    selectedMedium.value = ''
-    selectedStandard.value = ''
-    initialSubjectMappings.value = []
-  } catch (error) {
-    console.error('Error updating syllabus mappings:', error)
-    alert('Failed to update syllabus mappings. Please try again.')
-  } finally {
-    isLoading.value = false
   }
 }
-
-// Watchers
-watch([selectedMedium, selectedStandard], async () => {
-  if (selectedMedium.value && selectedStandard.value) {
-    await loadExistingMappings()
-  } else {
-    selectedSubjects.value = []
-    initialSubjectMappings.value = []
-  }
-})
-
-// Lifecycle hooks
-onMounted(() => {
-  fetchBoards()
-})
 </script>
 
 <style scoped>
+/* Default styles for screens above 576px */
+.dynamic-style {
+  position: static;
+  background-color: transparent;
+  box-shadow: none;
+  width: auto;
+}
+
+/* Styles for screens below 576px */
+@media (max-width: 576px) {
+  .dynamic-style {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+  }
+
+  #viewSyllabusBtn {
+    width: 100% !important;
+  }
+}
+
+/* Mobile styles for nav link */
+@media (max-width: 768px) {
+  #navSyllabus {
+    font-weight: bolder;
+    font-size: 1.1rem !important;
+    text-decoration: none !important;
+  }
+}
+
+/* Form styling */
+.form-floating > .form-control,
+.form-floating > .form-select {
+  height: calc(3.5rem + 2px);
+  line-height: 1.25;
+}
+
 .form-floating > label {
-  z-index: 3;
+  padding: 1rem 0.75rem;
 }
 
-.form-check-input:checked {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+.form-select option[disabled] {
+  color: #6c757d;
+  font-style: italic;
 }
 
-.card {
-  border-radius: 0.5rem;
+/* Dropdown styling */
+.dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0;
 }
 
-.card-header {
+.dropdown-item {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  display: block;
+  color: #212529;
+}
+
+.dropdown-item:hover,
+.dropdown-item.active {
   background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+  color: #212529;
 }
 
-.form-check-label {
-  cursor: pointer;
+.dropdown-item.active {
+  background-color: #e9ecef;
 }
 
-.form-check-input {
-  cursor: pointer;
+/* Button styling */
+.btn-dark {
+  transition: all 0.3s ease;
+}
+
+.btn-dark:hover {
+  background-color: #343a40;
+  border-color: #343a40;
+}
+
+.btn-dark:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
 }
 </style>

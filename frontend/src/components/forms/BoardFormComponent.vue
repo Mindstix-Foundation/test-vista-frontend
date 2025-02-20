@@ -222,7 +222,7 @@
                     id="address"
                     v-model="form.address.street"
                     placeholder="Address"
-                    style="min-height: 100px; overflow-y: hidden"
+                    style="min-height: 100px"
                     @input="
                       (e) => {
                         autoResizeTextarea(e)
@@ -1793,9 +1793,7 @@ const ensureVisible = (element: HTMLElement, container: HTMLElement) => {
 <style scoped>
 /* Main container styles */
 .container-fluid {
-  height: 100vh;
-  max-height: 100vh;
-  overflow-y: auto;
+  min-height: 100%;
   padding-bottom: 2rem;
   display: flex;
   flex-direction: column;
@@ -1803,7 +1801,6 @@ const ensureVisible = (element: HTMLElement, container: HTMLElement) => {
 
 .form-container {
   flex: 1;
-  overflow-y: auto;
   padding: 1rem;
 }
 
@@ -1830,6 +1827,15 @@ form {
   border: 1px solid rgba(0, 0, 0, 0.15);
   padding: 0.5rem 0;
   width: 100%;
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .dropdown-menu.show {
@@ -1861,6 +1867,18 @@ form {
   top: 100%;
   left: 0;
   z-index: 1000;
+}
+
+/* Remove scrollbar from textarea while keeping functionality */
+textarea {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 /* Rest of your existing styles... */
