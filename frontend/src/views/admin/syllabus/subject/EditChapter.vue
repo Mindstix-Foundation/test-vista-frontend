@@ -30,13 +30,22 @@
           </h4>
         </div>
         <div class="col col-12 col-sm-5 text-end align-self-end">
-          <h3 class="text-left fw-bolder text-uppercase mb-2">Add New Chapter</h3>
+          <h3 class="text-left fw-bolder text-uppercase mb-2">Edit Chapter</h3>
         </div>
       </div>
       <hr />
     </div>
     <div id="form-container" class="row mt-4 justify-content-center">
-      <ChapterFormComponent @submit="saveChapter" />
+      <ChapterFormComponent
+        v-if="chapterData"
+        :initial-data="chapterData"
+        @submit="updateChapter"
+      />
+      <div v-else class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -68,11 +77,9 @@ interface Subject {
   name: string
 }
 
-interface Chapter {
-  id: number
-  medium_standard_subject_id: number
-  sequential_chapter_number: number
-  name: string
+interface ChapterData {
+  chapterName: string
+  topics: string[]
 }
 
 const route = useRoute()
@@ -83,9 +90,10 @@ const selectedBoard = ref<Board | null>(null)
 const selectedMedium = ref<Medium | null>(null)
 const selectedStandard = ref<Standard | null>(null)
 const selectedSubject = ref<Subject | null>(null)
+const chapterData = ref<ChapterData | null>(null)
 
 onMounted(async () => {
-  await fetchData()
+  await Promise.all([fetchData(), fetchChapterData()])
 })
 
 const fetchData = async () => {
@@ -119,81 +127,120 @@ const fetchData = async () => {
   }
 }
 
-const saveChapter = async (formData: { chapterName: string; topics: string[] }) => {
+const fetchChapterData = async () => {
   try {
-    // First, get all existing chapters to determine the next sequential number
-    const chaptersResponse = await fetch(getApiUrl(`/chapters?subject_id=${route.query.subject}`))
-    if (!chaptersResponse.ok) throw new Error('Failed to fetch chapters')
-    const existingChapters: Chapter[] = await chaptersResponse.json()
+    const chapterId = route.params.id
+    const response = await fetch(getApiUrl(`/chapters/${chapterId}`))
+    if (!response.ok) throw new Error('Failed to fetch chapter data')
 
-    // Calculate next sequential number
-    const nextChapterNumber =
-      existingChapters.length > 0
-        ? Math.max(...existingChapters.map((ch) => ch.sequential_chapter_number)) + 1
-        : 1
+    const data = await response.json()
 
-    // Prepare chapter data
-    const chapterData = {
-      medium_standard_subject_id: Number(route.query.subject),
-      sequential_chapter_number: nextChapterNumber,
-      name: formData.chapterName,
+    // Transform the data to match the form component's expected format
+    chapterData.value = {
+      chapterName: data.name,
+      topics: data.topics.map((topic: { name: string }) => topic.name),
     }
-
-    // Save chapter
-    const chapterResponse = await fetch(getApiUrl('/chapters'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(chapterData),
-    })
-
-    if (!chapterResponse.ok) throw new Error('Failed to save chapter')
-
-    const savedChapter = await chapterResponse.json()
-
-    // Save topics with sequential numbers
-    await Promise.all(
-      formData.topics.map(async (topicName, index) => {
-        const topicData = {
-          chapter_id: savedChapter.id,
-          sequential_topic_number: index + 1,
-          name: topicName.trim(),
-        }
-
-        const topicResponse = await fetch(getApiUrl('/topics'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(topicData),
-        })
-
-        if (!topicResponse.ok) throw new Error(`Failed to save topic: ${topicName}`)
-      }),
-    )
-
+  } catch (error) {
+    console.error('Error fetching chapter data:', error)
     toastStore.showToast({
-      title: 'Success',
-      message: 'Chapter and topics saved successfully',
-      type: 'success',
+      title: 'Error',
+      message: 'Failed to load chapter data',
+      type: 'error',
     })
-
-    // Navigate back to subject syllabus
     router.push({
       name: 'subjectSyllabus',
       params: { id: route.query.subject as string },
-      query: {
-        board: route.query.board,
-        medium: route.query.medium,
-        standard: route.query.standard,
+      query: route.query,
+    })
+  }
+}
+
+const updateChapter = async (formData: ChapterData) => {
+  try {
+    const chapterId = route.params.id
+
+    // Update chapter name
+    const chapterResponse = await fetch(getApiUrl(`/chapters/${chapterId}`), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        name: formData.chapterName,
+      }),
+    })
+
+    if (!chapterResponse.ok) throw new Error('Failed to update chapter')
+
+    // Get existing topics to compare
+    const existingTopicsResponse = await fetch(getApiUrl(`/topics?chapterId=${chapterId}`))
+    if (!existingTopicsResponse.ok) throw new Error('Failed to fetch existing topics')
+    const existingTopics = await existingTopicsResponse.json()
+
+    // Update or create topics
+    await Promise.all(
+      formData.topics.map(async (topicName, index) => {
+        const existingTopic = existingTopics[index]
+        const topicData = {
+          name: topicName.trim(),
+          sequential_topic_number: index + 1,
+        }
+
+        if (existingTopic) {
+          // Update existing topic
+          const response = await fetch(getApiUrl(`/topics/${existingTopic.id}`), {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(topicData),
+          })
+          if (!response.ok) throw new Error(`Failed to update topic: ${topicName}`)
+        } else {
+          // Create new topic
+          const response = await fetch(getApiUrl('/topics'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...topicData,
+              chapter_id: chapterId,
+            }),
+          })
+          if (!response.ok) throw new Error(`Failed to create topic: ${topicName}`)
+        }
+      }),
+    )
+
+    // Delete any extra existing topics
+    if (existingTopics.length > formData.topics.length) {
+      await Promise.all(
+        existingTopics.slice(formData.topics.length).map(async (topic: { id: number }) => {
+          const response = await fetch(getApiUrl(`/topics/${topic.id}`), {
+            method: 'DELETE',
+          })
+          if (!response.ok) throw new Error(`Failed to delete topic: ${topic.id}`)
+        }),
+      )
+    }
+
+    toastStore.showToast({
+      title: 'Success',
+      message: 'Chapter updated successfully',
+      type: 'success',
+    })
+
+    router.push({
+      name: 'subjectSyllabus',
+      params: { id: route.query.subject as string },
+      query: route.query,
     })
   } catch (error) {
-    console.error('Error saving chapter:', error)
+    console.error('Error updating chapter:', error)
     toastStore.showToast({
       title: 'Error',
-      message: 'Failed to save chapter and topics',
+      message: 'Failed to update chapter',
       type: 'error',
     })
   }

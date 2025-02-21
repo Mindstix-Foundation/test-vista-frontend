@@ -60,6 +60,8 @@ html,
 body {
   min-height: 100vh;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -88,4 +90,70 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media screen and (max-width: 768px) {
+  html,
+  body {
+    /* Force scrollbar on mobile */
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  #app {
+    height: 100vh;
+    overflow-y: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Log viewport size through CSS */
+  body::after {
+    content: '';
+    display: none;
+  }
+
+  body::before {
+    content: 'Current viewport: ' attr(data-viewport-width) 'x' attr(data-viewport-height);
+    display: none;
+  }
+}
+
+/* Update scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+  border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* Ensure content doesn't get cut off at the bottom */
+.container-fluid {
+  padding-bottom: 20px;
 }

@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import BoardDashboard from '@/views/admin/board/BoardDashboard.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import FormLayout from '@/layouts/FormLayout.vue'
+import EditChapter from '@/views/admin/syllabus/subject/EditChapter.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -87,6 +88,15 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/syllabus/subject/AddChapter.vue'),
       },
     ],
+  },
+  {
+    path: '/admin/syllabus/chapter/:id/edit',
+    name: 'editChapter',
+    component: EditChapter,
+    meta: {
+      requiresAuth: true,
+      roles: ['admin'],
+    },
   },
 ]
 

@@ -125,25 +125,39 @@
                       <thead>
                         <tr>
                           <th scope="col" style="width: 50px"></th>
-                          <th scope="col"></th>
+                          <th scope="col">Subject Name</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-if="availableSubjects.length === 0">
                           <td colspan="2" class="text-center">No subjects available</td>
                         </tr>
-                        <tr v-else v-for="subject in filteredAvailableSubjects" :key="subject.id">
-                          <td>
+                        <tr
+                          v-else
+                          v-for="subject in filteredAvailableSubjects"
+                          :key="subject.id"
+                          class="cursor-pointer"
+                        >
+                          <td
+                            @click.stop="toggleSubjectSelection(subject.id)"
+                            style="cursor: pointer"
+                          >
                             <div class="form-check d-flex justify-content-center">
                               <input
                                 type="checkbox"
                                 class="form-check-input"
                                 :value="subject.id"
                                 v-model="selectedSubjectIds"
+                                @click.stop
                               />
                             </div>
                           </td>
-                          <td>{{ subject.name }}</td>
+                          <td
+                            @click.stop="toggleSubjectSelection(subject.id)"
+                            style="cursor: pointer"
+                          >
+                            {{ subject.name }}
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -345,14 +359,17 @@ const navigateToAddSubject = async () => {
     if (!response.ok) throw new Error('Failed to fetch board subjects')
     const boardSubjects = await response.json()
 
-    // Set available subjects and pre-select mapped ones
+    // Get the current mapped subject IDs
+    const currentSubjectIds = mappedSubjects.value.map((subject) => subject.subject_id)
+
+    // Set all subjects as available and pre-select mapped ones
     availableSubjects.value = boardSubjects.map((subject: BoardSubject) => ({
       id: subject.id,
       name: subject.name,
     }))
 
-    // Set initially selected subjects
-    selectedSubjectIds.value = mappedSubjects.value.map((subject) => subject.subject_id)
+    // Pre-select currently mapped subjects
+    selectedSubjectIds.value = [...currentSubjectIds]
 
     // Show modal
     const modal = new Modal(document.getElementById('addSubjectModal') as HTMLElement)
@@ -383,6 +400,15 @@ const filteredAvailableSubjects = computed(() => {
   const query = modalSearchQuery.value.toLowerCase()
   return availableSubjects.value.filter((subject) => subject.name.toLowerCase().includes(query))
 })
+
+const toggleSubjectSelection = (subjectId: number) => {
+  const index = selectedSubjectIds.value.indexOf(subjectId)
+  if (index === -1) {
+    selectedSubjectIds.value.push(subjectId)
+  } else {
+    selectedSubjectIds.value.splice(index, 1)
+  }
+}
 
 const addSelectedSubjects = async () => {
   try {

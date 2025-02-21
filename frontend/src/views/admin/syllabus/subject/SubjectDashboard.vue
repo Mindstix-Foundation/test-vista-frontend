@@ -375,8 +375,19 @@ const deleteChapter = async () => {
 
     if (!response.ok) throw new Error('Failed to delete chapter')
 
-    // Remove chapter from list
-    chapters.value = chapters.value.filter((c) => c.id !== selectedChapterForDelete.value?.id)
+    // Store the expanded states before fetching
+    const expandedStates = new Map(
+      chapters.value.map((chapter) => [chapter.id, chapter.isExpanded]),
+    )
+
+    // Fetch updated chapters to get the new sequential numbers
+    await fetchData()
+
+    // Restore the expanded states
+    chapters.value = chapters.value.map((chapter) => ({
+      ...chapter,
+      isExpanded: expandedStates.get(chapter.id) || false,
+    }))
 
     toastStore.showToast({
       title: 'Success',

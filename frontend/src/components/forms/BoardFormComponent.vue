@@ -92,7 +92,9 @@
                     class="form-control"
                     :class="{
                       'is-invalid':
-                        !validationStates.country.valid && validationStates.country.touched,
+                        !validationStates.country.valid &&
+                        validationStates.country.touched &&
+                        !showCountryDropdown,
                       'is-valid': validationStates.country.valid,
                     }"
                     id="country"
@@ -121,7 +123,9 @@
                     </button>
                   </div>
                   <label for="country">Country <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please select a country</div>
+                  <div class="invalid-feedback" v-show="!showCountryDropdown">
+                    Please select a country
+                  </div>
                 </div>
               </div>
 
@@ -132,7 +136,10 @@
                     type="text"
                     class="form-control"
                     :class="{
-                      'is-invalid': !validationStates.state.valid && validationStates.state.touched,
+                      'is-invalid':
+                        !validationStates.state.valid &&
+                        validationStates.state.touched &&
+                        !showStateDropdown,
                       'is-valid': validationStates.state.valid,
                     }"
                     id="state"
@@ -162,7 +169,9 @@
                     </button>
                   </div>
                   <label for="state">State <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please select a state</div>
+                  <div class="invalid-feedback" v-show="!showStateDropdown">
+                    Please select a state
+                  </div>
                 </div>
               </div>
 
@@ -173,7 +182,10 @@
                     type="text"
                     class="form-control"
                     :class="{
-                      'is-invalid': !validationStates.city.valid && validationStates.city.touched,
+                      'is-invalid':
+                        !validationStates.city.valid &&
+                        validationStates.city.touched &&
+                        !showCityDropdown,
                       'is-valid': validationStates.city.valid,
                     }"
                     id="city"
@@ -203,7 +215,9 @@
                     </button>
                   </div>
                   <label for="city">City <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please select a city</div>
+                  <div class="invalid-feedback" v-show="!showCityDropdown">
+                    Please select a city
+                  </div>
                 </div>
               </div>
             </div>

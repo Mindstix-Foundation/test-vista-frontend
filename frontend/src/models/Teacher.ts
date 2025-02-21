@@ -7,6 +7,7 @@ export interface TeacherFormData {
   alternateContactNumber?: string
   highestQualification: string
   teacherSubjects: Array<{
+    id?: number
     schoolStandardId: number
     mediumStandardSubjectId: number
   }>

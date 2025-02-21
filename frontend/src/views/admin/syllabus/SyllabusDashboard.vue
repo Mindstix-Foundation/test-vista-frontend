@@ -17,88 +17,55 @@
           <!-- Board Selection -->
           <div class="col-12 col-sm-10 col-md-8">
             <div class="mb-3">
-              <div class="form-floating dropdown">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="filterBoard"
-                  placeholder="Search for Board"
-                  v-model="boardSearch"
-                  @input="filterBoards"
-                  @focus="showBoardDropdown = true"
-                  @click="showBoardDropdown = true"
-                  autocomplete="off"
-                  required
-                  @keydown="handleBoardKeydown"
-                />
-                <div
-                  class="dropdown-menu"
-                  :class="{ show: showBoardDropdown && filteredBoards.length > 0 }"
-                  style="position: absolute; width: 100%; z-index: 1000"
-                >
-                  <button
-                    v-for="(board, index) in filteredBoards"
-                    :key="board.id"
-                    class="dropdown-item"
-                    :class="{ active: index === selectedBoardIndex }"
-                    @click="selectBoard(board)"
-                    type="button"
-                  >
-                    {{ board.name }}
-                  </button>
-                </div>
-                <label for="filterBoard">Board <span class="text-danger">*</span></label>
-              </div>
+              <SearchableDropdown
+                id="filterBoard"
+                label="Board"
+                placeholder="Search for Board"
+                :items="boards"
+                v-model="selectedBoard"
+                :search-keys="['name', 'abbreviation']"
+                required
+                @change="handleBoardChange"
+                next-field-id="filterMedium"
+              />
             </div>
           </div>
 
           <!-- Medium Selection -->
           <div class="col-12 col-sm-10 col-md-8">
             <div class="mb-3">
-              <div class="form-floating">
-                <select
-                  id="filterMedium"
-                  class="form-select"
-                  required
-                  v-model="selectedMediumId"
-                  :disabled="!selectedBoard"
-                >
-                  <option value="">Select Medium</option>
-                  <option v-for="medium in boardMediums" :key="medium.id" :value="medium.id">
-                    {{ medium.instruction_medium }}
-                  </option>
-                </select>
-                <label for="filterMedium" class="form-label">
-                  Medium <span class="text-danger">*</span>
-                </label>
-              </div>
+              <SearchableDropdown
+                id="filterMedium"
+                label="Medium"
+                placeholder="Search for Medium"
+                :items="boardMediums"
+                v-model="selectedMedium"
+                label-key="instruction_medium"
+                :search-keys="['instruction_medium']"
+                :disabled="!selectedBoard"
+                required
+                @change="handleMediumChange"
+                next-field-id="filterStandard"
+              />
             </div>
           </div>
 
           <!-- Standard Selection -->
           <div class="col-12 col-sm-10 col-md-8">
             <div class="mb-3">
-              <div class="form-floating">
-                <select
-                  id="filterClass"
-                  class="form-select"
-                  required
-                  v-model="selectedStandardId"
-                  :disabled="!selectedBoard"
-                >
-                  <option value="">Select Standard</option>
-                  <option
-                    v-for="standard in boardStandards"
-                    :key="standard.id"
-                    :value="standard.id"
-                  >
-                    Standard {{ standard.name }}
-                  </option>
-                </select>
-                <label for="filterClass" class="form-label">
-                  Standard <span class="text-danger">*</span>
-                </label>
-              </div>
+              <SearchableDropdown
+                id="filterStandard"
+                label="Standard"
+                placeholder="Search for Standard"
+                :items="boardStandards"
+                v-model="selectedStandard"
+                :disabled="!selectedBoard"
+                required
+                @change="handleStandardChange"
+                next-field-id="viewSyllabusBtn"
+              >
+                <template #item="{ item }">Standard {{ item.name }}</template>
+              </SearchableDropdown>
             </div>
           </div>
 
@@ -108,7 +75,7 @@
               type="submit"
               class="btn btn-dark mt-3"
               id="viewSyllabusBtn"
-              :disabled="!selectedBoard || !selectedMediumId || !selectedStandardId"
+              :disabled="!selectedBoard || !selectedMedium || !selectedStandard"
             >
               Manage Syllabus
             </button>
@@ -123,6 +90,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getApiUrl } from '@/config/api'
+import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 
 interface Board {
   id: number
@@ -147,37 +115,27 @@ interface BoardDetails extends Board {
   standards: Standard[]
 }
 
+// Add Item interface for dropdown component
+interface Item {
+  id: number | string
+  [key: string]: unknown
+}
+
 const router = useRouter()
-const boardDropdownRef = ref<HTMLElement | null>(null)
 
 // Form data
-const boardSearch = ref('')
 const selectedBoard = ref<BoardDetails | null>(null)
-const selectedMediumId = ref('')
-const selectedStandardId = ref('')
-const showBoardDropdown = ref(false)
-const selectedBoardIndex = ref(-1)
+const selectedMedium = ref<InstructionMedium | null>(null)
+const selectedStandard = ref<Standard | null>(null)
 
 // Data lists
 const boards = ref<Board[]>([])
 const boardMediums = computed(() => selectedBoard.value?.instruction_mediums || [])
 const boardStandards = computed(() => selectedBoard.value?.standards || [])
 
-// Computed property for filtered boards
-const filteredBoards = computed(() => {
-  const search = boardSearch.value.toLowerCase()
-  return boards.value.filter(
-    (board) =>
-      board.name.toLowerCase().includes(search) ||
-      board.abbreviation.toLowerCase().includes(search),
-  )
-})
-
-// Handle click outside board dropdown
-const handleClickOutside = (event: MouseEvent) => {
-  if (boardDropdownRef.value && !boardDropdownRef.value.contains(event.target as Node)) {
-    showBoardDropdown.value = false
-  }
+// Handle click outside dropdowns
+const handleClickOutside = () => {
+  document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 }
 
 // Fetch boards on component mount
@@ -196,48 +154,14 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// Filter boards based on search input
-const filterBoards = () => {
-  showBoardDropdown.value = true
-}
-
-// Handle board keyboard navigation
-const handleBoardKeydown = (event: KeyboardEvent) => {
-  if (!showBoardDropdown.value) return
-
-  switch (event.key) {
-    case 'ArrowDown':
-      event.preventDefault()
-      selectedBoardIndex.value = Math.min(
-        selectedBoardIndex.value + 1,
-        filteredBoards.value.length - 1,
-      )
-      break
-    case 'ArrowUp':
-      event.preventDefault()
-      selectedBoardIndex.value = Math.max(selectedBoardIndex.value - 1, -1)
-      break
-    case 'Enter':
-      event.preventDefault()
-      if (selectedBoardIndex.value >= 0 && filteredBoards.value[selectedBoardIndex.value]) {
-        selectBoard(filteredBoards.value[selectedBoardIndex.value])
-      }
-      break
-    case 'Escape':
-      event.preventDefault()
-      showBoardDropdown.value = false
-      break
-  }
-}
-
-// Select board and fetch its details
-const selectBoard = async (board: Board) => {
+// Selection handlers
+const handleBoardChange = async (board: Item | null) => {
   try {
     // Reset dependent selections
-    selectedMediumId.value = ''
-    selectedStandardId.value = ''
-    boardSearch.value = board.name
-    showBoardDropdown.value = false
+    selectedMedium.value = null
+    selectedStandard.value = null
+
+    if (!board) return
 
     // Fetch board details
     const response = await fetch(getApiUrl(`/boards/${board.id}`))
@@ -249,15 +173,24 @@ const selectBoard = async (board: Board) => {
   }
 }
 
+const handleMediumChange = (medium: Item | null) => {
+  selectedMedium.value = medium as InstructionMedium | null
+  selectedStandard.value = null
+}
+
+const handleStandardChange = (standard: Item | null) => {
+  selectedStandard.value = standard as Standard | null
+}
+
 // Form submission handler
 const handleSubmit = () => {
-  if (selectedBoard.value) {
+  if (selectedBoard.value && selectedMedium.value && selectedStandard.value) {
     router.push({
       name: 'syllabusStandard',
       query: {
         board: selectedBoard.value.id,
-        medium: selectedMediumId.value,
-        standard: selectedStandardId.value,
+        medium: selectedMedium.value.id,
+        standard: selectedStandard.value.id,
       },
     })
   }
@@ -297,55 +230,6 @@ const handleSubmit = () => {
     font-size: 1.1rem !important;
     text-decoration: none !important;
   }
-}
-
-/* Form styling */
-.form-floating > .form-control,
-.form-floating > .form-select {
-  height: calc(3.5rem + 2px);
-  line-height: 1.25;
-}
-
-.form-floating > label {
-  padding: 1rem 0.75rem;
-}
-
-.form-select option[disabled] {
-  color: #6c757d;
-  font-style: italic;
-}
-
-/* Dropdown styling */
-.dropdown-menu {
-  max-height: 200px;
-  overflow-y: auto;
-  margin-top: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  background-color: white;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  padding: 0.5rem 0;
-}
-
-.dropdown-item {
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  display: block;
-  color: #212529;
-}
-
-.dropdown-item:hover,
-.dropdown-item.active {
-  background-color: #f8f9fa;
-  color: #212529;
-}
-
-.dropdown-item.active {
-  background-color: #e9ecef;
 }
 
 /* Button styling */

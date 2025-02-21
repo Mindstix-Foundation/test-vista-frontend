@@ -1,11 +1,11 @@
 <template>
-  <div class="container-fluid">
+  <div class="container-fluid board-form-container">
     <BoardFormComponent :isEditMode="false" @submit="handleBoardSubmit" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BoardFormComponent from '@/components/forms/BoardFormComponent.vue'
 import { useToastStore } from '@/store/toast'
@@ -21,6 +21,29 @@ import type {
 const router = useRouter()
 const toastStore = useToastStore()
 const isSubmitting = ref(false)
+
+const logDimensions = () => {
+  const container = document.querySelector('.board-form-container')
+  console.log('AddBoard - Window dimensions:', {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    scrollHeight: document.documentElement.scrollHeight,
+    clientHeight: document.documentElement.clientHeight,
+    bodyHeight: document.body.scrollHeight,
+    containerHeight: container?.scrollHeight,
+    hasVerticalScroll: document.documentElement.scrollHeight > window.innerHeight,
+    overflowY: window.getComputedStyle(container as Element).overflowY,
+  })
+}
+
+onMounted(() => {
+  logDimensions()
+  window.addEventListener('resize', logDimensions)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', logDimensions)
+})
 
 interface ApiErrorResponse {
   message?: string | string[]
@@ -138,3 +161,23 @@ const handleBoardSubmit = async (formData: {
   }
 }
 </script>
+
+<style scoped>
+.board-form-container {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  padding-bottom: 2rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Add styles for mobile devices */
+@media screen and (max-width: 768px) {
+  .board-form-container {
+    height: 100%;
+    overflow-y: scroll !important;
+    position: relative;
+    padding-bottom: 4rem; /* Increased padding for mobile */
+  }
+}
+</style>

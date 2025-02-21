@@ -37,7 +37,10 @@
             type="text"
             class="form-control"
             :class="{
-              'is-invalid': !validationStates.boardId.valid && validationStates.boardId.touched,
+              'is-invalid':
+                !validationStates.boardId.valid &&
+                validationStates.boardId.touched &&
+                !showBoardDropdown,
               'is-valid': validationStates.boardId.valid && validationStates.boardId.touched,
             }"
             id="board"
@@ -68,7 +71,11 @@
           <label for="board">Board <span class="text-danger">*</span></label>
           <div
             class="invalid-feedback"
-            v-if="!validationStates.boardId.valid && validationStates.boardId.touched"
+            v-show="
+              !validationStates.boardId.valid &&
+              validationStates.boardId.touched &&
+              !showBoardDropdown
+            "
           >
             Please select a board
           </div>
@@ -83,7 +90,10 @@
             type="text"
             class="form-control"
             :class="{
-              'is-invalid': !validationStates.schoolId.valid && validationStates.schoolId.touched,
+              'is-invalid':
+                !validationStates.schoolId.valid &&
+                validationStates.schoolId.touched &&
+                !showSchoolDropdown,
               'is-valid': validationStates.schoolId.valid && validationStates.schoolId.touched,
             }"
             id="school"
@@ -123,7 +133,11 @@
           <label for="school">School <span class="text-danger">*</span></label>
           <div
             class="invalid-feedback"
-            v-if="!validationStates.schoolId.valid && validationStates.schoolId.touched"
+            v-show="
+              !validationStates.schoolId.valid &&
+              validationStates.schoolId.touched &&
+              !showSchoolDropdown
+            "
           >
             {{
               !formData.boardId
