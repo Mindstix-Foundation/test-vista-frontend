@@ -45,6 +45,16 @@ const routes: RouteRecordRaw[] = [
         name: 'subjectSyllabus',
         component: () => import('@/views/admin/syllabus/subject/SubjectDashboard.vue'),
       },
+      {
+        path: 'pattern',
+        name: 'patternDashboard',
+        component: () => import('@/views/admin/pattern/PatternDashboard.vue'),
+      },
+      {
+        path: 'pattern/:id/edit',
+        name: 'editPattern',
+        component: () => import('@/views/admin/pattern/EditPattern.vue'),
+      },
     ],
   },
   // Form routes without navbar
@@ -87,6 +97,16 @@ const routes: RouteRecordRaw[] = [
         name: 'addChapter',
         component: () => import('@/views/admin/syllabus/subject/AddChapter.vue'),
       },
+      {
+        path: 'pattern/add',
+        name: 'createPattern',
+        component: () => import('@/views/admin/pattern/AddPattern.vue'),
+      },
+      {
+        path: 'pattern/section/add',
+        name: 'addSection',
+        component: () => import('@/views/admin/pattern/AddSection.vue'),
+      },
     ],
   },
   {
@@ -97,6 +117,21 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       roles: ['admin'],
     },
+  },
+  {
+    path: '/admin/pattern/add',
+    name: 'createPattern',
+    component: () => import('@/views/admin/pattern/AddPattern.vue'),
+  },
+  {
+    path: '/admin/pattern/add/section',
+    name: 'addSection',
+    component: () => import('@/views/admin/pattern/AddSection.vue'),
+  },
+  {
+    path: '/admin/pattern/edit/section',
+    name: 'editSection',
+    component: () => import('@/views/admin/pattern/EditSection.vue'),
   },
 ]
 

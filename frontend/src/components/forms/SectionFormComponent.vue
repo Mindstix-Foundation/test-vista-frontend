@@ -1,0 +1,699 @@
+<template>
+  <form @submit.prevent="handleSubmit">
+    <div class="row g-3 justify-content-center">
+      <div v-if="disabled" class="col-12 col-sm-10 col-md-8">
+        <div class="alert alert-warning">
+          Cannot add more sections as it would exceed the total pattern marks.
+        </div>
+      </div>
+      <!-- Section Header -->
+      <div class="col col-12 col-sm-10 col-md-8">
+        <div
+          class="input-group"
+          :class="{ 'is-invalid': showSectionHeaderError, 'is-valid': isSectionHeaderValid }"
+        >
+          <!-- Question Number -->
+          <div class="form-floating" style="width: 10%">
+            <input
+              type="text"
+              class="form-control"
+              id="floatingQueNum"
+              placeholder="Question Number"
+              v-model="formData.questionNumber"
+              @input="handleSectionHeaderInput"
+              @blur="handleSectionHeaderBlur"
+              required
+            />
+            <label for="floatingQueNum">Q.</label>
+          </div>
+
+          <!-- Sub Question -->
+          <div class="form-floating" style="width: 10%">
+            <input
+              type="text"
+              class="form-control"
+              id="floatingSubQue"
+              placeholder="Sub Question"
+              v-model="formData.subQuestion"
+              @input="handleSectionHeaderInput"
+              @blur="handleSectionHeaderBlur"
+              required
+            />
+            <label for="floatingSubQue">Sub Q.</label>
+          </div>
+
+          <!-- Section Name -->
+          <div class="form-floating" style="width: 80%">
+            <input
+              type="text"
+              class="form-control"
+              id="floatingSection"
+              placeholder="Section Name"
+              v-model="formData.sectionName"
+              @input="handleSectionHeaderInput"
+              @blur="handleSectionHeaderBlur"
+              required
+            />
+            <label for="floatingSection">Section Name / Main Question</label>
+          </div>
+          <div class="invalid-feedback">Please fill in all section header fields</div>
+        </div>
+      </div>
+
+      <!-- Question Details -->
+      <div class="col col-12 col-sm-10 col-md-8">
+        <div class="d-flex flex-column flex-sm-row gap-3">
+          <!-- Total Questions -->
+          <div class="flex-grow-1">
+            <div class="form-floating">
+              <input
+                type="number"
+                class="form-control"
+                :class="{
+                  'is-invalid':
+                    validationStates.totalQuestions.touched &&
+                    !validationStates.totalQuestions.valid,
+                }"
+                id="totalQuestion"
+                placeholder="Total Number of Question"
+                v-model="formData.totalQuestions"
+                @input="handleTotalQuestionsInput"
+                min="0"
+                required
+              />
+              <label for="totalQuestion">Total Questions</label>
+              <div class="invalid-feedback">Please enter total questions</div>
+            </div>
+          </div>
+
+          <!-- Required Questions -->
+          <div class="flex-grow-1">
+            <div class="form-floating">
+              <input
+                type="number"
+                class="form-control"
+                :class="{
+                  'is-invalid':
+                    validationStates.requiredQuestions.touched &&
+                    !validationStates.requiredQuestions.valid,
+                }"
+                id="requiredQuestion"
+                placeholder="Required Question"
+                v-model="formData.requiredQuestions"
+                @input="handleRequiredQuestionsInput"
+                min="0"
+                required
+              />
+              <label for="requiredQuestion">Mandatory Question</label>
+              <div class="invalid-feedback">Please enter required questions</div>
+            </div>
+          </div>
+
+          <!-- Marks per Question -->
+          <div class="flex-grow-1">
+            <div class="form-floating">
+              <input
+                type="number"
+                class="form-control"
+                :class="{
+                  'is-invalid':
+                    validationStates.marksPerQuestion.touched &&
+                    !validationStates.marksPerQuestion.valid,
+                }"
+                id="marksPerQuestion"
+                placeholder="Marks per Question"
+                v-model="formData.marksPerQuestion"
+                @input="handleMarksPerQuestionInput"
+                min="0"
+                required
+              />
+              <label for="marksPerQuestion">Marks per Question</label>
+              <div class="invalid-feedback">
+                {{
+                  formData.marksPerQuestion === ''
+                    ? 'Please enter marks per question'
+                    : Number(formData.marksPerQuestion) <= 0
+                      ? 'Marks per question must be greater than 0'
+                      : `Total section marks (${Number(formData.requiredQuestions) * Number(formData.marksPerQuestion)}) exceeds the available marks (${availableMarks}). Please enter a smaller value.`
+                }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marks Display -->
+      <div class="col col-12 col-sm-10 col-md-8">
+        <div class="d-flex justify-content-center align-items-center">
+          <div class="d-flex align-items-center gap-4">
+            <div class="d-flex align-items-center">
+              <label for="sectionMarks" class="me-2 mb-0">Section Marks:</label>
+              <input
+                type="text"
+                readonly
+                class="form-control-plaintext text-center fs-5"
+                id="sectionMarks"
+                :value="sectionMarks"
+                style="width: 40px"
+              />
+            </div>
+            <div class="d-flex align-items-center">
+              <label for="remainingMarks" class="me-2 mb-0">Remaining Marks:</label>
+              <input
+                type="text"
+                readonly
+                class="form-control-plaintext text-center fs-5"
+                :class="{ 'text-danger': currentRemainingMarks < 0 }"
+                id="remainingMarks"
+                :value="currentRemainingMarks"
+                style="width: 40px"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question Type Selection -->
+      <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8" :disabled="disabled">
+        <legend class="float-none w-auto">Select Question Type &nbsp;</legend>
+
+        <div class="row g-2 justify-content-center">
+          <!-- Same Type Checkbox -->
+          <div class="col col-12 mb-3 ms-5">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="sameType"
+                v-model="formData.sameType"
+              />
+              <label class="form-check-label" for="sameType">
+                All questions are of the same type.
+              </label>
+            </div>
+          </div>
+
+          <!-- Single Question Type Input (when sameType is true) -->
+          <div class="col col-12" v-if="formData.sameType">
+            <div class="input-group mb-3">
+              <span class="input-group-text">#</span>
+              <SearchableDropdown
+                id="questionType"
+                label="Question Type"
+                placeholder="Search for Question Type"
+                :items="questionTypes"
+                v-model="selectedQuestionType"
+                :search-keys="['type_name']"
+                label-key="type_name"
+                :class="{
+                  'is-invalid':
+                    !validationStates.questionType.valid && validationStates.questionType.touched,
+                  'is-valid':
+                    validationStates.questionType.valid && validationStates.questionType.touched,
+                }"
+                required
+                @update:modelValue="handleQuestionTypeInput"
+              />
+              <div class="invalid-feedback">Please select a question type</div>
+            </div>
+          </div>
+
+          <!-- Multiple Question Type Inputs (when sameType is false) -->
+          <div class="col col-12" v-else>
+            <div v-for="(_, index) in formData.questionTypes" :key="index" class="input-group mb-3">
+              <span class="input-group-text">#{{ index + 1 }}</span>
+              <SearchableDropdown
+                :id="'questionType' + index"
+                :label="'Question Type ' + (index + 1)"
+                placeholder="Search for Question Type"
+                :items="questionTypes"
+                v-model="selectedQuestionTypes[index]"
+                :search-keys="['type_name']"
+                label-key="type_name"
+                :class="{
+                  'is-invalid':
+                    !validationStates.questionType.valid && validationStates.questionType.touched,
+                  'is-valid':
+                    validationStates.questionType.valid && validationStates.questionType.touched,
+                }"
+                required
+                @update:modelValue="(value) => handleIndividualQuestionTypeInput(value, index)"
+              />
+              <div class="invalid-feedback">Please select a question type</div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Submit Button -->
+      <div class="col col-12 col-sm-10 col-md-8">
+        <div class="text-center">
+          <button type="submit" class="btn btn-dark" :disabled="!isFormValid || disabled">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { getApiUrl } from '@/config/api'
+import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+
+export interface SectionFormData {
+  questionNumber: string
+  subQuestion: string
+  sectionName: string
+  totalQuestions: string
+  requiredQuestions: string
+  marksPerQuestion: string
+  sameType: boolean
+  questionType: string
+  questionTypes: string[]
+}
+
+interface QuestionType {
+  id: number
+  type_name: string
+  subsection_question_types: Array<never>
+}
+
+interface Props {
+  totalPatternMarks: number
+  disabled?: boolean
+  remainingMarks?: number
+  initialSectionData?: {
+    questionNumber: string
+    subQuestion: string
+    sectionName: string
+    totalQuestions: number
+    requiredQuestions: number
+    marksPerQuestion: number
+    sameType: boolean
+    questionType: string
+    questionTypes: string[]
+  }
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  disabled: false,
+  remainingMarks: 0,
+})
+
+// Emits
+const emit = defineEmits<{
+  (e: 'submit', data: SectionFormData): void
+}>()
+
+// Form data
+const formData = ref<SectionFormData>({
+  questionNumber: '',
+  subQuestion: '',
+  sectionName: '',
+  totalQuestions: '',
+  requiredQuestions: '',
+  marksPerQuestion: '',
+  sameType: false,
+  questionType: '',
+  questionTypes: [],
+})
+
+// Add interface for validation states
+interface ValidationState {
+  valid: boolean
+  touched: boolean
+}
+
+interface SectionHeaderValidation {
+  valid: boolean
+  allTouched: boolean
+}
+
+interface ValidationStates {
+  sectionHeader: SectionHeaderValidation
+  totalQuestions: ValidationState
+  requiredQuestions: ValidationState
+  marksPerQuestion: ValidationState
+  questionType: ValidationState
+}
+
+// Update validation states with proper typing
+const validationStates = ref<ValidationStates>({
+  sectionHeader: { valid: false, allTouched: false },
+  totalQuestions: { valid: false, touched: false },
+  requiredQuestions: { valid: false, touched: false },
+  marksPerQuestion: { valid: false, touched: false },
+  questionType: { valid: false, touched: false },
+})
+
+// Question types state
+const questionTypes = ref<QuestionType[]>([])
+const selectedQuestionType = ref<QuestionType | null>(null)
+const selectedQuestionTypes = ref<(QuestionType | null)[]>([])
+
+// Fetch question types
+const fetchQuestionTypes = async () => {
+  try {
+    const response = await fetch(getApiUrl('/question-types'))
+    if (!response.ok) throw new Error('Failed to fetch question types')
+    const data = await response.json()
+    questionTypes.value = data
+  } catch (error) {
+    console.error('Error fetching question types:', error)
+  }
+}
+
+onMounted(async () => {
+  console.log('Component mounted, initial data:', props.initialSectionData)
+
+  // First fetch question types
+  await fetchQuestionTypes()
+  console.log('Question types fetched:', questionTypes.value)
+
+  // Only proceed with initialization if we have initial data
+  if (props.initialSectionData) {
+    console.log('Initializing form with data:', props.initialSectionData)
+
+    // Initialize form data
+    formData.value = {
+      questionNumber: props.initialSectionData.questionNumber,
+      subQuestion: props.initialSectionData.subQuestion,
+      sectionName: props.initialSectionData.sectionName,
+      totalQuestions: props.initialSectionData.totalQuestions.toString(),
+      requiredQuestions: props.initialSectionData.requiredQuestions.toString(),
+      marksPerQuestion: props.initialSectionData.marksPerQuestion.toString(),
+      sameType: props.initialSectionData.sameType,
+      questionType: props.initialSectionData.questionType,
+      questionTypes: [...props.initialSectionData.questionTypes],
+    }
+
+    // Set validation states
+    validationStates.value.sectionHeader.valid = true
+    validationStates.value.sectionHeader.allTouched = true
+    validationStates.value.totalQuestions.valid = true
+    validationStates.value.totalQuestions.touched = true
+    validationStates.value.requiredQuestions.valid = true
+    validationStates.value.requiredQuestions.touched = true
+    validationStates.value.marksPerQuestion.valid = true
+    validationStates.value.marksPerQuestion.touched = true
+    validationStates.value.questionType.valid = true
+    validationStates.value.questionType.touched = true
+
+    // Now that question types are loaded, set the selected type
+    if (props.initialSectionData.sameType) {
+      console.log('Setting same type question:', props.initialSectionData.questionType)
+      const matchingType = questionTypes.value.find(
+        (qt) => qt.type_name === props.initialSectionData?.questionType,
+      )
+      console.log('Found matching type:', matchingType)
+      if (matchingType) {
+        selectedQuestionType.value = matchingType
+        formData.value.questionType = matchingType.type_name
+        formData.value.questionTypes = Array(Number(formData.value.totalQuestions)).fill(
+          matchingType.type_name,
+        )
+      }
+    } else {
+      console.log('Setting different question types:', props.initialSectionData.questionTypes)
+      selectedQuestionTypes.value = props.initialSectionData.questionTypes.map(
+        (type) => questionTypes.value.find((qt) => qt.type_name === type) || null,
+      )
+    }
+  }
+})
+
+// Watch for question type selection changes
+watch(selectedQuestionType, (newValue) => {
+  console.log('Selected question type changed:', newValue)
+  if (formData.value.sameType) {
+    formData.value.questionType = newValue?.type_name || ''
+    formData.value.questionTypes = Array(Number(formData.value.totalQuestions)).fill(
+      newValue?.type_name || '',
+    )
+  }
+  handleQuestionTypeInput()
+})
+
+// Watch for total questions changes to update question types array
+watch(
+  () => formData.value.totalQuestions,
+  (newValue) => {
+    const numValue = Number(newValue)
+    if (numValue > 0) {
+      if (formData.value.sameType) {
+        formData.value.questionTypes = Array(numValue).fill(formData.value.questionType)
+      } else {
+        const currentTypes = [...formData.value.questionTypes]
+        formData.value.questionTypes = Array(numValue)
+          .fill('')
+          .map((_, i) => currentTypes[i] || '')
+        selectedQuestionTypes.value = Array(numValue)
+          .fill(null)
+          .map((_, i) => selectedQuestionTypes.value[i] || null)
+      }
+    } else {
+      formData.value.questionTypes = []
+      selectedQuestionTypes.value = []
+    }
+  },
+)
+
+// Watch for sameType changes
+watch(
+  () => formData.value.sameType,
+  (newValue) => {
+    const numTotalQuestions = Number(formData.value.totalQuestions)
+    if (newValue) {
+      formData.value.questionTypes = Array(numTotalQuestions).fill(formData.value.questionType)
+      selectedQuestionTypes.value = Array(numTotalQuestions).fill(selectedQuestionType.value)
+    } else {
+      formData.value.questionTypes = Array(numTotalQuestions).fill('')
+      selectedQuestionTypes.value = Array(numTotalQuestions).fill(null)
+    }
+  },
+)
+
+// Computed values
+const sectionMarks = computed(() => {
+  const requiredQuestions = Number(formData.value.requiredQuestions) || 0
+  const marksPerQuestion = Number(formData.value.marksPerQuestion) || 0
+  return requiredQuestions * marksPerQuestion
+})
+
+const availableMarks = computed(() => {
+  // Always use the remainingMarks prop as the base
+  return props.remainingMarks
+})
+
+const currentRemainingMarks = computed(() => {
+  return availableMarks.value - sectionMarks.value
+})
+
+const isSectionHeaderValid = computed(() => {
+  return (
+    formData.value.questionNumber.trim() !== '' &&
+    formData.value.subQuestion.trim() !== '' &&
+    formData.value.sectionName.trim() !== ''
+  )
+})
+
+const showSectionHeaderError = computed(() => {
+  return validationStates.value.sectionHeader.allTouched && !isSectionHeaderValid.value
+})
+
+const isFormValid = computed(() => {
+  const questionTypesValid = formData.value.sameType
+    ? validationStates.value.questionType.valid
+    : formData.value.questionTypes.length === Number(formData.value.totalQuestions) &&
+      formData.value.questionTypes.every((type) => type.trim() !== '')
+
+  return (
+    isSectionHeaderValid.value &&
+    validationStates.value.totalQuestions.valid &&
+    validationStates.value.requiredQuestions.valid &&
+    validationStates.value.marksPerQuestion.valid &&
+    questionTypesValid &&
+    sectionMarks.value <= props.totalPatternMarks
+  )
+})
+
+// Input handlers
+const handleSectionHeaderInput = () => {
+  if (validationStates.value.sectionHeader.allTouched) {
+    validationStates.value.sectionHeader.valid = isSectionHeaderValid.value
+  }
+}
+
+const handleSectionHeaderBlur = () => {
+  validationStates.value.sectionHeader.allTouched = true
+  validationStates.value.sectionHeader.valid = isSectionHeaderValid.value
+}
+
+const handleTotalQuestionsInput = (e: Event) => {
+  const value = (e.target as HTMLInputElement).value
+  validationStates.value.totalQuestions.touched = true
+  validationStates.value.totalQuestions.valid = value !== '' && Number(value) > 0
+
+  // Also validate required questions since it depends on total questions
+  if (formData.value.requiredQuestions) {
+    const mockEvent = new Event('input')
+    Object.defineProperty(mockEvent, 'target', {
+      value: { value: formData.value.requiredQuestions },
+    })
+    handleRequiredQuestionsInput(mockEvent)
+  }
+}
+
+const handleRequiredQuestionsInput = (e: Event) => {
+  const value = (e.target as HTMLInputElement).value
+  validationStates.value.requiredQuestions.touched = true
+  validationStates.value.requiredQuestions.valid =
+    value !== '' && Number(value) > 0 && Number(value) <= Number(formData.value.totalQuestions)
+
+  // Also validate marks per question since it depends on required questions
+  if (formData.value.marksPerQuestion) {
+    const mockEvent = new Event('input')
+    Object.defineProperty(mockEvent, 'target', {
+      value: { value: formData.value.marksPerQuestion },
+    })
+    handleMarksPerQuestionInput(mockEvent)
+  }
+}
+
+const handleMarksPerQuestionInput = (e: Event) => {
+  const value = (e.target as HTMLInputElement).value
+  validationStates.value.marksPerQuestion.touched = true
+
+  // Basic validation
+  const isBasicValid = value !== '' && Number(value) > 0
+
+  // Check if total section marks would exceed remaining marks
+  const totalSectionMarks = Number(formData.value.requiredQuestions) * Number(value)
+  const isWithinLimit = totalSectionMarks <= availableMarks.value
+
+  validationStates.value.marksPerQuestion.valid = isBasicValid && isWithinLimit
+}
+
+const handleIndividualQuestionTypeInput = (value: unknown, index: number) => {
+  validationStates.value.questionType.touched = true
+  const questionType = value as QuestionType | null
+  formData.value.questionTypes[index] = questionType?.type_name || ''
+  validationStates.value.questionType.valid = formData.value.sameType
+    ? selectedQuestionType.value !== null
+    : formData.value.questionTypes.every((type) => type.trim() !== '')
+}
+
+const handleQuestionTypeInput = () => {
+  validationStates.value.questionType.touched = true
+  if (formData.value.sameType) {
+    validationStates.value.questionType.valid = selectedQuestionType.value !== null
+  } else {
+    validationStates.value.questionType.valid = formData.value.questionTypes.every(
+      (type) => type.trim() !== '',
+    )
+  }
+}
+
+// Methods
+const handleSubmit = () => {
+  // Mark all fields as touched
+  validationStates.value.sectionHeader.allTouched = true
+  validationStates.value.totalQuestions.touched = true
+  validationStates.value.requiredQuestions.touched = true
+  validationStates.value.marksPerQuestion.touched = true
+  validationStates.value.questionType.touched = true
+
+  if (!isFormValid.value) {
+    return
+  }
+
+  emit('submit', formData.value)
+}
+
+// Expose some values that parent might need
+defineExpose({
+  sectionMarks,
+  remainingMarks: currentRemainingMarks,
+  isFormValid,
+})
+</script>
+
+<style scoped>
+.form-control-plaintext {
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 0;
+  margin: 0;
+  min-height: unset;
+  line-height: 1;
+}
+
+/* Button styles */
+.btn-dark {
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.btn-dark:hover:not(:disabled) {
+  background-color: #343a40;
+  border-color: #343a40;
+}
+
+.btn-dark:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Spacing utilities */
+.g-3 {
+  gap: 0.5rem !important;
+}
+
+.mb-4 {
+  margin-bottom: 1rem !important;
+}
+
+/* Label styles */
+.fw-bold {
+  font-weight: 500 !important;
+}
+
+/* Form check styles */
+.form-check {
+  padding-left: 1.5rem;
+}
+
+.form-check-input {
+  margin-top: 0.25rem;
+}
+
+.form-check-label {
+  font-size: 0.9rem;
+  color: #212529;
+}
+
+/* Fieldset styles */
+fieldset {
+  border-color: #dee2e6;
+}
+
+legend {
+  font-size: 1rem;
+  margin-bottom: 0;
+  color: #6c757d;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 575.98px) {
+  .d-flex.flex-column.flex-sm-row {
+    gap: 1rem !important;
+  }
+
+  .d-flex.flex-column.flex-sm-row.justify-content-center {
+    gap: 2rem !important;
+  }
+}
+</style>

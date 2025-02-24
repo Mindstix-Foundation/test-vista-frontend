@@ -24,10 +24,23 @@
                 :items="boards"
                 v-model="selectedBoard"
                 :search-keys="['name', 'abbreviation']"
+                :class="{
+                  'is-invalid': !validationStates.board.valid && validationStates.board.touched,
+                  'is-valid': validationStates.board.valid && validationStates.board.touched,
+                }"
                 required
                 @change="handleBoardChange"
+                @update:modelValue="handleBoardInput"
                 next-field-id="filterMedium"
-              />
+              >
+                <template #label> Board <span class="text-danger">*</span> </template>
+              </SearchableDropdown>
+              <div
+                class="invalid-feedback"
+                v-if="!validationStates.board.valid && validationStates.board.touched"
+              >
+                Please select a board
+              </div>
             </div>
           </div>
 
@@ -43,10 +56,23 @@
                 label-key="instruction_medium"
                 :search-keys="['instruction_medium']"
                 :disabled="!selectedBoard"
+                :class="{
+                  'is-invalid': !validationStates.medium.valid && validationStates.medium.touched,
+                  'is-valid': validationStates.medium.valid && validationStates.medium.touched,
+                }"
                 required
                 @change="handleMediumChange"
+                @update:modelValue="handleMediumInput"
                 next-field-id="filterStandard"
-              />
+              >
+                <template #label> Medium <span class="text-danger">*</span> </template>
+              </SearchableDropdown>
+              <div
+                class="invalid-feedback"
+                v-if="!validationStates.medium.valid && validationStates.medium.touched"
+              >
+                Please select a medium
+              </div>
             </div>
           </div>
 
@@ -60,12 +86,25 @@
                 :items="boardStandards"
                 v-model="selectedStandard"
                 :disabled="!selectedBoard"
+                :class="{
+                  'is-invalid':
+                    !validationStates.standard.valid && validationStates.standard.touched,
+                  'is-valid': validationStates.standard.valid && validationStates.standard.touched,
+                }"
                 required
                 @change="handleStandardChange"
+                @update:modelValue="handleStandardInput"
                 next-field-id="viewSyllabusBtn"
               >
+                <template #label> Standard <span class="text-danger">*</span> </template>
                 <template #item="{ item }">Standard {{ item.name }}</template>
               </SearchableDropdown>
+              <div
+                class="invalid-feedback"
+                v-if="!validationStates.standard.valid && validationStates.standard.touched"
+              >
+                Please select a standard
+              </div>
             </div>
           </div>
 
@@ -75,7 +114,7 @@
               type="submit"
               class="btn btn-dark mt-3"
               id="viewSyllabusBtn"
-              :disabled="!selectedBoard || !selectedMedium || !selectedStandard"
+              :disabled="!isFormValid"
             >
               Manage Syllabus
             </button>
@@ -87,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getApiUrl } from '@/config/api'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
@@ -128,14 +167,41 @@ const selectedBoard = ref<BoardDetails | null>(null)
 const selectedMedium = ref<InstructionMedium | null>(null)
 const selectedStandard = ref<Standard | null>(null)
 
+// Validation states
+const validationStates = ref({
+  board: { valid: false, touched: false },
+  medium: { valid: false, touched: false },
+  standard: { valid: false, touched: false },
+})
+
 // Data lists
 const boards = ref<Board[]>([])
 const boardMediums = computed(() => selectedBoard.value?.instruction_mediums || [])
 const boardStandards = computed(() => selectedBoard.value?.standards || [])
 
-// Handle click outside dropdowns
-const handleClickOutside = () => {
-  document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+// Computed
+const isFormValid = computed(() => {
+  return (
+    validationStates.value.board.valid &&
+    validationStates.value.medium.valid &&
+    validationStates.value.standard.valid
+  )
+})
+
+// Input handlers
+const handleBoardInput = (value: unknown) => {
+  validationStates.value.board.touched = true
+  validationStates.value.board.valid = value !== null
+}
+
+const handleMediumInput = (value: unknown) => {
+  validationStates.value.medium.touched = true
+  validationStates.value.medium.valid = value !== null
+}
+
+const handleStandardInput = (value: unknown) => {
+  validationStates.value.standard.touched = true
+  validationStates.value.standard.valid = value !== null
 }
 
 // Fetch boards on component mount
@@ -144,22 +210,21 @@ onMounted(async () => {
     const response = await fetch(getApiUrl('/boards'))
     if (!response.ok) throw new Error('Failed to fetch boards')
     boards.value = await response.json()
-    document.addEventListener('click', handleClickOutside)
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
 })
 
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
 // Selection handlers
 const handleBoardChange = async (board: Item | null) => {
   try {
-    // Reset dependent selections
+    // Reset dependent selections and validation states
     selectedMedium.value = null
     selectedStandard.value = null
+    validationStates.value.medium.valid = false
+    validationStates.value.medium.touched = false
+    validationStates.value.standard.valid = false
+    validationStates.value.standard.touched = false
 
     if (!board) return
 
@@ -176,6 +241,8 @@ const handleBoardChange = async (board: Item | null) => {
 const handleMediumChange = (medium: Item | null) => {
   selectedMedium.value = medium as InstructionMedium | null
   selectedStandard.value = null
+  validationStates.value.standard.valid = false
+  validationStates.value.standard.touched = false
 }
 
 const handleStandardChange = (standard: Item | null) => {
@@ -184,6 +251,15 @@ const handleStandardChange = (standard: Item | null) => {
 
 // Form submission handler
 const handleSubmit = () => {
+  // Mark all fields as touched
+  Object.keys(validationStates.value).forEach((key) => {
+    validationStates.value[key as keyof typeof validationStates.value].touched = true
+  })
+
+  if (!isFormValid.value) {
+    return
+  }
+
   if (selectedBoard.value && selectedMedium.value && selectedStandard.value) {
     router.push({
       name: 'syllabusStandard',
@@ -246,5 +322,11 @@ const handleSubmit = () => {
   background-color: #6c757d;
   border-color: #6c757d;
   cursor: not-allowed;
+}
+
+/* Form validation styles */
+.invalid-feedback {
+  display: block;
+  margin-top: 0.25rem;
 }
 </style>

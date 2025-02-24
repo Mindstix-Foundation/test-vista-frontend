@@ -1,14 +1,16 @@
 <template>
-  <div class="form-floating dropdown">
+  <div class="form-floating dropdown" ref="dropdownRef">
     <input
       type="text"
       class="form-control"
+      :class="$attrs.class"
       :id="id"
       :placeholder="placeholder"
       v-model="searchText"
       @input="handleInput"
       @focus="showDropdown = true"
       @click="showDropdown = true"
+      @blur="handleBlur"
       autocomplete="off"
       required
       :disabled="disabled"
@@ -37,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
 interface Item {
   id: number | string
@@ -75,6 +77,7 @@ const emit = defineEmits<{
 const searchText = ref('')
 const showDropdown = ref(false)
 const selectedIndex = ref(-1)
+const dropdownRef = ref<HTMLElement | null>(null)
 
 // Watch for external value changes
 watch(
@@ -201,6 +204,38 @@ const selectItem = (item: Item) => {
   })
 }
 
+// Add click outside handler
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (dropdownRef.value && !dropdownRef.value.contains(target)) {
+    // Only close if click is outside the dropdown and not on the input
+    const input = dropdownRef.value.querySelector('input')
+    if (input !== target) {
+      showDropdown.value = false
+    }
+  }
+}
+
+// Add blur handler
+const handleBlur = (event: FocusEvent) => {
+  // Use setTimeout to allow click events on dropdown items to fire first
+  setTimeout(() => {
+    const relatedTarget = event.relatedTarget as HTMLElement
+    if (!dropdownRef.value?.contains(relatedTarget)) {
+      showDropdown.value = false
+    }
+  }, 200)
+}
+
+// Add lifecycle hooks for event listener
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleClickOutside)
+})
+
 // Expose method to clear selection
 defineExpose({
   clear: () => {
@@ -247,5 +282,20 @@ defineExpose({
 
 .form-floating > label {
   padding: 1rem 0.75rem;
+}
+
+/* Add validation styling */
+:deep(.form-control.is-valid) {
+  border-color: #198754;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+:deep(.form-control.is-valid:focus) {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
 }
 </style>
