@@ -356,10 +356,13 @@ const selectedQuestionTypes = ref<(QuestionType | null)[]>([])
 // Fetch question types
 const fetchQuestionTypes = async () => {
   try {
+    console.log('Fetching question types...')
     const response = await fetch(getApiUrl('/question-types'))
     if (!response.ok) throw new Error('Failed to fetch question types')
     const data = await response.json()
+    console.log('Question types fetched successfully:', data)
     questionTypes.value = data
+    console.log('Question types set in component:', questionTypes.value)
   } catch (error) {
     console.error('Error fetching question types:', error)
   }
@@ -367,14 +370,17 @@ const fetchQuestionTypes = async () => {
 
 onMounted(async () => {
   console.log('Component mounted, initial data:', props.initialSectionData)
+  console.log('Initial form data state:', formData.value)
 
   // First fetch question types
   await fetchQuestionTypes()
-  console.log('Question types fetched:', questionTypes.value)
+  console.log('After fetch - Question types state:', questionTypes.value)
 
   // Only proceed with initialization if we have initial data
   if (props.initialSectionData) {
     console.log('Initializing form with data:', props.initialSectionData)
+    console.log('Initial question type from data:', props.initialSectionData.questionType)
+    console.log('Initial sameType value:', props.initialSectionData.sameType)
 
     // Initialize form data
     formData.value = {
@@ -388,6 +394,7 @@ onMounted(async () => {
       questionType: props.initialSectionData.questionType,
       questionTypes: [...props.initialSectionData.questionTypes],
     }
+    console.log('Form data after initialization:', formData.value)
 
     // Set validation states
     validationStates.value.sectionHeader.valid = true
@@ -404,34 +411,47 @@ onMounted(async () => {
     // Now that question types are loaded, set the selected type
     if (props.initialSectionData.sameType) {
       console.log('Setting same type question:', props.initialSectionData.questionType)
+      console.log(
+        'Available question types:',
+        questionTypes.value.map((qt) => qt.type_name),
+      )
       const matchingType = questionTypes.value.find(
         (qt) => qt.type_name === props.initialSectionData?.questionType,
       )
       console.log('Found matching type:', matchingType)
       if (matchingType) {
+        console.log('Setting selectedQuestionType to:', matchingType)
         selectedQuestionType.value = matchingType
         formData.value.questionType = matchingType.type_name
         formData.value.questionTypes = Array(Number(formData.value.totalQuestions)).fill(
           matchingType.type_name,
         )
+        console.log('Updated form data after setting question type:', formData.value)
+      } else {
+        console.warn('No matching question type found for:', props.initialSectionData.questionType)
       }
     } else {
       console.log('Setting different question types:', props.initialSectionData.questionTypes)
-      selectedQuestionTypes.value = props.initialSectionData.questionTypes.map(
-        (type) => questionTypes.value.find((qt) => qt.type_name === type) || null,
-      )
+      selectedQuestionTypes.value = props.initialSectionData.questionTypes.map((type) => {
+        const found = questionTypes.value.find((qt) => qt.type_name === type)
+        console.log(`Finding match for type ${type}:`, found)
+        return found || null
+      })
+      console.log('Set selectedQuestionTypes to:', selectedQuestionTypes.value)
     }
   }
 })
 
 // Watch for question type selection changes
 watch(selectedQuestionType, (newValue) => {
-  console.log('Selected question type changed:', newValue)
+  console.log('Watch - Selected question type changed:', newValue)
   if (formData.value.sameType) {
+    console.log('Updating form data with new question type:', newValue?.type_name)
     formData.value.questionType = newValue?.type_name || ''
     formData.value.questionTypes = Array(Number(formData.value.totalQuestions)).fill(
       newValue?.type_name || '',
     )
+    console.log('Updated form data:', formData.value)
   }
   handleQuestionTypeInput()
 })
@@ -586,6 +606,10 @@ const handleIndividualQuestionTypeInput = (value: unknown, index: number) => {
 }
 
 const handleQuestionTypeInput = () => {
+  console.log('handleQuestionTypeInput called')
+  console.log('Current selectedQuestionType:', selectedQuestionType.value)
+  console.log('Current form data:', formData.value)
+
   validationStates.value.questionType.touched = true
   if (formData.value.sameType) {
     validationStates.value.questionType.valid = selectedQuestionType.value !== null
@@ -594,6 +618,7 @@ const handleQuestionTypeInput = () => {
       (type) => type.trim() !== '',
     )
   }
+  console.log('Question type validation state:', validationStates.value.questionType)
 }
 
 // Methods

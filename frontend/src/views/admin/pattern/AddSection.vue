@@ -49,6 +49,7 @@ interface SectionData {
   sameType: boolean
   questionType: string
   questionTypes: string[]
+  seqencial_section_number: number
 }
 
 const handleSubmit = async (formData: SectionFormData) => {
@@ -58,6 +59,7 @@ const handleSubmit = async (formData: SectionFormData) => {
     totalQuestions: Number(formData.totalQuestions),
     requiredQuestions: Number(formData.requiredQuestions),
     marksPerQuestion: Number(formData.marksPerQuestion),
+    seqencial_section_number: patternStore.sections.length + 1,
   }
 
   try {

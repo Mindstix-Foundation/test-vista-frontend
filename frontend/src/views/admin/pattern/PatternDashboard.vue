@@ -154,7 +154,7 @@
               <div class="row mb-2 justify-content-end">
                 <div class="col-12 col-sm-auto text-end">
                   <router-link
-                    :to="{ name: 'editPattern', params: { id: pattern.id } }"
+                    :to="{ name: 'editPattern', params: { id: pattern.id.toString() } }"
                     class="text-decoration-none text-black me-2 ms-3 fs-4"
                   >
                     <i class="bi bi-pencil-square"></i>
@@ -212,10 +212,10 @@
                       <th><strong>Number of Questions</strong></th>
                       <th><strong>Total Marks Allotted</strong></th>
                     </tr>
-                    <tr v-for="(section, index) in pattern.sections" :key="index">
-                      <td>{{ section.question_type }}</td>
-                      <td>{{ section.question_count }}</td>
-                      <td>{{ section.question_count * section.marks_per_question }}</td>
+                    <tr v-for="section in pattern.sections" :key="section.id">
+                      <td>{{ section.section_name }}</td>
+                      <td>{{ section.total_questions }}</td>
+                      <td>{{ section.mandotory_questions * section.marks_per_question }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -298,6 +298,10 @@ interface Pattern {
   board: {
     id: number
     name: string
+    abbreviation: string
+    address_id: number
+    created_at: string
+    updated_at: string
   }
   standard: {
     id: number
@@ -309,9 +313,15 @@ interface Pattern {
   }
   sections: Array<{
     id: number
-    question_type: string
-    question_count: number
+    pattern_id: number
+    seqencial_section_number: number
+    sub_section: string
+    section_name: string
+    total_questions: number
+    mandotory_questions: number
     marks_per_question: number
+    created_at: string
+    updated_at: string
   }>
   isExpanded?: boolean
 }

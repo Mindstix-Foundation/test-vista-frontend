@@ -37,6 +37,7 @@ interface SectionData {
   sameType: boolean
   questionType: string
   questionTypes: string[]
+  seqencial_section_number: number
 }
 
 export const usePatternStore = defineStore('pattern', {
@@ -72,17 +73,25 @@ export const usePatternStore = defineStore('pattern', {
     },
 
     addSection(sectionData: SectionData) {
-      this.sections.push({ ...sectionData })
+      const seqencial_section_number = this.sections.length + 1
+      this.sections.push({ ...sectionData, seqencial_section_number })
     },
 
     updateSection(index: number, sectionData: SectionData) {
       if (index >= 0 && index < this.sections.length) {
-        this.sections[index] = sectionData
+        const existing_seqencial_number = this.sections[index].seqencial_section_number
+        this.sections[index] = {
+          ...sectionData,
+          seqencial_section_number: existing_seqencial_number,
+        }
       }
     },
 
     removeSection(index: number) {
       this.sections.splice(index, 1)
+      this.sections.forEach((section, idx) => {
+        section.seqencial_section_number = idx + 1
+      })
     },
 
     clearFormData() {

@@ -70,17 +70,34 @@ const currentSection = computed(() => {
   return sectionData
 })
 
+interface SectionData {
+  questionNumber: string
+  subQuestion: string
+  sectionName: string
+  totalQuestions: number
+  requiredQuestions: number
+  marksPerQuestion: number
+  sameType: boolean
+  questionType: string
+  questionTypes: string[]
+  seqencial_section_number: number
+}
+
 const handleSubmit = async (formData: SectionFormData) => {
   try {
     console.log('Submitting updated section data:', formData)
 
-    // Update the section in the store
-    patternStore.updateSection(sectionIndex.value, {
+    // Convert form data to section data
+    const sectionData: SectionData = {
       ...formData,
       totalQuestions: Number(formData.totalQuestions),
       requiredQuestions: Number(formData.requiredQuestions),
       marksPerQuestion: Number(formData.marksPerQuestion),
-    })
+      seqencial_section_number: patternStore.sections[sectionIndex.value].seqencial_section_number, // Preserve the existing sequential number
+    }
+
+    // Update the section in the store
+    patternStore.updateSection(sectionIndex.value, sectionData)
 
     // Navigate back to pattern creation
     router.push({

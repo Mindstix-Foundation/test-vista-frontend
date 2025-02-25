@@ -79,33 +79,6 @@ const showDropdown = ref(false)
 const selectedIndex = ref(-1)
 const dropdownRef = ref<HTMLElement | null>(null)
 
-// Watch for external value changes
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    if (newValue) {
-      searchText.value = getItemLabel(newValue)
-    } else {
-      searchText.value = ''
-    }
-  },
-  { immediate: true },
-)
-
-const filteredItems = computed(() => {
-  const search = searchText.value.toLowerCase()
-  if (!search) return props.items
-
-  return props.items.filter((item) => {
-    return props.searchKeys.some((key) => {
-      const value = getNestedValue(item, key)
-      return String(value || '')
-        .toLowerCase()
-        .includes(search)
-    })
-  })
-})
-
 const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
   let current: unknown = obj
   const keys = path.split('.')
@@ -134,6 +107,33 @@ const getItemKey = (item: Item): string | number => {
   }
   return item.id
 }
+
+// Watch for external value changes
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue) {
+      searchText.value = getItemLabel(newValue)
+    } else {
+      searchText.value = ''
+    }
+  },
+  { immediate: true },
+)
+
+const filteredItems = computed(() => {
+  const search = searchText.value.toLowerCase()
+  if (!search) return props.items
+
+  return props.items.filter((item) => {
+    return props.searchKeys.some((key) => {
+      const value = getNestedValue(item, key)
+      return String(value || '')
+        .toLowerCase()
+        .includes(search)
+    })
+  })
+})
 
 const handleInput = () => {
   showDropdown.value = true

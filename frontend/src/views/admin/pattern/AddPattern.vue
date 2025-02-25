@@ -83,8 +83,10 @@ const handleSubmit = async (formData: FormData) => {
 
     const pattern = await response.json()
 
-    // Now create all sections for this pattern
+    // Now create all sections for this pattern in sequence
     for (const section of patternStore.sections) {
+      console.log('Creating section with sequential number:', section.seqencial_section_number)
+
       // Create section
       const sectionResponse = await fetch(getApiUrl('/sections'), {
         method: 'POST',
@@ -93,7 +95,7 @@ const handleSubmit = async (formData: FormData) => {
         },
         body: JSON.stringify({
           pattern_id: pattern.id,
-          seqencial_section_number: parseInt(section.questionNumber),
+          seqencial_section_number: section.seqencial_section_number,
           sub_section: section.subQuestion,
           section_name: section.sectionName,
           total_questions: section.totalQuestions,
