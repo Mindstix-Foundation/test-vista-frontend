@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import PatternFormComponent from '@/components/forms/PatternFormComponent.vue'
 import type { FormData } from '@/components/forms/PatternFormComponent.vue'
@@ -168,6 +168,7 @@ const fetchPattern = async () => {
 
     // Set sections in store
     patternStore.sections = pattern.sections.map((section: Section) => ({
+      id: section.id,
       questionNumber: section.seqencial_section_number.toString(),
       subQuestion: section.sub_section,
       sectionName: section.section_name,
@@ -182,22 +183,35 @@ const fetchPattern = async () => {
 
     // Fetch question types for each section
     for (const section of pattern.sections) {
-      const questionTypesResponse = await fetch(getApiUrl(`/sections/${section.id}/question-types`))
+      const questionTypesResponse = await fetch(
+        getApiUrl(`/subsection-question-types?sectionId=${section.id}`),
+      )
       if (questionTypesResponse.ok) {
         const questionTypes: SectionQuestionType[] = await questionTypesResponse.json()
         const sectionIndex = patternStore.sections.findIndex(
           (s) => s.seqencial_section_number === section.seqencial_section_number,
         )
         if (sectionIndex !== -1) {
-          const sameType = questionTypes.every(
-            (qt, _, arr) => qt.question_type_id === arr[0].question_type_id,
-          )
-          patternStore.sections[sectionIndex].sameType = sameType
-          patternStore.sections[sectionIndex].questionType =
-            questionTypes[0]?.question_type?.type_name || ''
-          patternStore.sections[sectionIndex].questionTypes = questionTypes.map(
-            (qt) => qt.question_type.type_name,
-          )
+          // Check if there's a single entry with sequential number 0
+          const hasCommonType = questionTypes.some((qt) => qt.seqencial_subquestion_number === 0)
+
+          if (hasCommonType) {
+            // If sequential number is 0, all questions have the same type
+            const commonType = questionTypes.find((qt) => qt.seqencial_subquestion_number === 0)
+            patternStore.sections[sectionIndex].sameType = true
+            patternStore.sections[sectionIndex].questionType =
+              commonType?.question_type?.type_name || ''
+            patternStore.sections[sectionIndex].questionTypes = [
+              commonType?.question_type?.type_name || '',
+            ]
+          } else {
+            // Multiple question types
+            patternStore.sections[sectionIndex].sameType = false
+            patternStore.sections[sectionIndex].questionType = ''
+            patternStore.sections[sectionIndex].questionTypes = questionTypes
+              .sort((a, b) => a.seqencial_subquestion_number - b.seqencial_subquestion_number)
+              .map((qt) => qt.question_type.type_name)
+          }
         }
       }
     }
@@ -211,73 +225,36 @@ const fetchPattern = async () => {
 
 const handleSubmit = async (formData: FormData) => {
   try {
-    // Update pattern
-    const patternResponse = await fetch(getApiUrl(`/patterns/${route.params.id}`), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        pattern_name: formData.patternName,
-        board_id: formData.selectedBoard?.id,
-        standard_id: formData.selectedStandard?.id,
-        subject_id: formData.selectedSubject?.id,
-        total_marks: formData.totalMarks,
-      }),
-    })
+    // Get current pattern data to compare changes
+    const currentPatternResponse = await fetch(getApiUrl(`/patterns/${route.params.id}`))
+    if (!currentPatternResponse.ok) throw new Error('Failed to fetch current pattern')
+    const currentPattern = await currentPatternResponse.json()
 
-    if (!patternResponse.ok) throw new Error('Failed to update pattern')
+    // Check if pattern details have changed
+    const patternChanged =
+      currentPattern.pattern_name !== formData.patternName ||
+      currentPattern.board_id !== formData.selectedBoard?.id ||
+      currentPattern.standard_id !== formData.selectedStandard?.id ||
+      currentPattern.subject_id !== formData.selectedSubject?.id ||
+      currentPattern.total_marks !== formData.totalMarks
 
-    // Delete existing sections
-    await fetch(getApiUrl(`/patterns/${route.params.id}/sections`), {
-      method: 'DELETE',
-    })
-
-    // Create new sections
-    for (const section of patternStore.sections) {
-      console.log('Creating section with sequential number:', section.seqencial_section_number)
-
-      // Create section
-      const sectionResponse = await fetch(getApiUrl('/sections'), {
-        method: 'POST',
+    // Only update if pattern details have changed
+    if (patternChanged) {
+      const patternResponse = await fetch(getApiUrl(`/patterns/${route.params.id}`), {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          pattern_id: route.params.id,
-          seqencial_section_number: section.seqencial_section_number,
-          sub_section: section.subQuestion,
-          section_name: section.sectionName,
-          total_questions: section.totalQuestions,
-          mandotory_questions: section.requiredQuestions,
-          marks_per_question: section.marksPerQuestion,
+          pattern_name: formData.patternName,
+          board_id: formData.selectedBoard?.id,
+          standard_id: formData.selectedStandard?.id,
+          subject_id: formData.selectedSubject?.id,
+          total_marks: formData.totalMarks,
         }),
       })
 
-      if (!sectionResponse.ok) {
-        throw new Error('Failed to create section')
-      }
-
-      const createdSection = await sectionResponse.json()
-
-      // Create subsection question types
-      if (section.sameType) {
-        // If same type for all questions, create entries for each question
-        const questionType = await getQuestionTypeByName(section.questionType)
-        if (questionType) {
-          for (let i = 1; i <= section.totalQuestions; i++) {
-            await createSubsectionQuestionType(createdSection.id, i, questionType.id)
-          }
-        }
-      } else {
-        // Create entries for different question types
-        for (let i = 0; i < section.questionTypes.length; i++) {
-          const questionType = await getQuestionTypeByName(section.questionTypes[i])
-          if (questionType) {
-            await createSubsectionQuestionType(createdSection.id, i + 1, questionType.id)
-          }
-        }
-      }
+      if (!patternResponse.ok) throw new Error('Failed to update pattern')
     }
 
     patternStore.clearFormData()
@@ -288,48 +265,15 @@ const handleSubmit = async (formData: FormData) => {
   }
 }
 
-const getQuestionTypeByName = async (typeName: string) => {
-  try {
-    const response = await fetch(getApiUrl('/question-types'))
-    if (!response.ok) throw new Error('Failed to fetch question types')
-    const types: QuestionType[] = await response.json()
-    return types.find((type) => type.type_name === typeName)
-  } catch (error) {
-    console.error('Error fetching question type:', error)
-    return null
-  }
-}
-
-const createSubsectionQuestionType = async (
-  sectionId: number,
-  sequentialNumber: number,
-  questionTypeId: number,
-) => {
-  const response = await fetch(getApiUrl('/subsection-question-types'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      section_id: sectionId,
-      seqencial_subquestion_number: sequentialNumber,
-      question_type_id: questionTypeId,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to create subsection question type')
-  }
-
-  return await response.json()
-}
-
 const handleAddSection = (formData: FormData) => {
   patternStore.setFormData(formData)
   router.push({
     name: 'addSection',
     query: {
       remainingMarks: formData.remainingMarks?.toString() || formData.totalMarks.toString(),
+      fromEdit: 'true',
+      patternId: route.params.id?.toString(),
+      nextSequentialNumber: (patternStore.sections.length + 1).toString(),
     },
   })
 }
@@ -356,16 +300,53 @@ const editSection = (index: number) => {
       sectionIndex: index.toString(),
       remainingMarks: totalRemainingMarks.toString(),
       totalMarks: formData.value.totalMarks.toString(),
+      fromEdit: 'true',
+      patternId: route.params.id?.toString(),
+      sectionId: patternStore.sections[index].id?.toString(),
     },
   })
 }
 
-const deleteSection = (index: number) => {
-  patternStore.removeSection(index)
+const deleteSection = async (index: number) => {
+  try {
+    loading.value = true
+    const sectionToDelete = patternStore.sections[index]
+    if (!sectionToDelete.id) {
+      console.error('Section ID not found')
+      return
+    }
+
+    // Delete section from backend
+    const response = await fetch(getApiUrl(`/sections/${sectionToDelete.id}`), {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to delete section')
+    }
+
+    // Refresh pattern data to get updated sections from backend
+    await fetchPattern()
+  } catch (error) {
+    console.error('Error deleting section:', error)
+    error.value = 'Failed to delete section. Please try again.'
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
   fetchPattern()
+})
+
+onBeforeUnmount(() => {
+  const nextRoute = router.currentRoute.value.name
+  if (nextRoute !== 'addSection' && nextRoute !== 'editSection') {
+    console.log('Clearing form data - navigating to:', nextRoute)
+    patternStore.clearFormData()
+  } else {
+    console.log('Preserving form data for:', nextRoute)
+  }
 })
 </script>
 

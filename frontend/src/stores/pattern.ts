@@ -28,6 +28,7 @@ interface PatternFormData {
 }
 
 interface SectionData {
+  id?: number
   questionNumber: string
   subQuestion: string
   sectionName: string

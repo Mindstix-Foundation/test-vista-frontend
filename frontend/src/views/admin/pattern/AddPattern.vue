@@ -112,12 +112,10 @@ const handleSubmit = async (formData: FormData) => {
 
       // Create subsection question types
       if (section.sameType) {
-        // If same type for all questions, create entries for each question
+        // If same type for all questions, create single entry with sequential number 0
         const questionType = questionTypes.value.find((qt) => qt.type_name === section.questionType)
         if (questionType) {
-          for (let i = 1; i <= section.totalQuestions; i++) {
-            await createSubsectionQuestionType(createdSection.id, i, questionType.id)
-          }
+          await createSubsectionQuestionType(createdSection.id, 0, questionType.id)
         }
       } else {
         // Create entries for different question types

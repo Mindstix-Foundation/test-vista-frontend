@@ -31,6 +31,7 @@ import SectionFormComponent from '@/components/forms/SectionFormComponent.vue'
 import type { SectionFormData } from '@/components/forms/SectionFormComponent.vue'
 import { usePatternStore } from '@/stores/pattern'
 import { computed } from 'vue'
+import { getApiUrl } from '@/config/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -53,45 +54,119 @@ interface SectionData {
 }
 
 const handleSubmit = async (formData: SectionFormData) => {
-  // Convert string values to numbers
-  const sectionData: SectionData = {
-    ...formData,
-    totalQuestions: Number(formData.totalQuestions),
-    requiredQuestions: Number(formData.requiredQuestions),
-    marksPerQuestion: Number(formData.marksPerQuestion),
-    seqencial_section_number: patternStore.sections.length + 1,
-  }
-
   try {
-    // Validate section marks before adding
-    if (!validateSectionMarks(sectionData)) {
-      // You might want to show an error message here
-      console.error('Adding this section would exceed total pattern marks')
-      return
+    const isFromEditPattern = route.query.fromEdit === 'true'
+    const patternId = route.query.patternId as string
+    const nextSequentialNumber = route.query.nextSequentialNumber as string
+
+    if (isFromEditPattern && patternId && nextSequentialNumber) {
+      // Create section immediately in backend
+      const sectionResponse = await fetch(getApiUrl('/sections'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pattern_id: Number(patternId),
+          seqencial_section_number: Number(nextSequentialNumber),
+          sub_section: formData.subQuestion,
+          section_name: formData.sectionName,
+          total_questions: Number(formData.totalQuestions),
+          mandotory_questions: Number(formData.requiredQuestions),
+          marks_per_question: Number(formData.marksPerQuestion),
+        }),
+      })
+
+      if (!sectionResponse.ok) {
+        throw new Error('Failed to create section')
+      }
+
+      const createdSection = await sectionResponse.json()
+
+      // Create subsection question types
+      if (formData.sameType) {
+        // If same type for all questions, create single entry with sequential number 0
+        const questionType = await getQuestionTypeByName(formData.questionType)
+        if (questionType) {
+          await createSubsectionQuestionType(createdSection.id, 0, questionType.id)
+        }
+      } else {
+        // Create entries for different question types
+        for (let i = 0; i < formData.questionTypes.length; i++) {
+          const questionType = await getQuestionTypeByName(formData.questionTypes[i])
+          if (questionType) {
+            await createSubsectionQuestionType(createdSection.id, i + 1, questionType.id)
+          }
+        }
+      }
+
+      router.push({
+        name: 'editPattern',
+        params: { id: patternId },
+      })
+    } else {
+      // Add to store for new pattern creation
+      const sectionData: SectionData = {
+        questionNumber: formData.questionNumber,
+        subQuestion: formData.subQuestion,
+        sectionName: formData.sectionName,
+        totalQuestions: Number(formData.totalQuestions),
+        requiredQuestions: Number(formData.requiredQuestions),
+        marksPerQuestion: Number(formData.marksPerQuestion),
+        sameType: formData.sameType,
+        questionType: formData.questionType,
+        questionTypes: formData.questionTypes,
+        seqencial_section_number: patternStore.sections.length + 1,
+      }
+      patternStore.addSection(sectionData)
+      router.push({ name: 'createPattern' })
     }
-
-    // Add section to pattern store
-    patternStore.addSection(sectionData)
-
-    // Navigate back to pattern creation
-    router.push({
-      name: 'createPattern',
-    })
   } catch (error) {
-    console.error('Error adding section:', error)
+    console.error('Error handling section submission:', error)
+    // Handle error (show error message to user)
   }
+}
+
+const getQuestionTypeByName = async (typeName: string) => {
+  try {
+    const response = await fetch(getApiUrl('/question-types'))
+    if (!response.ok) throw new Error('Failed to fetch question types')
+    const types = await response.json()
+    return types.find((type: { type_name: string }) => type.type_name === typeName)
+  } catch (error) {
+    console.error('Error fetching question type:', error)
+    return null
+  }
+}
+
+const createSubsectionQuestionType = async (
+  sectionId: number,
+  sequentialNumber: number,
+  questionTypeId: number,
+) => {
+  const response = await fetch(getApiUrl('/subsection-question-types'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      section_id: sectionId,
+      seqencial_subquestion_number: sequentialNumber,
+      question_type_id: questionTypeId,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to create subsection question type')
+  }
+
+  return await response.json()
 }
 
 // Add computed property to check if more sections can be added
 const canAddSection = computed(() => {
   return patternStore.remainingMarks > 0
 })
-
-// Add validation to prevent adding sections if total marks would be exceeded
-const validateSectionMarks = (formData: SectionData) => {
-  const sectionMarks = formData.requiredQuestions * formData.marksPerQuestion
-  return patternStore.formData.totalMarks >= patternStore.totalSectionMarks + sectionMarks
-}
 </script>
 
 <style scoped>
