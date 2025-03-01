@@ -472,7 +472,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
 
 // Types
@@ -545,6 +545,18 @@ interface School {
   address?: Address
   mediums?: { id: number; name: string }[]
   standards?: { id: number; name: string }[]
+  School_Instruction_Medium?: Array<{
+    instruction_medium: {
+      id: number
+      instruction_medium: string
+    }
+  }>
+  School_Standard?: Array<{
+    standard: {
+      id: number
+      name: string
+    }
+  }>
 }
 
 interface DisplaySchool extends School {
@@ -556,25 +568,6 @@ interface DisplaySchool extends School {
   }
   mediums: Array<{ id: number; name: string }>
   standards: Array<{ id: number; name: string }>
-}
-
-interface SchoolInstructionMedium {
-  instruction_medium: {
-    id: number
-    instruction_medium: string
-  }
-}
-
-interface SchoolStandard {
-  standard: {
-    id: number
-    name: string
-  }
-}
-
-interface ApiSchool extends School {
-  School_Instruction_Medium: SchoolInstructionMedium[]
-  School_Standard: SchoolStandard[]
 }
 
 const route = useRoute()
@@ -627,16 +620,13 @@ function highlightText(text: string, search: string): string {
 async function fetchStateAndCountry(cityId: number) {
   try {
     // First get the city to get state_id
-    const cityResponse = await fetch(getApiUrl(`/cities/${cityId}`))
-    const city = await cityResponse.json()
+    const { data: city } = await axiosInstance.get(`/cities/${cityId}`)
 
     // Get state data using state_id from city
-    const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
-    const state = await stateResponse.json()
+    const { data: state } = await axiosInstance.get(`/states/${city.state_id}`)
 
     // Get country data using country_id from state
-    const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
-    const country = await countryResponse.json()
+    const { data: country } = await axiosInstance.get(`/countries/${state.country_id}`)
 
     return {
       city: { id: city.id, state_id: city.state_id, name: city.name },
@@ -653,13 +643,12 @@ async function fetchSchools() {
   try {
     console.log('Starting fetchSchools...')
 
-    const schoolsResponse = await fetch(getApiUrl('/schools'))
-    const schoolsData = (await schoolsResponse.json()) as ApiSchool[]
+    const { data: schoolsData } = await axiosInstance.get<School[]>('/schools')
     console.log('Schools data:', schoolsData)
 
     // Process schools with location data
     const processedSchools = await Promise.all(
-      schoolsData.map(async (school): Promise<DisplaySchool> => {
+      schoolsData.map(async (school: School): Promise<DisplaySchool> => {
         // Fetch complete location data for each school
         const locationData = school.address?.city_id
           ? await fetchStateAndCountry(school.address.city_id)
@@ -684,12 +673,14 @@ async function fetchSchools() {
             country: locationData?.country || { id: 0, name: '' },
           },
           mediums:
-            school.School_Instruction_Medium?.map((medium) => ({
-              id: medium.instruction_medium.id,
-              name: medium.instruction_medium.instruction_medium,
-            })) || [],
+            school.School_Instruction_Medium?.map(
+              (medium: { instruction_medium: { id: number; instruction_medium: string } }) => ({
+                id: medium.instruction_medium.id,
+                name: medium.instruction_medium.instruction_medium,
+              }),
+            ) || [],
           standards:
-            school.School_Standard?.map((standard) => ({
+            school.School_Standard?.map((standard: { standard: { id: number; name: string } }) => ({
               id: standard.standard.id,
               name: standard.standard.name,
             })) || [],
@@ -715,8 +706,7 @@ async function fetchSchools() {
 
 async function fetchBoards() {
   try {
-    const response = await fetch(getApiUrl('/boards'))
-    const data = await response.json()
+    const { data } = await axiosInstance.get('/boards')
     boards.value = data
   } catch (error) {
     console.error('Error fetching boards:', error)
@@ -757,11 +747,7 @@ const deleteSchool = async () => {
     }
 
     // Delete school
-    const response = await fetch(getApiUrl(`/schools/${selectedSchool.value.id}`), {
-      method: 'DELETE',
-    })
-
-    if (!response.ok) throw new Error('Failed to delete school')
+    await axiosInstance.delete(`/schools/${selectedSchool.value.id}`)
 
     // Refresh the schools list
     fetchSchools()
@@ -812,12 +798,7 @@ async function showDeleteConfirmation() {
     viewModal?.hide()
 
     // Fetch associated teachers
-    const response = await fetch(getApiUrl(`/users?schoolId=${selectedSchool.value.id}`))
-    if (!response.ok) {
-      throw new Error('Failed to fetch associated teachers')
-    }
-
-    const teachers = await response.json()
+    const { data: teachers } = await axiosInstance.get(`/users?schoolId=${selectedSchool.value.id}`)
     associatedTeachers.value = teachers
 
     // Show the confirmation modal

@@ -511,7 +511,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getApiUrl } from '@/config/api'
+import { Modal } from 'bootstrap'
+import axiosInstance from '@/config/axios'
 import type {
   CreateBoardDto,
   CreateAddressDto,
@@ -519,23 +520,22 @@ import type {
   CreateStandardDto,
   CreateSubjectDto,
 } from '@/models/Board'
-import { Modal } from 'bootstrap'
 
 interface Country {
-  id: string
+  id: number
   name: string
 }
 
 interface State {
-  id: string
+  id: number
   name: string
-  country_id: string
+  country_id: number
 }
 
 interface City {
-  id: string
+  id: number
   name: string
-  state_id: string
+  state_id: number
 }
 
 export interface MediumOfInstruction {
@@ -691,8 +691,7 @@ const fetchLocationDetails = async (
   type: 'city' | 'state' | 'country',
 ): Promise<string> => {
   try {
-    const response = await fetch(getApiUrl(`/${type}s/${id}`))
-    const data = await response.json()
+    const { data } = await axiosInstance.get(`/${type}s/${id}`)
     return data.name || ''
   } catch (error) {
     console.error(`Error fetching ${type} details:`, error)
@@ -702,57 +701,21 @@ const fetchLocationDetails = async (
 
 // Update updateLocationData function to use proper typing
 const updateLocationData = async (addressData: { city_id: string | number }) => {
-  const cityResponse = await fetch(getApiUrl(`/cities/${addressData.city_id}`))
-  if (cityResponse.ok) {
-    const cityData = await cityResponse.json()
-    form.value.address.city_id = cityData.id
-    citySearch.value = cityData.name
+  const { data: cityData } = await axiosInstance.get(`/cities/${addressData.city_id}`)
+  form.value.address.city_id = cityData.id
+  citySearch.value = cityData.name
 
-    if (cityData.state_id) {
-      const stateResponse = await fetch(getApiUrl(`/states/${cityData.state_id}`))
-      if (stateResponse.ok) {
-        const stateData = await stateResponse.json()
-        form.value.address.state_id = stateData.id
-        stateSearch.value = stateData.name
+  if (cityData.state_id) {
+    const { data: stateData } = await axiosInstance.get(`/states/${cityData.state_id}`)
+    form.value.address.state_id = stateData.id
+    stateSearch.value = stateData.name
 
-        if (stateData.country_id) {
-          const countryResponse = await fetch(getApiUrl(`/countries/${stateData.country_id}`))
-          if (countryResponse.ok) {
-            const countryData = await countryResponse.json()
-            form.value.address.country_id = countryData.id
-            countrySearch.value = countryData.name
-          }
-        }
-      }
+    if (stateData.country_id) {
+      const { data: countryData } = await axiosInstance.get(`/countries/${stateData.country_id}`)
+      form.value.address.country_id = countryData.id
+      countrySearch.value = countryData.name
     }
   }
-}
-
-interface BoardApiResponse {
-  id: number
-  name: string
-  abbreviation: string
-  address?: {
-    id: number
-    city_id: number
-    postal_code: string
-    street: string
-  }
-  instruction_mediums: Array<{
-    id: number
-    instruction_medium: string
-    board_id: number
-  }>
-  standards: Array<{
-    id: number
-    name: string
-    board_id: number
-  }>
-  subjects: Array<{
-    id: number
-    name: string
-    board_id: number
-  }>
 }
 
 const fetchBoardData = async (boardId: number) => {
@@ -760,9 +723,7 @@ const fetchBoardData = async (boardId: number) => {
     isLoading.value = true
     console.log('Fetching board data for ID:', boardId)
 
-    const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (!boardResponse.ok) throw new Error('Failed to fetch board')
-    const boardData: BoardApiResponse = await boardResponse.json()
+    const { data: boardData } = await axiosInstance.get(`/boards/${boardId}`)
     console.log('Board data received:', boardData)
 
     // Update form with board data, ensuring proper type conversion
@@ -776,17 +737,19 @@ const fetchBoardData = async (boardId: number) => {
         state_id: 0, // Will be set by updateLocationData
         country_id: 0, // Will be set by updateLocationData
       },
-      mediums: boardData.instruction_mediums.map((m) => ({
-        id: m.id,
-        name: m.instruction_medium,
-        board_id: Number(boardId),
-      })),
-      standards: boardData.standards.map((s) => ({
+      mediums: boardData.instruction_mediums.map(
+        (m: { id: number; instruction_medium: string }) => ({
+          id: m.id,
+          name: m.instruction_medium,
+          board_id: Number(boardId),
+        }),
+      ),
+      standards: boardData.standards.map((s: { id: number; name: string }) => ({
         id: s.id,
         name: s.name,
         board_id: Number(boardId),
       })),
-      subjects: boardData.subjects.map((s) => ({
+      subjects: boardData.subjects.map((s: { id: number; name: string }) => ({
         id: s.id,
         name: s.name,
         board_id: Number(boardId),
@@ -816,110 +779,109 @@ const fetchBoardData = async (boardId: number) => {
   }
 }
 
-// Update onMounted to use the new fetchBoardData function
+// Fetch reference data
+const fetchCountries = async () => {
+  try {
+    console.log('Fetching countries...')
+    const response = await axiosInstance.get('/countries')
+    console.log('Countries response:', response.data)
+    countries.value = response.data
+    console.log('Countries assigned:', countries.value)
+  } catch (error) {
+    console.error('Error fetching countries:', error)
+    countries.value = []
+  }
+}
+
+// Update onMounted to fetch initial countries
 onMounted(async () => {
-  if (props.isEditMode && props.boardId) {
-    await fetchBoardData(parseInt(props.boardId))
+  try {
+    // Fetch initial data
+    await fetchCountries()
+
+    if (props.isEditMode && props.boardId) {
+      await fetchBoardData(parseInt(props.boardId))
+    }
+
+    // Add click outside handlers
+    document.addEventListener('click', (e: Event) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('#country')) {
+        showCountryDropdown.value = false
+      }
+      if (!target.closest('#state')) {
+        showStateDropdown.value = false
+      }
+      if (!target.closest('#city')) {
+        showCityDropdown.value = false
+      }
+    })
+
+    // Auto-resize textarea
+    nextTick(() => {
+      const textarea = document.getElementById('address') as HTMLTextAreaElement
+      if (textarea) {
+        textarea.style.height = ''
+        textarea.style.height = textarea.scrollHeight + 'px'
+      }
+    })
+  } catch (error) {
+    console.error('Error in component initialization:', error)
   }
 })
 
 // Update handleCountryChange to ensure number types
 const handleCountryChange = async () => {
-  form.value.address.state_id = 0
-  form.value.address.city_id = 0
-  stateSearch.value = ''
-  citySearch.value = ''
-  validationStates.value.state.valid = false
-  validationStates.value.city.valid = false
+  try {
+    console.log('Handling country change...')
+    form.value.address.state_id = 0
+    form.value.address.city_id = 0
+    stateSearch.value = ''
+    citySearch.value = ''
+    validationStates.value.state.valid = false
+    validationStates.value.city.valid = false
 
-  if (form.value.address.country_id) {
-    try {
-      const response = await fetch(getApiUrl(`/states?countryId=${form.value.address.country_id}`))
-      if (!response.ok) throw new Error('Failed to fetch states')
-      states.value = await response.json()
-    } catch (error) {
-      console.error('Error fetching states:', error)
+    if (form.value.address.country_id) {
+      console.log('Fetching states for country:', form.value.address.country_id)
+      const response = await axiosInstance.get(`/states?countryId=${form.value.address.country_id}`)
+      console.log('States response:', response.data)
+      states.value = response.data
+    } else {
       states.value = []
     }
-  } else {
+  } catch (error) {
+    console.error('Error in handleCountryChange:', error)
     states.value = []
   }
 }
 
 // Update handleStateChange function
 const handleStateChange = async () => {
-  // Reset city
-  form.value.address.city_id = 0
-  citySearch.value = ''
-  validationStates.value.city.valid = false
+  try {
+    console.log('Handling state change...')
+    // Reset city
+    form.value.address.city_id = 0
+    citySearch.value = ''
+    validationStates.value.city.valid = false
 
-  // Fetch cities for selected state using query parameter
-  if (form.value.address.state_id) {
-    try {
-      const response = await fetch(getApiUrl(`/cities?stateId=${form.value.address.state_id}`))
-      if (!response.ok) throw new Error('Failed to fetch cities')
-      cities.value = await response.json()
-    } catch (error) {
-      console.error('Error fetching cities:', error)
+    // Fetch cities for selected state using query parameter
+    if (form.value.address.state_id) {
+      console.log('Fetching cities for state:', form.value.address.state_id)
+      const response = await axiosInstance.get(`/cities?stateId=${form.value.address.state_id}`)
+      console.log('Cities response:', response.data)
+      cities.value = response.data
+    } else {
       cities.value = []
     }
-  } else {
+  } catch (error) {
+    console.error('Error in handleStateChange:', error)
     cities.value = []
   }
 }
 
-// Update computed properties for filtered states and cities
-const filteredStates = computed(() => {
-  if (!stateSearch.value) return states.value
-  const search = stateSearch.value.toLowerCase()
-  return states.value.filter((state) => state.name.toLowerCase().includes(search))
-})
-
-const filteredCities = computed(() => {
-  if (!citySearch.value) return cities.value
-  const search = citySearch.value.toLowerCase()
-  return cities.value.filter((city) => city.name.toLowerCase().includes(search))
-})
-
-// Update onMounted to fetch initial countries
-onMounted(async () => {
-  // Fetch initial data
-  await fetchCountries()
-  if (props.isEditMode && props.boardId) {
-    await fetchBoardData(parseInt(props.boardId))
-  }
-
-  // Add click outside handlers
-  document.addEventListener('click', (e: Event) => {
-    const target = e.target as HTMLElement
-    if (!target.closest('#country')) {
-      showCountryDropdown.value = false
-    }
-    if (!target.closest('#state')) {
-      showStateDropdown.value = false
-    }
-    if (!target.closest('#city')) {
-      showCityDropdown.value = false
-    }
-  })
-
-  // Auto-resize textarea
-  nextTick(() => {
-    const textarea = document.getElementById('address') as HTMLTextAreaElement
-    if (textarea) {
-      textarea.style.height = ''
-      textarea.style.height = textarea.scrollHeight + 'px'
-    }
-  })
-})
-
-const filteredCountries = computed(() => {
-  if (!countrySearch.value) return countries.value
-  const search = countrySearch.value.toLowerCase()
-  return countries.value.filter((country) => country.name.toLowerCase().includes(search))
-})
-
+// Update selectCountry to properly trigger state loading
 const selectCountry = (country: Country) => {
+  console.log('Selecting country:', country)
   countrySearch.value = country.name
   form.value.address.country_id = Number(country.id)
   showCountryDropdown.value = false
@@ -934,23 +896,13 @@ const selectCountry = (country: Country) => {
   validationStates.value.state.valid = false
   validationStates.value.city.valid = false
 
-  handleCountryChange().then(() => {
-    const stateInput = document.getElementById('state')
-    if (stateInput) stateInput.focus()
-  })
+  // Load states for selected country
+  handleCountryChange()
 }
 
-const filterCountries = () => {
-  showCountryDropdown.value = true
-  selectedCountryIndex.value = -1
-  validationStates.value.country.touched = true
-  if (!countrySearch.value) {
-    form.value.address.country_id = 0
-    validationStates.value.country.valid = false
-  }
-}
-
+// Update selectState to properly trigger city loading
 const selectState = (state: State) => {
+  console.log('Selecting state:', state)
   stateSearch.value = state.name
   form.value.address.state_id = Number(state.id)
   showStateDropdown.value = false
@@ -962,77 +914,36 @@ const selectState = (state: State) => {
   form.value.address.city_id = 0
   validationStates.value.city.valid = false
 
-  handleStateChange().then(() => {
-    const cityInput = document.getElementById('city')
-    if (cityInput) cityInput.focus()
-  })
+  // Load cities for selected state
+  handleStateChange()
 }
 
-const selectCity = (city: City) => {
-  citySearch.value = city.name
-  form.value.address.city_id = Number(city.id)
-  showCityDropdown.value = false
-  validationStates.value.city.valid = true
-  validationStates.value.city.touched = true
-
-  // Move focus to address field
-  const addressInput = document.getElementById('address')
-  if (addressInput) addressInput.focus()
-}
-
-const filterStates = () => {
-  showStateDropdown.value = true
-  selectedStateIndex.value = -1
-  validationStates.value.state.touched = true
-  if (!stateSearch.value) {
-    form.value.address.state_id = 0
-    validationStates.value.state.valid = false
-  }
-}
-
-const filterCities = () => {
-  showCityDropdown.value = true
-  selectedCityIndex.value = -1
-  validationStates.value.city.touched = true
-  if (!citySearch.value) {
-    form.value.address.city_id = 0
-    validationStates.value.city.valid = false
-  }
-}
-
-// Add new functions to handle focus events
+// Update handleStateFocus to properly show dropdown
 const handleStateFocus = async () => {
   if (form.value.address.country_id) {
-    showStateDropdown.value = true
-    // Fetch states if not already loaded
-    if (states.value.length === 0) {
-      try {
-        const response = await fetch(
-          getApiUrl(`/states?countryId=${form.value.address.country_id}`),
-        )
-        if (!response.ok) throw new Error('Failed to fetch states')
-        states.value = await response.json()
-      } catch (error) {
-        console.error('Error fetching states:', error)
-        states.value = []
+    try {
+      if (states.value.length === 0) {
+        console.log('Loading states on focus...')
+        await handleCountryChange()
       }
+      showStateDropdown.value = true
+    } catch (error) {
+      console.error('Error in handleStateFocus:', error)
     }
   }
 }
 
+// Update handleCityFocus to properly show dropdown
 const handleCityFocus = async () => {
   if (form.value.address.state_id) {
-    showCityDropdown.value = true
-    // Fetch cities if not already loaded
-    if (cities.value.length === 0) {
-      try {
-        const response = await fetch(getApiUrl(`/cities?stateId=${form.value.address.state_id}`))
-        if (!response.ok) throw new Error('Failed to fetch cities')
-        cities.value = await response.json()
-      } catch (error) {
-        console.error('Error fetching cities:', error)
-        cities.value = []
+    try {
+      if (cities.value.length === 0) {
+        console.log('Loading cities on focus...')
+        await handleStateChange()
       }
+      showCityDropdown.value = true
+    } catch (error) {
+      console.error('Error in handleCityFocus:', error)
     }
   }
 }
@@ -1386,17 +1297,6 @@ const handleAbbreviationBlur = () => {
   }
 }
 
-// Fetch reference data
-const fetchCountries = async () => {
-  try {
-    const response = await fetch(getApiUrl('/countries'))
-    if (!response.ok) throw new Error('Failed to fetch countries')
-    countries.value = await response.json()
-  } catch (error) {
-    console.error('Error fetching countries:', error)
-  }
-}
-
 // Modify handleSubmit to show confirmation modal only in edit mode
 const handleSubmit = async (e: Event) => {
   e.preventDefault()
@@ -1431,10 +1331,10 @@ const handleSubmit = async (e: Event) => {
 }
 
 const fetchCurrentBoardData = async (boardId: number) => {
-  const [mediums, standards, subjects] = await Promise.all([
-    fetch(getApiUrl(`/instruction-mediums/board/${boardId}`)).then((r) => r.json()),
-    fetch(getApiUrl(`/standards/board/${boardId}`)).then((r) => r.json()),
-    fetch(getApiUrl(`/subjects/board/${boardId}`)).then((r) => r.json()),
+  const [{ data: mediums }, { data: standards }, { data: subjects }] = await Promise.all([
+    axiosInstance.get(`/instruction-mediums/board/${boardId}`),
+    axiosInstance.get(`/standards/board/${boardId}`),
+    axiosInstance.get(`/subjects/board/${boardId}`),
   ])
   return { mediums, standards, subjects }
 }
@@ -1572,11 +1472,7 @@ const calculateChanges = async () => {
 
   // Get current data
   const { mediums, standards, subjects } = await fetchCurrentBoardData(boardId)
-  const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
-
-  if (!boardResponse.ok) return
-
-  const currentBoard = await boardResponse.json()
+  const { data: currentBoard } = await axiosInstance.get(`/boards/${boardId}`)
 
   // Compare basic board info
   const boardChanges = compareBasicBoardInfo(currentBoard, form.value, boardId)
@@ -1584,22 +1480,21 @@ const calculateChanges = async () => {
 
   // Compare address if it exists
   if (currentBoard.address_id) {
-    const addressResponse = await fetch(getApiUrl(`/addresses/${currentBoard.address_id}`))
-    if (addressResponse.ok) {
-      const currentAddress = await addressResponse.json()
-      const addressChanges = await compareAddressChanges(currentAddress, form.value.address)
+    const { data: currentAddress } = await axiosInstance.get(
+      `/addresses/${currentBoard.address_id}`,
+    )
+    const addressChanges = await compareAddressChanges(currentAddress, form.value.address)
 
-      if (addressChanges.length > 0) {
-        changes.value.push({
-          type: 'modify',
-          message: 'Board address details modified:\n' + addressChanges.join('\n'),
-          entity: 'board',
-          data: {
-            old: { id: currentBoard.address_id, name: 'Previous Address' },
-            new: { name: 'New Address' },
-          },
-        })
-      }
+    if (addressChanges.length > 0) {
+      changes.value.push({
+        type: 'modify',
+        message: 'Board address details modified:\n' + addressChanges.join('\n'),
+        entity: 'board',
+        data: {
+          old: { id: currentBoard.address_id, name: 'Previous Address' },
+          new: { name: 'New Address' },
+        },
+      })
     }
   }
 
@@ -1633,7 +1528,6 @@ const confirmAndSubmit = async () => {
       modal?.hide()
     }
 
-    // Format the address data
     const formattedAddress = {
       street: form.value.address.street?.trim() || '',
       postal_code: form.value.address.postal_code?.trim() || '',
@@ -1643,52 +1537,20 @@ const confirmAndSubmit = async () => {
     let addressId: number | undefined
 
     if (props.isEditMode && props.boardId) {
-      // Get current board data to get the address_id
-      const boardResponse = await fetch(getApiUrl(`/boards/${props.boardId}`))
-      if (!boardResponse.ok) {
-        throw new Error('Failed to fetch board data')
-      }
-      const boardData = await boardResponse.json()
+      const { data: boardData } = await axiosInstance.get(`/boards/${props.boardId}`)
       addressId = boardData.address_id
     }
 
-    // Update or create address
     if (props.isEditMode && addressId) {
-      // Update existing address
       console.log('Updating address with data:', formattedAddress)
-
-      const addressResponse = await fetch(getApiUrl(`/addresses/${addressId}`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formattedAddress),
-      })
-
-      if (!addressResponse.ok) {
-        const errorData = await addressResponse.text()
-        console.error('Failed to update address:', errorData)
-        throw new Error(`Failed to update address: ${errorData}`)
-      }
-
-      const updatedAddress = await addressResponse.json()
+      const { data: updatedAddress } = await axiosInstance.put(
+        `/addresses/${addressId}`,
+        formattedAddress,
+      )
       console.log('Address updated successfully:', updatedAddress)
       addressId = updatedAddress.id
     } else {
-      // Create new address
-      const addressResponse = await fetch(getApiUrl('/addresses'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formattedAddress),
-      })
-
-      if (!addressResponse.ok) {
-        throw new Error('Failed to create address')
-      }
-
-      const newAddress = await addressResponse.json()
+      const { data: newAddress } = await axiosInstance.post('/addresses', formattedAddress)
       addressId = newAddress.id
       console.log('New address created:', addressId)
     }
@@ -1756,18 +1618,14 @@ const isFormValid = computed(() => {
 // Add missing functions for duplicate checks
 const checkDuplicateName = async (name: string) => {
   try {
-    // Fetch all boards and check manually since we don't have a dedicated endpoint
-    const response = await fetch(getApiUrl('/boards'))
-    if (response.ok) {
-      const boards = await response.json()
-      const isDuplicate = boards.some(
-        (board: { id: number; name: string }) =>
-          board.name.toLowerCase() === name.toLowerCase() &&
-          (!props.boardId || board.id !== parseInt(props.boardId)),
-      )
-      isDuplicateName.value = isDuplicate
-      validationStates.value.name.valid = !isDuplicate
-    }
+    const { data: boards } = await axiosInstance.get('/boards')
+    const isDuplicate = boards.some(
+      (board: { id: number; name: string }) =>
+        board.name.toLowerCase() === name.toLowerCase() &&
+        (!props.boardId || board.id !== parseInt(props.boardId)),
+    )
+    isDuplicateName.value = isDuplicate
+    validationStates.value.name.valid = !isDuplicate
   } catch (error) {
     console.error('Error checking duplicate name:', error)
   }
@@ -1775,18 +1633,14 @@ const checkDuplicateName = async (name: string) => {
 
 const checkDuplicateAbbreviation = async (abbreviation: string) => {
   try {
-    // Fetch all boards and check manually since we don't have a dedicated endpoint
-    const response = await fetch(getApiUrl('/boards'))
-    if (response.ok) {
-      const boards = await response.json()
-      const isDuplicate = boards.some(
-        (board: { id: number; abbreviation: string }) =>
-          board.abbreviation.toLowerCase() === abbreviation.toLowerCase() &&
-          (!props.boardId || board.id !== parseInt(props.boardId)),
-      )
-      isDuplicateAbbreviation.value = isDuplicate
-      validationStates.value.abbreviation.valid = !isDuplicate
-    }
+    const { data: boards } = await axiosInstance.get('/boards')
+    const isDuplicate = boards.some(
+      (board: { id: number; abbreviation: string }) =>
+        board.abbreviation.toLowerCase() === abbreviation.toLowerCase() &&
+        (!props.boardId || board.id !== parseInt(props.boardId)),
+    )
+    isDuplicateAbbreviation.value = isDuplicate
+    validationStates.value.abbreviation.valid = !isDuplicate
   } catch (error) {
     console.error('Error checking duplicate abbreviation:', error)
   }
@@ -1801,6 +1655,70 @@ const ensureVisible = (element: HTMLElement, container: HTMLElement) => {
   } else if (elementRect.top < containerRect.top) {
     container.scrollTop -= containerRect.top - elementRect.top
   }
+}
+
+// Add back the computed properties
+const filteredStates = computed(() => {
+  if (!stateSearch.value) return states.value
+  const search = stateSearch.value.toLowerCase()
+  return states.value.filter((state) => state.name.toLowerCase().includes(search))
+})
+
+const filteredCities = computed(() => {
+  if (!citySearch.value) return cities.value
+  const search = citySearch.value.toLowerCase()
+  return cities.value.filter((city) => city.name.toLowerCase().includes(search))
+})
+
+const filteredCountries = computed(() => {
+  if (!countrySearch.value) return countries.value
+  const search = countrySearch.value.toLowerCase()
+  return countries.value.filter((country) => country.name.toLowerCase().includes(search))
+})
+
+// Add back the filter functions
+const filterCountries = () => {
+  showCountryDropdown.value = true
+  selectedCountryIndex.value = -1
+  validationStates.value.country.touched = true
+  if (!countrySearch.value) {
+    form.value.address.country_id = 0
+    validationStates.value.country.valid = false
+  }
+}
+
+const filterStates = () => {
+  showStateDropdown.value = true
+  selectedStateIndex.value = -1
+  validationStates.value.state.touched = true
+  if (!stateSearch.value) {
+    form.value.address.state_id = 0
+    validationStates.value.state.valid = false
+  }
+}
+
+const filterCities = () => {
+  showCityDropdown.value = true
+  selectedCityIndex.value = -1
+  validationStates.value.city.touched = true
+  if (!citySearch.value) {
+    form.value.address.city_id = 0
+    validationStates.value.city.valid = false
+  }
+}
+
+// Add back the selectCity function
+const selectCity = (city: City) => {
+  console.log('Selecting city:', city)
+  citySearch.value = city.name
+  form.value.address.city_id = Number(city.id)
+  showCityDropdown.value = false
+  validationStates.value.city.valid = true
+  validationStates.value.city.touched = true
+
+  // Move focus to address field
+  const addressInput = document.getElementById('address')
+  if (addressInput) addressInput.focus()
 }
 </script>
 

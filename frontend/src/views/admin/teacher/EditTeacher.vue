@@ -78,8 +78,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TeacherFormComponent from '@/components/forms/TeacherFormComponent.vue'
 import type { TeacherFormData } from '@/models/Teacher'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import * as bootstrap from 'bootstrap'
+import { useToastStore } from '@/store/toast'
 
 interface OperationResult {
   operation: string
@@ -87,19 +88,12 @@ interface OperationResult {
   message?: string
 }
 
-interface UserData {
-  name: string
-  email_id: string
-  contact_number: number
-  alternate_contact_number?: number
-  highest_qualification?: string
-}
-
 interface SchoolAssignment {
   end_date: string | null
   school: {
     id: number
     name: string
+    board_id: number
   }
 }
 
@@ -112,22 +106,6 @@ interface SchoolStandard {
 }
 
 interface TeacherSubject {
-  school_standard: {
-    id: number
-    standard: {
-      id: number
-      name: string
-    }
-  }
-  medium_standard_subject: {
-    id: number
-    subject: {
-      name: string
-    }
-  }
-}
-
-interface TeacherSubjectWithId {
   id: number
   school_standard: {
     id: number
@@ -148,44 +126,29 @@ const router = useRouter()
 const route = useRoute()
 const teacherData = ref<TeacherFormData | null>(null)
 const operationResults = ref<OperationResult[]>([])
+const toastStore = useToastStore()
 let operationResultModal: bootstrap.Modal | null = null
-
-const getErrorMessage = async (response: Response): Promise<string> => {
-  try {
-    const data = await response.json()
-    return data.message || data.error || 'Unknown error occurred'
-  } catch {
-    return 'Failed to parse error message'
-  }
-}
 
 const fetchTeacherData = async (id: string) => {
   try {
     // Fetch user data
-    const userResponse = await fetch(getApiUrl(`/users/${id}`))
-    if (!userResponse.ok) throw new Error('Failed to fetch user data')
-    const userData: UserData = await userResponse.json()
+    const { data: userData } = await axiosInstance.get(`/users/${id}`)
 
     // Fetch school data
-    const schoolResponse = await fetch(getApiUrl(`/user-schools/user/${id}`))
-    if (!schoolResponse.ok) throw new Error('Failed to fetch school data')
-    const schoolData = await schoolResponse.json()
+    const { data: schoolData } = await axiosInstance.get(`/user-schools/user/${id}`)
     const activeSchool = schoolData.find((s: SchoolAssignment) => !s.end_date)
 
     let schoolStandards: SchoolStandard[] = []
     if (activeSchool) {
       // Fetch standards from school standard table
-      const schoolStandardsResponse = await fetch(
-        getApiUrl(`/school-standards/school/${activeSchool.school.id}`),
+      const { data: standards } = await axiosInstance.get(
+        `/school-standards/school/${activeSchool.school.id}`,
       )
-      if (!schoolStandardsResponse.ok) throw new Error('Failed to fetch school standards')
-      schoolStandards = await schoolStandardsResponse.json()
+      schoolStandards = standards
     }
 
     // Fetch teacher subjects
-    const subjectsResponse = await fetch(getApiUrl(`/teacher-subjects?userId=${id}`))
-    if (!subjectsResponse.ok) throw new Error('Failed to fetch teacher subjects')
-    const subjectsData: TeacherSubject[] = await subjectsResponse.json()
+    const { data: subjectsData } = await axiosInstance.get(`/teacher-subjects?userId=${id}`)
 
     // Process and group subjects by standard
     const standardSubjects = new Map()
@@ -241,93 +204,55 @@ const fetchTeacherData = async (id: string) => {
     console.log('Teacher data prepared:', teacherData.value)
   } catch (error) {
     console.error('Error fetching teacher data:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to fetch teacher data',
+      type: 'error',
+    })
     router.push('/admin/teacher')
   }
 }
 
-onMounted(async () => {
-  const teacherId = route.params.id as string
-  if (!teacherId) {
-    router.push('/admin/teacher')
-    return
-  }
-
-  await fetchTeacherData(teacherId)
-  operationResultModal = new bootstrap.Modal(document.getElementById('operationResultModal')!)
-})
-
 const updateUserData = async (userId: string, formData: TeacherFormData) => {
-  const response = await fetch(getApiUrl(`/users/${userId}`), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: formData.name,
-      email_id: formData.emailId,
-      contact_number: formData.contactNumber,
-      alternate_contact_number: formData.alternateContactNumber,
-      highest_qualification: formData.highestQualification,
-    }),
+  await axiosInstance.put(`/users/${userId}`, {
+    name: formData.name,
+    email_id: formData.emailId,
+    contact_number: formData.contactNumber,
+    alternate_contact_number: formData.alternateContactNumber,
+    highest_qualification: formData.highestQualification,
   })
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
 }
 
 const updateSchoolAssignment = async (userId: string, schoolId: number) => {
   // Get current school assignments
-  const currentSchool = await fetch(getApiUrl(`/user-schools/user/${userId}`))
-  const schoolData = await currentSchool.json()
+  const { data: schoolData } = await axiosInstance.get(`/user-schools/user/${userId}`)
 
   // Find the active school assignment (one without an end_date)
-  const activeSchool = schoolData.find((s: { end_date: string | null }) => !s.end_date)
+  const activeSchool = schoolData.find((s: SchoolAssignment) => !s.end_date)
 
   // If there's an active school and it's different from the selected school
   if (activeSchool && activeSchool.school.id !== schoolId) {
     // End the current active assignment
-    const endCurrentResponse = await fetch(getApiUrl(`/user-schools/${activeSchool.id}`), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...activeSchool,
-        end_date: new Date().toISOString(),
-      }),
+    await axiosInstance.put(`/user-schools/${activeSchool.id}`, {
+      ...activeSchool,
+      end_date: new Date().toISOString(),
     })
-    if (!endCurrentResponse.ok) {
-      throw new Error('Failed to end current school assignment')
-    }
   }
 
   // If there's no active school or the school has changed, create a new assignment
   if (!activeSchool || activeSchool.school.id !== schoolId) {
     // Create new assignment with null end_date
-    const newAssignmentPayload = {
+    await axiosInstance.post('/user-schools', {
       user_id: userId,
       school_id: schoolId,
       start_date: new Date().toISOString(),
       end_date: null,
-    }
-
-    const newResponse = await fetch(getApiUrl('/user-schools'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newAssignmentPayload),
     })
-
-    if (!newResponse.ok) {
-      throw new Error('Failed to create new school assignment')
-    }
   }
 }
 
 const deleteSubject = async (subjectId: number) => {
-  const response = await fetch(getApiUrl(`/teacher-subjects/${subjectId}`), {
-    method: 'DELETE',
-  })
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
+  await axiosInstance.delete(`/teacher-subjects/${subjectId}`)
 }
 
 const addSubject = async (
@@ -335,19 +260,11 @@ const addSubject = async (
   schoolStandardId: number,
   mediumStandardSubjectId: number,
 ) => {
-  const response = await fetch(getApiUrl('/teacher-subjects'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_id: userId,
-      school_standard_id: schoolStandardId,
-      medium_standard_subject_id: mediumStandardSubjectId,
-    }),
+  await axiosInstance.post('/teacher-subjects', {
+    user_id: userId,
+    school_standard_id: schoolStandardId,
+    medium_standard_subject_id: mediumStandardSubjectId,
   })
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
 }
 
 const cleanupAndNavigate = () => {
@@ -372,28 +289,19 @@ const formatOperationMessage = (operation: string, isResult: boolean) => {
   return operation
 }
 
-// Update the getSubjectDetails function
 const getSubjectDetails = async (mediumStandardSubjectId: number) => {
   console.log('[getSubjectDetails] Starting with mediumStandardSubjectId:', mediumStandardSubjectId)
 
   try {
-    // First get the medium-standard-subject details
-    const response = await fetch(getApiUrl(`/medium-standard-subjects/${mediumStandardSubjectId}`))
-    if (!response.ok) {
-      const errorMessage = await getErrorMessage(response)
-      throw new Error(errorMessage)
-    }
-    const data = await response.json()
+    const { data } = await axiosInstance.get(`/medium-standard-subjects/${mediumStandardSubjectId}`)
     console.log('[getSubjectDetails] Response data:', data)
 
-    // Extract the subject and standard names from the response
     return {
       name: data.subject?.name || 'Unknown Subject',
       standardName: data.standard?.name || 'Unknown Standard',
     }
   } catch (error) {
     console.error('[getSubjectDetails] Error:', error)
-    // Return default values if we can't get the details
     return {
       name: 'Unknown Subject',
       standardName: 'Unknown Standard',
@@ -444,8 +352,7 @@ const handleSubmit = async (data: {
         })
 
         // After successful school change, handle subject changes
-        const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
-        const subjectsData: TeacherSubjectWithId[] = await currentSubjects.json()
+        const { data: subjectsData } = await axiosInstance.get(`/teacher-subjects?userId=${userId}`)
 
         // Remove all existing subject assignments as school has changed
         for (const subject of subjectsData) {
@@ -485,12 +392,11 @@ const handleSubmit = async (data: {
       }
     } else {
       // If school hasn't changed, handle only subject changes
-      const currentSubjects = await fetch(getApiUrl(`/teacher-subjects?userId=${userId}`))
-      const subjectsData: TeacherSubjectWithId[] = await currentSubjects.json()
+      const { data: subjectsData } = await axiosInstance.get(`/teacher-subjects?userId=${userId}`)
 
       // Find subjects to remove
       const subjectsToRemove = subjectsData.filter(
-        (current) =>
+        (current: TeacherSubject) =>
           !formData.teacherSubjects.some(
             (newSubj) =>
               newSubj.schoolStandardId === current.school_standard.id &&
@@ -502,7 +408,7 @@ const handleSubmit = async (data: {
       const subjectsToAdd = formData.teacherSubjects.filter(
         (newSubj) =>
           !subjectsData.some(
-            (current) =>
+            (current: TeacherSubject) =>
               current.school_standard.id === newSubj.schoolStandardId &&
               current.medium_standard_subject.id === newSubj.mediumStandardSubjectId,
           ),
@@ -566,8 +472,24 @@ const handleSubmit = async (data: {
     }
   } catch (error) {
     console.error('[handleSubmit] Error in handleSubmit:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to update teacher information',
+      type: 'error',
+    })
   }
 }
+
+onMounted(async () => {
+  const teacherId = route.params.id as string
+  if (!teacherId) {
+    router.push('/admin/teacher')
+    return
+  }
+
+  await fetchTeacherData(teacherId)
+  operationResultModal = new bootstrap.Modal(document.getElementById('operationResultModal')!)
+})
 </script>
 
 <style scoped>

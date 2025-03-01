@@ -12,7 +12,7 @@
 import { useRouter } from 'vue-router'
 import SchoolFormComponent from '@/components/forms/SchoolFormComponent.vue'
 import type { SchoolFormData } from '@/models/School'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
 import { onMounted, onUnmounted } from 'vue'
 
@@ -45,23 +45,12 @@ onUnmounted(() => {
 const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
   try {
     // Step 1: Create the address first
-    const addressResponse = await fetch(getApiUrl('/addresses'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        street: schoolData.address.street,
-        postal_code: schoolData.address.postal_code,
-        city_id: schoolData.address.city_id,
-      }),
+    const { data: createdAddress } = await axiosInstance.post('/addresses', {
+      street: schoolData.address.street,
+      postal_code: schoolData.address.postal_code,
+      city_id: schoolData.address.city_id,
     })
 
-    if (!addressResponse.ok) {
-      throw new Error('Failed to create address')
-    }
-
-    const createdAddress = await addressResponse.json()
     console.log('Address created successfully:', createdAddress)
 
     // Step 2: Create the school with the new address ID
@@ -75,71 +64,43 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
       alternate_contact_number: schoolData.alternate_contact_number || null,
     }
 
-    const schoolResponse = await fetch(getApiUrl('/schools'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(schoolPayload),
-    })
+    try {
+      const { data: createdSchool } = await axiosInstance.post('/schools', schoolPayload)
+      console.log('School created successfully:', createdSchool)
 
-    if (!schoolResponse.ok) {
-      // If school creation fails, delete the created address to avoid orphaned addresses
-      await fetch(getApiUrl(`/addresses/${createdAddress.id}`), {
-        method: 'DELETE',
-      })
-      throw new Error('Failed to create school')
-    }
-
-    const createdSchool = await schoolResponse.json()
-    console.log('School created successfully:', createdSchool)
-
-    // Step 3: Create school-instruction-medium mappings
-    const mediumPromises = schoolData.mediums.map(async (mediumId) => {
-      const response = await fetch(getApiUrl('/school-instruction-mediums'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Step 3: Create school-instruction-medium mappings
+      const mediumPromises = schoolData.mediums.map(async (mediumId) => {
+        const response = await axiosInstance.post('/school-instruction-mediums', {
           school_id: createdSchool.id,
           instruction_medium_id: mediumId,
-        }),
+        })
+        return response.data
       })
-      if (!response.ok) {
-        throw new Error(`Failed to create medium mapping for medium ID ${mediumId}`)
-      }
-      return response.json()
-    })
 
-    // Step 4: Create school-standard mappings
-    const standardPromises = schoolData.standards.map(async (standardId) => {
-      const response = await fetch(getApiUrl('/school-standards'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Step 4: Create school-standard mappings
+      const standardPromises = schoolData.standards.map(async (standardId) => {
+        const response = await axiosInstance.post('/school-standards', {
           school_id: createdSchool.id,
           standard_id: standardId,
-        }),
+        })
+        return response.data
       })
-      if (!response.ok) {
-        throw new Error(`Failed to create standard mapping for standard ID ${standardId}`)
-      }
-      return response.json()
-    })
 
-    // Wait for all mappings to be created
-    await Promise.all([...mediumPromises, ...standardPromises])
-    console.log('School mappings created successfully')
+      // Wait for all mappings to be created
+      await Promise.all([...mediumPromises, ...standardPromises])
+      console.log('School mappings created successfully')
 
-    toastStore.showToast({
-      title: 'Success',
-      message: `School "${schoolData.name}" has been created successfully.`,
-      type: 'success',
-    })
-    router.push('/admin/school')
+      toastStore.showToast({
+        title: 'Success',
+        message: `School "${schoolData.name}" has been created successfully.`,
+        type: 'success',
+      })
+      router.push('/admin/school')
+    } catch (error) {
+      // If school creation fails, delete the created address to avoid orphaned addresses
+      await axiosInstance.delete(`/addresses/${createdAddress.id}`)
+      throw error
+    }
   } catch (error) {
     console.error('Error creating school:', error)
     toastStore.showToast({

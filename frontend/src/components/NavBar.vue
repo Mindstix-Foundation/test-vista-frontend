@@ -80,7 +80,14 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <a class="nav-link pb-0 disabled" id="navProfile" href="#">Profile</a>
+              <router-link
+                to="/admin/profile"
+                class="nav-link pb-0"
+                id="navProfile"
+                @click="closeOffcanvas"
+              >
+                Profile
+              </router-link>
             </li>
           </ul>
           <div class="navbar-nav">
@@ -160,9 +167,19 @@ const showLogoutModal = () => {
 
 const handleLogout = () => {
   logoutModal?.hide()
-  // Clear any auth tokens or user data from localStorage
-  localStorage.clear()
+  // Clear all authentication data
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.clear() // Clear any remaining data
+
+  // Reset any auth state in your app
+  document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+
+  // Redirect to login page
   router.push('/login')
+
+  // Force a page reload to clear any cached data
+  window.location.reload()
 }
 
 const closeOffcanvas = () => {

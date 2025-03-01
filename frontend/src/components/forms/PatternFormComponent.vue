@@ -193,14 +193,16 @@
                   </div>
                   <div class="col-12 col-sm-auto text-end">
                     <button
+                      type="button"
                       class="btn btn-link text-decoration-none text-black me-2 fs-5"
                       @click="$emit('editSection', index)"
                     >
                       <i class="bi bi-pencil-square"></i>
                     </button>
                     <button
+                      type="button"
                       class="btn btn-link text-decoration-none text-black fs-5"
-                      @click="showDeleteConfirmation(index)"
+                      @click.prevent.stop="$emit('deleteSection', index)"
                     >
                       <i class="bi bi-trash3"></i>
                     </button>
@@ -252,44 +254,12 @@
       </div>
     </div>
   </form>
-
-  <!-- Delete Confirmation Modal -->
-  <div
-    class="modal fade"
-    id="deleteConfirmationModal"
-    tabindex="-1"
-    aria-hidden="true"
-    data-bs-backdrop="static"
-    ref="deleteModal"
-  >
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">Delete Section</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">Are you sure you want to delete this section?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" @click="confirmDelete">Delete</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
-import { getApiUrl } from '@/config/api'
-import { Modal } from 'bootstrap'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -323,6 +293,7 @@ interface Props {
   isEditMode?: boolean
   initialData?: FormData
   sections: Array<{
+    id?: number
     questionNumber: string
     subQuestion: string
     sectionName: string
@@ -332,6 +303,8 @@ interface Props {
     sameType: boolean
     questionType: string
     questionTypes: string[]
+    seqencial_section_number?: number
+    sub_section?: string
   }>
 }
 
@@ -345,6 +318,16 @@ const emit = defineEmits<{
   (e: 'addSection', data: FormData): void
   (e: 'editSection', index: number): void
   (e: 'deleteSection', index: number): void
+  (
+    e: 'updatePatternInfo',
+    data: {
+      pattern_name: string
+      board_id: number | undefined
+      standard_id: number | undefined
+      subject_id: number | undefined
+      total_marks: number
+    },
+  ): void
 }>()
 
 // Form data
@@ -420,11 +403,6 @@ onMounted(async () => {
       calculateRemainingMarks()
     }
   }
-
-  // Initialize the Bootstrap modal
-  if (deleteModal.value) {
-    bsModal = new Modal(deleteModal.value)
-  }
 })
 
 const remainingMarks = ref(0)
@@ -496,17 +474,15 @@ const handleBoardInput = async (value: unknown) => {
 const fetchBoardDetails = async (boardId: number) => {
   try {
     console.log('Fetching board details, ID:', boardId)
-    const response = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (!response.ok) throw new Error('Failed to fetch board details')
-    const data = await response.json()
-    console.log('Board details response:', data)
+    const response = await axiosInstance.get(`/boards/${boardId}`)
+    console.log('Board details response:', response.data)
 
     // Update the board in formData with complete data
     if (formData.value.selectedBoard) {
       formData.value.selectedBoard = {
         ...formData.value.selectedBoard,
-        standards: data.standards,
-        subjects: data.subjects,
+        standards: response.data.standards,
+        subjects: response.data.subjects,
       }
       console.log('Updated board in form data:', formData.value.selectedBoard)
     }
@@ -567,16 +543,14 @@ watch(
 
 const fetchBoards = async () => {
   try {
-    const response = await fetch(getApiUrl('/boards'))
-    if (!response.ok) throw new Error('Failed to fetch boards')
-    const data = await response.json()
-    boards.value = data
+    const response = await axiosInstance.get('/boards')
+    boards.value = response.data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   // Mark all fields as touched
   Object.keys(validationStates.value).forEach((key) => {
     validationStates.value[key as keyof typeof validationStates.value].touched = true
@@ -586,7 +560,19 @@ const handleSubmit = () => {
     return
   }
 
-  emit('submit', formData.value)
+  // Only emit submit if not in edit mode
+  if (!props.isEditMode) {
+    emit('submit', formData.value)
+  } else {
+    // For edit mode, emit a different event for pattern info update
+    emit('updatePatternInfo', {
+      pattern_name: formData.value.patternName,
+      board_id: formData.value.selectedBoard?.id,
+      standard_id: formData.value.selectedStandard?.id,
+      subject_id: formData.value.selectedSubject?.id,
+      total_marks: formData.value.totalMarks,
+    })
+  }
 }
 
 const addSection = () => {
@@ -661,23 +647,6 @@ const toRomanNumeral = (num: number): string => {
   }
 
   return result
-}
-
-const deleteModal = ref<HTMLElement | null>(null)
-const sectionToDelete = ref<number | null>(null)
-let bsModal: Modal | null = null
-
-const showDeleteConfirmation = (index: number) => {
-  sectionToDelete.value = index
-  bsModal?.show()
-}
-
-const confirmDelete = () => {
-  if (sectionToDelete.value !== null) {
-    emit('deleteSection', sectionToDelete.value)
-    sectionToDelete.value = null
-    bsModal?.hide()
-  }
 }
 </script>
 

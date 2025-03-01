@@ -9,7 +9,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BoardFormComponent from '@/components/forms/BoardFormComponent.vue'
 import { useToastStore } from '@/store/toast'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import type {
   CreateBoardDto,
   CreateAddressDto,
@@ -65,18 +65,16 @@ const createEntity = async <T,>(
   data: T,
   errorMessage: string,
 ): Promise<ApiResponse> => {
-  const response = await fetch(getApiUrl(endpoint), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
+  try {
+    const { data: responseData } = await axiosInstance.post(endpoint, data)
+    return responseData
+  } catch (error) {
+    const errorData =
+      error instanceof Error
+        ? null
+        : ((error as { response?: { data: ApiErrorResponse } })?.response?.data ?? null)
     throw new Error(handleApiError(errorData, errorMessage))
   }
-
-  return response.json()
 }
 
 const createRelatedEntities = async <T extends { board_id?: number }>(

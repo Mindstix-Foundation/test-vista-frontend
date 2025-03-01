@@ -606,9 +606,9 @@
 // Import necessary dependencies and types
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { getApiUrl } from '@/config/api'
 import type { SchoolFormData, SchoolValidationStates } from '@/models/School'
 import { Modal } from 'bootstrap'
+import axiosInstance from '@/config/axios'
 
 // Update interfaces based on Prisma schema
 interface Country {
@@ -882,9 +882,9 @@ const selectBoard = async (board: BoardListItem) => {
   try {
     console.log('Fetching board data for ID:', board.id)
     // Fetch board's available mediums and standards using the board endpoints
-    const [mediums, standards] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${board.id}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/standards/board/${board.id}`)).then((r) => r.json()),
+    const [{ data: mediums }, { data: standards }] = await Promise.all([
+      axiosInstance.get(`/instruction-mediums/board/${board.id}`),
+      axiosInstance.get(`/standards/board/${board.id}`),
     ])
     console.log('Fetched mediums:', mediums)
     console.log('Fetched standards:', standards)
@@ -929,19 +929,9 @@ const selectBoard = async (board: BoardListItem) => {
 // Update functions to fetch school mediums and standards with proper types
 const fetchSchoolMediums = async (schoolId: number) => {
   try {
-    const url = getApiUrl(`/school-instruction-mediums/school/${schoolId}`)
+    const url = `/school-instruction-mediums/school/${schoolId}`
     console.log('Fetching mediums from URL:', url)
-    const response = await fetch(url)
-    console.log('Mediums response status:', response.status)
-
-    if (!response.ok) {
-      console.error('Failed to fetch school mediums. Status:', response.status)
-      const errorText = await response.text()
-      console.error('Error response:', errorText)
-      throw new Error('Failed to fetch school mediums')
-    }
-
-    const data = await response.json()
+    const { data } = await axiosInstance.get(url)
     console.log('Raw mediums data:', data)
 
     // Map the data to the required format
@@ -959,19 +949,9 @@ const fetchSchoolMediums = async (schoolId: number) => {
 
 const fetchSchoolStandards = async (schoolId: number) => {
   try {
-    const url = getApiUrl(`/school-standards/school/${schoolId}`)
+    const url = `/school-standards/school/${schoolId}`
     console.log('Fetching standards from URL:', url)
-    const response = await fetch(url)
-    console.log('Standards response status:', response.status)
-
-    if (!response.ok) {
-      console.error('Failed to fetch school standards. Status:', response.status)
-      const errorText = await response.text()
-      console.error('Error response:', errorText)
-      throw new Error('Failed to fetch school standards')
-    }
-
-    const data = await response.json()
+    const { data } = await axiosInstance.get(url)
     console.log('Raw standards data:', data)
 
     // Map the data to the required format
@@ -1286,11 +1266,12 @@ watch(
 
       // Fetch board details and update board search
       if (form.value.board_id) {
-        const boardResponse = await fetch(getApiUrl(`/boards/${form.value.board_id}`))
-        if (boardResponse.ok) {
-          const board = await boardResponse.json()
+        try {
+          const { data: board } = await axiosInstance.get(`/boards/${form.value.board_id}`)
           selectedBoard.value = board
           boardSearch.value = board.name
+        } catch (error) {
+          console.error('Error fetching board details:', error)
         }
       }
 
@@ -1650,9 +1631,7 @@ const goBack = () => {
 // Add fetchBoards function
 const fetchBoards = async () => {
   try {
-    const response = await fetch(getApiUrl('/boards'))
-    if (!response.ok) throw new Error('Failed to fetch boards')
-    const data: Board[] = await response.json()
+    const { data } = await axiosInstance.get('/boards')
     boards.value = data
   } catch (error) {
     console.error('Error fetching boards:', error)
@@ -1694,39 +1673,30 @@ const updateLocationSearches = async () => {
   try {
     if (form.value.address.city_id) {
       // Fetch city details by ID
-      const cityResponse = await fetch(getApiUrl(`/cities/${form.value.address.city_id}`))
-      if (!cityResponse.ok) throw new Error('Failed to fetch city')
-      const city = await cityResponse.json()
+      const { data: city } = await axiosInstance.get(`/cities/${form.value.address.city_id}`)
       citySearch.value = city.name
       selectedCity.value = city
       form.value.address.state_id = city.state_id
 
       // Fetch state by ID
-      const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
-      if (!stateResponse.ok) throw new Error('Failed to fetch state')
-      const state = await stateResponse.json()
+      const { data: state } = await axiosInstance.get(`/states/${city.state_id}`)
       stateSearch.value = state.name
       selectedState.value = state
-      form.value.address.state_id = state.id
       form.value.address.country_id = state.country_id
 
       // Fetch country by ID
-      const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
-      if (!countryResponse.ok) throw new Error('Failed to fetch country')
-      const country = await countryResponse.json()
+      const { data: country } = await axiosInstance.get(`/countries/${state.country_id}`)
       countrySearch.value = country.name
       selectedCountry.value = country
 
       // Update validation states
       validationStates.value.city.valid = true
-      validationStates.value.city.touched = true
       validationStates.value.state.valid = true
-      validationStates.value.state.touched = true
       validationStates.value.country.valid = true
-      validationStates.value.country.touched = true
 
-      // Only fetch states for the selected country and cities for the selected state
-      await Promise.all([fetchStates(country.id), fetchCities(state.id)])
+      // Fetch states and cities for dropdowns
+      await fetchStates(state.country_id)
+      await fetchCities(state.id)
     }
   } catch (error) {
     console.error('Error updating location searches:', error)
@@ -1736,9 +1706,8 @@ const updateLocationSearches = async () => {
 // Update fetchStates to only fetch states for a specific country
 const fetchStates = async (countryId: number) => {
   try {
-    const response = await fetch(getApiUrl(`/states?countryId=${countryId}`))
-    if (!response.ok) throw new Error('Failed to fetch states')
-    states.value = await response.json()
+    const { data } = await axiosInstance.get(`/states?countryId=${countryId}`)
+    states.value = data
   } catch (error) {
     console.error('Error fetching states:', error)
     states.value = []
@@ -1748,9 +1717,8 @@ const fetchStates = async (countryId: number) => {
 // Update fetchCities to only fetch cities for a specific state
 const fetchCities = async (stateId: number) => {
   try {
-    const response = await fetch(getApiUrl(`/cities?stateId=${stateId}`))
-    if (!response.ok) throw new Error('Failed to fetch cities')
-    cities.value = await response.json()
+    const { data } = await axiosInstance.get(`/cities?stateId=${stateId}`)
+    cities.value = data
   } catch (error) {
     console.error('Error fetching cities:', error)
     cities.value = []
@@ -1884,9 +1852,7 @@ const handleCountryChange = async () => {
   if (form.value.address.country_id) {
     try {
       console.log('Fetching states for country:', form.value.address.country_id)
-      const response = await fetch(getApiUrl(`/states?countryId=${form.value.address.country_id}`))
-      if (!response.ok) throw new Error('Failed to fetch states')
-      const data = await response.json()
+      const { data } = await axiosInstance.get(`/states?countryId=${form.value.address.country_id}`)
       console.log('Fetched states:', data)
       states.value = data
     } catch (error) {
@@ -1909,9 +1875,7 @@ const handleStateChange = async () => {
   if (form.value.address.state_id) {
     try {
       console.log('Fetching cities for state:', form.value.address.state_id)
-      const response = await fetch(getApiUrl(`/cities?stateId=${form.value.address.state_id}`))
-      if (!response.ok) throw new Error('Failed to fetch cities')
-      const data = await response.json()
+      const { data } = await axiosInstance.get(`/cities?stateId=${form.value.address.state_id}`)
       console.log('Fetched cities:', data)
       cities.value = data
     } catch (error) {
@@ -1926,14 +1890,11 @@ const handleStateChange = async () => {
 // Add fetchCountries function
 const fetchCountries = async () => {
   try {
-    console.log('Fetching countries...')
-    const response = await fetch(getApiUrl('/countries'))
-    if (!response.ok) throw new Error('Failed to fetch countries')
-    const data = await response.json()
-    console.log('Fetched countries:', data)
+    const { data } = await axiosInstance.get('/countries')
     countries.value = data
   } catch (error) {
     console.error('Error fetching countries:', error)
+    countries.value = []
   }
 }
 

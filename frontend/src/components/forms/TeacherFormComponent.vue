@@ -472,7 +472,7 @@ import { ref, reactive, onMounted, watch, computed } from 'vue'
 import useVuelidate from '@vuelidate/core'
 import { required, email, helpers } from '@vuelidate/validators'
 import type { TeacherFormData } from '@/models/Teacher'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import { Modal } from 'bootstrap'
 import { useRoute } from 'vue-router'
 
@@ -803,7 +803,7 @@ const handleSchoolKeydown = (event: KeyboardEvent) => {
   }
 }
 
-// Initialize form data if initialData is provided
+// Watch for initialData changes
 watch(
   () => props.initialData,
   async (newData) => {
@@ -816,9 +816,7 @@ watch(
       // First fetch school details to get board information
       if (newData.schoolId) {
         try {
-          const schoolResponse = await fetch(getApiUrl(`/schools/${newData.schoolId}`))
-          if (!schoolResponse.ok) throw new Error('Failed to fetch school details')
-          const schoolData = await schoolResponse.json()
+          const { data: schoolData } = await axiosInstance.get(`/schools/${newData.schoolId}`)
           console.log('[Validation] School data fetched:', schoolData)
 
           // Update form data first, but preserve the board ID we're about to set
@@ -847,11 +845,9 @@ watch(
           await fetchSchools()
 
           // Fetch standards for this school
-          const standardsResponse = await fetch(
-            getApiUrl(`/school-standards/school/${newData.schoolId}`),
+          const { data: schoolStandardsData } = await axiosInstance.get(
+            `/school-standards/school/${newData.schoolId}`,
           )
-          if (!standardsResponse.ok) throw new Error('Failed to fetch school standards')
-          const schoolStandardsData = await standardsResponse.json()
 
           // Store the complete school standards data
           schoolStandards.value = schoolStandardsData
@@ -954,16 +950,7 @@ async function fetchSchools() {
       return
     }
 
-    const url = getApiUrl(`/schools?boardId=${formData.boardId}`)
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    console.log('Schools API response status:', response.status)
-    if (!response.ok) throw new Error('Failed to fetch schools')
-    const data = await response.json()
+    const { data } = await axiosInstance.get(`/schools?boardId=${formData.boardId}`)
     console.log('Fetched schools:', data)
     schools.value = data
     console.log('Updated schools.value:', schools.value)
@@ -1327,14 +1314,12 @@ const selectSchool = async (school: { id: number; name: string }) => {
 
   try {
     // Get school details
-    const schoolResponse = await fetch(getApiUrl(`/schools/${school.id}`))
-    if (!schoolResponse.ok) throw new Error('Failed to fetch school details')
-    const schoolData = await schoolResponse.json()
+    const { data: schoolData } = await axiosInstance.get(`/schools/${school.id}`)
 
     // Fetch standards for this school
-    const standardsResponse = await fetch(getApiUrl(`/school-standards/school/${school.id}`))
-    if (!standardsResponse.ok) throw new Error('Failed to fetch school standards')
-    const schoolStandardsData = await standardsResponse.json()
+    const { data: schoolStandardsData } = await axiosInstance.get(
+      `/school-standards/school/${school.id}`,
+    )
 
     // Store the complete school standards data
     schoolStandards.value = schoolStandardsData
@@ -1471,18 +1456,9 @@ const handleStandardSelect = async () => {
     console.log('[Subject Selection] Using school standard ID:', schoolStandardId)
 
     // Fetch subjects for this standard
-    const url = getApiUrl(`/medium-standard-subjects?standard_id=${standard.id}`)
-    console.log('[Subject Selection] Fetching subjects from:', url)
-
-    const response = await fetch(url)
-    if (!response.ok) {
-      console.error('Failed to fetch subjects. Status:', response.status)
-      const errorText = await response.text()
-      console.error('Error response:', errorText)
-      throw new Error('Failed to fetch subjects')
-    }
-
-    const subjects = await response.json()
+    const { data: subjects } = await axiosInstance.get(
+      `/medium-standard-subjects?standard_id=${standard.id}`,
+    )
     console.log('[Subject Selection] Fetched subjects:', subjects)
 
     // Update mediumStandardSubjects for display
@@ -1737,9 +1713,7 @@ const handleEmailInput = async (e: Event) => {
       }
 
       // Check if email already exists by fetching all users
-      const response = await fetch(getApiUrl('/users'))
-      if (!response.ok) throw new Error('Failed to check email')
-      const users = await response.json()
+      const { data: users } = await axiosInstance.get('/users')
 
       // Check if any user has this email
       const exists = users.some((user: { email_id: string }) => user.email_id === value)
@@ -1813,15 +1787,7 @@ const boardInput = ref<HTMLInputElement | null>(null)
 async function fetchBoards() {
   try {
     console.log('Fetching boards...')
-    const response = await fetch(getApiUrl('/boards'), {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    console.log('Boards API response status:', response.status)
-    if (!response.ok) throw new Error('Failed to fetch boards')
-    const data = await response.json()
+    const { data } = await axiosInstance.get('/boards')
     console.log('Fetched boards:', data)
     boards.value = data
     console.log('Updated boards.value:', boards.value)

@@ -2,7 +2,15 @@
   <div class="container my-4">
     <div class="container">
       <div class="row g-2 justify-content-end">
-        <router-link class="btn btn-close" to="/admin/pattern" aria-label="Close" />
+        <router-link
+          class="btn btn-close"
+          :to="
+            $route.query.fromEdit
+              ? { name: 'editPattern', params: { id: String($route.query.patternId) } }
+              : { name: 'createPattern' }
+          "
+          aria-label="Close"
+        />
       </div>
       <div class="row justify-content-center align-items-center my-2">
         <div class="col col-12 col-sm-10 col-md-8">
@@ -31,7 +39,7 @@ import SectionFormComponent from '@/components/forms/SectionFormComponent.vue'
 import type { SectionFormData } from '@/components/forms/SectionFormComponent.vue'
 import { usePatternStore } from '@/stores/pattern'
 import { computed } from 'vue'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -57,31 +65,20 @@ const handleSubmit = async (formData: SectionFormData) => {
   try {
     const isFromEditPattern = route.query.fromEdit === 'true'
     const patternId = route.query.patternId as string
-    const nextSequentialNumber = route.query.nextSequentialNumber as string
+    const nextSequenceNumber = route.query.nextSequenceNumber as string
 
-    if (isFromEditPattern && patternId && nextSequentialNumber) {
-      // Create section immediately in backend
-      const sectionResponse = await fetch(getApiUrl('/sections'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pattern_id: Number(patternId),
-          seqencial_section_number: Number(nextSequentialNumber),
-          sub_section: formData.subQuestion,
-          section_name: formData.sectionName,
-          total_questions: Number(formData.totalQuestions),
-          mandotory_questions: Number(formData.requiredQuestions),
-          marks_per_question: Number(formData.marksPerQuestion),
-        }),
+    if (isFromEditPattern && patternId) {
+      // Create section immediately in backend for edit pattern
+      const { data: createdSection } = await axiosInstance.post('/sections', {
+        pattern_id: Number(patternId),
+        sequence_number: Number(nextSequenceNumber),
+        section_number: Number(formData.questionNumber),
+        sub_section: formData.subQuestion,
+        section_name: formData.sectionName,
+        total_questions: Number(formData.totalQuestions),
+        mandotory_questions: Number(formData.requiredQuestions),
+        marks_per_question: Number(formData.marksPerQuestion),
       })
-
-      if (!sectionResponse.ok) {
-        throw new Error('Failed to create section')
-      }
-
-      const createdSection = await sectionResponse.json()
 
       // Create subsection question types
       if (formData.sameType) {
@@ -100,6 +97,7 @@ const handleSubmit = async (formData: SectionFormData) => {
         }
       }
 
+      // Return to edit pattern page after successful creation
       router.push({
         name: 'editPattern',
         params: { id: patternId },
@@ -107,7 +105,7 @@ const handleSubmit = async (formData: SectionFormData) => {
     } else {
       // Add to store for new pattern creation
       const sectionData: SectionData = {
-        questionNumber: formData.questionNumber,
+        questionNumber: formData.questionNumber || nextSequenceNumber,
         subQuestion: formData.subQuestion,
         sectionName: formData.sectionName,
         totalQuestions: Number(formData.totalQuestions),
@@ -129,9 +127,7 @@ const handleSubmit = async (formData: SectionFormData) => {
 
 const getQuestionTypeByName = async (typeName: string) => {
   try {
-    const response = await fetch(getApiUrl('/question-types'))
-    if (!response.ok) throw new Error('Failed to fetch question types')
-    const types = await response.json()
+    const { data: types } = await axiosInstance.get('/question-types')
     return types.find((type: { type_name: string }) => type.type_name === typeName)
   } catch (error) {
     console.error('Error fetching question type:', error)
@@ -144,23 +140,13 @@ const createSubsectionQuestionType = async (
   sequentialNumber: number,
   questionTypeId: number,
 ) => {
-  const response = await fetch(getApiUrl('/subsection-question-types'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      section_id: sectionId,
-      seqencial_subquestion_number: sequentialNumber,
-      question_type_id: questionTypeId,
-    }),
+  const { data } = await axiosInstance.post('/subsection-question-types', {
+    section_id: sectionId,
+    seqencial_subquestion_number: sequentialNumber,
+    question_type_id: questionTypeId,
   })
 
-  if (!response.ok) {
-    throw new Error('Failed to create subsection question type')
-  }
-
-  return await response.json()
+  return data
 }
 
 // Add computed property to check if more sections can be added

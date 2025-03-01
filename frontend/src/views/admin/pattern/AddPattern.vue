@@ -30,8 +30,9 @@ import { ref, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PatternFormComponent from '@/components/forms/PatternFormComponent.vue'
 import type { FormData } from '@/components/forms/PatternFormComponent.vue'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import { usePatternStore } from '@/stores/pattern'
+import { useToastStore } from '@/store/toast'
 
 interface QuestionType {
   id: number
@@ -41,15 +42,14 @@ interface QuestionType {
 
 const router = useRouter()
 const patternStore = usePatternStore()
+const toastStore = useToastStore()
 const formComponent = ref<InstanceType<typeof PatternFormComponent> | null>(null)
 const questionTypes = ref<QuestionType[]>([])
 
 // Fetch question types
 const fetchQuestionTypes = async () => {
   try {
-    const response = await fetch(getApiUrl('/question-types'))
-    if (!response.ok) throw new Error('Failed to fetch question types')
-    const data = await response.json()
+    const { data } = await axiosInstance.get('/question-types')
     questionTypes.value = data
   } catch (error) {
     console.error('Error fetching question types:', error)
@@ -63,52 +63,29 @@ onMounted(() => {
 const handleSubmit = async (formData: FormData) => {
   try {
     // First create the pattern
-    const response = await fetch(getApiUrl('/patterns'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        pattern_name: formData.patternName,
-        board_id: formData.selectedBoard?.id,
-        standard_id: formData.selectedStandard?.id,
-        subject_id: formData.selectedSubject?.id,
-        total_marks: formData.totalMarks,
-      }),
+    const { data: pattern } = await axiosInstance.post('/patterns', {
+      pattern_name: formData.patternName,
+      board_id: formData.selectedBoard?.id,
+      standard_id: formData.selectedStandard?.id,
+      subject_id: formData.selectedSubject?.id,
+      total_marks: formData.totalMarks,
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to create pattern')
-    }
-
-    const pattern = await response.json()
 
     // Now create all sections for this pattern in sequence
     for (const section of patternStore.sections) {
       console.log('Creating section with sequential number:', section.seqencial_section_number)
 
       // Create section
-      const sectionResponse = await fetch(getApiUrl('/sections'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pattern_id: pattern.id,
-          seqencial_section_number: section.seqencial_section_number,
-          sub_section: section.subQuestion,
-          section_name: section.sectionName,
-          total_questions: section.totalQuestions,
-          mandotory_questions: section.requiredQuestions,
-          marks_per_question: section.marksPerQuestion,
-        }),
+      const { data: createdSection } = await axiosInstance.post('/sections', {
+        pattern_id: pattern.id,
+        sequence_number: section.seqencial_section_number,
+        section_number: parseInt(section.questionNumber),
+        sub_section: section.subQuestion,
+        section_name: section.sectionName,
+        total_questions: section.totalQuestions,
+        mandotory_questions: section.requiredQuestions,
+        marks_per_question: section.marksPerQuestion,
       })
-
-      if (!sectionResponse.ok) {
-        throw new Error('Failed to create section')
-      }
-
-      const createdSection = await sectionResponse.json()
 
       // Create subsection question types
       if (section.sameType) {
@@ -130,11 +107,23 @@ const handleSubmit = async (formData: FormData) => {
       }
     }
 
+    // Show success toast
+    toastStore.showToast({
+      type: 'success',
+      title: 'Success',
+      message: 'Pattern created successfully!',
+    })
+
     patternStore.clearFormData()
     router.push('/admin/pattern')
   } catch (error) {
     console.error('Error creating pattern:', error)
-    // Handle error (show error message to user)
+    // Show error toast
+    toastStore.showToast({
+      type: 'error',
+      title: 'Error',
+      message: 'Failed to create pattern. Please try again.',
+    })
   }
 }
 
@@ -143,31 +132,32 @@ const createSubsectionQuestionType = async (
   sequentialNumber: number,
   questionTypeId: number,
 ) => {
-  const response = await fetch(getApiUrl('/subsection-question-types'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      section_id: sectionId,
-      seqencial_subquestion_number: sequentialNumber,
-      question_type_id: questionTypeId,
-    }),
+  const { data } = await axiosInstance.post('/subsection-question-types', {
+    section_id: sectionId,
+    seqencial_subquestion_number: sequentialNumber,
+    question_type_id: questionTypeId,
   })
 
-  if (!response.ok) {
-    throw new Error('Failed to create subsection question type')
-  }
-
-  return await response.json()
+  return data
 }
 
 const handleAddSection = (formData: FormData) => {
   patternStore.setFormData(formData)
+
+  // Find the highest Q number (section_number) from existing sections
+  const highestSectionNumber = patternStore.sections.reduce((max, section) => {
+    const currentNumber = parseInt(section.questionNumber) || 0
+    return currentNumber > max ? currentNumber : max
+  }, 0)
+  const nextSectionNumber = highestSectionNumber + 1
+  const nextSequenceNumber = patternStore.sections.length + 1
+
   router.push({
     name: 'addSection',
     query: {
       remainingMarks: formData.remainingMarks?.toString() || formData.totalMarks.toString(),
+      nextSequenceNumber: nextSequenceNumber.toString(),
+      nextSectionNumber: nextSectionNumber.toString(),
     },
   })
 }
@@ -194,6 +184,8 @@ const editSection = (index: number) => {
       sectionIndex: index.toString(),
       remainingMarks: totalRemainingMarks.toString(),
       totalMarks: patternStore.formData.totalMarks.toString(),
+      sequenceNumber: sectionToEdit.seqencial_section_number?.toString(),
+      sectionNumber: sectionToEdit.questionNumber?.toString(),
     },
   })
 }

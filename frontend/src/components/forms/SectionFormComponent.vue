@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="handleSubmit">
+  <form @submit.prevent="handleSubmit" novalidate>
     <div class="row g-3 justify-content-center">
       <div v-if="disabled" class="col-12 col-sm-10 col-md-8">
         <div class="alert alert-warning">
@@ -15,23 +15,36 @@
           <!-- Question Number -->
           <div class="form-floating" style="width: 10%">
             <input
-              type="text"
+              ref="questionNumberInput"
+              type="number"
               class="form-control"
+              :class="{
+                'is-invalid': validationStates.sectionHeader.allTouched && !isQuestionNumberValid,
+                'is-valid': isQuestionNumberValid && validationStates.sectionHeader.allTouched,
+              }"
               id="floatingQueNum"
               placeholder="Question Number"
               v-model="formData.questionNumber"
               @input="handleSectionHeaderInput"
               @blur="handleSectionHeaderBlur"
+              min="1"
+              step="1"
               required
             />
             <label for="floatingQueNum">Q.</label>
+            <div class="invalid-feedback">Please enter a valid question number greater than 0</div>
           </div>
 
           <!-- Sub Question -->
           <div class="form-floating" style="width: 10%">
             <input
+              ref="subQuestionInput"
               type="text"
               class="form-control"
+              :class="{
+                'is-invalid': validationStates.sectionHeader.allTouched && !isSubQuestionValid,
+                'is-valid': isSubQuestionValid && validationStates.sectionHeader.allTouched,
+              }"
               id="floatingSubQue"
               placeholder="Sub Question"
               v-model="formData.subQuestion"
@@ -40,13 +53,19 @@
               required
             />
             <label for="floatingSubQue">Sub Q.</label>
+            <div class="invalid-feedback">Please enter a sub question</div>
           </div>
 
           <!-- Section Name -->
           <div class="form-floating" style="width: 80%">
             <input
+              ref="sectionNameInput"
               type="text"
               class="form-control"
+              :class="{
+                'is-invalid': validationStates.sectionHeader.allTouched && !isSectionNameValid,
+                'is-valid': isSectionNameValid && validationStates.sectionHeader.allTouched,
+              }"
               id="floatingSection"
               placeholder="Section Name"
               v-model="formData.sectionName"
@@ -55,6 +74,7 @@
               required
             />
             <label for="floatingSection">Section Name / Main Question</label>
+            <div class="invalid-feedback">Please enter a section name</div>
           </div>
           <div class="invalid-feedback">Please fill in all section header fields</div>
         </div>
@@ -67,6 +87,7 @@
           <div class="flex-grow-1">
             <div class="form-floating">
               <input
+                ref="totalQuestionsInput"
                 type="number"
                 class="form-control"
                 :class="{
@@ -90,6 +111,7 @@
           <div class="flex-grow-1">
             <div class="form-floating">
               <input
+                ref="requiredQuestionsInput"
                 type="number"
                 class="form-control"
                 :class="{
@@ -113,6 +135,7 @@
           <div class="flex-grow-1">
             <div class="form-floating">
               <input
+                ref="marksPerQuestionInput"
                 type="number"
                 class="form-control"
                 :class="{
@@ -248,9 +271,7 @@
       <!-- Submit Button -->
       <div class="col col-12 col-sm-10 col-md-8">
         <div class="text-center">
-          <button type="submit" class="btn btn-dark" :disabled="!isFormValid || disabled">
-            Save
-          </button>
+          <button type="submit" class="btn btn-dark">Save</button>
         </div>
       </div>
     </div>
@@ -259,8 +280,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { getApiUrl } from '@/config/api'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import axiosInstance from '@/config/axios'
 
 export interface SectionFormData {
   questionNumber: string
@@ -357,11 +378,9 @@ const selectedQuestionTypes = ref<(QuestionType | null)[]>([])
 const fetchQuestionTypes = async () => {
   try {
     console.log('Fetching question types...')
-    const response = await fetch(getApiUrl('/question-types'))
-    if (!response.ok) throw new Error('Failed to fetch question types')
-    const data = await response.json()
-    console.log('Question types fetched successfully:', data)
-    questionTypes.value = data
+    const response = await axiosInstance.get('/question-types')
+    console.log('Question types fetched successfully:', response.data)
+    questionTypes.value = response.data
     console.log('Question types set in component:', questionTypes.value)
   } catch (error) {
     console.error('Error fetching question types:', error)
@@ -491,6 +510,10 @@ watch(
     } else {
       formData.value.questionTypes = Array(numTotalQuestions).fill('')
       selectedQuestionTypes.value = Array(numTotalQuestions).fill(null)
+      // Reset validation state when unchecking same type
+      validationStates.value.questionType.valid = false
+      selectedQuestionType.value = null
+      formData.value.questionType = ''
     }
   },
 )
@@ -511,12 +534,21 @@ const currentRemainingMarks = computed(() => {
   return availableMarks.value - sectionMarks.value
 })
 
+const isQuestionNumberValid = computed(() => {
+  const num = Number(formData.value.questionNumber)
+  return !isNaN(num) && num > 0 && Number.isInteger(num)
+})
+
+const isSubQuestionValid = computed(() => {
+  return formData.value.subQuestion.trim() !== ''
+})
+
+const isSectionNameValid = computed(() => {
+  return formData.value.sectionName.trim() !== ''
+})
+
 const isSectionHeaderValid = computed(() => {
-  return (
-    formData.value.questionNumber.trim() !== '' &&
-    formData.value.subQuestion.trim() !== '' &&
-    formData.value.sectionName.trim() !== ''
-  )
+  return isQuestionNumberValid.value && isSubQuestionValid.value && isSectionNameValid.value
 })
 
 const showSectionHeaderError = computed(() => {
@@ -525,7 +557,7 @@ const showSectionHeaderError = computed(() => {
 
 const isFormValid = computed(() => {
   const questionTypesValid = formData.value.sameType
-    ? validationStates.value.questionType.valid
+    ? selectedQuestionType.value !== null
     : formData.value.questionTypes.length === Number(formData.value.totalQuestions) &&
       formData.value.questionTypes.every((type) => type.trim() !== '')
 
@@ -538,6 +570,15 @@ const isFormValid = computed(() => {
     sectionMarks.value <= props.totalPatternMarks
   )
 })
+
+// Add refs for input fields
+const questionNumberInput = ref<HTMLInputElement | null>(null)
+const subQuestionInput = ref<HTMLInputElement | null>(null)
+const sectionNameInput = ref<HTMLInputElement | null>(null)
+const totalQuestionsInput = ref<HTMLInputElement | null>(null)
+const requiredQuestionsInput = ref<HTMLInputElement | null>(null)
+const marksPerQuestionInput = ref<HTMLInputElement | null>(null)
+const questionTypeInput = ref<HTMLElement | null>(null)
 
 // Input handlers
 const handleSectionHeaderInput = () => {
@@ -623,17 +664,64 @@ const handleQuestionTypeInput = () => {
 
 // Methods
 const handleSubmit = () => {
-  // Mark all fields as touched
+  // Mark all fields as touched to trigger validation messages
   validationStates.value.sectionHeader.allTouched = true
   validationStates.value.totalQuestions.touched = true
   validationStates.value.requiredQuestions.touched = true
   validationStates.value.marksPerQuestion.touched = true
   validationStates.value.questionType.touched = true
 
-  if (!isFormValid.value) {
+  // Check each validation and focus the first invalid field
+  if (!isQuestionNumberValid.value) {
+    questionNumberInput.value?.focus()
     return
   }
 
+  if (!isSubQuestionValid.value) {
+    subQuestionInput.value?.focus()
+    return
+  }
+
+  if (!isSectionNameValid.value) {
+    sectionNameInput.value?.focus()
+    return
+  }
+
+  if (!validationStates.value.totalQuestions.valid) {
+    totalQuestionsInput.value?.focus()
+    return
+  }
+
+  if (!validationStates.value.requiredQuestions.valid) {
+    requiredQuestionsInput.value?.focus()
+    return
+  }
+
+  if (!validationStates.value.marksPerQuestion.valid) {
+    marksPerQuestionInput.value?.focus()
+    return
+  }
+
+  if (!validationStates.value.questionType.valid) {
+    if (formData.value.sameType) {
+      questionTypeInput.value?.focus()
+    } else {
+      // Focus the first empty question type dropdown
+      const emptyIndex = formData.value.questionTypes.findIndex((type) => !type)
+      if (emptyIndex !== -1) {
+        const dropdown = document.getElementById(`questionType${emptyIndex}`)
+        dropdown?.focus()
+      }
+    }
+    return
+  }
+
+  if (sectionMarks.value > props.totalPatternMarks) {
+    marksPerQuestionInput.value?.focus()
+    return
+  }
+
+  // If all validations pass, emit the submit event
   emit('submit', formData.value)
 }
 

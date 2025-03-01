@@ -4,16 +4,52 @@ import BoardDashboard from '@/views/admin/board/BoardDashboard.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import FormLayout from '@/layouts/FormLayout.vue'
 import EditChapter from '@/views/admin/syllabus/subject/EditChapter.vue'
+import LoginHomepage from '@/views/login/LoginHomepage.vue'
+import ForgetPassword from '@/views/login/ForgetPassword.vue'
+import ResetPassword from '@/views/login/ResetPassword.vue'
+import AdminProfile from '@/views/admin/profile/AdminProfile.vue'
+import { useAuthStore } from '@/stores/auth'
+
+// Define public routes that don't require authentication
+const publicRoutes = ['/login', '/forgot-password', '/reset-password']
+
+// Update the route meta type
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    roles?: string[]
+  }
+}
 
 const routes: RouteRecordRaw[] = [
   {
+    path: '/login',
+    name: 'login',
+    component: LoginHomepage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgotPassword',
+    component: ForgetPassword,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/reset-password',
+    name: 'resetPassword',
+    component: ResetPassword,
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/',
-    redirect: '/admin/board',
+    redirect: '/login',
+    meta: { requiresAuth: false },
   },
   // Dashboard routes with navbar
   {
     path: '/admin',
     component: AdminLayout,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
     children: [
       {
         path: 'board',
@@ -50,12 +86,18 @@ const routes: RouteRecordRaw[] = [
         name: 'patternDashboard',
         component: () => import('@/views/admin/pattern/PatternDashboard.vue'),
       },
+      {
+        path: 'profile',
+        name: 'adminProfile',
+        component: AdminProfile,
+      },
     ],
   },
   // Form routes without navbar
   {
     path: '/admin',
     component: FormLayout,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
     children: [
       {
         path: 'board/add',
@@ -129,6 +171,35 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+// Navigation guard
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  const isAuthenticated = await authStore.checkAuth()
+  const userRole = authStore.userRole
+
+  // Check if route requires authentication
+  if (to.meta.requiresAuth) {
+    if (!isAuthenticated) {
+      // Not authenticated, redirect to login
+      next({ name: 'login', query: { redirect: to.fullPath } })
+      return
+    }
+
+    // Check role requirements
+    if (to.meta.roles && userRole && !to.meta.roles.includes(userRole)) {
+      // User's role is not authorized
+      next({ name: 'login' })
+      return
+    }
+  } else if (isAuthenticated && publicRoutes.includes(to.path)) {
+    // If user is authenticated and tries to access public routes like login
+    next({ path: '/admin/board' })
+    return
+  }
+
+  next()
 })
 
 export default router

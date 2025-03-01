@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import BoardFormComponent from '@/components/forms/BoardFormComponent.vue'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import { onMounted, ref } from 'vue'
 import type {
   CreateInstructionMediumDto,
@@ -138,39 +138,22 @@ onMounted(() => {
   console.log('EditBoard mounted with board ID:', route.params.id)
 })
 
-const getErrorMessage = async (response: Response): Promise<string> => {
-  try {
-    const data = await response.json()
-    return data.message || data.error || 'Unknown error occurred'
-  } catch {
-    return 'Failed to parse error message'
-  }
-}
-
 const updateBoard = async (formData: BoardFormSubmitData): Promise<BoardResponse> => {
-  const response = await fetch(getApiUrl(`/boards/${route.params.id}`), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: formData.board.name,
-      abbreviation: formData.board.abbreviation,
-    }),
+  const { data } = await axiosInstance.put(`/boards/${route.params.id}`, {
+    name: formData.board.name,
+    abbreviation: formData.board.abbreviation,
   })
-
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
-  return response.json()
+  return data
 }
 
 const fetchExistingItems = async (boardId: number) => {
   console.log('Fetching existing items for board:', boardId)
-  return Promise.all([
-    fetch(getApiUrl(`/instruction-mediums/board/${boardId}`)).then((r) => r.json()),
-    fetch(getApiUrl(`/standards/board/${boardId}`)).then((r) => r.json()),
-    fetch(getApiUrl(`/subjects/board/${boardId}`)).then((r) => r.json()),
-  ]) as Promise<[ExistingItem[], ExistingItem[], ExistingItem[]]>
+  const [mediums, standards, subjects] = await Promise.all([
+    axiosInstance.get(`/instruction-mediums/board/${boardId}`).then((r) => r.data),
+    axiosInstance.get(`/standards/board/${boardId}`).then((r) => r.data),
+    axiosInstance.get(`/subjects/board/${boardId}`).then((r) => r.data),
+  ])
+  return [mediums, standards, subjects] as [ExistingItem[], ExistingItem[], ExistingItem[]]
 }
 
 const deleteRelatedSchoolItems = async (
@@ -178,52 +161,36 @@ const deleteRelatedSchoolItems = async (
   itemId: number,
   relationField: string,
 ): Promise<void> => {
-  const response = await fetch(getApiUrl(endpoint))
-  if (!response.ok) return
-
-  const allItems = await response.json()
+  const { data: allItems } = await axiosInstance.get(endpoint)
   const relatedItems = allItems.filter((item: SchoolRelatedItem) => item[relationField] === itemId)
 
   for (const item of relatedItems) {
-    const deleteResponse = await fetch(getApiUrl(`${endpoint}/${item.id}`), { method: 'DELETE' })
-    if (!deleteResponse.ok) {
-      console.error(`Failed to delete related item ${item.id}`)
+    try {
+      await axiosInstance.delete(`${endpoint}/${item.id}`)
+    } catch (error) {
+      console.error(`Failed to delete related item ${item.id}:`, error)
     }
   }
-}
-
-const handleMediumApiError = (operation: string, mediumName: string): never => {
-  throw new Error(`Failed to ${operation} medium: ${mediumName}`)
 }
 
 const deleteMedium = async (medium: ExistingItem): Promise<void> => {
   console.log('Attempting to delete medium:', medium)
   await deleteRelatedSchoolItems('/school-instruction-mediums', medium.id, 'instruction_medium_id')
-  const response = await fetch(getApiUrl(`/instruction-mediums/${medium.id}`), {
-    method: 'DELETE',
-  })
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
+  await axiosInstance.delete(`/instruction-mediums/${medium.id}`)
 }
 
 const updateMedium = async (id: number, medium: MediumFormData, boardId: number): Promise<void> => {
-  const response = await fetch(getApiUrl(`/instruction-mediums/${id}`), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: medium.name, board_id: boardId }),
+  await axiosInstance.put(`/instruction-mediums/${id}`, {
+    name: medium.name,
+    board_id: boardId,
   })
-  if (!response.ok) handleMediumApiError('update', medium.name)
 }
 
 const createMedium = async (medium: MediumFormData, boardId: number): Promise<void> => {
-  const response = await fetch(getApiUrl('/instruction-mediums'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: medium.name, board_id: boardId }),
+  await axiosInstance.post('/instruction-mediums', {
+    name: medium.name,
+    board_id: boardId,
   })
-  if (!response.ok) handleMediumApiError('create', medium.name)
 }
 
 const handleMediumChanges = async (
@@ -335,20 +302,10 @@ const handleMediumChanges = async (
   }
 }
 
-const handleStandardApiError = (operation: string, standardName: string): never => {
-  throw new Error(`Failed to ${operation} standard: ${standardName}`)
-}
-
 const deleteStandard = async (standard: ExistingItem): Promise<void> => {
   console.log('Attempting to delete standard:', standard)
   await deleteRelatedSchoolItems('/school-standards', standard.id, 'standard_id')
-  const response = await fetch(getApiUrl(`/standards/${standard.id}`), {
-    method: 'DELETE',
-  })
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
+  await axiosInstance.delete(`/standards/${standard.id}`)
 }
 
 const updateStandard = async (
@@ -356,21 +313,17 @@ const updateStandard = async (
   standard: StandardFormData,
   boardId: number,
 ): Promise<void> => {
-  const response = await fetch(getApiUrl(`/standards/${id}`), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: standard.name, board_id: boardId }),
+  await axiosInstance.put(`/standards/${id}`, {
+    name: standard.name,
+    board_id: boardId,
   })
-  if (!response.ok) handleStandardApiError('update', standard.name)
 }
 
 const createStandard = async (standard: StandardFormData, boardId: number): Promise<void> => {
-  const response = await fetch(getApiUrl('/standards'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: standard.name, board_id: boardId }),
+  await axiosInstance.post('/standards', {
+    name: standard.name,
+    board_id: boardId,
   })
-  if (!response.ok) handleStandardApiError('create', standard.name)
 }
 
 const handleStandardChanges = async (
@@ -438,19 +391,9 @@ const handleStandardChanges = async (
   }
 }
 
-const handleSubjectApiError = (operation: string, subjectName: string): never => {
-  throw new Error(`Failed to ${operation} subject: ${subjectName}`)
-}
-
 const deleteSubject = async (subject: ExistingItem): Promise<void> => {
   console.log('Attempting to delete subject:', subject)
-  const response = await fetch(getApiUrl(`/subjects/${subject.id}`), {
-    method: 'DELETE',
-  })
-  if (!response.ok) {
-    const errorMessage = await getErrorMessage(response)
-    throw new Error(errorMessage)
-  }
+  await axiosInstance.delete(`/subjects/${subject.id}`)
 }
 
 const updateSubject = async (
@@ -458,21 +401,17 @@ const updateSubject = async (
   subject: SubjectFormData,
   boardId: number,
 ): Promise<void> => {
-  const response = await fetch(getApiUrl(`/subjects/${id}`), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: subject.name, board_id: boardId }),
+  await axiosInstance.put(`/subjects/${id}`, {
+    name: subject.name,
+    board_id: boardId,
   })
-  if (!response.ok) handleSubjectApiError('update', subject.name)
 }
 
 const createSubject = async (subject: SubjectFormData, boardId: number): Promise<void> => {
-  const response = await fetch(getApiUrl('/subjects'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: subject.name, board_id: boardId }),
+  await axiosInstance.post('/subjects', {
+    name: subject.name,
+    board_id: boardId,
   })
-  if (!response.ok) handleSubjectApiError('create', subject.name)
 }
 
 const handleSubjectChanges = async (
@@ -545,8 +484,8 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
     operationResults.value = [] // Reset results
 
     // Check if board details have changed
-    const boardResponse = await fetch(getApiUrl(`/boards/${route.params.id}`))
-    const currentBoard = await boardResponse.json()
+    const boardResponse = await axiosInstance.get(`/boards/${route.params.id}`)
+    const currentBoard = boardResponse.data
     const boardChanged =
       currentBoard.name !== formData.board.name ||
       currentBoard.abbreviation !== formData.board.abbreviation

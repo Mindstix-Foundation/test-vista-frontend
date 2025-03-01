@@ -420,7 +420,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Modal } from 'bootstrap'
 import type { Teacher } from '@/models/Teacher'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
 
 interface SubjectResponse {
@@ -486,12 +486,7 @@ const fetchTeachers = async () => {
 
     // Step 1: Get all roles to find TEACHER role ID
     console.log('Step 1: Fetching roles...')
-    const rolesResponse = await fetch(getApiUrl('/roles'))
-    if (!rolesResponse.ok) {
-      console.error('Failed to fetch roles:', rolesResponse.status, rolesResponse.statusText)
-      throw new Error(`Failed to fetch roles: ${rolesResponse.status}`)
-    }
-    const roles = await rolesResponse.json()
+    const { data: roles } = await axiosInstance.get('/roles')
     console.log('Fetched roles:', roles)
 
     const teacherRole = roles.find((role: { role_name: string }) => role.role_name === 'TEACHER')
@@ -503,16 +498,7 @@ const fetchTeachers = async () => {
 
     // Step 2: Get all user-roles to find users with TEACHER role
     console.log('Step 2: Fetching user roles...')
-    const userRolesResponse = await fetch(getApiUrl('/user-roles'))
-    if (!userRolesResponse.ok) {
-      console.error(
-        'Failed to fetch user roles:',
-        userRolesResponse.status,
-        userRolesResponse.statusText,
-      )
-      throw new Error(`Failed to fetch user roles: ${userRolesResponse.status}`)
-    }
-    const userRoles = await userRolesResponse.json()
+    const { data: userRoles } = await axiosInstance.get('/user-roles')
     console.log('Fetched user roles:', userRoles)
 
     // Filter user IDs that have the TEACHER role
@@ -529,12 +515,7 @@ const fetchTeachers = async () => {
 
     // Step 3: Get user details for all teacher IDs
     console.log('Step 3: Fetching user details...')
-    const usersResponse = await fetch(getApiUrl('/users'))
-    if (!usersResponse.ok) {
-      console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText)
-      throw new Error(`Failed to fetch users: ${usersResponse.status}`)
-    }
-    const allUsers = await usersResponse.json()
+    const { data: allUsers } = await axiosInstance.get('/users')
     console.log('Fetched all users:', allUsers)
 
     // Filter only teacher users
@@ -546,13 +527,7 @@ const fetchTeachers = async () => {
     const schoolAssignments = await Promise.all(
       teacherUsers.map(async (user: { id: number }) => {
         console.log(`Fetching school assignment for user ${user.id}...`)
-        const response = await fetch(getApiUrl(`/user-schools/user/${user.id}`))
-        if (!response.ok) {
-          console.warn(`Failed to fetch school for user ${user.id}:`, response.status)
-          return { id: 0, name: '' }
-        }
-
-        const schools = await response.json()
+        const { data: schools } = await axiosInstance.get(`/user-schools/user/${user.id}`)
         console.log(`Schools for user ${user.id}:`, schools)
 
         // Get the active school assignment (one without end_date)
@@ -646,13 +621,7 @@ async function openViewModal(teacher: Teacher) {
     modal.show()
 
     // Then fetch teacher subjects
-    const response = await fetch(getApiUrl(`/teacher-subjects?userId=${teacher.id}`))
-    if (!response.ok) {
-      console.error('Failed to fetch teacher subjects:', response.status)
-      throw new Error('Failed to fetch teacher subjects')
-    }
-
-    const subjects = await response.json()
+    const { data: subjects } = await axiosInstance.get(`/teacher-subjects?userId=${teacher.id}`)
     console.log('Fetched teacher subjects:', subjects)
 
     // Update the teacher data with fetched subjects
@@ -706,17 +675,14 @@ async function updateTeacherStatus() {
 
   try {
     const newStatus = !selectedTeacher.value.status
-    const response = await fetch(getApiUrl(`/users/${selectedTeacher.value.id}`), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: newStatus,
-      }),
+    await axiosInstance.put(`/users/${selectedTeacher.value.id}`, {
+      status: newStatus,
+      name: selectedTeacher.value.name,
+      email_id: selectedTeacher.value.emailId,
+      contact_number: selectedTeacher.value.contactNumber,
+      alternate_contact_number: selectedTeacher.value.alternateContactNumber,
+      highest_qualification: selectedTeacher.value.highestQualification,
     })
-
-    if (!response.ok) throw new Error('Failed to update status')
 
     selectedTeacher.value.status = newStatus
     await fetchTeachers()
@@ -769,19 +735,7 @@ async function deleteTeacher() {
       return
     }
 
-    const response = await fetch(getApiUrl(`/users/${selectedTeacher.value.id}`), {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Teacher not found')
-      }
-      throw new Error('Failed to delete teacher')
-    }
+    await axiosInstance.delete(`/users/${selectedTeacher.value.id}`)
 
     await fetchTeachers()
 

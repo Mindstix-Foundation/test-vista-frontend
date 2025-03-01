@@ -147,7 +147,7 @@
         :key="pattern.id"
         class="col col-12 col-sm-10"
       >
-        <div class="card">
+        <div class="card" :class="{ 'border-danger border-2': !isPatternMarksValid(pattern) }">
           <div class="card-body">
             <div class="container p-0">
               <!-- Card Header with Actions -->
@@ -270,7 +270,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { Modal } from 'bootstrap'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -372,14 +372,20 @@ const showDeleteConfirmation = (pattern: Pattern) => {
 const deletePattern = async () => {
   if (!selectedPatternForDelete.value) return
   try {
-    const response = await fetch(getApiUrl(`/patterns/${selectedPatternForDelete.value.id}`), {
-      method: 'DELETE',
-    })
-    if (!response.ok) throw new Error('Failed to delete pattern')
+    await axiosInstance.delete(`/patterns/${selectedPatternForDelete.value.id}`)
     await fetchPatterns() // Refresh patterns after deletion
   } catch (error) {
     console.error('Error deleting pattern:', error)
   }
+}
+
+// Add this function before the fetchPatterns function
+const isPatternMarksValid = (pattern: Pattern) => {
+  const totalSectionMarks = pattern.sections.reduce(
+    (total, section) => total + section.mandotory_questions * section.marks_per_question,
+    0,
+  )
+  return pattern.total_marks === totalSectionMarks
 }
 
 // Fetch patterns from API
@@ -401,10 +407,8 @@ const fetchPatterns = async () => {
       queryParams.append('totalMarks', totalMarks.value)
     }
 
-    const response = await fetch(getApiUrl(`/patterns?${queryParams.toString()}`))
-    if (!response.ok) throw new Error('Failed to fetch patterns')
-    const data = await response.json()
-    patterns.value = data.map((pattern: Pattern) => ({
+    const response = await axiosInstance.get(`/patterns?${queryParams.toString()}`)
+    patterns.value = response.data.map((pattern: Pattern) => ({
       ...pattern,
       isExpanded: false,
     }))
@@ -418,10 +422,8 @@ const fetchPatterns = async () => {
 // Fetch boards from API
 const fetchBoards = async () => {
   try {
-    const response = await fetch(getApiUrl('/boards'))
-    if (!response.ok) throw new Error('Failed to fetch boards')
-    const data = await response.json()
-    boards.value = data
+    const response = await axiosInstance.get('/boards')
+    boards.value = response.data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
@@ -441,6 +443,15 @@ const filteredPatterns = computed(() => {
         pattern.subject.name.toLowerCase().includes(query),
     )
   }
+
+  // Sort patterns - invalid patterns first
+  result = [...result].sort((a, b) => {
+    const aValid = isPatternMarksValid(a)
+    const bValid = isPatternMarksValid(b)
+    if (!aValid && bValid) return -1
+    if (aValid && !bValid) return 1
+    return 0
+  })
 
   return result
 })

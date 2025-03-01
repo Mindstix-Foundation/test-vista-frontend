@@ -66,7 +66,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SchoolFormComponent from '@/components/forms/SchoolFormComponent.vue'
-import { getApiUrl } from '@/config/api'
+import axiosInstance from '@/config/axios'
 import type { SchoolFormData } from '@/models/School'
 import * as bootstrap from 'bootstrap'
 
@@ -106,35 +106,26 @@ const cleanupAndNavigate = () => {
   router.push('/admin/school')
 }
 
-const getErrorMessage = async (response: Response): Promise<string> => {
-  try {
-    const data = await response.json()
-    return data.message || data.error || 'Unknown error occurred'
-  } catch {
-    return 'Failed to parse error message'
-  }
-}
-
 // Fetch school data when component mounts
 onMounted(async () => {
   try {
     if (!schoolId.value) return
 
     isLoading.value = true
-    const response = await fetch(getApiUrl(`/schools/${schoolId.value}`))
-    if (!response.ok) throw new Error('Failed to fetch school data')
-
-    const school = await response.json()
+    const { data: school } = await axiosInstance.get(`/schools/${schoolId.value}`)
     console.log('Fetched school data:', school)
 
     // Get board mediums and standards
-    const [boardMediums, boardStandards, schoolMediums, schoolStandards] = await Promise.all([
-      fetch(getApiUrl(`/instruction-mediums/board/${school.board_id}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/standards/board/${school.board_id}`)).then((r) => r.json()),
-      fetch(getApiUrl(`/school-instruction-mediums/school/${schoolId.value}`)).then((r) =>
-        r.json(),
-      ),
-      fetch(getApiUrl(`/school-standards/school/${schoolId.value}`)).then((r) => r.json()),
+    const [
+      { data: boardMediums },
+      { data: boardStandards },
+      { data: schoolMediums },
+      { data: schoolStandards },
+    ] = await Promise.all([
+      axiosInstance.get(`/instruction-mediums/board/${school.board_id}`),
+      axiosInstance.get(`/standards/board/${school.board_id}`),
+      axiosInstance.get(`/school-instruction-mediums/school/${schoolId.value}`),
+      axiosInstance.get(`/school-standards/school/${schoolId.value}`),
     ])
 
     // Map board mediums and standards to the format expected by the form
@@ -197,8 +188,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
     operationResults.value = []
 
     // Get current school data to compare changes
-    const currentSchoolResponse = await fetch(getApiUrl(`/schools/${schoolId.value}`))
-    const currentSchool = await currentSchoolResponse.json()
+    const { data: currentSchool } = await axiosInstance.get(`/schools/${schoolId.value}`)
 
     // Track what has actually changed
     const hasAddressChanged =
@@ -217,22 +207,11 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
     // Update address if changed
     if (hasAddressChanged) {
       try {
-        const addressResponse = await fetch(getApiUrl(`/addresses/${updatedData.address_id}`), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            street: updatedData.address.street,
-            postal_code: updatedData.address.postal_code,
-            city_id: updatedData.address.city_id,
-          }),
+        await axiosInstance.put(`/addresses/${updatedData.address_id}`, {
+          street: updatedData.address.street,
+          postal_code: updatedData.address.postal_code,
+          city_id: updatedData.address.city_id,
         })
-
-        if (!addressResponse.ok) {
-          const errorMessage = await getErrorMessage(addressResponse)
-          throw new Error(errorMessage)
-        }
 
         operationResults.value.push({
           operation: 'Update School Address',
@@ -250,26 +229,15 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
     // Update school if details changed
     if (hasSchoolDetailsChanged) {
       try {
-        const schoolResponse = await fetch(getApiUrl(`/schools/${schoolId.value}`), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: updatedData.name,
-            board_id: updatedData.board_id,
-            address_id: updatedData.address_id,
-            principal_name: updatedData.principal_name,
-            email: updatedData.email,
-            contact_number: updatedData.contact_number,
-            alternate_contact_number: updatedData.alternate_contact_number || null,
-          }),
+        await axiosInstance.put(`/schools/${schoolId.value}`, {
+          name: updatedData.name,
+          board_id: updatedData.board_id,
+          address_id: updatedData.address_id,
+          principal_name: updatedData.principal_name,
+          email: updatedData.email,
+          contact_number: updatedData.contact_number,
+          alternate_contact_number: updatedData.alternate_contact_number || null,
         })
-
-        if (!schoolResponse.ok) {
-          const errorMessage = await getErrorMessage(schoolResponse)
-          throw new Error(errorMessage)
-        }
 
         operationResults.value.push({
           operation: 'Update School Details',
@@ -286,10 +254,9 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
 
     // Update instruction mediums
     try {
-      const existingMediumsResponse = await fetch(
-        getApiUrl(`/school-instruction-mediums/school/${schoolId.value}`),
+      const { data: existingMediums } = await axiosInstance.get(
+        `/school-instruction-mediums/school/${schoolId.value}`,
       )
-      const existingMediums = await existingMediumsResponse.json()
       const existingMediumIds = existingMediums.map(
         (m: { instruction_medium_id: number }) => m.instruction_medium_id,
       )
@@ -305,13 +272,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
         // Process removals
         for (const medium of mediumsToRemove as SchoolMedium[]) {
           try {
-            const response = await fetch(getApiUrl(`/school-instruction-mediums/${medium.id}`), {
-              method: 'DELETE',
-            })
-            if (!response.ok) {
-              const errorMessage = await getErrorMessage(response)
-              throw new Error(errorMessage)
-            }
+            await axiosInstance.delete(`/school-instruction-mediums/${medium.id}`)
             const mediumInfo = schoolFormRef.value?.availableMediums.find(
               (m) => m.id === medium.instruction_medium_id,
             )
@@ -334,20 +295,10 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
         // Process additions
         for (const mediumId of mediumsToAdd) {
           try {
-            const response = await fetch(getApiUrl('/school-instruction-mediums'), {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                school_id: parseInt(schoolId.value),
-                instruction_medium_id: mediumId,
-              }),
+            await axiosInstance.post('/school-instruction-mediums', {
+              school_id: parseInt(schoolId.value),
+              instruction_medium_id: mediumId,
             })
-            if (!response.ok) {
-              const errorMessage = await getErrorMessage(response)
-              throw new Error(errorMessage)
-            }
             const mediumInfo = schoolFormRef.value?.availableMediums.find((m) => m.id === mediumId)
             operationResults.value.push({
               operation: `Add Medium: ${mediumInfo?.name || 'Unknown Medium'}`,
@@ -373,10 +324,9 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
 
     // Update standards
     try {
-      const existingStandardsResponse = await fetch(
-        getApiUrl(`/school-standards/school/${schoolId.value}`),
+      const { data: existingStandards } = await axiosInstance.get(
+        `/school-standards/school/${schoolId.value}`,
       )
-      const existingStandards = await existingStandardsResponse.json()
       const existingStandardIds = existingStandards.map(
         (s: { standard_id: number }) => s.standard_id,
       )
@@ -392,13 +342,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
         // Process removals
         for (const standard of standardsToRemove as SchoolStandard[]) {
           try {
-            const response = await fetch(getApiUrl(`/school-standards/${standard.id}`), {
-              method: 'DELETE',
-            })
-            if (!response.ok) {
-              const errorMessage = await getErrorMessage(response)
-              throw new Error(errorMessage)
-            }
+            await axiosInstance.delete(`/school-standards/${standard.id}`)
             const standardInfo = schoolFormRef.value?.availableStandards.find(
               (s) => s.id === standard.standard_id,
             )
@@ -421,20 +365,10 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
         // Process additions
         for (const standardId of standardsToAdd) {
           try {
-            const response = await fetch(getApiUrl('/school-standards'), {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                school_id: parseInt(schoolId.value),
-                standard_id: standardId,
-              }),
+            await axiosInstance.post('/school-standards', {
+              school_id: parseInt(schoolId.value),
+              standard_id: standardId,
             })
-            if (!response.ok) {
-              const errorMessage = await getErrorMessage(response)
-              throw new Error(errorMessage)
-            }
             const standardInfo = schoolFormRef.value?.availableStandards.find(
               (s) => s.id === standardId,
             )

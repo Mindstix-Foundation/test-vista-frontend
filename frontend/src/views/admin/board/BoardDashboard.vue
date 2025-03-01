@@ -398,61 +398,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { Board } from '@/models/Board'
 import { useRouter, useRoute } from 'vue-router'
-import { getApiUrl } from '@/config/api'
-import * as bootstrap from 'bootstrap'
+import { Modal } from 'bootstrap'
+import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
-
-interface BoardDetails {
-  id: number
-  name: string
-  abbreviation: string
-  address_id?: number
-  address?: {
-    id: number
-    city_id: number
-    postal_code: string
-    street: string
-    created_at: string
-    updated_at: string
-    city: {
-      id: number
-      state_id: number
-      name: string
-    }
-    state: {
-      id: number
-      country_id: number
-      name: string
-    }
-    country: {
-      id: number
-      name: string
-    }
-  }
-  mediums: Array<{
-    id: number
-    board_id: number
-    instruction_medium: string
-    created_at: string
-    updated_at: string
-  }>
-  standards: Array<{
-    id: number
-    board_id: number
-    name: string
-    created_at: string
-    updated_at: string
-  }>
-  subjects: Array<{
-    id: number
-    board_id: number
-    name: string
-    created_at: string
-    updated_at: string
-  }>
-}
+import type { Board, BoardDetails } from '@/types/board.ts'
+import * as bootstrap from 'bootstrap'
 
 const router = useRouter()
 const route = useRoute()
@@ -465,20 +416,21 @@ const error = ref<string | null>(null)
 const showInfoModal = ref(false)
 const associatedSchools = ref<Array<{ id: number; name: string }>>([])
 const confirmationText = ref('')
+const deleteModal = ref<Modal | null>(null)
 
 async function fetchLocationData(cityId: number) {
   try {
     // First get the city to get state_id
-    const cityResponse = await fetch(getApiUrl(`/cities/${cityId}`))
-    const city = await cityResponse.json()
+    const cityResponse = await axiosInstance.get(`/cities/${cityId}`)
+    const city = cityResponse.data
 
     // Get state data using state_id from city
-    const stateResponse = await fetch(getApiUrl(`/states/${city.state_id}`))
-    const state = await stateResponse.json()
+    const stateResponse = await axiosInstance.get(`/states/${city.state_id}`)
+    const state = stateResponse.data
 
     // Get country data using country_id from state
-    const countryResponse = await fetch(getApiUrl(`/countries/${state.country_id}`))
-    const country = await countryResponse.json()
+    const countryResponse = await axiosInstance.get(`/countries/${state.country_id}`)
+    const country = countryResponse.data
 
     return {
       city: { id: city.id, state_id: city.state_id, name: city.name },
@@ -494,10 +446,8 @@ async function fetchLocationData(cityId: number) {
 const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
   try {
     console.log('Fetching board details for ID:', boardId)
-    const response = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (!response.ok) throw new Error('Failed to fetch board')
-
-    const boardData = await response.json()
+    const response = await axiosInstance.get(`/boards/${boardId}`)
+    const boardData = response.data
     console.log('Board data received:', boardData)
 
     // Fetch location data if address exists
@@ -525,21 +475,19 @@ const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
     return boardDetails
   } catch (error) {
     console.error('Error in fetchBoardDetails:', error)
-    throw error
+    throw new Error('Failed to fetch board')
   }
 }
 
 const fetchBoards = async () => {
   try {
     isLoading.value = true
-    const response = await fetch(getApiUrl('/boards'))
-    if (!response.ok) throw new Error('Failed to fetch boards')
-
-    const data = await response.json()
-    boards.value = data
+    error.value = null
+    const response = await axiosInstance.get('/boards')
+    boards.value = response.data
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to fetch boards'
     console.error('Error fetching boards:', err)
+    error.value = 'Failed to load boards. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -548,7 +496,7 @@ const fetchBoards = async () => {
 const filteredBoards = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return boards.value.filter(
-    (board) =>
+    (board: Board) =>
       board.name.toLowerCase().includes(query) ||
       (board.abbreviation?.toLowerCase() || '').includes(query),
   )
@@ -587,30 +535,22 @@ const checkAssociatedSchools = async (boardId: number) => {
     let hasSyllabus = false
 
     // First check for associated schools
-    const schoolsResponse = await fetch(getApiUrl(`/schools?boardId=${boardId}`))
-    if (!schoolsResponse.ok) {
-      throw new Error('Failed to check associated schools')
-    }
-    const schools = await schoolsResponse.json()
+    const schoolsResponse = await axiosInstance.get(`/schools?boardId=${boardId}`)
+    const schools = schoolsResponse.data
 
     // Check for syllabus assignments - only need to check mediums
-    const mediumsResponse = await fetch(getApiUrl(`/instruction-mediums/board/${boardId}`))
-    if (!mediumsResponse.ok) {
-      throw new Error('Failed to fetch board mediums')
-    }
-    const mediums = await mediumsResponse.json()
+    const mediumsResponse = await axiosInstance.get(`/instruction-mediums/board/${boardId}`)
+    const mediums = mediumsResponse.data
 
     // Check if any medium has syllabus data
     for (const medium of mediums) {
-      const syllabusResponse = await fetch(
-        getApiUrl(`/medium-standard-subjects?instruction_medium_id=${medium.id}`),
+      const syllabusResponse = await axiosInstance.get(
+        `/medium-standard-subjects?instruction_medium_id=${medium.id}`,
       )
-      if (syllabusResponse.ok) {
-        const syllabusData = await syllabusResponse.json()
-        if (syllabusData && syllabusData.length > 0) {
-          hasSyllabus = true
-          break // Exit loop as soon as we find any syllabus data
-        }
+      const syllabusData = syllabusResponse.data
+      if (syllabusData && syllabusData.length > 0) {
+        hasSyllabus = true
+        break // Exit loop as soon as we find any syllabus data
       }
     }
 
@@ -651,19 +591,10 @@ const deleteBoard = async () => {
     }
 
     // Proceed with board deletion
-    const response = await fetch(getApiUrl(`/boards/${selectedBoard.value.id}`), {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to delete board')
-    }
+    await axiosInstance.delete(`/boards/${selectedBoard.value.id}`)
 
     // Update the local boards list
-    boards.value = boards.value.filter((board) => board.id !== selectedBoard.value?.id)
+    boards.value = boards.value.filter((board: Board) => board.id !== selectedBoard.value?.id)
 
     // Show success toast
     const toastStore = useToastStore()
@@ -743,6 +674,13 @@ watch(showInfoModal, (newValue) => {
 
 // Fetch boards when component mounts
 onMounted(() => {
+  // Initialize delete modal
+  const modalElement = document.getElementById('deleteConfirmationModal')
+  if (modalElement) {
+    deleteModal.value = new Modal(modalElement)
+  }
+
+  // Fetch boards
   fetchBoards()
 })
 </script>
