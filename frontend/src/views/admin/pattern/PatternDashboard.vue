@@ -208,7 +208,7 @@
                 <table class="table table-sm table-striped table-bordered">
                   <tbody>
                     <tr class="table-dark">
-                      <th><strong>Type of Questions</strong></th>
+                      <th><strong>Section Name</strong></th>
                       <th><strong>Number of Questions</strong></th>
                       <th><strong>Total Marks Allotted</strong></th>
                     </tr>
