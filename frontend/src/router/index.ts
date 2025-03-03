@@ -3,11 +3,13 @@ import type { RouteRecordRaw } from 'vue-router'
 import BoardDashboard from '@/views/admin/board/BoardDashboard.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import FormLayout from '@/layouts/FormLayout.vue'
+import LoginLayout from '@/layouts/LoginLayout.vue'
 import EditChapter from '@/views/admin/syllabus/subject/EditChapter.vue'
 import LoginHomepage from '@/views/login/LoginHomepage.vue'
 import ForgetPassword from '@/views/login/ForgetPassword.vue'
 import ResetPassword from '@/views/login/ResetPassword.vue'
 import AdminProfile from '@/views/admin/profile/AdminProfile.vue'
+import TeacherProfile from '@/views/teacher/profile/TeacherProfile.vue'
 import { useAuthStore } from '@/stores/auth'
 
 // Define public routes that don't require authentication
@@ -165,6 +167,19 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       roles: ['admin'],
     },
+  },
+  // Teacher routes
+  {
+    path: '/teacher',
+    component: LoginLayout,
+    meta: { requiresAuth: true, roles: ['TEACHER'] },
+    children: [
+      {
+        path: 'profile',
+        name: 'teacherProfile',
+        component: TeacherProfile,
+      },
+    ],
   },
 ]
 

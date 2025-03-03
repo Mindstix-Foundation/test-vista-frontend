@@ -1,7 +1,7 @@
 <template>
   <div class="container mt-4 mb-5">
     <!-- Header Section -->
-    <div class="row p-2 g-2 mb-1">
+    <div class="row p-2 g-2 mb-1 mt-2">
       <div class="row g-2 justify-content-center align-items-center mb-4">
         <div class="col-12 col-sm-10">
           <h5 class="text-left fw-bolder text-uppercase m-0">SYLLABUS MANAGEMENT</h5>

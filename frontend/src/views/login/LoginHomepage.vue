@@ -102,13 +102,13 @@ const login = async () => {
     const { data } = response.data
 
     // Store auth data using the auth store
-    authStore.setAuth(data.access_token, data.user.roles[0])
+    authStore.setAuth(data.access_token, data.user.roles[0], data.user.id)
 
     // Redirect based on role
     if (data.user.roles.includes('ADMIN')) {
       router.push('/admin/board')
     } else if (data.user.roles.includes('TEACHER')) {
-      router.push('/teacher')
+      router.push('/teacher/profile')
     }
   } catch (error) {
     console.error('Login error:', error)
