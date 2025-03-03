@@ -11,7 +11,7 @@
     </div>
 
     <!-- Profile Card -->
-    <div class="row gy-2 g-3 justify-content-center p-3">
+    <div class="row gy-2 g-3 justify-content-center">
       <div class="col-12 col-sm-10 col-md-8">
         <div class="card shadow-sm">
           <div v-if="loading" class="text-center py-4">
@@ -25,7 +25,7 @@
           <form v-else>
             <!-- Name -->
             <div class="row mb-2">
-              <label for="name" class="col-12 col-sm-3 col-form-label fw-bolder">Name</label>
+              <label for="name" class="col-12 col-sm-3 col-form-label fw-bolder">Name:</label>
               <div class="col-12 col-sm-9">
                 <input
                   type="text"
