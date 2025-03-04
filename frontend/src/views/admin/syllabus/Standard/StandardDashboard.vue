@@ -207,9 +207,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getApiUrl } from '@/config/api'
 import { Modal } from 'bootstrap'
 import { useToastStore } from '@/store/toast'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -289,18 +289,16 @@ onMounted(async () => {
 
   try {
     // Fetch board details
-    const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (!boardResponse.ok) throw new Error('Failed to fetch board details')
-    const boardData = await boardResponse.json()
-    selectedBoard.value = boardData
+    const boardResponse = await axiosInstance.get(`/boards/${boardId}`)
+    selectedBoard.value = boardResponse.data
 
     // Find selected medium
-    selectedMedium.value = boardData.instruction_mediums.find(
+    selectedMedium.value = boardResponse.data.instruction_mediums.find(
       (medium: InstructionMedium) => medium.id === Number(mediumId),
     )
 
     // Find selected standard
-    selectedStandard.value = boardData.standards.find(
+    selectedStandard.value = boardResponse.data.standards.find(
       (standard: Standard) => standard.id === Number(standardId),
     )
 
@@ -313,16 +311,12 @@ onMounted(async () => {
 
 const fetchSubjects = async () => {
   try {
-    const response = await fetch(
-      getApiUrl(
-        `/medium-standard-subjects/medium/${selectedMedium.value?.id}/standard/${selectedStandard.value?.id}?board_id=${selectedBoard.value?.id}`,
-      ),
+    const response = await axiosInstance.get(
+      `/medium-standard-subjects/medium/${selectedMedium.value?.id}/standard/${selectedStandard.value?.id}?board_id=${selectedBoard.value?.id}`,
     )
-    if (!response.ok) throw new Error('Failed to fetch subjects')
-    const data = await response.json()
 
     // Store mapped subjects with their mapping IDs
-    mappedSubjects.value = data.map((item: MediumStandardSubject) => ({
+    mappedSubjects.value = response.data.map((item: MediumStandardSubject) => ({
       id: item.id, // mapping id
       subject_id: item.subject.id,
       name: item.subject.name,
@@ -355,9 +349,8 @@ const navigateToAddSubject = async () => {
     modalSearchQuery.value = ''
 
     // Fetch all subjects from the board
-    const response = await fetch(getApiUrl(`/subjects/board/${selectedBoard.value?.id}`))
-    if (!response.ok) throw new Error('Failed to fetch board subjects')
-    const boardSubjects = await response.json()
+    const response = await axiosInstance.get(`/subjects/board/${selectedBoard.value?.id}`)
+    const boardSubjects = response.data
 
     // Get the current mapped subject IDs
     const currentSubjectIds = mappedSubjects.value.map((subject) => subject.subject_id)
@@ -421,12 +414,11 @@ const addSelectedSubjects = async () => {
 
     // Handle deletions
     for (const mapping of subjectsToRemove) {
-      const response = await fetch(getApiUrl(`/medium-standard-subjects/${mapping.id}`), {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        if (response.status === 409) {
+      try {
+        await axiosInstance.delete(`/medium-standard-subjects/${mapping.id}`)
+      } catch (error) {
+        const axiosError = error as { response?: { status: number } }
+        if (axiosError.response && axiosError.response.status === 409) {
           toastStore.showToast({
             title: 'Error',
             message: `Cannot remove subject "${mapping.name}" as it has existing relationships.`,
@@ -442,21 +434,11 @@ const addSelectedSubjects = async () => {
 
     // Handle additions
     for (const subjectId of subjectsToAdd) {
-      const response = await fetch(getApiUrl('/medium-standard-subjects'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          instruction_medium_id: selectedMedium.value?.id,
-          standard_id: selectedStandard.value?.id,
-          subject_id: subjectId,
-        }),
+      await axiosInstance.post('/medium-standard-subjects', {
+        instruction_medium_id: selectedMedium.value?.id,
+        standard_id: selectedStandard.value?.id,
+        subject_id: subjectId,
       })
-
-      if (!response.ok) {
-        throw new Error(`Failed to add subject mapping`)
-      }
     }
 
     // Refresh subjects list

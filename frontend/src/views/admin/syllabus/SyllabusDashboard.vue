@@ -128,8 +128,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getApiUrl } from '@/config/api'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -207,9 +207,8 @@ const handleStandardInput = (value: unknown) => {
 // Fetch boards on component mount
 onMounted(async () => {
   try {
-    const response = await fetch(getApiUrl('/boards'))
-    if (!response.ok) throw new Error('Failed to fetch boards')
-    boards.value = await response.json()
+    const response = await axiosInstance.get('/boards')
+    boards.value = response.data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
@@ -229,10 +228,8 @@ const handleBoardChange = async (board: Item | null) => {
     if (!board) return
 
     // Fetch board details
-    const response = await fetch(getApiUrl(`/boards/${board.id}`))
-    if (!response.ok) throw new Error('Failed to fetch board details')
-    const boardDetails = await response.json()
-    selectedBoard.value = boardDetails
+    const response = await axiosInstance.get(`/boards/${board.id}`)
+    selectedBoard.value = response.data
   } catch (error) {
     console.error('Error fetching board details:', error)
   }

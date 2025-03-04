@@ -53,9 +53,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getApiUrl } from '@/config/api'
 import { useToastStore } from '@/store/toast'
 import ChapterFormComponent from '@/components/forms/ChapterFormComponent.vue'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -99,24 +99,20 @@ onMounted(async () => {
 const fetchData = async () => {
   try {
     // Fetch board details
-    const boardResponse = await fetch(getApiUrl(`/boards/${route.query.board}`))
-    if (!boardResponse.ok) throw new Error('Failed to fetch board details')
-    selectedBoard.value = await boardResponse.json()
+    const boardResponse = await axiosInstance.get(`/boards/${route.query.board}`)
+    selectedBoard.value = boardResponse.data
 
     // Fetch medium details
-    const mediumResponse = await fetch(getApiUrl(`/instruction-mediums/${route.query.medium}`))
-    if (!mediumResponse.ok) throw new Error('Failed to fetch medium details')
-    selectedMedium.value = await mediumResponse.json()
+    const mediumResponse = await axiosInstance.get(`/instruction-mediums/${route.query.medium}`)
+    selectedMedium.value = mediumResponse.data
 
     // Fetch standard details
-    const standardResponse = await fetch(getApiUrl(`/standards/${route.query.standard}`))
-    if (!standardResponse.ok) throw new Error('Failed to fetch standard details')
-    selectedStandard.value = await standardResponse.json()
+    const standardResponse = await axiosInstance.get(`/standards/${route.query.standard}`)
+    selectedStandard.value = standardResponse.data
 
     // Fetch subject details
-    const subjectResponse = await fetch(getApiUrl(`/subjects/${route.query.subject}`))
-    if (!subjectResponse.ok) throw new Error('Failed to fetch subject details')
-    selectedSubject.value = await subjectResponse.json()
+    const subjectResponse = await axiosInstance.get(`/subjects/${route.query.subject}`)
+    selectedSubject.value = subjectResponse.data
   } catch (error) {
     console.error('Error fetching data:', error)
     toastStore.showToast({
@@ -130,10 +126,8 @@ const fetchData = async () => {
 const fetchChapterData = async () => {
   try {
     const chapterId = route.params.id
-    const response = await fetch(getApiUrl(`/chapters/${chapterId}`))
-    if (!response.ok) throw new Error('Failed to fetch chapter data')
-
-    const data = await response.json()
+    const response = await axiosInstance.get(`/chapters/${chapterId}`)
+    const data = response.data
 
     // Transform the data to match the form component's expected format
     chapterData.value = {
@@ -160,22 +154,13 @@ const updateChapter = async (formData: ChapterData) => {
     const chapterId = route.params.id
 
     // Update chapter name
-    const chapterResponse = await fetch(getApiUrl(`/chapters/${chapterId}`), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: formData.chapterName,
-      }),
+    await axiosInstance.put(`/chapters/${chapterId}`, {
+      name: formData.chapterName,
     })
 
-    if (!chapterResponse.ok) throw new Error('Failed to update chapter')
-
     // Get existing topics to compare
-    const existingTopicsResponse = await fetch(getApiUrl(`/topics?chapterId=${chapterId}`))
-    if (!existingTopicsResponse.ok) throw new Error('Failed to fetch existing topics')
-    const existingTopics = await existingTopicsResponse.json()
+    const existingTopicsResponse = await axiosInstance.get(`/topics?chapterId=${chapterId}`)
+    const existingTopics = existingTopicsResponse.data
 
     // Update or create topics
     await Promise.all(
@@ -188,27 +173,13 @@ const updateChapter = async (formData: ChapterData) => {
 
         if (existingTopic) {
           // Update existing topic
-          const response = await fetch(getApiUrl(`/topics/${existingTopic.id}`), {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(topicData),
-          })
-          if (!response.ok) throw new Error(`Failed to update topic: ${topicName}`)
+          await axiosInstance.put(`/topics/${existingTopic.id}`, topicData)
         } else {
           // Create new topic
-          const response = await fetch(getApiUrl('/topics'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              ...topicData,
-              chapter_id: chapterId,
-            }),
+          await axiosInstance.post('/topics', {
+            ...topicData,
+            chapter_id: chapterId,
           })
-          if (!response.ok) throw new Error(`Failed to create topic: ${topicName}`)
         }
       }),
     )
@@ -217,10 +188,7 @@ const updateChapter = async (formData: ChapterData) => {
     if (existingTopics.length > formData.topics.length) {
       await Promise.all(
         existingTopics.slice(formData.topics.length).map(async (topic: { id: number }) => {
-          const response = await fetch(getApiUrl(`/topics/${topic.id}`), {
-            method: 'DELETE',
-          })
-          if (!response.ok) throw new Error(`Failed to delete topic: ${topic.id}`)
+          await axiosInstance.delete(`/topics/${topic.id}`)
         }),
       )
     }

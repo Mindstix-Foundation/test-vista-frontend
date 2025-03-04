@@ -44,9 +44,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getApiUrl } from '@/config/api'
 import { useToastStore } from '@/store/toast'
 import ChapterFormComponent from '@/components/forms/ChapterFormComponent.vue'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -91,24 +91,20 @@ onMounted(async () => {
 const fetchData = async () => {
   try {
     // Fetch board details
-    const boardResponse = await fetch(getApiUrl(`/boards/${route.query.board}`))
-    if (!boardResponse.ok) throw new Error('Failed to fetch board details')
-    selectedBoard.value = await boardResponse.json()
+    const boardResponse = await axiosInstance.get(`/boards/${route.query.board}`)
+    selectedBoard.value = boardResponse.data
 
     // Fetch medium details
-    const mediumResponse = await fetch(getApiUrl(`/instruction-mediums/${route.query.medium}`))
-    if (!mediumResponse.ok) throw new Error('Failed to fetch medium details')
-    selectedMedium.value = await mediumResponse.json()
+    const mediumResponse = await axiosInstance.get(`/instruction-mediums/${route.query.medium}`)
+    selectedMedium.value = mediumResponse.data
 
     // Fetch standard details
-    const standardResponse = await fetch(getApiUrl(`/standards/${route.query.standard}`))
-    if (!standardResponse.ok) throw new Error('Failed to fetch standard details')
-    selectedStandard.value = await standardResponse.json()
+    const standardResponse = await axiosInstance.get(`/standards/${route.query.standard}`)
+    selectedStandard.value = standardResponse.data
 
     // Fetch subject details
-    const subjectResponse = await fetch(getApiUrl(`/subjects/${route.query.subject}`))
-    if (!subjectResponse.ok) throw new Error('Failed to fetch subject details')
-    selectedSubject.value = await subjectResponse.json()
+    const subjectResponse = await axiosInstance.get(`/subjects/${route.query.subject}`)
+    selectedSubject.value = subjectResponse.data
   } catch (error) {
     console.error('Error fetching data:', error)
     toastStore.showToast({
@@ -122,9 +118,8 @@ const fetchData = async () => {
 const saveChapter = async (formData: { chapterName: string; topics: string[] }) => {
   try {
     // First, get all existing chapters to determine the next sequential number
-    const chaptersResponse = await fetch(getApiUrl(`/chapters?subject_id=${route.query.subject}`))
-    if (!chaptersResponse.ok) throw new Error('Failed to fetch chapters')
-    const existingChapters: Chapter[] = await chaptersResponse.json()
+    const chaptersResponse = await axiosInstance.get(`/chapters?subject_id=${route.query.subject}`)
+    const existingChapters: Chapter[] = chaptersResponse.data
 
     // Calculate next sequential number
     const nextChapterNumber =
@@ -140,17 +135,8 @@ const saveChapter = async (formData: { chapterName: string; topics: string[] }) 
     }
 
     // Save chapter
-    const chapterResponse = await fetch(getApiUrl('/chapters'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(chapterData),
-    })
-
-    if (!chapterResponse.ok) throw new Error('Failed to save chapter')
-
-    const savedChapter = await chapterResponse.json()
+    const chapterResponse = await axiosInstance.post('/chapters', chapterData)
+    const savedChapter = chapterResponse.data
 
     // Save topics with sequential numbers
     await Promise.all(
@@ -161,15 +147,7 @@ const saveChapter = async (formData: { chapterName: string; topics: string[] }) 
           name: topicName.trim(),
         }
 
-        const topicResponse = await fetch(getApiUrl('/topics'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(topicData),
-        })
-
-        if (!topicResponse.ok) throw new Error(`Failed to save topic: ${topicName}`)
+        await axiosInstance.post('/topics', topicData)
       }),
     )
 

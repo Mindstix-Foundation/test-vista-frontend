@@ -174,8 +174,8 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import Sortable from 'sortablejs'
-import { getApiUrl } from '@/config/api'
 import { useToastStore } from '@/store/toast'
+import axiosInstance from '@/config/axios'
 
 interface Board {
   id: number
@@ -244,33 +244,28 @@ const fetchData = async () => {
     const subjectId = route.params.id
 
     // Fetch board details
-    const boardResponse = await fetch(getApiUrl(`/boards/${boardId}`))
-    if (!boardResponse.ok) throw new Error('Failed to fetch board details')
-    selectedBoard.value = await boardResponse.json()
+    const boardResponse = await axiosInstance.get(`/boards/${boardId}`)
+    selectedBoard.value = boardResponse.data
 
     // Fetch medium details
-    const mediumResponse = await fetch(getApiUrl(`/instruction-mediums/${mediumId}`))
-    if (!mediumResponse.ok) throw new Error('Failed to fetch medium details')
-    selectedMedium.value = await mediumResponse.json()
+    const mediumResponse = await axiosInstance.get(`/instruction-mediums/${mediumId}`)
+    selectedMedium.value = mediumResponse.data
 
     // Fetch standard details
-    const standardResponse = await fetch(getApiUrl(`/standards/${standardId}`))
-    if (!standardResponse.ok) throw new Error('Failed to fetch standard details')
-    selectedStandard.value = await standardResponse.json()
+    const standardResponse = await axiosInstance.get(`/standards/${standardId}`)
+    selectedStandard.value = standardResponse.data
 
     // Fetch subject details
-    const subjectResponse = await fetch(getApiUrl(`/subjects/${subjectId}`))
-    if (!subjectResponse.ok) throw new Error('Failed to fetch subject details')
-    selectedSubject.value = await subjectResponse.json()
+    const subjectResponse = await axiosInstance.get(`/subjects/${subjectId}`)
+    selectedSubject.value = subjectResponse.data
 
     // Fetch chapters and topics in a single request
-    const chaptersResponse = await fetch(
-      getApiUrl(`/chapters?mediumStandardSubjectId=${route.params.id}`),
+    const chaptersResponse = await axiosInstance.get(
+      `/chapters?mediumStandardSubjectId=${route.params.id}`,
     )
-    if (!chaptersResponse.ok) throw new Error('Failed to fetch chapters')
 
     // Transform the response data to match our interface
-    const chaptersData = await chaptersResponse.json()
+    const chaptersData = chaptersResponse.data
     chapters.value = chaptersData
       .map((chapter: ChapterData) => ({
         id: chapter.id,
@@ -369,11 +364,7 @@ const deleteChapter = async () => {
   if (!selectedChapterForDelete.value) return
 
   try {
-    const response = await fetch(getApiUrl(`/chapters/${selectedChapterForDelete.value.id}`), {
-      method: 'DELETE',
-    })
-
-    if (!response.ok) throw new Error('Failed to delete chapter')
+    await axiosInstance.delete(`/chapters/${selectedChapterForDelete.value.id}`)
 
     // Store the expanded states before fetching
     const expandedStates = new Map(
@@ -414,22 +405,9 @@ const handleChapterReorder = async ({ item, newIndex }: Sortable.SortableEvent) 
     const mediumStandardSubjectId = Number(route.params.id)
 
     // Make API call to update only the dragged chapter's position
-    const response = await fetch(
-      getApiUrl(`/chapters/reorder/${chapterId}/${mediumStandardSubjectId}`),
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sequential_chapter_number: newIndex + 1,
-        }),
-      },
-    )
-
-    if (!response.ok) {
-      throw new Error('Failed to update chapter order')
-    }
+    await axiosInstance.put(`/chapters/reorder/${chapterId}/${mediumStandardSubjectId}`, {
+      sequential_chapter_number: newIndex + 1,
+    })
 
     // Store the expanded states before fetching
     const expandedStates = new Map(
@@ -476,19 +454,9 @@ const handleTopicReorder = async ({ item, newIndex }: Sortable.SortableEvent) =>
     }
 
     // Make API call to update only the dragged topic's position
-    const response = await fetch(getApiUrl(`/topics/reorder/${topicId}/${chapterId}`), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sequential_topic_number: newIndex + 1,
-      }),
+    await axiosInstance.put(`/topics/reorder/${topicId}/${chapterId}`, {
+      sequential_topic_number: newIndex + 1,
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to update topic order')
-    }
 
     // Store the expanded states before fetching
     const expandedStates = new Map(
