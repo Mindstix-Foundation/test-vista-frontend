@@ -526,10 +526,21 @@ const handleTotalMarksBlur = () => {
 const calculateRemainingMarks = () => {
   // Calculate total section marks from all added sections
   const totalSectionMarks = sections.reduce((total, section) => {
-    return total + section.requiredQuestions * section.marksPerQuestion
-  }, 0)
+    const sectionMarks = section.requiredQuestions * section.marksPerQuestion;
+    console.log(`PatternForm - Section ${section.sectionName}: ${sectionMarks} marks`);
+    return total + sectionMarks;
+  }, 0);
 
-  remainingMarks.value = formData.value.totalMarks - totalSectionMarks
+  console.log('PatternForm - Total marks calculation:', {
+    totalPatternMarks: formData.value.totalMarks,
+    totalSectionMarks,
+    remainingMarks: formData.value.totalMarks - totalSectionMarks
+  });
+
+  remainingMarks.value = formData.value.totalMarks - totalSectionMarks;
+
+  // Update the formData with the current remaining marks
+  formData.value.remainingMarks = remainingMarks.value;
 }
 
 // Watch for changes in sections to recalculate remaining marks
@@ -624,6 +635,11 @@ watch(
 // Update the defineExpose section
 defineExpose({
   remainingMarks: computed(() => remainingMarks.value),
+  recalculateRemainingMarks: () => {
+    console.log('PatternForm - Recalculating remaining marks');
+    calculateRemainingMarks();
+    return remainingMarks.value;
+  }
 })
 
 // Add toRomanNumeral function

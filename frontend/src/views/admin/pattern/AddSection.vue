@@ -6,7 +6,7 @@
           class="btn btn-close"
           :to="
             $route.query.fromEdit
-              ? { name: 'editPattern', params: { id: String($route.query.patternId) } }
+              ? { name: 'editPattern', params: { id: String($route.query.patternId) }, query: { from: 'editSection' } }
               : { name: 'createPattern' }
           "
           aria-label="Close"
@@ -47,6 +47,7 @@ const patternStore = usePatternStore()
 
 const totalPatternMarks = computed(() => Number(route.query.remainingMarks || 0))
 const isDisabled = computed(() => totalPatternMarks.value <= 0)
+const storeOnly = computed(() => route.query.storeOnly === 'true')
 
 interface SectionData {
   questionNumber: string
@@ -59,6 +60,9 @@ interface SectionData {
   questionType: string
   questionTypes: string[]
   seqencial_section_number: number
+  isNew?: boolean
+  isModified?: boolean
+  id?: number
 }
 
 const handleSubmit = async (formData: SectionFormData) => {
@@ -66,8 +70,16 @@ const handleSubmit = async (formData: SectionFormData) => {
     const isFromEditPattern = route.query.fromEdit === 'true'
     const patternId = route.query.patternId as string
     const nextSequenceNumber = route.query.nextSequenceNumber as string
+    const nextSectionNumber = route.query.nextSectionNumber as string || '1'
 
-    if (isFromEditPattern && patternId) {
+    console.log('Handling section submission:')
+    console.log('- isFromEditPattern:', isFromEditPattern)
+    console.log('- storeOnly:', storeOnly.value)
+    console.log('- patternId:', patternId)
+    console.log('- nextSequenceNumber:', nextSequenceNumber)
+    console.log('- Form data:', formData)
+
+    if (isFromEditPattern && patternId && !storeOnly.value) {
       // Create section immediately in backend for edit pattern
       const { data: createdSection } = await axiosInstance.post('/sections', {
         pattern_id: Number(patternId),
@@ -101,11 +113,36 @@ const handleSubmit = async (formData: SectionFormData) => {
       router.push({
         name: 'editPattern',
         params: { id: patternId },
+        query: { from: 'editSection' }
+      })
+    } else if (isFromEditPattern && patternId && storeOnly.value) {
+      // Add to store for edit pattern mode without API calls
+      console.log('Adding section to store for edit pattern mode')
+      const sectionData: SectionData = {
+        questionNumber: formData.questionNumber || nextSectionNumber,
+        subQuestion: formData.subQuestion,
+        sectionName: formData.sectionName,
+        totalQuestions: Number(formData.totalQuestions),
+        requiredQuestions: Number(formData.requiredQuestions),
+        marksPerQuestion: Number(formData.marksPerQuestion),
+        sameType: formData.sameType,
+        questionType: formData.questionType,
+        questionTypes: formData.questionTypes,
+        seqencial_section_number: Number(nextSequenceNumber),
+        isNew: true, // Mark as new section
+        isModified: false, // Not modified since it's new
+      }
+      patternStore.addSection(sectionData)
+      router.push({
+        name: 'editPattern',
+        params: { id: patternId },
+        query: { from: 'editSection' }
       })
     } else {
       // Add to store for new pattern creation
+      console.log('Adding section to store for new pattern creation')
       const sectionData: SectionData = {
-        questionNumber: formData.questionNumber || nextSequenceNumber,
+        questionNumber: formData.questionNumber || nextSectionNumber,
         subQuestion: formData.subQuestion,
         sectionName: formData.sectionName,
         totalQuestions: Number(formData.totalQuestions),

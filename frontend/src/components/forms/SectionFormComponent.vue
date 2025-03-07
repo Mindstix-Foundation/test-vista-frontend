@@ -309,9 +309,9 @@ interface Props {
     questionNumber: string
     subQuestion: string
     sectionName: string
-    totalQuestions: number
-    requiredQuestions: number
-    marksPerQuestion: number
+    totalQuestions: string
+    requiredQuestions: string
+    marksPerQuestion: string
     sameType: boolean
     questionType: string
     questionTypes: string[]
@@ -406,9 +406,9 @@ onMounted(async () => {
       questionNumber: props.initialSectionData.questionNumber,
       subQuestion: props.initialSectionData.subQuestion,
       sectionName: props.initialSectionData.sectionName,
-      totalQuestions: props.initialSectionData.totalQuestions.toString(),
-      requiredQuestions: props.initialSectionData.requiredQuestions.toString(),
-      marksPerQuestion: props.initialSectionData.marksPerQuestion.toString(),
+      totalQuestions: props.initialSectionData.totalQuestions,
+      requiredQuestions: props.initialSectionData.requiredQuestions,
+      marksPerQuestion: props.initialSectionData.marksPerQuestion,
       sameType: props.initialSectionData.sameType,
       questionType: props.initialSectionData.questionType,
       questionTypes: [...props.initialSectionData.questionTypes],
@@ -531,6 +531,8 @@ const availableMarks = computed(() => {
 })
 
 const currentRemainingMarks = computed(() => {
+  // When editing a section, the remainingMarks already includes the current section's marks
+  // So we just need to subtract the current section marks from the available marks
   return availableMarks.value - sectionMarks.value
 })
 
@@ -632,9 +634,22 @@ const handleMarksPerQuestionInput = (e: Event) => {
 
   // Check if total section marks would exceed remaining marks
   const totalSectionMarks = Number(formData.value.requiredQuestions) * Number(value)
+
+  // When editing, the remainingMarks already includes the current section's original marks
   const isWithinLimit = totalSectionMarks <= availableMarks.value
 
   validationStates.value.marksPerQuestion.valid = isBasicValid && isWithinLimit
+
+  // Log for debugging
+  console.log('SectionForm - Marks calculation:', {
+    requiredQuestions: Number(formData.value.requiredQuestions),
+    marksPerQuestion: Number(value),
+    totalSectionMarks,
+    availableMarks: availableMarks.value,
+    isWithinLimit,
+    currentRemainingMarks: availableMarks.value - totalSectionMarks,
+    totalPatternMarks: props.totalPatternMarks
+  });
 }
 
 const handleIndividualQuestionTypeInput = (value: unknown, index: number) => {
@@ -716,7 +731,13 @@ const handleSubmit = () => {
     return
   }
 
-  if (sectionMarks.value > props.totalPatternMarks) {
+  // Final check to ensure section marks don't exceed available marks
+  if (sectionMarks.value > availableMarks.value) {
+    console.error('SectionForm - Section marks exceed available marks:', {
+      sectionMarks: sectionMarks.value,
+      availableMarks: availableMarks.value,
+      difference: sectionMarks.value - availableMarks.value
+    });
     marksPerQuestionInput.value?.focus()
     return
   }

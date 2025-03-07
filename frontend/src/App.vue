@@ -6,7 +6,16 @@
     :type="toastStore.type"
     @close="toastStore.hideToast"
   />
-  <RouterView />
+  <RouterView v-slot="{ Component, route }">
+    <keep-alive :include="['EditPattern', 'EditSection']">
+      <component
+        :is="Component"
+        :key="route.name === 'editPattern' && route.query.from === 'editSection'
+          ? `${route.name}-${route.params.id}`
+          : route.fullPath"
+      />
+    </keep-alive>
+  </RouterView>
 </template>
 
 <script setup lang="ts">

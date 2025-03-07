@@ -147,7 +147,11 @@
         :key="pattern.id"
         class="col col-12 col-sm-10"
       >
-        <div class="card" :class="{ 'border-danger border-2': !isPatternMarksValid(pattern) }">
+        <div
+          class="card"
+          :class="{ 'border-danger border-2': !isPatternMarksValid(pattern) }"
+          :data-pattern-id="pattern.id"
+        >
           <div class="card-body">
             <div class="container p-0">
               <!-- Card Header with Actions -->
@@ -194,32 +198,38 @@
                   <span>{{ pattern.subject.name }}</span>
                 </div>
                 <div class="col-12 col-sm-1 text-end">
-                  <i
-                    class="bi"
-                    :class="pattern.isExpanded ? 'bi-chevron-double-up' : 'bi-chevron-double-down'"
+                  <button
+                    class="btn chevron-btn"
                     @click="togglePattern(pattern.id)"
-                    style="cursor: pointer"
-                  ></i>
+                    :title="pattern.isExpanded ? 'Hide details' : 'Show details'"
+                  >
+                    <i
+                      class="bi bi-chevron-double-down fs-4"
+                      :class="{ 'chevron-rotated': pattern.isExpanded }"
+                    ></i>
+                  </button>
                 </div>
               </div>
 
               <!-- Pattern Details Table -->
-              <div class="row mt-3" v-show="pattern.isExpanded">
-                <table class="table table-sm table-striped table-bordered">
-                  <tbody>
-                    <tr class="table-dark">
-                      <th><strong>Section Name</strong></th>
-                      <th><strong>Number of Questions</strong></th>
-                      <th><strong>Total Marks Allotted</strong></th>
-                    </tr>
-                    <tr v-for="section in pattern.sections" :key="section.id">
-                      <td>{{ section.section_name }}</td>
-                      <td>{{ section.total_questions }}</td>
-                      <td>{{ section.mandotory_questions * section.marks_per_question }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <transition name="slide-fade">
+                <div class="row mt-3 pattern-details" v-if="pattern.isExpanded">
+                  <table class="table table-sm table-striped table-bordered">
+                    <tbody>
+                      <tr class="table-dark">
+                        <th><strong>Section Name</strong></th>
+                        <th><strong>Number of Questions</strong></th>
+                        <th><strong>Total Marks Allotted</strong></th>
+                      </tr>
+                      <tr v-for="section in pattern.sections" :key="section.id">
+                        <td>{{ section.section_name }}</td>
+                        <td>{{ section.total_questions }}</td>
+                        <td>{{ section.mandotory_questions * section.marks_per_question }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </transition>
             </div>
           </div>
         </div>
@@ -357,9 +367,21 @@ const clearSearch = () => {
 }
 
 const togglePattern = (patternId: number) => {
+  // Find the pattern to toggle
   const pattern = patterns.value.find((p) => p.id === patternId)
-  if (pattern) {
-    pattern.isExpanded = !pattern.isExpanded
+  if (!pattern) return
+
+  // Toggle the expanded state
+  pattern.isExpanded = !pattern.isExpanded
+
+  // If expanding, scroll to the pattern after a short delay to allow animation
+  if (pattern.isExpanded) {
+    setTimeout(() => {
+      const element = document.querySelector(`[data-pattern-id="${patternId}"]`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
   }
 }
 
@@ -503,5 +525,65 @@ onMounted(() => {
 .table th {
   background-color: #212529;
   color: white;
+}
+
+/* Transition styles for pattern details */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+/* Smooth transition for chevron icon */
+.bi-chevron-double-down {
+  transition: transform 0.3s ease, color 0.2s ease;
+  color: #6c757d;
+}
+
+/* Rotate the chevron when expanded */
+.chevron-rotated {
+  transform: rotate(180deg);
+}
+
+/* Styling for the chevron button */
+.chevron-btn {
+  background: transparent;
+  padding: 0;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.chevron-btn:hover {
+  color: #0d6efd;
+  transform: scale(1.1);
+}
+
+.chevron-btn:active {
+  transform: scale(0.95);
+}
+
+.chevron-btn:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Add a subtle box shadow to the pattern card */
+.card {
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 </style>

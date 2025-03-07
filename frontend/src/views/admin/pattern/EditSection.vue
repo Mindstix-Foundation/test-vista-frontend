@@ -28,14 +28,14 @@
         @submit="handleSubmit"
         :total-pattern-marks="totalPatternMarks"
         :remaining-marks="Number($route.query.remainingMarks || 0)"
-        :initial-section-data="currentSection"
+        :initial-section-data="currentSection || undefined"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { computed, ref, onMounted } from 'vue'
 import SectionFormComponent from '@/components/forms/SectionFormComponent.vue'
 import type { SectionFormData } from '@/components/forms/SectionFormComponent.vue'
@@ -76,6 +76,7 @@ const loading = ref(false)
 const isFromEditPattern = computed(() => route.query.fromEdit === 'true')
 const patternId = computed(() => route.query.patternId?.toString())
 const sectionId = computed(() => route.query.sectionId?.toString())
+const storeOnly = computed(() => route.query.storeOnly === 'true')
 
 const sectionIndex = computed(() => {
   const index = Number(route.query.sectionIndex || 0)
@@ -89,7 +90,17 @@ const totalPatternMarks = computed(() => {
   return marks
 })
 
-const currentSection = ref<SectionFormData | null>(null)
+const currentSection = ref<SectionFormData>({
+  questionNumber: '',
+  subQuestion: '',
+  sectionName: '',
+  totalQuestions: '',
+  requiredQuestions: '',
+  marksPerQuestion: '',
+  sameType: false,
+  questionType: '',
+  questionTypes: [],
+})
 
 // Fetch section data from backend
 const fetchSectionFromBackend = async () => {
@@ -172,9 +183,35 @@ const createSubsectionQuestionType = async (
 
 const handleSubmit = async (formData: SectionFormData) => {
   try {
-    if (isFromEditPattern.value && sectionId.value) {
+    console.log('EditSection - Processing form submission');
+
+    // Calculate the marks for this section
+    const sectionMarks = Number(formData.requiredQuestions) * Number(formData.marksPerQuestion);
+    const availableMarks = Number(route.query.remainingMarks || 0);
+
+    console.log('EditSection - Section marks calculation:', {
+      requiredQuestions: Number(formData.requiredQuestions),
+      marksPerQuestion: Number(formData.marksPerQuestion),
+      totalSectionMarks: sectionMarks,
+      availableMarks,
+      remainingAfterUpdate: availableMarks - sectionMarks
+    });
+
+    // Validate that the section marks don't exceed available marks
+    if (sectionMarks > availableMarks) {
+      console.error('EditSection - Section marks exceed available marks:', {
+        sectionMarks,
+        availableMarks,
+        difference: sectionMarks - availableMarks
+      });
+      alert(`Section marks (${sectionMarks}) exceed available marks (${availableMarks}). Please reduce the marks per question or the number of required questions.`);
+      return;
+    }
+
+    if (isFromEditPattern.value && sectionId.value && !storeOnly.value) {
       // Update section in backend immediately
       loading.value = true
+      console.log('EditSection - Updating section in backend');
 
       // Update section details
       await axiosInstance.put(`/sections/${sectionId.value}`, {
@@ -216,9 +253,39 @@ const handleSubmit = async (formData: SectionFormData) => {
       router.push({
         name: 'editPattern',
         params: { id: patternId.value },
+        query: { from: 'editSection' }
+      })
+    } else if (isFromEditPattern.value && storeOnly.value) {
+      // Update section in store only for edit pattern mode
+      console.log('EditSection - Updating section in store');
+
+      const sectionData = {
+        id: sectionId.value ? Number(sectionId.value) : undefined,
+        questionNumber: formData.questionNumber,
+        subQuestion: formData.subQuestion,
+        sectionName: formData.sectionName,
+        totalQuestions: Number(formData.totalQuestions),
+        requiredQuestions: Number(formData.requiredQuestions),
+        marksPerQuestion: Number(formData.marksPerQuestion),
+        sameType: formData.sameType,
+        questionType: formData.questionType,
+        questionTypes: formData.questionTypes,
+        seqencial_section_number: Number(route.query.sequenceNumber || 0),
+        isModified: true, // Mark as modified
+        isNew: false, // Not a new section
+      }
+
+      patternStore.updateSection(sectionIndex.value, sectionData)
+      console.log('EditSection - Section updated in store, navigating back');
+
+      router.push({
+        name: 'editPattern',
+        params: { id: patternId.value },
+        query: { from: 'editSection' }
       })
     } else {
       // Update section in store for new pattern creation
+      console.log('EditSection - Updating section for new pattern');
       const sectionData = {
         questionNumber: formData.questionNumber,
         subQuestion: formData.subQuestion,
@@ -233,7 +300,10 @@ const handleSubmit = async (formData: SectionFormData) => {
           patternStore.sections[sectionIndex.value].seqencial_section_number,
       }
       patternStore.updateSection(sectionIndex.value, sectionData)
-      router.push({ name: 'createPattern' })
+      router.push({
+        name: 'createPattern',
+        query: { from: 'editSection' }
+      })
     }
   } catch (error) {
     console.error('Error updating section:', error)
@@ -244,12 +314,17 @@ const handleSubmit = async (formData: SectionFormData) => {
 }
 
 onMounted(() => {
-  if (isFromEditPattern.value) {
+  if (isFromEditPattern.value && sectionId.value && !storeOnly.value) {
     fetchSectionFromBackend()
   } else {
     getSectionFromStore()
   }
 })
+
+onBeforeRouteLeave((to, from, next) => {
+  console.log('EditSection - Leaving EditSection page');
+  next();
+});
 </script>
 
 <style scoped>

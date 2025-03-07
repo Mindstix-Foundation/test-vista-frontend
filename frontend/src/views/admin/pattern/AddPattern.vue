@@ -165,16 +165,18 @@ const handleAddSection = (formData: FormData) => {
 const editSection = (index: number) => {
   // Get the current section data
   const sectionToEdit = patternStore.sections[index]
-  console.log('Editing section:', sectionToEdit)
+  console.log('AddPattern - Editing section:', sectionToEdit)
 
   // Calculate remaining marks excluding current section's marks
   const currentSectionMarks = sectionToEdit.requiredQuestions * sectionToEdit.marksPerQuestion
   const remainingMarksExcludingCurrent = formComponent.value?.remainingMarks || 0
   const totalRemainingMarks = remainingMarksExcludingCurrent + currentSectionMarks
 
-  console.log('Navigation params:', {
+  console.log('AddPattern - Navigation params:', {
     sectionIndex: index,
-    remainingMarks: totalRemainingMarks,
+    currentSectionMarks,
+    remainingMarksExcludingCurrent,
+    totalRemainingMarks,
     totalMarks: patternStore.formData.totalMarks,
   })
 
