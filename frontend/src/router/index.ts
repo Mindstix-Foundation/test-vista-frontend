@@ -188,6 +188,12 @@ const router = createRouter({
   routes,
 })
 
+// Add a router.afterEach hook that does nothing for now
+// We can re-enable logging when needed
+router.afterEach(() => {
+  // Logging disabled
+});
+
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
