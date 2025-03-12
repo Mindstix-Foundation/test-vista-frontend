@@ -477,12 +477,15 @@ const fetchBoardDetails = async (boardId: number) => {
     const response = await axiosInstance.get(`/boards/${boardId}`)
     console.log('Board details response:', response.data)
 
+    // Handle the new response format where data might be nested
+    const boardData = response.data.data || response.data
+
     // Update the board in formData with complete data
     if (formData.value.selectedBoard) {
       formData.value.selectedBoard = {
         ...formData.value.selectedBoard,
-        standards: response.data.standards,
-        subjects: response.data.subjects,
+        standards: boardData.standards || [],
+        subjects: boardData.subjects || [],
       }
       console.log('Updated board in form data:', formData.value.selectedBoard)
     }
@@ -555,7 +558,9 @@ watch(
 const fetchBoards = async () => {
   try {
     const response = await axiosInstance.get('/boards')
-    boards.value = response.data
+    // Handle the new response format where data is nested inside a 'data' property
+    boards.value = response.data.data || response.data
+    console.log('Fetched boards:', boards.value)
   } catch (error) {
     console.error('Error fetching boards:', error)
   }

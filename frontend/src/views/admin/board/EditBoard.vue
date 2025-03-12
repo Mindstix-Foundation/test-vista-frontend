@@ -88,6 +88,62 @@ interface ExistingItem {
   board_id: number
   name?: string
   instruction_medium?: string
+  sequence_number?: number
+}
+
+// Add interfaces for board API response
+interface InstructionMedium {
+  id: number
+  instruction_medium: string
+  created_at: string
+  updated_at: string
+}
+
+interface Standard {
+  id: number
+  name: string
+  sequence_number: number
+  created_at: string
+  updated_at: string
+}
+
+interface Subject {
+  id: number
+  name: string
+  created_at: string
+  updated_at: string
+}
+
+interface BoardApiResponse {
+  id: number
+  name: string
+  abbreviation: string
+  address_id: number
+  created_at: string
+  updated_at: string
+  address: {
+    id: number
+    postal_code: string
+    street: string
+    city_id: number
+    city: {
+      id: number
+      name: string
+      state_id: number
+      state: {
+        id: number
+        name: string
+        country_id: number
+        country: {
+          id: number
+          name: string
+        }
+      }
+    }
+  }
+  instruction_mediums: InstructionMedium[]
+  standards: Standard[]
+  subjects: Subject[]
 }
 
 // Add interfaces for form data with IDs
@@ -109,13 +165,7 @@ interface BoardFormSubmitData {
   mediums: MediumFormData[]
   standards: StandardFormData[]
   subjects: SubjectFormData[]
-}
-
-interface BoardResponse {
-  id: number
-  name: string
-  abbreviation: string
-  address_id: number
+  changes?: Change[]
 }
 
 interface SchoolRelatedItem {
@@ -129,6 +179,18 @@ interface OperationResult {
   message?: string
 }
 
+interface Change {
+  type: 'delete' | 'modify' | 'add'
+  message: string
+  entity: 'medium' | 'standard' | 'subject' | 'board' | 'separator'
+  data: {
+    id?: number
+    name?: string
+    old?: { id: number; name: string }
+    new?: { id?: number; name: string }
+  }
+}
+
 const router = useRouter()
 const route = useRoute()
 
@@ -138,22 +200,12 @@ onMounted(() => {
   console.log('EditBoard mounted with board ID:', route.params.id)
 })
 
-const updateBoard = async (formData: BoardFormSubmitData): Promise<BoardResponse> => {
-  const { data } = await axiosInstance.put(`/boards/${route.params.id}`, {
+const updateBoard = async (formData: BoardFormSubmitData): Promise<BoardApiResponse> => {
+  const { data } = await axiosInstance.put<BoardApiResponse>(`/boards/${route.params.id}`, {
     name: formData.board.name,
     abbreviation: formData.board.abbreviation,
   })
   return data
-}
-
-const fetchExistingItems = async (boardId: number) => {
-  console.log('Fetching existing items for board:', boardId)
-  const [mediums, standards, subjects] = await Promise.all([
-    axiosInstance.get(`/instruction-mediums/board/${boardId}`).then((r) => r.data),
-    axiosInstance.get(`/standards/board/${boardId}`).then((r) => r.data),
-    axiosInstance.get(`/subjects/board/${boardId}`).then((r) => r.data),
-  ])
-  return [mediums, standards, subjects] as [ExistingItem[], ExistingItem[], ExistingItem[]]
 }
 
 const deleteRelatedSchoolItems = async (
@@ -313,27 +365,91 @@ const updateStandard = async (
   standard: StandardFormData,
   boardId: number,
 ): Promise<void> => {
+  // Only update the name if it has changed, not the sequence
   await axiosInstance.put(`/standards/${id}`, {
     name: standard.name,
-    board_id: boardId,
+    board_id: boardId
   })
 }
+
+const reorderStandard = async (
+  id: number,
+  newPosition: number,
+  boardId: number
+): Promise<void> => {
+  // Use the specific reorder API endpoint with the correct parameters
+  console.log(`Calling reorder API for standard ${id} to position ${newPosition} in board ${boardId}`);
+
+  try {
+    const response = await axiosInstance.put(`/standards/${id}/reorder`, {
+      newPosition,
+      boardId
+    });
+    console.log('Reorder API response:', response.data);
+  } catch (error) {
+    console.error('Error in reorderStandard API call:', error);
+    throw error;
+  }
+}
+
+// Helper function to add delay between API calls
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const createStandard = async (standard: StandardFormData, boardId: number): Promise<void> => {
   await axiosInstance.post('/standards', {
     name: standard.name,
     board_id: boardId,
+    sequence_number: standard.sequence_number
   })
 }
 
 const handleStandardChanges = async (
-  formStandards: StandardFormData[],
+  formStandards: (StandardFormData & { _reorderDetected?: boolean })[],
   existingStandards: ExistingItem[],
   boardId: number,
 ): Promise<void> => {
+  // Check if reordering was detected in the form data
+  const reorderDetected = formStandards.length > 0 && formStandards[0]._reorderDetected === true;
+  console.log('Reorder detected from form data:', reorderDetected);
+
+  console.log('Starting handleStandardChanges with:', {
+    formStandards: formStandards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number })),
+    existingStandards: existingStandards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number }))
+  });
+
   const validFormStandards = formStandards.filter((s) => s.name.trim())
   const formStandardsMap = new Map(validFormStandards.map((s) => [s.id, s]))
   const existingStandardsMap = new Map(existingStandards.map((s) => [s.id, s]))
+
+  // Create a map of standard IDs to their positions in the form
+  const formStandardPositions = new Map<number, number>();
+  validFormStandards.forEach((standard, index) => {
+    if (standard.id) {
+      formStandardPositions.set(standard.id, index + 1); // 1-based position
+    }
+  });
+
+  // Check if any standard has a different position in the form compared to its current sequence_number
+  const orderChanged = existingStandards.some(standard => {
+    const formPosition = formStandardPositions.get(standard.id);
+    return formPosition !== undefined && formPosition !== standard.sequence_number;
+  });
+
+  console.log('Order changed (by sequence):', orderChanged);
+
+  // Also check if the order has changed by comparing the IDs in their current order
+  const formStandardIds = validFormStandards.filter(s => s.id).map(s => s.id);
+  const existingStandardIds = existingStandards.map(s => s.id);
+
+  const idsOrderChanged = JSON.stringify(formStandardIds) !== JSON.stringify(existingStandardIds);
+  console.log('Order changed (by ID order):', idsOrderChanged, {
+    formStandardIds,
+    existingStandardIds
+  });
+
+  // Use either method to detect order changes, or use the reorderDetected flag
+  const hasOrderChanged = orderChanged || idsOrderChanged || reorderDetected;
+  console.log('Final order changed decision:', hasOrderChanged);
 
   // Handle deletions
   for (const standard of existingStandards.filter((s) => !formStandardsMap.has(s.id))) {
@@ -343,6 +459,8 @@ const handleStandardChanges = async (
         operation: `Deleted standard: ${standard.name}`,
         status: 'success',
       })
+      // Add delay after deletion to prevent deadlocks
+      await delay(300);
     } catch (error) {
       operationResults.value.push({
         operation: `Delete standard: ${standard.name}`,
@@ -352,41 +470,176 @@ const handleStandardChanges = async (
     }
   }
 
-  // Handle updates
+  // Handle name updates and additions first
+  const nameUpdatePromises = [];
+  const additionPromises = [];
+
+  // Handle name updates
   for (const [id, standard] of formStandardsMap) {
     if (!id) continue
     const existing = existingStandardsMap.get(id)
-    if (existing?.name !== standard.name) {
-      try {
-        await updateStandard(id, standard, boardId)
-        operationResults.value.push({
-          operation: `Updated standard: ${existing?.name} → ${standard.name}`,
-          status: 'success',
-        })
-      } catch (error) {
-        operationResults.value.push({
-          operation: `Update standard: ${standard.name}`,
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        })
-      }
+
+    // Check if name has changed
+    const nameChanged = existing?.name !== standard.name;
+
+    if (nameChanged) {
+      const promise = (async () => {
+        try {
+          await updateStandard(id, standard, boardId)
+          operationResults.value.push({
+            operation: `Updated standard: ${existing?.name} → ${standard.name}`,
+            status: 'success',
+          })
+        } catch (error) {
+          operationResults.value.push({
+            operation: `Update standard: ${standard.name}`,
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Unknown error',
+          })
+        }
+      })();
+      nameUpdatePromises.push(promise);
     }
   }
 
   // Handle additions
   for (const standard of validFormStandards.filter((s) => !s.id)) {
+    const promise = (async () => {
+      try {
+        await createStandard(standard, boardId)
+        operationResults.value.push({
+          operation: `Added standard: ${standard.name} (sequence: ${standard.sequence_number})`,
+          status: 'success',
+        })
+      } catch (error) {
+        operationResults.value.push({
+          operation: `Add standard: ${standard.name}`,
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    })();
+    additionPromises.push(promise);
+  }
+
+  // Wait for all name updates and additions to complete
+  if (nameUpdatePromises.length > 0 || additionPromises.length > 0) {
+    await Promise.all([...nameUpdatePromises, ...additionPromises]);
+    // Add delay after updates and additions before reordering
+    await delay(500);
+  }
+
+  // Now handle reordering - must be done after all other operations
+  // Get the latest standards with their IDs (including newly created ones)
+  const { data: updatedStandards } = await axiosInstance.get(`/standards/board/${boardId}`);
+  console.log('Updated standards from API:', updatedStandards);
+
+  // Create a map of standard IDs to their current positions
+  const standardIdToPositionMap = new Map(
+    updatedStandards.map((s: { id: number; sequence_number: number }) => [s.id, s.sequence_number])
+  );
+
+  // Create a map of standard IDs to their names for logging
+  const standardIdToNameMap = new Map(
+    updatedStandards.map((s: { id: number; name: string }) => [s.id, s.name])
+  );
+
+  // Find standards that have moved from their original position
+  const movedStandards = [];
+
+  // Map form standards to their IDs and desired positions
+  for (let i = 0; i < validFormStandards.length; i++) {
+    const standard = validFormStandards[i];
+    let standardId = standard.id;
+
+    // If it's a new standard, find its ID from the updated standards
+    if (!standardId) {
+      const matchingStandard = updatedStandards.find(
+        (s: { name: string }) => s.name.toLowerCase().trim() === standard.name.toLowerCase().trim()
+      );
+      if (matchingStandard) {
+        standardId = matchingStandard.id;
+      }
+    }
+
+    if (standardId) {
+      const desiredPosition = i + 1; // 1-based position
+      const currentPosition = standardIdToPositionMap.get(standardId) || 0;
+
+      if (currentPosition !== desiredPosition) {
+        movedStandards.push({
+          id: standardId,
+          name: standardIdToNameMap.get(standardId) || standard.name,
+          fromPosition: currentPosition,
+          toPosition: desiredPosition
+        });
+      }
+    }
+  }
+
+  console.log('Standards that need reordering:', movedStandards);
+
+  // If no standards have moved, we're done
+  if (movedStandards.length === 0) {
+    // If we detected an order change earlier but no standards need reordering now,
+    // it might be because the form standards already have the correct sequence numbers.
+    // In this case, we should force a reorder based on the form standards.
+    if (hasOrderChanged) {
+      console.log('Order change detected but no standards need reordering. Forcing reorder based on form standards.');
+
+      // Create reorder requests for all standards based on their position in the form
+      for (let i = 0; i < validFormStandards.length; i++) {
+        const standard = validFormStandards[i];
+        if (standard.id) {
+          const desiredPosition = i + 1; // 1-based position
+          const currentPosition = standardIdToPositionMap.get(standard.id) || 0;
+
+          // If reordering was detected, force reordering even if positions match
+          if (reorderDetected || currentPosition !== desiredPosition) {
+            movedStandards.push({
+              id: standard.id,
+              name: standard.name,
+              fromPosition: currentPosition,
+              toPosition: desiredPosition
+            });
+          }
+        }
+      }
+
+      console.log('Forced standards reordering:', movedStandards);
+
+      if (movedStandards.length === 0) {
+        console.log('No standards need reordering after force check');
+        return;
+      }
+    } else {
+      console.log('No standards need reordering');
+      return;
+    }
+  }
+
+  // Process all reorder requests with a 50ms delay between them
+  // This allows the backend to handle any potential deadlocks
+  for (const standard of movedStandards) {
     try {
-      await createStandard(standard, boardId)
+      console.log(`Reordering standard ${standard.name} from position ${standard.fromPosition} to ${standard.toPosition}`);
+
+      await reorderStandard(standard.id, standard.toPosition, Number(boardId));
+
       operationResults.value.push({
-        operation: `Added standard: ${standard.name}`,
+        operation: `Reordered standard: ${standard.name} (position: ${standard.fromPosition} → ${standard.toPosition})`,
         status: 'success',
-      })
+      });
+
+      // Add a 50ms delay between reorder requests
+      await delay(50);
     } catch (error) {
+      console.error('Error reordering standard:', error);
       operationResults.value.push({
-        operation: `Add standard: ${standard.name}`,
+        operation: `Reorder standard: ${standard.name}`,
         status: 'error',
         message: error instanceof Error ? error.message : 'Unknown error',
-      })
+      });
     }
   }
 }
@@ -483,8 +736,24 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
   try {
     operationResults.value = [] // Reset results
 
+    // Log the received form data
+    console.log('Received form data:', {
+      standards: formData.standards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number })),
+      changes: formData.changes
+    });
+
+    // Check if there's a reordering change
+    const hasReorderingChange = formData.changes ?
+      formData.changes.some((change: Change) =>
+        change.entity === 'standard' && change.message === 'Standards reordered'
+      ) : false;
+
+    if (hasReorderingChange) {
+      console.log('Reordering change detected in form data');
+    }
+
     // Check if board details have changed
-    const boardResponse = await axiosInstance.get(`/boards/${route.params.id}`)
+    const boardResponse = await axiosInstance.get<BoardApiResponse>(`/boards/${route.params.id}`)
     const currentBoard = boardResponse.data
     const boardChanged =
       currentBoard.name !== formData.board.name ||
@@ -509,8 +778,36 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       }
     }
 
-    // Fetch all existing items
-    const [existingMediums, existingStandards, existingSubjects] = await fetchExistingItems(boardId)
+    // Get existing items from the board data
+    // The API already returns all related data in the correct order
+    const existingMediums = currentBoard.instruction_mediums.map((m: InstructionMedium) => ({
+      id: m.id,
+      board_id: boardId,
+      instruction_medium: m.instruction_medium
+    }))
+
+    const existingStandards = currentBoard.standards.map((s: Standard) => ({
+      id: s.id,
+      board_id: boardId,
+      name: s.name,
+      sequence_number: s.sequence_number
+    }))
+
+    // Log existing standards for comparison
+    console.log('Existing standards:', existingStandards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number })));
+
+    const existingSubjects = currentBoard.subjects.map((s: Subject) => ({
+      id: s.id,
+      board_id: boardId,
+      name: s.name
+    }))
+
+    // Ensure standards have proper sequence numbers based on their current order
+    formData.standards.forEach((standard, index) => {
+      if (standard.name.trim()) {
+        standard.sequence_number = index + 1;
+      }
+    });
 
     // Compare and only process changed items
     const mediumsChanged = (() => {
@@ -521,12 +818,50 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       return JSON.stringify(formMediumNames) !== JSON.stringify(existingMediumNames)
     })()
 
-    const standardsChanged = (() => {
-      const formStandardNames = formData.standards.map((s) => s.name.toLowerCase().trim()).sort()
-      const existingStandardNames = existingStandards
-        .map((s) => s.name?.toLowerCase().trim())
-        .sort()
-      return JSON.stringify(formStandardNames) !== JSON.stringify(existingStandardNames)
+    // Force standardsChanged to true if there's a reordering change
+    const standardsChanged = hasReorderingChange || (() => {
+      // Check if standards have changed in name, order, or if any have been added/removed
+      if (formData.standards.filter(s => s.name.trim()).length !== existingStandards.length) {
+        console.log('Standards changed: count mismatch');
+        return true;
+      }
+
+      // Check for name or sequence changes
+      for (let i = 0; i < formData.standards.length; i++) {
+        const formStandard = formData.standards[i];
+        if (!formStandard.name.trim()) continue;
+
+        // If this is a new standard (no ID), then standards have changed
+        if (!formStandard.id) {
+          console.log('Standards changed: new standard detected');
+          return true;
+        }
+
+        // Find the existing standard with the same ID
+        const existingStandard = existingStandards.find(s => s.id === formStandard.id);
+        if (!existingStandard) {
+          console.log('Standards changed: existing standard not found');
+          return true;
+        }
+
+        // Check if name or sequence has changed
+        if (existingStandard.name.toLowerCase().trim() !== formStandard.name.toLowerCase().trim()) {
+          console.log('Standards changed: name changed');
+          return true;
+        }
+
+        if (existingStandard.sequence_number !== formStandard.sequence_number) {
+          console.log('Standards changed: sequence changed', {
+            id: formStandard.id,
+            name: formStandard.name,
+            oldSequence: existingStandard.sequence_number,
+            newSequence: formStandard.sequence_number
+          });
+          return true;
+        }
+      }
+
+      return false;
     })()
 
     const subjectsChanged = (() => {
@@ -540,6 +875,7 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       mediumsChanged,
       standardsChanged,
       subjectsChanged,
+      hasReorderingChange
     })
 
     // Only process items that have changed
@@ -555,8 +891,18 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       })
       changePromises.push(handleMediumChanges(updatedMediums, existingMediums, boardId))
     }
-    if (standardsChanged)
-      changePromises.push(handleStandardChanges(formData.standards, existingStandards, boardId))
+
+    // If standards have changed or there's a reordering change, handle standard changes
+    if (standardsChanged) {
+      // Create a modified version of formData.standards with a flag indicating if reordering was detected
+      const standardsWithReorderFlag = formData.standards.map(s => ({
+        ...s,
+        _reorderDetected: hasReorderingChange
+      }));
+
+      changePromises.push(handleStandardChanges(standardsWithReorderFlag, existingStandards, boardId))
+    }
+
     if (subjectsChanged)
       changePromises.push(handleSubjectChanges(formData.subjects, existingSubjects, boardId))
 

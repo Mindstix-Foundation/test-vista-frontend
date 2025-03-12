@@ -93,6 +93,26 @@ const routes: RouteRecordRaw[] = [
         name: 'adminProfile',
         component: AdminProfile,
       },
+      {
+        path: 'questionBank',
+        name: 'questionBank',
+        component: () => import('@/views/admin/questionBank/Questionbank.vue'),
+      },
+      {
+        path: 'questionBank/dashboard',
+        name: 'questionDashboard',
+        component: () => import('@/views/admin/questionBank/QuestionDashboard.vue'),
+      },
+      {
+        path: 'questionBank/add',
+        name: 'addQuestion',
+        component: () => import('@/views/admin/questionBank/AddQuestion.vue'),
+      },
+      {
+        path: 'questionBank/translation',
+        name: 'translationPending',
+        component: () => import('@/views/admin/questionBank/TranslationPending.vue'),
+      },
     ],
   },
   // Form routes without navbar

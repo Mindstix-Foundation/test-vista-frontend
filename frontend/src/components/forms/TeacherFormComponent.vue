@@ -64,6 +64,7 @@
               class="dropdown-item"
               :class="{ active: index === selectedBoardIndex }"
               @click="selectBoard(board)"
+              @mousedown.prevent="selectBoard(board)"
             >
               {{ board.name }}
             </button>
@@ -325,7 +326,16 @@
                   Remove
                 </button>
               </div>
-              <div class="ps-3">{{ standard.subjects.map((s) => s.name).join(', ') }}</div>
+              <div class="ps-3 d-flex flex-wrap gap-2">
+                <span
+                  v-for="subject in standard.subjects"
+                  :key="subject.id"
+                  class="subject-badge"
+                >
+                  <i class="bi bi-book me-1"></i>
+                  {{ subject.name }}
+                </span>
+              </div>
             </div>
           </li>
         </ul>
@@ -687,7 +697,10 @@ const rules = {
   },
   boardId: {
     required: helpers.withMessage('Board selection is required', required),
-    validBoard: helpers.withMessage('Please select a valid board', (value: number) => value !== 0),
+    validBoard: helpers.withMessage('Please select a valid board', (value: number) => {
+      console.log('[Validation Rule] Checking boardId:', value);
+      return value !== 0 && value !== undefined && value !== null;
+    }),
   },
   schoolId: {
     required: helpers.withMessage('School selection is required', required),
@@ -820,7 +833,7 @@ watch(
           console.log('[Validation] School data fetched:', schoolData)
 
           // Update form data first, but preserve the board ID we're about to set
-          const boardId = schoolData.board_id
+          const boardId = schoolData.board.id
           Object.assign(formData, newData)
           formData.boardId = boardId // Ensure boardId is set correctly
 
@@ -950,9 +963,10 @@ async function fetchSchools() {
       return
     }
 
-    const { data } = await axiosInstance.get(`/schools?boardId=${formData.boardId}`)
-    console.log('Fetched schools:', data)
-    schools.value = data
+    const response = await axiosInstance.get(`/schools?boardId=${formData.boardId}`)
+    console.log('Fetched schools:', response.data)
+    // Extract schools from the data wrapper if it exists
+    schools.value = response.data.data || response.data
     console.log('Updated schools.value:', schools.value)
 
     // If we have initial data, set the school name after schools are loaded
@@ -974,6 +988,29 @@ const handleSubmit = async () => {
   console.log('[Submit Validation] Starting form validation')
   console.log('[Submit Validation] Current form data:', formData)
   console.log('[Submit Validation] Validation states:', validationStates)
+  console.log('[Submit Validation] Vuelidate state:', v$.value)
+
+  // CRITICAL FIX: Force update the board validation state based on the boardSearch value
+  // If boardSearch matches a board name, ensure the boardId is set correctly
+  if (boardSearch.value) {
+    const matchingBoard = boards.value.find(
+      board => board.name.toLowerCase() === boardSearch.value.toLowerCase()
+    );
+
+    if (matchingBoard) {
+      console.log('[Submit Validation] Found matching board:', matchingBoard);
+      formData.boardId = matchingBoard.id;
+      validationStates.boardId.valid = true;
+      validationStates.boardId.touched = true;
+      v$.value.boardId.$model = matchingBoard.id;
+      v$.value.boardId.$touch();
+
+      // If we have a matching board but no school selected, we need to fetch schools
+      if (!formData.schoolId) {
+        await fetchSchools();
+      }
+    }
+  }
 
   // Mark all fields as touched to show validation errors
   Object.keys(validationStates).forEach((key) => {
@@ -995,7 +1032,13 @@ const handleSubmit = async () => {
   // Ensure boardId is set from the school's board
   if (selectedSchoolBoard.value) {
     formData.boardId = selectedSchoolBoard.value.id
+    // Make sure validation state is updated
+    validationStates.boardId.valid = true
+    v$.value.boardId.$model = selectedSchoolBoard.value.id
   }
+
+  console.log('[Submit Validation] Before final validation - boardId:', formData.boardId)
+  console.log('[Submit Validation] Board validation state:', validationStates.boardId)
 
   // Trigger validation
   const isValid = await v$.value.$validate()
@@ -1003,6 +1046,54 @@ const handleSubmit = async () => {
 
   if (!isValid) {
     console.log('[Submit Validation] Form validation failed')
+
+    // CRITICAL FIX: Check if the board field is the one causing validation failure
+    if (v$.value.boardId.$error) {
+      console.log('[Submit Validation] Board validation failed, checking if we have a valid board name');
+
+      // If we have a board name but validation failed, try to find the board again
+      if (boardSearch.value) {
+        const matchingBoard = boards.value.find(
+          board => board.name.toLowerCase() === boardSearch.value.toLowerCase()
+        );
+
+        if (matchingBoard) {
+          console.log('[Submit Validation] Found matching board on retry:', matchingBoard);
+          // Force update the model and validation state
+          formData.boardId = matchingBoard.id;
+          v$.value.boardId.$model = matchingBoard.id;
+          await v$.value.boardId.$touch();
+
+          // Try validation again
+          const retryValid = await v$.value.$validate();
+          console.log('[Submit Validation] Retry validation result:', retryValid);
+
+          if (retryValid) {
+            // If validation passes on retry, proceed with form submission
+            if (isEditMode.value) {
+              await calculateChanges();
+              saveConfirmationModal?.show();
+            } else {
+              emit('submit', {
+                formData: {
+                  name: formData.name,
+                  emailId: formData.emailId,
+                  contactNumber: formData.contactNumber,
+                  alternateContactNumber: formData.alternateContactNumber,
+                  highestQualification: formData.highestQualification,
+                  schoolId: formData.schoolId,
+                  boardId: formData.boardId,
+                  teacherSubjects: formData.teacherSubjects,
+                  groupedSubjects: formData.groupedSubjects,
+                },
+                changes: [],
+              });
+            }
+            return;
+          }
+        }
+      }
+    }
 
     // Define the order of fields to check (matching the actual input IDs)
     const fieldOrder = [
@@ -1022,6 +1113,7 @@ const handleSubmit = async () => {
 
     // Focus the first invalid field
     if (firstInvalidField) {
+      console.log('[Submit Validation] Focusing on invalid field:', firstInvalidField);
       const element = document.getElementById(firstInvalidField.id)
       if (element) {
         element.focus()
@@ -1787,9 +1879,10 @@ const boardInput = ref<HTMLInputElement | null>(null)
 async function fetchBoards() {
   try {
     console.log('Fetching boards...')
-    const { data } = await axiosInstance.get('/boards')
-    console.log('Fetched boards:', data)
-    boards.value = data
+    const response = await axiosInstance.get('/boards')
+    console.log('Fetched boards:', response.data)
+    // Extract boards from the data wrapper
+    boards.value = response.data.data
     console.log('Updated boards.value:', boards.value)
 
     // If we have initial data, set the board name after boards are loaded
@@ -1817,11 +1910,28 @@ const filterBoards = () => {
     console.log('Empty search, showing all boards')
     filteredBoards.value = boards.value
     validationStates.boardId.valid = false
+    v$.value.boardId.$model = 0 // Reset the vuelidate model when search is empty
   } else {
     filteredBoards.value = boards.value.filter((board) =>
       board.name.toLowerCase().includes(boardSearch.value.toLowerCase()),
     )
     console.log('Filtered boards:', filteredBoards.value)
+
+    // Check if the current search exactly matches a board name
+    const exactMatch = boards.value.find(
+      (board) => board.name.toLowerCase() === boardSearch.value.toLowerCase()
+    )
+
+    if (exactMatch) {
+      // If there's an exact match, update the validation state
+      formData.boardId = exactMatch.id
+      validationStates.boardId.valid = true
+      v$.value.boardId.$model = exactMatch.id
+    } else {
+      // If no exact match, mark as invalid
+      validationStates.boardId.valid = false
+      v$.value.boardId.$model = 0
+    }
   }
   selectedBoardIndex.value = -1
 }
@@ -1845,6 +1955,7 @@ const handleBoardKeydown = (event: KeyboardEvent) => {
     case 'Enter':
       event.preventDefault()
       if (selectedBoardIndex.value >= 0) {
+        console.log('[Board Keydown] Selecting board via keyboard:', filteredBoards.value[selectedBoardIndex.value])
         selectBoard(filteredBoards.value[selectedBoardIndex.value])
         // Focus school field after selection
         const schoolInput = document.getElementById('school')
@@ -1852,6 +1963,7 @@ const handleBoardKeydown = (event: KeyboardEvent) => {
           schoolInput.focus()
         }
       } else if (filteredBoards.value.length === 1) {
+        console.log('[Board Keydown] Selecting single board match:', filteredBoards.value[0])
         selectBoard(filteredBoards.value[0])
         // Focus school field after selection
         const schoolInput = document.getElementById('school')
@@ -1871,6 +1983,12 @@ const handleBoardKeydown = (event: KeyboardEvent) => {
 
 // Add board selection function
 const selectBoard = async (board: { id: number; name: string }) => {
+  console.log('[Board Selection] Selected board:', board)
+
+  // CRITICAL FIX: Directly update the Vuelidate model first
+  v$.value.boardId.$model = board.id
+
+  // Then update the form data and UI state
   formData.boardId = board.id
   boardSearch.value = board.name
   showBoardDropdown.value = false
@@ -1886,11 +2004,20 @@ const selectBoard = async (board: { id: number; name: string }) => {
   selectedStandard.value = null
   standards.value = []
 
-  // Validate board selection
+  // Validate board selection - ensure this is set correctly
   validationStates.boardId.touched = true
   validationStates.boardId.valid = true
-  await v$.value.$touch()
+
+  // Force validation update
   await v$.value.boardId.$touch()
+  await v$.value.$touch()
+
+  console.log('[Board Selection] Updated validation state:', {
+    formDataBoardId: formData.boardId,
+    validationState: validationStates.boardId,
+    vuelidateState: v$.value.boardId,
+    vuelidateErrors: v$.value.boardId.$errors
+  })
 
   // Fetch schools for selected board
   await fetchSchools()
@@ -1905,7 +2032,11 @@ const selectBoard = async (board: { id: number; name: string }) => {
 // Add watch for board search to validate empty field
 watch(boardSearch, (newValue) => {
   if (!newValue && validationStates.boardId.touched) {
+    console.log('[Board Watch] Board search cleared, updating validation state')
     validationStates.boardId.valid = false
+    formData.boardId = 0
+    v$.value.boardId.$model = 0
+    v$.value.boardId.$touch()
   }
 })
 
@@ -2143,5 +2274,32 @@ watch(
   background-color: #6c757d;
   border-color: #6c757d;
   cursor: not-allowed;
+}
+
+/* Replace with enhanced styling */
+.subject-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem;
+  border-radius: 2rem;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.subject-badge:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.subject-badge i {
+  margin-right: 0.5rem;
+  color: #6c757d;
 }
 </style>

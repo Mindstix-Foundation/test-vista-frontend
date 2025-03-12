@@ -218,6 +218,13 @@ interface TopicData {
   chapter_id: number
 }
 
+interface MediumStandardSubject {
+  id: number
+  instruction_medium_id: number
+  standard_id: number
+  subject_id: number
+}
+
 const route = useRoute()
 const router = useRouter()
 const toastStore = useToastStore()
@@ -229,6 +236,7 @@ const selectedSubject = ref<Subject | null>(null)
 const chapters = ref<ChapterData[]>([])
 const isQuickEditMode = ref(false)
 const selectedChapterForDelete = ref<ChapterData | null>(null)
+const mediumStandardSubjectId = ref<number | null>(null)
 
 onMounted(async () => {
   await fetchData()
@@ -259,9 +267,27 @@ const fetchData = async () => {
     const subjectResponse = await axiosInstance.get(`/subjects/${subjectId}`)
     selectedSubject.value = subjectResponse.data
 
-    // Fetch chapters and topics in a single request
+    // Get the medium_standard_subject_id using the API endpoint
+    const mediumStandardSubjectResponse = await axiosInstance.get('/medium-standard-subjects', {
+      params: {
+        boardId: boardId,
+        instruction_medium_id: mediumId,
+        standard_id: standardId,
+        subject_id: subjectId
+      }
+    })
+
+    // Check if we got a valid response with at least one record
+    if (!mediumStandardSubjectResponse.data || mediumStandardSubjectResponse.data.length === 0) {
+      throw new Error('Could not find medium-standard-subject association')
+    }
+
+    const mediumStandardSubject: MediumStandardSubject = mediumStandardSubjectResponse.data[0]
+    mediumStandardSubjectId.value = mediumStandardSubject.id
+
+    // Fetch chapters using the correct medium_standard_subject_id
     const chaptersResponse = await axiosInstance.get(
-      `/chapters?mediumStandardSubjectId=${route.params.id}`,
+      `/chapters?mediumStandardSubjectId=${mediumStandardSubject.id}`,
     )
 
     // Transform the response data to match our interface
@@ -401,11 +427,14 @@ const handleChapterReorder = async ({ item, newIndex }: Sortable.SortableEvent) 
 
     // Get the chapter ID from the dragged item
     const chapterId = Number(item.getAttribute('data-chapter-id'))
-    // Get the subject ID from the route params
-    const mediumStandardSubjectId = Number(route.params.id)
+
+    // Use the stored mediumStandardSubjectId instead of the route params
+    if (!mediumStandardSubjectId.value) {
+      throw new Error('Medium standard subject ID not found')
+    }
 
     // Make API call to update only the dragged chapter's position
-    await axiosInstance.put(`/chapters/reorder/${chapterId}/${mediumStandardSubjectId}`, {
+    await axiosInstance.put(`/chapters/reorder/${chapterId}/${mediumStandardSubjectId.value}`, {
       sequential_chapter_number: newIndex + 1,
     })
 

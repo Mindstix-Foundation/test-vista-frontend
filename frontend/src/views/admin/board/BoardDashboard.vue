@@ -16,7 +16,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="text-center my-5">
+    <div v-if="isLoading && !isSearching" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -29,35 +29,56 @@
 
     <!-- Content when data is loaded -->
     <template v-else>
-      <!-- Search Section -->
-      <div class="row p-2 gy-2 justify-content-center">
-        <div class="col-12 col-sm-10">
-          <div class="input-group">
-            <div class="form-floating">
-              <input
-                type="text"
-                class="form-control"
-                id="boardFilter"
-                placeholder="Search for Board"
-                v-model="searchQuery"
-                autocomplete="off"
-              />
-              <label for="boardFilter">
-                <i class="bi bi-search text-secondary"></i> Search for Board
-              </label>
+      <!-- Search and Sort Section -->
+      <div class="row p-2 justify-content-center mb-2">
+        <div class="col-12 col-sm-10 col-md-10">
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <div class="search-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input
+                  type="text"
+                  class="form-control search-input"
+                  id="boardFilter"
+                  placeholder="Search boards by name..."
+                  v-model="searchQuery"
+                  autocomplete="off"
+                  @input="handleSearchInput"
+                  ref="searchInputRef"
+                />
+                <i v-if="isSearching" class="bi bi-arrow-repeat search-loading-icon"></i>
+                <i v-else-if="searchQuery" class="bi bi-x-circle clear-search-icon" @click="clearSearch"></i>
+              </div>
             </div>
-            <span class="input-group-text clear-icon" @click="clearBoardFilter">
-              <i class="bi bi-x-lg"></i>
-            </span>
+            <div class="col-12 col-md-4">
+              <div class="sort-wrapper">
+                <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="handleSortChange">
+                  <option value="name_asc">Sort by Name (A-Z)</option>
+                  <option value="name_desc">Sort by Name (Z-A)</option>
+                  <option value="created_at_desc">Sort by Created At (Newest)</option>
+                  <option value="created_at_asc">Sort by Created At (Oldest)</option>
+                  <option value="updated_at_desc">Sort by Updated At (Newest)</option>
+                  <option value="updated_at_asc">Sort by Updated At (Oldest)</option>
+                </select>
+                <i class="bi bi-funnel sort-icon"></i>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Table Section -->
-      <div id="table-container" class="row mt-4 p-2 justify-content-center">
+      <!-- Table Section with Loading Overlay -->
+      <div id="table-container" class="row p-2 justify-content-center">
         <div class="col col-12 col-sm-10 col-md-10">
-          <div class="table-responsive">
-            <table class="table table-sm table-hover table-striped table-bordered">
+          <div class="table-responsive position-relative">
+            <!-- Loading overlay for search -->
+            <div v-if="isSearching" class="search-loading-overlay">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Searching...</span>
+              </div>
+            </div>
+
+            <table class="table table-sm table-hover table-striped table-bordered" :class="{ 'table-searching': isSearching }">
               <colgroup>
                 <col style="width: 10px" />
                 <col style="width: 100%" />
@@ -88,6 +109,45 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div v-if="totalPages > 1" class="row mt-3 p-2 justify-content-center">
+        <div class="col-12 col-sm-10">
+          <div class="d-flex justify-content-between align-items-center">
+            <!-- Pagination Info -->
+            <div class="text-muted">
+              Showing {{ boards.length ? (currentPage - 1) * pageSize + 1 : 0 }} to
+              {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} entries
+            </div>
+
+            <!-- Pagination Buttons -->
+            <nav aria-label="Board pagination">
+              <ul class="pagination mb-0">
+                <!-- Previous Page Button -->
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                  <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+
+                <!-- Page Numbers -->
+                <li v-for="page in visiblePageNumbers" :key="page" class="page-item"
+                    :class="{ active: page === currentPage, disabled: page === '...' }">
+                  <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(Number(page))">{{ page }}</a>
+                  <span v-else class="page-link">...</span>
+                </li>
+
+                <!-- Next Page Button -->
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                  <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
           </div>
         </div>
       </div>
@@ -409,14 +469,94 @@ const router = useRouter()
 const route = useRoute()
 
 const searchQuery = ref('')
+const searchInputRef = ref<HTMLInputElement | null>(null)
 const boards = ref<Board[]>([])
 const selectedBoard = ref<BoardDetails | null>(null)
 const isLoading = ref(true)
+const isSearching = ref(false)
 const error = ref<string | null>(null)
 const showInfoModal = ref(false)
 const associatedSchools = ref<Array<{ id: number; name: string }>>([])
 const confirmationText = ref('')
 const deleteModal = ref<Modal | null>(null)
+const searchTimeout = ref<number | null>(null)
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = 15 // Fixed page size
+const totalItems = ref(0)
+const totalPages = ref(1)
+const sortOption = ref('name_asc')
+
+// Computed properties for sorting
+const sortBy = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like created_at_asc, we need to return "created_at"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return `${parts[0]}_${parts[1]}`
+    }
+    // For options like name_asc, we return "name"
+    return parts[0]
+  }
+  return 'name' // Default fallback
+})
+
+const sortOrder = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like created_at_asc, we need to return "asc"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return parts[2]
+    }
+    // For options like name_asc, we return "asc"
+    return parts[1]
+  }
+  return 'asc' // Default fallback
+})
+
+// Computed property to determine which page numbers to show
+const visiblePageNumbers = computed(() => {
+  const totalVisible = 5 // Number of page buttons to show
+  const pages: (number | string)[] = []
+
+  if (totalPages.value <= totalVisible) {
+    // If we have fewer pages than the visible count, show all pages
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Always include first page
+    pages.push(1)
+
+    // Calculate start and end of visible pages around current page
+    let start = Math.max(2, currentPage.value - Math.floor(totalVisible / 2))
+    const end = Math.min(totalPages.value - 1, start + totalVisible - 3)
+
+    // Adjust start if end is too close to totalPages
+    start = Math.max(2, Math.min(start, totalPages.value - totalVisible + 2))
+
+    // Add ellipsis if needed
+    if (start > 2) {
+      pages.push('...')
+    }
+
+    // Add visible page numbers
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+
+    // Add ellipsis if needed
+    if (end < totalPages.value - 1) {
+      pages.push('...')
+    }
+
+    // Always include last page
+    pages.push(totalPages.value)
+  }
+
+  return pages
+})
 
 async function fetchLocationData(cityId: number) {
   try {
@@ -481,26 +621,127 @@ const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
 
 const fetchBoards = async () => {
   try {
-    isLoading.value = true
+    if (!searchQuery.value) {
+      isLoading.value = true
+    } else {
+      isSearching.value = true
+    }
     error.value = null
-    const response = await axiosInstance.get('/boards')
-    boards.value = response.data
+
+    // Add pagination, sorting, and search parameters to the API request
+    const response = await axiosInstance.get('/boards', {
+      params: {
+        page: currentPage.value,
+        page_size: pageSize,
+        sort_by: sortBy.value,
+        sort_order: sortOrder.value,
+        search: searchQuery.value || undefined
+      }
+    })
+
+    console.log('API Response:', response.data)
+
+    // Check if response has data property that contains the array and pagination info
+    if (response.data && typeof response.data === 'object') {
+      if (response.data.data && Array.isArray(response.data.data)) {
+        // Handle paginated response format
+        boards.value = response.data.data
+
+        // Use the meta information from the API response
+        if (response.data.meta) {
+          totalItems.value = response.data.meta.total || 0
+          totalPages.value = response.data.meta.total_pages || 1
+        } else {
+          // Fallback if meta is missing
+          totalItems.value = boards.value.length
+          totalPages.value = Math.ceil(totalItems.value / pageSize)
+        }
+      } else if (Array.isArray(response.data)) {
+        // Handle array response format (fallback)
+        boards.value = response.data
+        totalItems.value = response.data.length
+        totalPages.value = Math.ceil(response.data.length / pageSize)
+      } else {
+        console.error('Unexpected response format:', response.data)
+        boards.value = []
+        error.value = 'Received invalid data format from server'
+      }
+    } else {
+      boards.value = []
+      error.value = 'Failed to load boards. Please try again.'
+    }
   } catch (err) {
     console.error('Error fetching boards:', err)
     error.value = 'Failed to load boards. Please try again.'
   } finally {
     isLoading.value = false
+    isSearching.value = false
   }
 }
 
-const filteredBoards = computed(() => {
-  const query = searchQuery.value.toLowerCase()
-  return boards.value.filter(
-    (board: Board) =>
-      board.name.toLowerCase().includes(query) ||
-      (board.abbreviation?.toLowerCase() || '').includes(query),
-  )
-})
+// Use the boards directly since filtering is now done on the server
+const filteredBoards = computed(() => boards.value)
+
+// Improved debounce function for search input
+const handleSearchInput = () => {
+  // Immediately set searching state for visual feedback
+  isSearching.value = true;
+
+  // Clear any existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+
+  // Set a new timeout
+  searchTimeout.value = setTimeout(() => {
+    currentPage.value = 1; // Reset to first page when search changes
+    fetchBoards();
+
+    // Update URL with search query for bookmarking/sharing
+    updateUrlParams();
+  }, 500) as unknown as number; // Increased debounce time for better UX
+}
+
+// Clear search function that maintains focus
+const clearSearch = () => {
+  searchQuery.value = '';
+  currentPage.value = 1;
+
+  // Set searching state for visual feedback
+  isSearching.value = true;
+
+  fetchBoards();
+
+  // Update URL to remove search parameter
+  updateUrlParams();
+
+  // Maintain focus on the search input after clearing
+  if (searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
+}
+
+// Function to update URL parameters without reloading the page
+const updateUrlParams = () => {
+  const query: Record<string, string> = {}
+
+  if (searchQuery.value) {
+    query.search = searchQuery.value
+  }
+
+  if (currentPage.value > 1) {
+    query.page = currentPage.value.toString()
+  }
+
+  if (sortOption.value !== 'name_asc') {
+    query.sort = sortOption.value
+  }
+
+  // Update URL without reloading the page
+  router.replace({ query }).catch(() => {
+    // Ignore navigation errors
+  })
+}
 
 const getHighlightedText = (board: Board) => {
   const query = searchQuery.value
@@ -618,18 +859,35 @@ const deleteBoard = async () => {
   }
 }
 
-const clearBoardFilter = () => {
-  searchQuery.value = ''
-}
-
 const cleanupModals = () => {
   confirmationText.value = ''
-  const deleteModal = bootstrap.Modal.getInstance(
-    document.getElementById('deleteConfirmationModal')!,
-  )
-  deleteModal?.hide()
-  const viewModal = bootstrap.Modal.getInstance(document.getElementById('boardInfoModal')!)
-  viewModal?.hide()
+
+  // Get all modal elements
+  const deleteModal = document.getElementById('deleteConfirmationModal')
+  const viewModal = document.getElementById('boardInfoModal')
+
+  // Hide and cleanup delete modal if it exists
+  if (deleteModal) {
+    const deleteModalInstance = bootstrap.Modal.getInstance(deleteModal)
+    deleteModalInstance?.hide()
+  }
+
+  // Hide and cleanup view modal if it exists
+  if (viewModal) {
+    const viewModalInstance = bootstrap.Modal.getInstance(viewModal)
+    viewModalInstance?.hide()
+  }
+
+  // Remove any remaining backdrops
+  const backdrops = document.getElementsByClassName('modal-backdrop')
+  while (backdrops.length > 0) {
+    backdrops[0].remove()
+  }
+
+  // Remove modal-open class from body
+  document.body.classList.remove('modal-open')
+  document.body.style.removeProperty('padding-right')
+  document.body.style.removeProperty('overflow')
 }
 
 const navigateToSchools = (boardName?: string) => {
@@ -672,7 +930,15 @@ watch(showInfoModal, (newValue) => {
   }
 })
 
-// Fetch boards when component mounts
+// Add this to ensure focus is maintained after data updates
+watch([boards, isSearching], () => {
+  // If we were searching and now we're done, restore focus to search input
+  if (!isSearching.value && searchInputRef.value && document.activeElement !== searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
+});
+
+// Lifecycle hooks
 onMounted(() => {
   // Initialize delete modal
   const modalElement = document.getElementById('deleteConfirmationModal')
@@ -680,9 +946,41 @@ onMounted(() => {
     deleteModal.value = new Modal(modalElement)
   }
 
+  // Initialize from route query if present
+  if (route.query.search) {
+    searchQuery.value = route.query.search as string
+  }
+
+  if (route.query.page) {
+    const pageNum = parseInt(route.query.page as string, 10)
+    if (!isNaN(pageNum) && pageNum > 0) {
+      currentPage.value = pageNum
+    }
+  }
+
+  if (route.query.sort) {
+    sortOption.value = route.query.sort as string
+  }
+
   // Fetch boards
   fetchBoards()
 })
+
+// Function to change page
+const changePage = (page: number | string) => {
+  if (typeof page === 'number') {
+    currentPage.value = page
+    fetchBoards()
+    updateUrlParams()
+  }
+}
+
+// Function to handle sort change
+const handleSortChange = () => {
+  currentPage.value = 1 // Reset to first page when changing sort
+  fetchBoards()
+  updateUrlParams()
+}
 </script>
 
 <style scoped>
@@ -706,6 +1004,11 @@ onMounted(() => {
   .btn-custom {
     background-color: #dc3545 !important;
     color: white !important;
+  }
+
+  /* Add padding to the bottom of the container to prevent overlap with fixed button */
+  .container.mt-4.mb-5 {
+    padding-bottom: 30px !important;
   }
 }
 
@@ -758,5 +1061,162 @@ onMounted(() => {
 .spinner-border {
   width: 3rem;
   height: 3rem;
+}
+
+/* Custom pagination styling */
+.pagination .page-item.active .page-link {
+  background-color: #212529;
+  border-color: #212529;
+  color: white;
+}
+
+.pagination .page-link {
+  color: #212529;
+}
+
+.pagination .page-link:hover {
+  background-color: #e9ecef;
+  color: #000;
+}
+
+/* Modern search and sort styling */
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 40px;
+  padding-right: 40px;
+  height: 48px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
+}
+
+.clear-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 101; /* Higher than the input focus z-index */
+}
+
+.clear-search-icon:hover {
+  color: #212529;
+}
+
+.search-loading-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.sort-wrapper {
+  position: relative;
+}
+
+.sort-select {
+  height: 48px;
+  padding-right: 40px;
+  border-radius: 6px;
+  appearance: none;
+  background-image: none;
+  transition: all 0.3s ease;
+}
+
+.sort-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.sort-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .search-input, .sort-select {
+    height: 42px;
+  }
+}
+
+.opacity-50 {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+/* Search loading overlay */
+.search-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.table-searching {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+/* Improved spinner animation */
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Ensure search input stays in focus */
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
+}
+
+/* Ensure search icons stay visible */
+.search-icon, .clear-search-icon, .search-loading-icon {
+  z-index: 101; /* Higher than the input focus z-index */
+}
+
+/* Ensure the search wrapper maintains its position */
+.search-wrapper {
+  position: relative;
+  z-index: 10;
 }
 </style>

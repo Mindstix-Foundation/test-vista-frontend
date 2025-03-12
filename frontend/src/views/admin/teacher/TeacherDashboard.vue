@@ -16,56 +16,61 @@
     </div>
 
     <!-- Search Section -->
-    <div class="row p-2 gy-2 g-3 justify-content-center">
-      <!-- Search Teacher -->
-      <div class="col-12 col-sm-5">
-        <div class="input-group">
-          <div class="form-floating">
-            <input
-              type="text"
-              class="form-control"
-              id="searchTeacherInput"
-              placeholder="Search for Teacher"
-              v-model="teacherSearch"
-              @input="filterTeachers"
-            />
-            <label for="searchTeacherInput">
-              <i class="bi bi-search text-secondary"></i> Search for Teacher
-            </label>
+    <div class="row p-2 justify-content-center mb-2">
+      <div class="col-12 col-sm-10 col-md-10">
+        <div class="row g-2">
+          <!-- Teacher Search (Full Width) -->
+          <div class="col-12">
+            <div class="search-wrapper">
+              <i class="bi bi-search search-icon"></i>
+              <input
+                type="text"
+                class="form-control search-input"
+                id="searchTeacherInput"
+                placeholder="Search for Teacher"
+                v-model="teacherSearch"
+                autocomplete="off"
+                @input="handleTeacherSearchInput"
+                ref="teacherSearchInputRef"
+              />
+              <i v-if="isSearchingTeacher" class="bi bi-arrow-repeat search-loading-icon"></i>
+              <i v-else-if="teacherSearch" class="bi bi-x-circle clear-search-icon" @click="clearSearch('teacher')"></i>
+            </div>
           </div>
-          <span
-            class="input-group-text clear-icon"
-            @click="clearSearch('teacher')"
-            style="cursor: pointer"
-          >
-            <i class="bi bi-x-lg"></i>
-          </span>
-        </div>
-      </div>
 
-      <!-- Search School -->
-      <div class="col-12 col-sm-5">
-        <div class="input-group">
-          <div class="form-floating">
-            <input
-              type="text"
-              class="form-control"
-              id="searchSchoolInput"
-              placeholder="Search for School"
-              v-model="schoolSearch"
-              @input="filterTeachers"
-            />
-            <label for="searchSchoolInput">
-              <i class="bi bi-search text-secondary"></i> Search for School
-            </label>
+          <!-- Second Row with School Search and Sort Dropdown -->
+          <div class="col-12 col-md-6">
+            <div class="search-wrapper">
+              <i class="bi bi-search search-icon"></i>
+              <input
+                type="text"
+                class="form-control search-input"
+                id="searchSchoolInput"
+                placeholder="Search for School"
+                v-model="schoolSearch"
+                autocomplete="off"
+                @input="handleSchoolSearchInput"
+                ref="schoolSearchInputRef"
+              />
+              <i v-if="isSearchingSchool" class="bi bi-arrow-repeat search-loading-icon"></i>
+              <i v-else-if="schoolSearch" class="bi bi-x-circle clear-search-icon" @click="clearSearch('school')"></i>
+            </div>
           </div>
-          <span
-            class="input-group-text clear-icon"
-            @click="clearSearch('school')"
-            style="cursor: pointer"
-          >
-            <i class="bi bi-x-lg"></i>
-          </span>
+
+          <!-- Sort Dropdown (Half Width) -->
+          <div class="col-12 col-md-6">
+            <div class="sort-wrapper">
+              <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="handleSortChange">
+                <option value="name_asc">Sort by Teacher Name (A-Z)</option>
+                <option value="name_desc">Sort by Teacher Name (Z-A)</option>
+                <option value="created_at_desc">Sort by Created At (Newest)</option>
+                <option value="created_at_asc">Sort by Created At (Oldest)</option>
+                <option value="updated_at_desc">Sort by Updated At (Newest)</option>
+                <option value="updated_at_asc">Sort by Updated At (Oldest)</option>
+              </select>
+              <i class="bi bi-funnel sort-icon"></i>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -73,10 +78,18 @@
     <!-- Table Section -->
     <div id="table-container" class="row p-2 mt-4 justify-content-center">
       <div class="col-12 col-sm-10 col-md-10">
-        <div class="table-responsive">
+        <div class="table-responsive position-relative">
+          <!-- Loading overlay for search -->
+          <div v-if="isSearchingTeacher || isSearchingSchool" class="search-loading-overlay">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Searching...</span>
+            </div>
+          </div>
+
           <table
             class="table table-sm table-striped table-hover table-bordered"
             style="width: 100%"
+            :class="{ 'table-searching': isSearchingTeacher || isSearchingSchool }"
           >
             <colgroup>
               <col style="width: 20px" />
@@ -112,7 +125,7 @@
               </tr>
             </thead>
             <tbody class="table-group-divider">
-              <tr v-if="loading">
+              <tr v-if="loading && !isSearchingTeacher && !isSearchingSchool">
                 <td colspan="5" class="text-center">
                   <output class="spinner-border">
                     <span class="visually-hidden">Loading...</span>
@@ -121,7 +134,7 @@
               </tr>
               <template v-else>
                 <tr v-for="(teacher, index) in filteredTeachers" :key="teacher.id">
-                  <th scope="row">{{ index + 1 }}</th>
+                  <th scope="row">{{ (currentPage - 1) * pageSize + index + 1 }}</th>
                   <td>{{ teacher.name }}</td>
                   <td>{{ teacher.school.name }}</td>
                   <td>{{ teacher.status ? 'Granted' : 'Revoked' }}</td>
@@ -139,6 +152,45 @@
               </template>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div v-if="totalPages > 1" class="row mt-3 p-2 justify-content-center">
+      <div class="col-12 col-sm-10">
+        <div class="d-flex justify-content-between align-items-center">
+          <!-- Pagination Info -->
+          <div class="text-muted">
+            Showing {{ teachers.length ? (currentPage - 1) * pageSize + 1 : 0 }} to
+            {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} entries
+          </div>
+
+          <!-- Pagination Buttons -->
+          <nav aria-label="Teacher pagination">
+            <ul class="pagination mb-0">
+              <!-- Previous Page Button -->
+              <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+
+              <!-- Page Numbers -->
+              <li v-for="page in visiblePageNumbers" :key="page" class="page-item"
+                  :class="{ active: page === currentPage, disabled: page === '...' }">
+                <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(Number(page))">{{ page }}</a>
+                <span v-else class="page-link">...</span>
+              </li>
+
+              <!-- Next Page Button -->
+              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </div>
@@ -169,6 +221,11 @@
                 <div class="col-12">
                   <form>
                     <div class="row g-3">
+                      <!-- Basic Information Section -->
+                      <div class="col-12 mb-3">
+                        <h5 class="border-bottom pb-2">Basic Information</h5>
+                      </div>
+
                       <div class="row">
                         <label class="col-12 col-lg-3 col-form-label fw-bold" for="teacherName">
                           Teacher Name:
@@ -183,6 +240,7 @@
                           />
                         </div>
                       </div>
+
                       <div class="row">
                         <label class="col-12 col-lg-3 col-form-label fw-bold" for="schoolName">
                           School Name:
@@ -197,6 +255,7 @@
                           />
                         </div>
                       </div>
+
                       <div class="row">
                         <div class="col-12 col-lg-6">
                           <div class="row">
@@ -231,12 +290,13 @@
                                 id="alternateContactNumber"
                                 readonly
                                 class="form-control-plaintext"
-                                :value="selectedTeacher.alternateContactNumber"
+                                :value="selectedTeacher.alternateContactNumber || 'Not provided'"
                               />
                             </div>
                           </div>
                         </div>
                       </div>
+
                       <div class="row">
                         <label class="col-12 col-lg-3 col-form-label fw-bold" for="emailId">
                           Email Id:
@@ -251,6 +311,7 @@
                           />
                         </div>
                       </div>
+
                       <div class="row">
                         <label
                           class="col-12 col-lg-3 col-form-label fw-bold"
@@ -269,8 +330,28 @@
                         </div>
                       </div>
 
-                      <div id="classSubjectList" v-if="selectedTeacher.teacherSubjects.length > 0">
-                        <h5>Standards & Subjects</h5>
+                      <div class="row">
+                        <label class="col-12 col-lg-3 col-form-label fw-bold" for="status">
+                          Access Status:
+                        </label>
+                        <div class="col-12 col-lg-9">
+                          <div class="form-control-plaintext">
+                            <span
+                              class="badge"
+                              :class="selectedTeacher.status ? 'bg-success' : 'bg-danger'"
+                            >
+                              {{ selectedTeacher.status ? 'Granted' : 'Revoked' }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Teaching Assignments Section -->
+                      <div class="col-12 mt-4">
+                        <h5 class="border-bottom pb-2">Teaching Assignments</h5>
+                      </div>
+
+                      <div id="classSubjectList" v-if="selectedTeacher.teacherSubjects.length > 0" class="col-12">
                         <ul class="list-group">
                           <li
                             v-for="(standardGroup, standardName) in groupedTeacherSubjects"
@@ -278,19 +359,24 @@
                             class="mb-2"
                           >
                             <div class="list-group-item">
-                              <div class="fw-bold">Standard {{ standardName }}</div>
-                              <div class="ps-3">
-                                {{
-                                  standardGroup
-                                    .map((subject) => subject.mediumStandardSubject.subject.name)
-                                    .join(', ')
-                                }}
+                              <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold">Standard {{ standardName }}</span>
+                              </div>
+                              <div class="ps-3 d-flex flex-wrap gap-2">
+                                <span
+                                  v-for="subject in standardGroup"
+                                  :key="subject.id"
+                                  class="subject-badge"
+                                >
+                                  <i class="bi bi-book me-1"></i>
+                                  {{ subject.mediumStandardSubject.subject.name }}
+                                </span>
                               </div>
                             </div>
                           </li>
                         </ul>
                       </div>
-                      <div v-else class="text-center text-muted">No subjects assigned</div>
+                      <div v-else class="col-12 text-center text-muted">No subjects assigned</div>
                     </div>
                   </form>
                 </div>
@@ -416,38 +502,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Modal } from 'bootstrap'
 import type { Teacher } from '@/models/Teacher'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
 
-interface SubjectResponse {
-  id: number
-  school_standard_id: number
-  medium_standard_subject_id: number
-  medium_standard_subject: {
-    id: number
-    instruction_medium: {
-      id: number
-      instruction_medium: string
-    }
-    subject: {
-      id: number
-      name: string
-    }
-  }
-  school_standard: {
-    id: number
-    standard: {
-      id: number
-      name: string
-    }
-  }
+// Extend the Teacher interface to include the new properties
+interface ExtendedTeacher extends Teacher {
+  teachingAssignments?: TeachingAssignment[]
 }
 
-interface UserResponse {
+// Remove the unused UserResponse interface completely
+// interface UserResponse {
+//   id: number
+//   name: string
+//   email_id: string
+//   contact_number: string
+//   alternate_contact_number?: string
+//   highest_qualification: string
+//   status: boolean
+//   created_at: string
+//   updated_at: string
+// }
+
+// Define a type for the API response data
+interface TeacherApiResponse {
   id: number
   name: string
   email_id: string
@@ -457,6 +538,25 @@ interface UserResponse {
   status: boolean
   created_at: string
   updated_at: string
+  schools?: string[] // Array of school names
+}
+
+// Add interface for teaching assignment
+interface TeachingAssignment {
+  id: number
+  standard: {
+    id: number
+    name: string
+    sequence_number: number
+  }
+  subject: {
+    id: number
+    name: string
+  }
+  medium: {
+    id: number
+    name: string
+  }
 }
 
 const route = useRoute()
@@ -464,11 +564,101 @@ const teachers = ref<Teacher[]>([])
 const loading = ref(true)
 const teacherSearch = ref('')
 const schoolSearch = ref('')
-const selectedTeacher = ref<Teacher | null>(null)
+const teacherSearchInputRef = ref<HTMLInputElement | null>(null)
+const schoolSearchInputRef = ref<HTMLInputElement | null>(null)
+const selectedTeacher = ref<ExtendedTeacher | null>(null)
 const showFilter = ref(false)
 const selectedStatus = ref('All')
 const toastStore = useToastStore()
 const confirmationText = ref('')
+const isSearchingTeacher = ref(false)
+const isSearchingSchool = ref(false)
+const teacherSearchTimeout = ref<number | null>(null)
+const schoolSearchTimeout = ref<number | null>(null)
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = 15 // Fixed page size
+const totalItems = ref(0)
+const totalPages = ref(0)
+const sortOption = ref('name_asc')
+
+// Computed properties for sorting
+const sortBy = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like created_at_asc, we need to return "created_at"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return `${parts[0]}_${parts[1]}`
+    }
+    // For options like name_asc, we return "name"
+    return parts[0]
+  }
+  return 'name' // Default fallback
+})
+
+const sortOrder = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like created_at_asc, we need to return "asc"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return parts[2]
+    }
+    // For options like name_asc, we return "asc"
+    return parts[1]
+  }
+  return 'asc' // Default fallback
+})
+
+// Computed property to determine which page numbers to show
+const visiblePageNumbers = computed(() => {
+  const pages = []
+  const maxVisiblePages = 5
+
+  if (totalPages.value <= maxVisiblePages) {
+    // Show all pages if there are few pages
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Always show first page
+    pages.push(1)
+
+    // Calculate start and end of visible pages
+    let startPage = Math.max(2, currentPage.value - 1)
+    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1)
+
+    // Adjust if we're near the beginning
+    if (currentPage.value <= 3) {
+      endPage = Math.min(totalPages.value - 1, 4)
+    }
+
+    // Adjust if we're near the end
+    if (currentPage.value >= totalPages.value - 2) {
+      startPage = Math.max(2, totalPages.value - 3)
+    }
+
+    // Add ellipsis if needed before visible pages
+    if (startPage > 2) {
+      pages.push('...')
+    }
+
+    // Add visible pages
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i)
+    }
+
+    // Add ellipsis if needed after visible pages
+    if (endPage < totalPages.value - 1) {
+      pages.push('...')
+    }
+
+    // Always show last page
+    pages.push(totalPages.value)
+  }
+
+  return pages
+})
 
 // Initialize from route query if present
 onMounted(async () => {
@@ -476,122 +666,166 @@ onMounted(async () => {
   if (schoolName) {
     schoolSearch.value = schoolName
   }
+
+  // Initialize sort parameters from query params if present
+  if (route.query.sort_by && route.query.sort_order) {
+    const sortByParam = route.query.sort_by as string
+    const sortOrderParam = route.query.sort_order as string
+    sortOption.value = `${sortByParam}_${sortOrderParam}`
+  }
+
+  // Initialize page from query params if present
+  if (route.query.page) {
+    const page = parseInt(route.query.page as string)
+    if (!isNaN(page) && page > 0) {
+      currentPage.value = page
+    }
+  }
+
   await fetchTeachers()
 })
 
 const fetchTeachers = async () => {
   try {
-    loading.value = true
+    if (!isSearchingTeacher.value && !isSearchingSchool.value) {
+      loading.value = true
+    }
     console.log('Starting teacher data fetch process...')
 
-    // Step 1: Get all roles to find TEACHER role ID
-    console.log('Step 1: Fetching roles...')
-    const { data: roles } = await axiosInstance.get('/roles')
-    console.log('Fetched roles:', roles)
-
-    const teacherRole = roles.find((role: { role_name: string }) => role.role_name === 'TEACHER')
-    if (!teacherRole) {
-      console.error('Teacher role not found in roles:', roles)
-      throw new Error('Teacher role configuration not found')
-    }
-    console.log('Found teacher role:', teacherRole)
-
-    // Step 2: Get all user-roles to find users with TEACHER role
-    console.log('Step 2: Fetching user roles...')
-    const { data: userRoles } = await axiosInstance.get('/user-roles')
-    console.log('Fetched user roles:', userRoles)
-
-    // Filter user IDs that have the TEACHER role
-    const teacherUserIds = userRoles
-      .filter((userRole: { role: { id: number } }) => userRole.role.id === teacherRole.id)
-      .map((userRole: { user: { id: number } }) => userRole.user.id)
-    console.log('Filtered teacher user IDs:', teacherUserIds)
-
-    if (teacherUserIds.length === 0) {
-      console.log('No teachers found in the system')
-      teachers.value = []
-      return
+    // Define the API parameters for pagination, sorting, and search
+    const params: Record<string, string | number> = {
+      page: currentPage.value,
+      page_size: pageSize,
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value
     }
 
-    // Step 3: Get user details for all teacher IDs
-    console.log('Step 3: Fetching user details...')
-    const { data: allUsers } = await axiosInstance.get('/users')
-    console.log('Fetched all users:', allUsers)
+    // Add search parameter if teacherSearch is provided
+    if (teacherSearch.value) {
+      params.search = teacherSearch.value
+    }
 
-    // Filter only teacher users
-    const teacherUsers = allUsers.filter((user: { id: number }) => teacherUserIds.includes(user.id))
-    console.log('Filtered teacher users:', teacherUsers)
+    // Add schoolSearch parameter if schoolSearch is provided
+    if (schoolSearch.value) {
+      params.schoolSearch = schoolSearch.value
+    }
 
-    // Step 4: Get school assignments for each teacher
-    console.log('Step 4: Fetching school assignments...')
-    const schoolAssignments = await Promise.all(
-      teacherUsers.map(async (user: { id: number }) => {
-        console.log(`Fetching school assignment for user ${user.id}...`)
-        const { data: schools } = await axiosInstance.get(`/user-schools/user/${user.id}`)
-        console.log(`Schools for user ${user.id}:`, schools)
+    // Add status filter if not "All"
+    if (selectedStatus.value !== 'All') {
+      params.status = selectedStatus.value === 'Grant' ? 'true' : 'false'
+    }
 
-        // Get the active school assignment (one without end_date)
-        const activeSchool = schools.find((s: { end_date: string | null }) => !s.end_date)
-        console.log(`Active school for user ${user.id}:`, activeSchool)
+    // Fetch teachers with pagination and search parameters
+    console.log('Fetching teachers with params:', params)
+    const response = await axiosInstance.get('/users', { params })
+    console.log('API Response:', response.data)
 
-        if (activeSchool && activeSchool.school) {
-          return {
-            id: activeSchool.school.id,
-            name: activeSchool.school.name,
-          }
+    // Check if response has data property that contains the array and pagination info
+    if (response.data && typeof response.data === 'object') {
+      if (response.data.data && Array.isArray(response.data.data)) {
+        // Map the API response to our teacher interface
+        teachers.value = response.data.data.map((user: TeacherApiResponse) => ({
+          id: user.id,
+          name: user.name,
+          emailId: user.email_id || '',
+          contactNumber: user.contact_number || '',
+          alternateContactNumber: user.alternate_contact_number || '',
+          highestQualification: user.highest_qualification || '',
+          status: user.status,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          school: user.schools && user.schools.length > 0
+            ? { id: 0, name: user.schools[0] } // Using first school from the array
+            : { id: 0, name: '' },
+          teacherSubjects: [],
+        }))
+
+        // Use the meta information from the API response
+        if (response.data.meta) {
+          totalItems.value = response.data.meta.total || 0
+          totalPages.value = response.data.meta.total_pages || 1
+
+          console.log('Pagination data from meta:', {
+            totalItems: totalItems.value,
+            totalPages: totalPages.value,
+            currentPage: currentPage.value,
+            pageSize: response.data.meta.page_size,
+            teachersLength: teachers.value.length
+          })
+        } else {
+          // Fallback if meta is missing
+          totalItems.value = teachers.value.length
+          totalPages.value = Math.ceil(totalItems.value / pageSize)
         }
-        return { id: 0, name: '' }
-      }),
-    )
-    console.log('Completed school assignments:', schoolAssignments)
 
-    // Combine all data
-    console.log('Combining all data...')
-    teachers.value = teacherUsers.map((user: UserResponse, index: number) => ({
-      id: user.id,
-      name: user.name,
-      emailId: user.email_id,
-      contactNumber: user.contact_number,
-      alternateContactNumber: user.alternate_contact_number,
-      highestQualification: user.highest_qualification,
-      status: user.status,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      school: schoolAssignments[index],
-      teacherSubjects: [],
-    }))
-    console.log('Final teachers data:', teachers.value)
+        console.log('Final teachers data:', teachers.value)
+      } else {
+        console.error('Unexpected response format:', response.data)
+        teachers.value = []
+        totalItems.value = 0
+        totalPages.value = 0
+      }
+    } else {
+      teachers.value = []
+      totalItems.value = 0
+      totalPages.value = 0
+    }
   } catch (error) {
     console.error('Error in fetchTeachers:', error)
     teachers.value = []
+    totalItems.value = 0
+    totalPages.value = 0
   } finally {
     loading.value = false
+    isSearchingTeacher.value = false
+    isSearchingSchool.value = false
   }
 }
 
-// Computed property for filtered teachers
-const filteredTeachers = computed(() => {
-  return teachers.value.filter((teacher) => {
-    const matchesTeacher = teacher.name.toLowerCase().includes(teacherSearch.value.toLowerCase())
-    const matchesSchool = teacher.school.name
-      .toLowerCase()
-      .includes(schoolSearch.value.toLowerCase())
-    const matchesStatus =
-      selectedStatus.value === 'All' ||
-      (selectedStatus.value === 'Grant' && teacher.status) ||
-      (selectedStatus.value === 'Revoke' && !teacher.status)
-    return matchesTeacher && matchesSchool && matchesStatus
-  })
-})
+// Function to change page
+function changePage(page: number) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  fetchTeachers()
+}
 
-// Clear search inputs
+// Function to handle sort change
+function handleSortChange() {
+  currentPage.value = 1 // Reset to first page when changing sort
+  fetchTeachers()
+}
+
+// Update clearSearch function to reset pagination and maintain focus
 function clearSearch(type: 'teacher' | 'school') {
   if (type === 'teacher') {
-    teacherSearch.value = ''
+    teacherSearch.value = '';
+    isSearchingTeacher.value = true;
+    // Maintain focus on the teacher search input after clearing
+    if (teacherSearchInputRef.value) {
+      teacherSearchInputRef.value.focus();
+    }
   } else {
-    schoolSearch.value = ''
+    schoolSearch.value = '';
+    isSearchingSchool.value = true;
+    // Maintain focus on the school search input after clearing
+    if (schoolSearchInputRef.value) {
+      schoolSearchInputRef.value.focus();
+    }
   }
+
+  // Reset to first page when filters change
+  currentPage.value = 1;
+
+  // Fetch teachers with updated filters
+  fetchTeachers();
 }
+
+// Update the filteredTeachers computed property to use the API-filtered data
+const filteredTeachers = computed(() => {
+  // Since we're using server-side filtering, we just return the teachers array
+  // The filtering is handled by the API based on the query parameters
+  return teachers.value
+})
 
 // Toggle filter visibility
 function toggleFilter() {
@@ -602,55 +836,84 @@ function toggleFilter() {
 function filterByStatus(status: string) {
   selectedStatus.value = status
   showFilter.value = false
+
+  // Reset to first page when changing filter
+  currentPage.value = 1
+
+  // Fetch teachers with the new status filter
+  fetchTeachers()
 }
 
 // View modal functions
 async function openViewModal(teacher: Teacher) {
   try {
     loading.value = true
-    console.log('Fetching subjects for teacher:', teacher.id)
+    console.log('Fetching detailed information for teacher:', teacher.id)
 
     // Set initial teacher data first so modal can open
     selectedTeacher.value = {
       ...teacher,
       teacherSubjects: [],
-    }
+    } as ExtendedTeacher
 
     // Show the modal first
     const modal = new Modal(document.getElementById('viewTeacherModal') as HTMLElement)
     modal.show()
 
-    // Then fetch teacher subjects
-    const { data: subjects } = await axiosInstance.get(`/teacher-subjects?userId=${teacher.id}`)
-    console.log('Fetched teacher subjects:', subjects)
+    // Fetch comprehensive teacher data using the new API endpoint
+    const { data: teacherData } = await axiosInstance.get(`/users/${teacher.id}`)
+    console.log('Fetched teacher data:', teacherData)
 
-    // Update the teacher data with fetched subjects
-    selectedTeacher.value = {
-      ...teacher,
-      teacherSubjects: subjects.map((subject: SubjectResponse) => ({
-        id: subject.id,
-        schoolStandardId: subject.school_standard_id,
-        mediumStandardSubjectId: subject.medium_standard_subject_id,
+    // Update the teacher data with fetched information
+    const updatedTeacher: ExtendedTeacher = {
+      id: teacherData.id,
+      name: teacherData.name,
+      emailId: teacherData.email_id,
+      contactNumber: teacherData.contact_number,
+      alternateContactNumber: teacherData.alternate_contact_number || '',
+      highestQualification: teacherData.highest_qualification,
+      status: teacherData.status,
+      createdAt: teacherData.created_at,
+      updatedAt: teacherData.updated_at,
+      school: teacherData.schools && teacherData.schools.length > 0
+        ? {
+            id: teacherData.school_id || 0,
+            name: typeof teacherData.schools[0] === 'string'
+              ? teacherData.schools[0]
+              : teacherData.schools[0].name || ''
+          }
+        : { id: 0, name: '' },
+      // Map teaching assignments to teacherSubjects format for compatibility
+      teacherSubjects: teacherData.teaching_assignments ? teacherData.teaching_assignments.map((assignment: TeachingAssignment) => ({
+        id: assignment.id,
+        schoolStandardId: assignment.standard.id, // Using standard id as a fallback
+        mediumStandardSubjectId: assignment.id, // Using assignment id as a fallback
         mediumStandardSubject: {
-          id: subject.medium_standard_subject.id,
+          id: assignment.id,
           instructionMedium: {
-            id: subject.medium_standard_subject.instruction_medium.id,
-            instruction_medium:
-              subject.medium_standard_subject.instruction_medium.instruction_medium,
+            id: assignment.medium.id,
+            instruction_medium: assignment.medium.name
           },
           standard: {
-            id: subject.school_standard.standard.id,
-            name: subject.school_standard.standard.name,
+            id: assignment.standard.id,
+            name: assignment.standard.name
           },
           subject: {
-            id: subject.medium_standard_subject.subject.id,
-            name: subject.medium_standard_subject.subject.name,
-          },
-        },
-      })),
+            id: assignment.subject.id,
+            name: assignment.subject.name
+          }
+        }
+      })) : [],
     }
+
+    selectedTeacher.value = updatedTeacher
   } catch (error) {
     console.error('Error in openViewModal:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to load teacher details. Please try again.',
+      type: 'error',
+    })
   } finally {
     loading.value = false
   }
@@ -796,10 +1059,38 @@ const confirmationModalMessage = computed(() => {
     : 'Are you sure you want to grant access to this teacher?'
 })
 
-// Filter teachers (used by input event handlers)
-function filterTeachers() {
-  // The actual filtering is handled by the filteredTeachers computed property
-  // This function exists just to satisfy the template event handlers
+// Handle teacher search input with debounce
+const handleTeacherSearchInput = () => {
+  // Immediately set searching state for visual feedback
+  isSearchingTeacher.value = true;
+
+  // Clear any existing timeout
+  if (teacherSearchTimeout.value) {
+    clearTimeout(teacherSearchTimeout.value);
+  }
+
+  // Set a new timeout
+  teacherSearchTimeout.value = setTimeout(() => {
+    currentPage.value = 1; // Reset to first page when search changes
+    fetchTeachers();
+  }, 500) as unknown as number; // Increased debounce time for better UX
+}
+
+// Handle school search input with debounce
+const handleSchoolSearchInput = () => {
+  // Immediately set searching state for visual feedback
+  isSearchingSchool.value = true;
+
+  // Clear any existing timeout
+  if (schoolSearchTimeout.value) {
+    clearTimeout(schoolSearchTimeout.value);
+  }
+
+  // Set a new timeout
+  schoolSearchTimeout.value = setTimeout(() => {
+    currentPage.value = 1; // Reset to first page when search changes
+    fetchTeachers();
+  }, 500) as unknown as number; // Increased debounce time for better UX
 }
 
 // Add this new function to handle modal cleanup
@@ -814,7 +1105,22 @@ function closeViewModal() {
   document.body.style.removeProperty('padding-right')
 }
 
-// Add this computed property in the script section
+// Add watchers to maintain focus after data updates
+watch([isSearchingTeacher], (newVal) => {
+  // If we were searching teachers and now we're done, restore focus to teacher search input
+  if (!newVal && teacherSearchInputRef.value) {
+    teacherSearchInputRef.value.focus();
+  }
+});
+
+watch([isSearchingSchool], (newVal) => {
+  // If we were searching schools and now we're done, restore focus to school search input
+  if (!newVal && schoolSearchInputRef.value) {
+    schoolSearchInputRef.value.focus();
+  }
+});
+
+// Update the groupedTeacherSubjects computed property to sort by standard sequence number
 const groupedTeacherSubjects = computed(() => {
   if (!selectedTeacher.value?.teacherSubjects) return {}
 
@@ -831,6 +1137,7 @@ const groupedTeacherSubjects = computed(() => {
       standard: {
         id: number
         name: string
+        sequence_number?: number
       }
       subject: {
         id: number
@@ -839,7 +1146,8 @@ const groupedTeacherSubjects = computed(() => {
     }
   }
 
-  return selectedTeacher.value.teacherSubjects.reduce(
+  // First group by standard name
+  const groupedByStandard = selectedTeacher.value.teacherSubjects.reduce(
     (groups: { [key: string]: TeacherSubjectGroup[] }, subject) => {
       const standardName = subject.mediumStandardSubject.standard.name
       if (!groups[standardName]) {
@@ -850,6 +1158,15 @@ const groupedTeacherSubjects = computed(() => {
     },
     {},
   )
+
+  // Sort subjects alphabetically within each standard
+  Object.keys(groupedByStandard).forEach(standardName => {
+    groupedByStandard[standardName].sort((a, b) =>
+      a.mediumStandardSubject.subject.name.localeCompare(b.mediumStandardSubject.subject.name)
+    )
+  })
+
+  return groupedByStandard
 })
 </script>
 
@@ -897,6 +1214,29 @@ const groupedTeacherSubjects = computed(() => {
     background-color: #dc3545 !important;
     color: white !important;
   }
+}
+
+/* Teacher modal styles */
+.form-control-plaintext {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.badge {
+  font-size: 0.85rem;
+  padding: 0.35em 0.65em;
+}
+
+.fw-medium {
+  font-weight: 500;
+}
+
+.list-group-item {
+  transition: background-color 0.2s ease;
+}
+
+.list-group-item:hover {
+  background-color: #f8f9fa;
 }
 
 #navTeacher {
@@ -1001,5 +1341,174 @@ const groupedTeacherSubjects = computed(() => {
 
 .btn-group .btn.btn-light:hover {
   background-color: #e9ecef;
+}
+
+/* Pagination styling */
+.pagination .page-item.active .page-link {
+  background-color: #212529 !important;
+  border-color: #212529 !important;
+  color: white !important;
+}
+
+.pagination .page-link {
+  color: #212529;
+}
+
+.pagination .page-link:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Modern search styling */
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 40px;
+  padding-right: 40px;
+  height: 48px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.clear-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.clear-search-icon:hover {
+  color: #212529;
+}
+
+/* Sort dropdown styling */
+.sort-wrapper {
+  position: relative;
+}
+
+.sort-select {
+  height: 48px;
+  padding-right: 40px;
+  border-radius: 6px;
+  appearance: none;
+  background-image: none;
+  transition: all 0.3s ease;
+}
+
+.sort-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.sort-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Search loading overlay */
+.search-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.table-searching {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+/* Improved spinner animation */
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.search-loading-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  animation: spin 1s linear infinite;
+}
+
+/* Ensure search input stays in focus */
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
+}
+
+/* Ensure search icons stay visible */
+.search-icon, .clear-search-icon, .search-loading-icon {
+  z-index: 101; /* Higher than the input focus z-index */
+}
+
+/* Ensure the search wrapper maintains its position */
+.search-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+/* Subject badge styling */
+.subject-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem;
+  border-radius: 2rem;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.subject-badge:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.subject-badge i {
+  margin-right: 0.5rem;
+  color: #6c757d;
 }
 </style>

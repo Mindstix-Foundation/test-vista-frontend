@@ -87,6 +87,7 @@ export interface CreateInstructionMediumDto {
 export interface CreateStandardDto {
   name: string
   board_id: number
+  sequence_number: number
 }
 
 export interface CreateSubjectDto {

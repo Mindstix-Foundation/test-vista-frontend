@@ -20,97 +20,106 @@
     </div>
 
     <!-- Search and Filter Section -->
-    <div class="row p-2 gy-2 justify-content-center">
-      <!-- Search Bar -->
-      <div class="col-12 col-sm-10">
-        <div class="input-group">
-          <div class="form-floating">
+    <div class="row p-2 justify-content-center mb-2">
+      <div class="col-12 col-sm-10 col-md-10">
+        <!-- Search, Sort and Filter in One Row -->
+        <div class="d-flex gap-2 mb-2">
+          <!-- Search Bar -->
+          <div class="search-field flex-grow-1">
+            <i class="bi bi-search search-icon"></i>
             <input
               type="text"
-              class="form-control"
+              class="form-control search-input"
               id="patternFilter"
-              placeholder="Search for pattern"
+              placeholder="Search for Pattern"
               v-model="searchQuery"
+              autocomplete="off"
+              @input="handleSearchInput"
+              ref="searchInputRef"
             />
-            <label for="patternFilter">
-              <i class="bi bi-search text-secondary"></i> Search for Pattern
-            </label>
+            <i v-if="isSearching" class="bi bi-arrow-repeat search-loading-icon"></i>
+            <i v-else-if="searchQuery" class="bi bi-x-circle clear-search-icon" @click="clearSearch"></i>
           </div>
-          <span class="input-group-text clear-icon" @click="clearSearch" style="cursor: pointer">
-            <i class="bi bi-x-lg"></i>
-          </span>
-          <span
-            class="input-group-text"
-            style="cursor: pointer"
-            data-bs-toggle="collapse"
-            data-bs-target="#filter"
-            aria-expanded="false"
-            aria-controls="filter"
-          >
-            Filter
-          </span>
+
+          <!-- Sort Dropdown -->
+          <div class="sort-field" style="min-width: 220px;">
+            <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="handleSortChange">
+              <option value="pattern_name_asc">Sort by Pattern Name (A-Z)</option>
+              <option value="pattern_name_desc">Sort by Pattern Name (Z-A)</option>
+              <option value="created_at_desc">Sort by Created At (Newest)</option>
+              <option value="created_at_asc">Sort by Created At (Oldest)</option>
+              <option value="updated_at_desc">Sort by Updated At (Newest)</option>
+              <option value="updated_at_asc">Sort by Updated At (Oldest)</option>
+            </select>
+          </div>
+
+          <!-- Filter Button -->
+          <div class="filter-field">
+            <button
+              class="btn filter-btn"
+              @click="toggleFilterIcon"
+              aria-expanded="false"
+              aria-controls="filter"
+            >
+              <i class="bi bi-funnel"></i>
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- Filter Section -->
-      <div class="col-12 col-sm-10 collapse" id="filter">
-        <div class="card border-0">
-          <div class="card-body">
-            <div class="container p-0">
-              <div class="row g-2">
-                <!-- Board Filter -->
-                <div class="col-12 col-sm-6">
-                  <SearchableDropdown
-                    id="filterBoard"
-                    label="Board"
-                    placeholder="Search for Board"
-                    :items="boards"
-                    v-model="selectedBoard"
-                    :search-keys="['name', 'abbreviation']"
-                  />
-                </div>
+        <!-- Filter Fields (Collapsible) -->
+        <div class="collapse" id="filter">
+          <div class="row g-2 mt-2">
+            <!-- Board Filter -->
+            <div class="col-12 col-md-6 mb-2">
+              <SearchableDropdown
+                id="filterBoard"
+                label="Board"
+                placeholder="Search for Board"
+                :items="boards"
+                v-model="selectedBoard"
+                :search-keys="['name', 'abbreviation']"
+              />
+            </div>
 
-                <!-- Total Marks Filter -->
-                <div class="col-6 col-sm-2">
-                  <div class="form-floating">
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="totalMarks"
-                      placeholder="Enter Total Marks"
-                      v-model="totalMarks"
-                    />
-                    <label for="totalMarks" class="form-label">Total Marks</label>
-                  </div>
-                </div>
-
-                <!-- Standard Filter -->
-                <div class="col-6 col-sm-2">
-                  <SearchableDropdown
-                    id="filterStandard"
-                    label="Standard"
-                    placeholder="Search for Standard"
-                    :items="availableStandards"
-                    v-model="selectedStandard"
-                    :disabled="!selectedBoard"
-                    :search-keys="['name']"
-                    :next-field-id="'filterSubject'"
-                  />
-                </div>
-
-                <!-- Subject Filter -->
-                <div class="col-12 col-sm-2">
-                  <SearchableDropdown
-                    id="filterSubject"
-                    label="Subject"
-                    placeholder="Search for Subject"
-                    :items="availableSubjects"
-                    v-model="selectedSubject"
-                    :disabled="!selectedBoard"
-                    :search-keys="['name']"
-                  />
-                </div>
+            <!-- Total Marks Filter -->
+            <div class="col-6 col-md-2 mb-2">
+              <div class="form-floating">
+                <input
+                  type="number"
+                  class="form-control"
+                  id="totalMarks"
+                  placeholder="Enter Total Marks"
+                  v-model="totalMarks"
+                />
+                <label for="totalMarks" class="form-label">Total Marks</label>
               </div>
+            </div>
+
+            <!-- Standard Filter -->
+            <div class="col-6 col-md-2 mb-2">
+              <SearchableDropdown
+                id="filterStandard"
+                label="Standard"
+                placeholder="Search for Standard"
+                :items="availableStandards"
+                v-model="selectedStandard"
+                :disabled="!selectedBoard"
+                :search-keys="['name']"
+                :next-field-id="'filterSubject'"
+              />
+            </div>
+
+            <!-- Subject Filter -->
+            <div class="col-12 col-md-2 mb-2">
+              <SearchableDropdown
+                id="filterSubject"
+                label="Subject"
+                placeholder="Search for Subject"
+                :items="availableSubjects"
+                v-model="selectedSubject"
+                :disabled="!selectedBoard"
+                :search-keys="['name']"
+              />
             </div>
           </div>
         </div>
@@ -120,7 +129,7 @@
     <!-- Pattern Cards -->
     <div class="row p-2 g-4 justify-content-center mb-5">
       <!-- No Patterns Message -->
-      <div v-if="!loading && patterns.length === 0" class="col col-12 col-sm-10 text-center">
+      <div v-if="!loading && !isSearching && patterns.length === 0" class="col col-12 col-sm-10 text-center">
         <div class="card">
           <div class="card-body py-5">
             <i class="bi bi-clipboard2-x fs-1 text-secondary mb-3"></i>
@@ -134,9 +143,18 @@
       </div>
 
       <!-- Loading Spinner -->
-      <div v-else-if="loading" class="col col-12 col-sm-10 text-center py-5">
+      <div v-else-if="loading && !isSearching" class="col col-12 col-sm-10 text-center py-5">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Search Loading Overlay -->
+      <div v-if="isSearching" class="col col-12 col-sm-10 position-relative">
+        <div class="search-loading-overlay">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Searching...</span>
+          </div>
         </div>
       </div>
 
@@ -146,6 +164,7 @@
         v-for="pattern in filteredPatterns"
         :key="pattern.id"
         class="col col-12 col-sm-10"
+        :class="{ 'pattern-searching': isSearching }"
       >
         <div
           class="card"
@@ -236,6 +255,45 @@
       </div>
     </div>
 
+    <!-- Pagination Controls -->
+    <div v-if="totalPages > 1" class="row mt-3 p-2 justify-content-center mb-5">
+      <div class="col-12 col-sm-10">
+        <div class="d-flex justify-content-between align-items-center">
+          <!-- Pagination Info -->
+          <div class="text-muted">
+            Showing {{ patterns.length ? (currentPage - 1) * pageSize + 1 : 0 }} to
+            {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} entries
+          </div>
+
+          <!-- Pagination Buttons -->
+          <nav aria-label="Pattern pagination">
+            <ul class="pagination mb-0">
+              <!-- Previous Page Button -->
+              <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+
+              <!-- Page Numbers -->
+              <li v-for="page in visiblePageNumbers" :key="page" class="page-item"
+                  :class="{ active: page === currentPage, disabled: page === '...' }">
+                <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(Number(page))">{{ page }}</a>
+                <span v-else class="page-link">...</span>
+              </li>
+
+              <!-- Next Page Button -->
+              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div
       class="modal fade"
@@ -278,9 +336,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { Modal } from 'bootstrap'
+import { Modal, Collapse } from 'bootstrap'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 import axiosInstance from '@/config/axios'
+import { useRoute } from 'vue-router'
 
 interface Board {
   id: number
@@ -338,6 +397,9 @@ interface Pattern {
 
 // Data
 const searchQuery = ref('')
+const searchInputRef = ref<HTMLInputElement | null>(null)
+const searchTimeout = ref<number | null>(null)
+const isSearching = ref(false)
 const selectedBoard = ref<Board | null>(null)
 const totalMarks = ref('')
 const selectedStandard = ref<{ id: number; name: string } | null>(null)
@@ -346,6 +408,95 @@ const patterns = ref<Pattern[]>([])
 const boards = ref<Board[]>([])
 const selectedPatternForDelete = ref<Pattern | null>(null)
 const loading = ref(false)
+const isFilterOpen = ref(false)
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = 15 // Fixed page size
+const totalItems = ref(0)
+const totalPages = ref(0)
+const sortOption = ref('pattern_name_asc')
+
+// Computed properties for sorting
+const sortBy = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like pattern_name_asc, we need to return "name"
+    if (parts[0] === 'pattern' && parts[1] === 'name') {
+      return 'name'
+    }
+    // For options like created_at_asc, we need to return "created_at"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return `${parts[0]}_${parts[1]}`
+    }
+  }
+  return 'name' // Default fallback
+})
+
+const sortOrder = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like pattern_name_asc, we need to return "asc"
+    if (parts[0] === 'pattern' && parts[1] === 'name') {
+      return parts[2]
+    }
+    // For options like created_at_asc, we need to return "asc"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return parts[2]
+    }
+  }
+  return 'asc' // Default fallback
+})
+
+// Computed property to determine which page numbers to show
+const visiblePageNumbers = computed(() => {
+  const pages = []
+  const maxVisiblePages = 5
+
+  if (totalPages.value <= maxVisiblePages) {
+    // Show all pages if there are few pages
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Always show first page
+    pages.push(1)
+
+    // Calculate start and end of visible pages
+    let startPage = Math.max(2, currentPage.value - 1)
+    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1)
+
+    // Adjust if we're near the beginning
+    if (currentPage.value <= 3) {
+      endPage = Math.min(totalPages.value - 1, 4)
+    }
+
+    // Adjust if we're near the end
+    if (currentPage.value >= totalPages.value - 2) {
+      startPage = Math.max(2, totalPages.value - 3)
+    }
+
+    // Add ellipsis if needed before visible pages
+    if (startPage > 2) {
+      pages.push('...')
+    }
+
+    // Add visible pages
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i)
+    }
+
+    // Add ellipsis if needed after visible pages
+    if (endPage < totalPages.value - 1) {
+      pages.push('...')
+    }
+
+    // Always show last page
+    pages.push(totalPages.value)
+  }
+
+  return pages
+})
 
 // Computed properties for available standards and subjects
 const availableStandards = computed(() => {
@@ -356,14 +507,88 @@ const availableSubjects = computed(() => {
   return selectedBoard.value?.subjects || []
 })
 
-// Watch for changes in filters to refetch patterns
-watch([selectedBoard, selectedStandard, selectedSubject, totalMarks], async () => {
-  await fetchPatterns()
-})
+// Handle search input with debounce
+const handleSearchInput = () => {
+  // Immediately set searching state for visual feedback
+  isSearching.value = true;
+
+  // Clear any existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+
+  // Set a new timeout
+  searchTimeout.value = setTimeout(() => {
+    currentPage.value = 1; // Reset to first page when search changes
+    fetchPatterns();
+  }, 500) as unknown as number; // Increased debounce time for better UX
+}
+
+// Clear search function that maintains focus
+const clearSearch = () => {
+  searchQuery.value = '';
+  isSearching.value = true;
+
+  // Reset to first page when clearing search
+  currentPage.value = 1;
+
+  // Fetch patterns with cleared search
+  fetchPatterns();
+
+  // Maintain focus on the search input after clearing
+  if (searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
+}
 
 // Methods
-const clearSearch = () => {
-  searchQuery.value = ''
+const clearFilters = () => {
+  // Reset filter values
+  selectedBoard.value = null
+  selectedStandard.value = null
+  selectedSubject.value = null
+  totalMarks.value = ''
+  // Reset sort to default
+  sortOption.value = 'pattern_name_asc'
+  // Reset to first page
+  currentPage.value = 1
+  // Fetch patterns with cleared filters
+  fetchPatterns()
+}
+
+const toggleFilterIcon = () => {
+  // Toggle the filter state
+  isFilterOpen.value = !isFilterOpen.value
+  console.log('Filter state toggled:', isFilterOpen.value)
+
+  // Manually toggle the collapse using Bootstrap's Collapse class
+  const filterElement = document.getElementById('filter')
+  if (filterElement) {
+    // Get or create a collapse instance
+    let bsCollapse = Collapse.getInstance(filterElement)
+    if (!bsCollapse) {
+      bsCollapse = new Collapse(filterElement, {
+        toggle: false
+      })
+    }
+
+    // Toggle the collapse
+    bsCollapse.toggle()
+
+    // Toggle active class on the filter button
+    const filterBtn = document.querySelector('.filter-btn')
+    if (filterBtn) {
+      if (isFilterOpen.value) {
+        filterBtn.classList.add('active')
+        console.log('Added active class to filter button')
+      } else {
+        filterBtn.classList.remove('active')
+        console.log('Removed active class from filter button')
+        // Clear all filters when closing
+        clearFilters()
+      }
+    }
+  }
 }
 
 const togglePattern = (patternId: number) => {
@@ -413,9 +638,25 @@ const isPatternMarksValid = (pattern: Pattern) => {
 // Fetch patterns from API
 const fetchPatterns = async () => {
   try {
-    loading.value = true
+    if (!isSearching.value) {
+      loading.value = true;
+    }
     const queryParams = new URLSearchParams()
 
+    // Add pagination and sorting parameters
+    queryParams.append('page', currentPage.value.toString())
+    queryParams.append('page_size', pageSize.toString())
+
+    // Format sort parameters according to API specification
+    queryParams.append('sort_by', sortBy.value)
+    queryParams.append('sort_order', sortOrder.value)
+
+    // Add search parameter if provided
+    if (searchQuery.value) {
+      queryParams.append('search', searchQuery.value)
+    }
+
+    // Add filter parameters
     if (selectedBoard.value?.id) {
       queryParams.append('boardId', selectedBoard.value.id.toString())
     }
@@ -429,15 +670,62 @@ const fetchPatterns = async () => {
       queryParams.append('totalMarks', totalMarks.value)
     }
 
+    console.log('API request parameters:', queryParams.toString())
     const response = await axiosInstance.get(`/patterns?${queryParams.toString()}`)
-    patterns.value = response.data.map((pattern: Pattern) => ({
-      ...pattern,
-      isExpanded: false,
-    }))
+
+    // Check if response has data property that contains the array and pagination info
+    if (response.data && typeof response.data === 'object') {
+      if (response.data.data && Array.isArray(response.data.data)) {
+        // Handle paginated response format
+        patterns.value = response.data.data.map((pattern: Pattern) => ({
+          ...pattern,
+          isExpanded: false,
+        }))
+
+        // Use the meta information from the API response
+        if (response.data.meta) {
+          totalItems.value = response.data.meta.total || 0
+          totalPages.value = response.data.meta.total_pages || 1
+
+          console.log('Pagination data from meta:', {
+            totalItems: totalItems.value,
+            totalPages: totalPages.value,
+            currentPage: currentPage.value,
+            pageSize: response.data.meta.page_size,
+            patternsLength: patterns.value.length
+          })
+        } else {
+          // Fallback if meta is missing
+          totalItems.value = patterns.value.length
+          totalPages.value = Math.ceil(totalItems.value / pageSize)
+        }
+      } else if (Array.isArray(response.data)) {
+        // Handle array response format (fallback)
+        patterns.value = response.data.map((pattern: Pattern) => ({
+          ...pattern,
+          isExpanded: false,
+        }))
+        totalItems.value = patterns.value.length
+        totalPages.value = Math.ceil(totalItems.value / pageSize)
+      } else {
+        console.error('Unexpected response format:', response.data)
+        patterns.value = []
+        totalItems.value = 0
+        totalPages.value = 0
+      }
+    } else {
+      patterns.value = []
+      totalItems.value = 0
+      totalPages.value = 0
+    }
   } catch (error) {
     console.error('Error fetching patterns:', error)
+    patterns.value = []
+    totalItems.value = 0
+    totalPages.value = 0
   } finally {
     loading.value = false
+    isSearching.value = false
   }
 }
 
@@ -455,7 +743,7 @@ const fetchBoards = async () => {
 const filteredPatterns = computed(() => {
   let result = patterns.value
 
-  // Apply search filter locally
+  // Apply search filter locally if needed
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
@@ -478,11 +766,78 @@ const filteredPatterns = computed(() => {
   return result
 })
 
+// Function to change page
+function changePage(page: number) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  fetchPatterns()
+}
+
+// Function to handle sort change
+function handleSortChange() {
+  currentPage.value = 1 // Reset to first page when changing sort
+  fetchPatterns()
+}
+
 // Lifecycle hooks
 onMounted(() => {
+  // Initialize from route query if present
+  const route = useRoute()
+
+  // Initialize sort parameters from query params if present
+  if (route.query.sort_by && route.query.sort_order) {
+    const sortByParam = route.query.sort_by as string
+    const sortOrderParam = route.query.sort_order as string
+
+    // Map API sort parameters to our sort options
+    if (sortByParam === 'name') {
+      sortOption.value = `pattern_name_${sortOrderParam}`
+    } else {
+      sortOption.value = `${sortByParam}_${sortOrderParam}`
+    }
+  }
+
+  // Initialize page from query params if present
+  if (route.query.page) {
+    const page = parseInt(route.query.page as string)
+    if (!isNaN(page) && page > 0) {
+      currentPage.value = page
+    }
+  }
+
   fetchBoards()
   fetchPatterns()
+
+  // Check if the filter element has the 'show' class initially
+  const filterElement = document.getElementById('filter')
+  if (filterElement) {
+    // Check if the element has the 'show' class initially
+    if (filterElement.classList.contains('show')) {
+      isFilterOpen.value = true
+
+      // Update filter button appearance
+      const filterBtn = document.querySelector('.filter-btn')
+      if (filterBtn) {
+        filterBtn.classList.add('active')
+      }
+    } else {
+      isFilterOpen.value = false
+    }
+  }
 })
+
+// Add watcher to maintain focus after search completes
+watch(isSearching, (newVal) => {
+  // If we were searching and now we're done, restore focus to search input
+  if (!newVal && searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
+});
+
+// Watch for changes in filters to refetch patterns
+watch([selectedBoard, selectedStandard, selectedSubject, totalMarks], async () => {
+  await fetchPatterns();
+});
 </script>
 
 <style scoped>
@@ -585,5 +940,218 @@ onMounted(() => {
 
 .card:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Pagination styling */
+.pagination .page-item.active .page-link {
+  background-color: #212529 !important;
+  border-color: #212529 !important;
+  color: white !important;
+}
+
+.pagination .page-link {
+  color: #212529;
+}
+
+.pagination .page-link:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Sort dropdown styling */
+.sort-wrapper {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.sort-select {
+  height: 48px;
+  padding-right: 40px;
+  border-radius: 6px;
+  appearance: none;
+  background-image: none;
+  transition: all 0.3s ease;
+}
+
+.sort-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.sort-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Filter button styling */
+.filter-btn {
+  height: 48px;
+  min-width: 48px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+}
+
+.filter-btn:hover {
+  background-color: #e9ecef;
+  color: #212529;
+}
+
+.filter-btn:focus {
+  box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+  outline: 0;
+}
+
+.filter-btn.active {
+  background-color: #212529;
+  color: white;
+  border-color: #212529;
+}
+
+.filter-btn.active:hover {
+  background-color: #343a40;
+  color: white;
+}
+
+/* Modern search styling */
+.search-field {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.search-input {
+  padding-left: 40px;
+  padding-right: 40px;
+  height: 48px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.clear-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.clear-search-icon:hover {
+  color: #212529;
+}
+
+@media (max-width: 768px) {
+  .search-input,
+  .sort-select,
+  .filter-btn {
+    height: 42px;
+  }
+
+  /* Adjust flex layout for mobile */
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+
+  .search-field {
+    flex: 1 0 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .sort-field {
+    flex: 1 1 auto;
+    min-width: 0 !important;
+  }
+}
+
+/* Filter section styling */
+#filter {
+  margin-top: 0.5rem;
+}
+
+/* Ensure consistent spacing in the layout */
+.row.g-2 {
+  margin-bottom: 0;
+}
+
+/* Search loading overlay */
+.search-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+  border-radius: 6px;
+}
+
+.pattern-searching {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+/* Improved spinner animation */
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.search-loading-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  animation: spin 1s linear infinite;
+}
+
+/* Ensure search input stays in focus */
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
+}
+
+/* Ensure search icons stay visible */
+.search-icon, .clear-search-icon, .search-loading-icon {
+  z-index: 101; /* Higher than the input focus z-index */
+}
+
+/* Ensure the search wrapper maintains its position */
+.search-field {
+  position: relative;
+  z-index: 10;
 }
 </style>

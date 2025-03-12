@@ -16,104 +16,170 @@
     </div>
 
     <!-- Search Section -->
-    <div class="row p-2 gy-2 g-3 justify-content-center">
-      <!-- School Search -->
-      <div class="col-12 col-sm-5">
-        <div class="input-group">
-          <div class="form-floating">
-            <input
-              type="text"
-              class="form-control"
-              id="schoolFilter"
-              placeholder="Search for School"
-              v-model="schoolSearch"
-              autocomplete="off"
-            />
-            <label for="schoolFilter">
-              <i class="bi bi-search text-secondary"></i> Search for School
-            </label>
+    <div class="row p-2 justify-content-center mb-2">
+      <div class="col-12 col-sm-10 col-md-10">
+        <div class="row g-2">
+          <!-- School Search (Full Width) -->
+          <div class="col-12">
+            <div class="search-wrapper">
+              <i class="bi bi-search search-icon"></i>
+              <input
+                type="text"
+                class="form-control search-input"
+                id="schoolFilter"
+                placeholder="Search for School"
+                v-model="schoolSearch"
+                autocomplete="off"
+                @input="handleSchoolSearchInput"
+                ref="schoolSearchInputRef"
+              />
+              <i v-if="isSearchingSchool" class="bi bi-arrow-repeat search-loading-icon"></i>
+              <i v-else-if="schoolSearch" class="bi bi-x-circle clear-search-icon" @click="clearInput('school')"></i>
+            </div>
           </div>
-          <span
-            class="input-group-text clear-icon"
-            @click="clearInput('school')"
-            style="cursor: pointer"
-          >
-            <i class="bi bi-x-lg"></i>
-          </span>
-        </div>
-      </div>
 
-      <!-- Board Search -->
-      <div class="col-12 col-sm-5">
-        <div class="input-group">
-          <div class="form-floating">
-            <input
-              type="text"
-              class="form-control"
-              id="boardFilter"
-              placeholder="Search for Board"
-              v-model="boardSearch"
-              autocomplete="off"
-            />
-            <label for="boardFilter">
-              <i class="bi bi-search text-secondary"></i> Search for Board
-            </label>
+          <!-- Second Row with Board Search and Sort Dropdown -->
+          <div class="col-12 col-md-6">
+            <div class="search-wrapper">
+              <i class="bi bi-search search-icon"></i>
+              <input
+                type="text"
+                class="form-control search-input"
+                id="boardFilter"
+                placeholder="Search for Board"
+                v-model="boardSearch"
+                autocomplete="off"
+                @input="handleBoardSearchInput"
+                ref="boardSearchInputRef"
+              />
+              <i v-if="isSearchingBoard" class="bi bi-arrow-repeat search-loading-icon"></i>
+              <i v-else-if="boardSearch" class="bi bi-x-circle clear-search-icon" @click="clearInput('board')"></i>
+            </div>
           </div>
-          <span
-            class="input-group-text clear-icon"
-            @click="clearInput('board')"
-            style="cursor: pointer"
-          >
-            <i class="bi bi-x-lg"></i>
-          </span>
+
+          <!-- Sort Dropdown (Half Width) -->
+          <div class="col-12 col-md-6">
+            <div class="sort-wrapper">
+              <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="handleSortChange">
+                <option value="name_asc">Sort by School Name (A-Z)</option>
+                <option value="name_desc">Sort by School Name (Z-A)</option>
+                <option value="created_at_desc">Sort by Created At (Newest)</option>
+                <option value="created_at_asc">Sort by Created At (Oldest)</option>
+                <option value="updated_at_desc">Sort by Updated At (Newest)</option>
+                <option value="updated_at_asc">Sort by Updated At (Oldest)</option>
+              </select>
+              <i class="bi bi-funnel sort-icon"></i>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Table Section -->
-    <div id="table-container" class="row mt-4 p-2 justify-content-center">
-      <div class="col col-12 col-sm-10 col-md-10">
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped table-bordered">
-            <colgroup>
-              <col style="width: 10px" />
-              <col style="width: 35%" />
-              <col style="width: 65%" />
-              <col style="width: 20px" />
-            </colgroup>
-            <thead class="table-dark">
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">School</th>
-                <th scope="col">Board</th>
-                <th scope="col">Manage</th>
-              </tr>
-            </thead>
-            <tbody class="table-group-divider" id="schoolTable">
-              <tr
-                v-for="(school, index) in filteredAndHighlightedSchools"
-                :key="school.id"
-                :data-board="school.board.abbreviation"
-              >
-                <th scope="row">{{ index + 1 }}</th>
-                <td v-html="school.highlightedName"></td>
-                <td v-html="school.highlightedBoardName"></td>
-                <td class="text-center">
-                  <i
-                    class="bi bi-three-dots"
-                    @click="openViewModal(school)"
-                    style="cursor: pointer"
-                  ></i>
-                </td>
-              </tr>
-              <tr v-if="filteredAndHighlightedSchools.length === 0">
-                <td colspan="4" class="text-center">No matching results found.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <!-- Loading State -->
+    <div v-if="isLoading && !isSearchingSchool && !isSearchingBoard" class="text-center my-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
     </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="alert alert-danger my-3" role="alert">
+      {{ error }}
+    </div>
+
+    <!-- Content when data is loaded -->
+    <template v-else>
+      <!-- Table Section -->
+      <div id="table-container" class="row mt-4 p-2 justify-content-center">
+        <div class="col col-12 col-sm-10 col-md-10">
+          <div class="table-responsive position-relative">
+            <!-- Loading overlay for search -->
+            <div v-if="isSearchingSchool || isSearchingBoard" class="search-loading-overlay">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Searching...</span>
+              </div>
+            </div>
+
+            <table class="table table-sm table-hover table-striped table-bordered" :class="{ 'table-searching': isSearchingSchool || isSearchingBoard }">
+              <colgroup>
+                <col style="width: 10px" />
+                <col style="width: 35%" />
+                <col style="width: 65%" />
+                <col style="width: 20px" />
+              </colgroup>
+              <thead class="table-dark">
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">School</th>
+                  <th scope="col">Board</th>
+                  <th scope="col">Manage</th>
+                </tr>
+              </thead>
+              <tbody class="table-group-divider" id="schoolTable">
+                <tr
+                  v-for="(school, index) in filteredAndHighlightedSchools"
+                  :key="school.id"
+                  :data-board="school.board_name"
+                >
+                  <th scope="row">{{ (currentPage - 1) * pageSize + index + 1 }}</th>
+                  <td v-html="school.highlightedName"></td>
+                  <td v-html="school.highlightedBoardName"></td>
+                  <td class="text-center">
+                    <i
+                      class="bi bi-three-dots"
+                      @click="openViewModal(school)"
+                      style="cursor: pointer"
+                    ></i>
+                  </td>
+                </tr>
+                <tr v-if="filteredAndHighlightedSchools.length === 0">
+                  <td colspan="4" class="text-center">No matching results found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div v-if="totalPages > 1" class="row mt-3 p-2 justify-content-center">
+        <div class="col-12 col-sm-10">
+          <div class="d-flex justify-content-between align-items-center">
+            <!-- Pagination Info -->
+            <div class="text-muted">
+              Showing {{ schools.length ? (currentPage - 1) * pageSize + 1 : 0 }} to
+              {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} entries
+            </div>
+
+            <!-- Pagination Buttons -->
+            <nav aria-label="School pagination">
+              <ul class="pagination mb-0">
+                <!-- Previous Page Button -->
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                  <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+
+                <!-- Page Numbers -->
+                <li v-for="page in visiblePageNumbers" :key="page" class="page-item"
+                    :class="{ active: page === currentPage, disabled: page === '...' }">
+                  <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(Number(page))">{{ page }}</a>
+                  <span v-else class="page-link">...</span>
+                </li>
+
+                <!-- Next Page Button -->
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                  <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <!-- Delete Confirmation Modal -->
     <div
@@ -469,42 +535,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
 
 // Types
-interface Country {
+interface Teacher {
   id: number
   name: string
-}
-
-interface State {
-  id: number
-  country_id: number
-  name: string
-}
-
-interface City {
-  id: number
-  state_id: number
-  name: string
-}
-
-interface Address {
-  id: number
-  city_id: number
-  postal_code: string
-  street: string
-  created_by: number
-  created_at: string
-  updated_by: number
-  updated_at: string
-  city?: City
-  state?: State
-  country?: Country
+  email_id: string
+  contact_number: string
+  alternate_contact_number?: string
+  highest_qualification: string
+  status: boolean
 }
 
 interface Board {
@@ -518,69 +563,111 @@ interface Board {
   updated_at: string
 }
 
-interface Teacher {
+// Basic school interface from API
+interface SchoolListItem {
   id: number
   name: string
-  email_id: string
-  contact_number: string
-  alternate_contact_number?: string
-  highest_qualification: string
-  status: boolean
+  board_name: string
+  board_abbreviation: string
 }
 
-interface School {
+// Extended school interface for detailed view
+interface SchoolDetail {
   id: number
-  board_id: number
   name: string
-  address_id: number
   principal_name: string
   email: string
   contact_number: string
   alternate_contact_number?: string
+  board: {
+    id: number
+    name: string
+    abbreviation: string
+    address_id: number
   created_by: number
   created_at: string
   updated_by: number
   updated_at: string
-  board?: Board
-  address?: Address
-  mediums?: { id: number; name: string }[]
-  standards?: { id: number; name: string }[]
-  School_Instruction_Medium?: Array<{
-    instruction_medium: {
+  }
+  address: {
       id: number
-      instruction_medium: string
-    }
-  }>
-  School_Standard?: Array<{
-    standard: {
-      id: number
-      name: string
-    }
-  }>
-}
-
-interface DisplaySchool extends School {
-  board: Board
-  address: Address & {
-    city: City
-    state: State
-    country: Country
+    city_id: number
+    postal_code: string
+    street: string
+    created_by: number
+    created_at: string
+    updated_by: number
+    updated_at: string
+    city: { id: number; state_id: number; name: string }
+    state: { id: number; country_id: number; name: string }
+    country: { id: number; name: string }
   }
   mediums: Array<{ id: number; name: string }>
   standards: Array<{ id: number; name: string }>
+}
+
+// Update PaginatedResponse interface
+interface PaginatedResponse<T> {
+  data: T[]
+  meta: {
+    sort_by?: string
+    sort_order?: string
+  }
 }
 
 const route = useRoute()
 const router = useRouter()
 const toastStore = useToastStore()
 
-const schools = ref<DisplaySchool[]>([])
+const schools = ref<SchoolListItem[]>([])
 const boards = ref<Board[]>([])
-const selectedSchool = ref<DisplaySchool | null>(null)
+const selectedSchool = ref<SchoolDetail | null>(null)
 const schoolSearch = ref('')
 const boardSearch = ref('')
+const schoolSearchInputRef = ref<HTMLInputElement | null>(null)
+const boardSearchInputRef = ref<HTMLInputElement | null>(null)
 const associatedTeachers = ref<Teacher[]>([])
 const confirmationText = ref('')
+
+// Pagination variables
+const currentPage = ref(1)
+const pageSize = 15
+const totalItems = ref(0)
+const totalPages = ref(0)
+const isLoading = ref(false)
+const isSearchingSchool = ref(false)
+const isSearchingBoard = ref(false)
+const error = ref<string | null>(null)
+const sortOption = ref('name_asc')
+const schoolSearchTimeout = ref<number | null>(null)
+const boardSearchTimeout = ref<number | null>(null)
+
+// Computed properties for sorting
+const sortBy = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like created_at_asc, we need to return "created_at"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return `${parts[0]}_${parts[1]}`
+    }
+    // For options like name_asc, we return "name"
+    return parts[0]
+  }
+  return 'name' // Default fallback
+})
+
+const sortOrder = computed(() => {
+  const parts = sortOption.value.split('_')
+  if (parts.length >= 2) {
+    // For options like created_at_asc, we need to return "asc"
+    if (parts[0] === 'created' || parts[0] === 'updated') {
+      return parts[2]
+    }
+    // For options like name_asc, we return "asc"
+    return parts[1]
+  }
+  return 'asc' // Default fallback
+})
 
 // Initialize from route query if present
 onMounted(() => {
@@ -588,27 +675,67 @@ onMounted(() => {
   if (boardName) {
     boardSearch.value = boardName
   }
+
+  // Initialize sort parameters from query params if present
+  if (route.query.sort_by && route.query.sort_order) {
+    const sortByParam = route.query.sort_by as string
+    const sortOrderParam = route.query.sort_order as string
+    sortOption.value = `${sortByParam}_${sortOrderParam}`
+  }
+
+  // Initialize page from query params if present
+  if (route.query.page) {
+    const page = parseInt(route.query.page as string)
+    if (!isNaN(page) && page > 0) {
+      currentPage.value = page
+    }
+  }
+
   fetchSchools()
   fetchBoards()
 })
 
 const filteredAndHighlightedSchools = computed(() => {
-  return schools.value
-    .filter((school) => {
-      const matchesSchool = school.name.toLowerCase().includes(schoolSearch.value.toLowerCase())
-      const matchesBoard = school.board.name.toLowerCase().includes(boardSearch.value.toLowerCase())
-      return matchesSchool && matchesBoard
-    })
-    .map((school) => {
-      const highlightedName = highlightText(school.name, schoolSearch.value)
-      const highlightedBoardName = highlightText(school.board.name, boardSearch.value)
-      return {
-        ...school,
-        highlightedName,
-        highlightedBoardName,
-      }
-    })
+  return schools.value.map((school) => ({
+      ...school,
+    highlightedName: highlightText(school.name, schoolSearch.value),
+    highlightedBoardName: highlightText(school.board_name, boardSearch.value)
+  }))
 })
+
+// Handle school search input with debounce
+const handleSchoolSearchInput = () => {
+  // Immediately set searching state for visual feedback
+  isSearchingSchool.value = true;
+
+  // Clear any existing timeout
+  if (schoolSearchTimeout.value) {
+    clearTimeout(schoolSearchTimeout.value);
+  }
+
+  // Set a new timeout
+  schoolSearchTimeout.value = setTimeout(() => {
+    currentPage.value = 1; // Reset to first page when search changes
+    fetchSchools();
+  }, 500) as unknown as number; // Increased debounce time for better UX
+}
+
+// Handle board search input with debounce
+const handleBoardSearchInput = () => {
+  // Immediately set searching state for visual feedback
+  isSearchingBoard.value = true;
+
+  // Clear any existing timeout
+  if (boardSearchTimeout.value) {
+    clearTimeout(boardSearchTimeout.value);
+  }
+
+  // Set a new timeout
+  boardSearchTimeout.value = setTimeout(() => {
+    currentPage.value = 1; // Reset to first page when search changes
+    fetchSchools();
+  }, 500) as unknown as number; // Increased debounce time for better UX
+}
 
 function highlightText(text: string, search: string): string {
   if (!search) return text
@@ -616,125 +743,211 @@ function highlightText(text: string, search: string): string {
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
-// Add these helper functions before fetchSchools
-async function fetchStateAndCountry(cityId: number) {
-  try {
-    // First get the city to get state_id
-    const { data: city } = await axiosInstance.get(`/cities/${cityId}`)
-
-    // Get state data using state_id from city
-    const { data: state } = await axiosInstance.get(`/states/${city.state_id}`)
-
-    // Get country data using country_id from state
-    const { data: country } = await axiosInstance.get(`/countries/${state.country_id}`)
-
-    return {
-      city: { id: city.id, state_id: city.state_id, name: city.name },
-      state: { id: state.id, country_id: state.country_id, name: state.name },
-      country: { id: country.id, name: country.name },
-    }
-  } catch (error) {
-    console.error('Error fetching location data:', error)
-    return null
-  }
-}
-
 async function fetchSchools() {
   try {
+    if (!schoolSearch.value && !boardSearch.value) {
+      isLoading.value = true
+    }
+    error.value = null
     console.log('Starting fetchSchools...')
 
-    const { data: schoolsData } = await axiosInstance.get<School[]>('/schools')
-    console.log('Schools data:', schoolsData)
-
-    // Process schools with location data
-    const processedSchools = await Promise.all(
-      schoolsData.map(async (school: School): Promise<DisplaySchool> => {
-        // Fetch complete location data for each school
-        const locationData = school.address?.city_id
-          ? await fetchStateAndCountry(school.address.city_id)
-          : null
-
-        return {
-          ...school,
-          board: {
-            id: school.board_id,
-            name: school.board?.name || '',
-            abbreviation: school.board?.abbreviation || '',
-            address_id: school.board?.address_id || 0,
-            created_by: school.board?.created_by || 0,
-            created_at: school.board?.created_at || '',
-            updated_by: school.board?.updated_by || 0,
-            updated_at: school.board?.updated_at || '',
-          },
-          address: {
-            ...school.address!,
-            city: locationData?.city || { id: 0, state_id: 0, name: '' },
-            state: locationData?.state || { id: 0, country_id: 0, name: '' },
-            country: locationData?.country || { id: 0, name: '' },
-          },
-          mediums:
-            school.School_Instruction_Medium?.map(
-              (medium: { instruction_medium: { id: number; instruction_medium: string } }) => ({
-                id: medium.instruction_medium.id,
-                name: medium.instruction_medium.instruction_medium,
-              }),
-            ) || [],
-          standards:
-            school.School_Standard?.map((standard: { standard: { id: number; name: string } }) => ({
-              id: standard.standard.id,
-              name: standard.standard.name,
-            })) || [],
-        }
-      }),
-    )
-
-    schools.value = processedSchools.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime()
-      const dateB = new Date(b.created_at).getTime()
-      return dateA - dateB
+    // Add pagination and sorting parameters to the API request
+    const response = await axiosInstance.get<PaginatedResponse<SchoolListItem>>('/schools', {
+      params: {
+        page: currentPage.value,
+        page_size: pageSize,
+        sort_by: sortBy.value,
+        sort_order: sortOrder.value,
+        search: schoolSearch.value || undefined,
+        boardSearch: boardSearch.value || undefined
+      }
     })
 
-    console.log('Processed schools:', schools.value)
-  } catch (error) {
-    console.error('Error in fetchSchools:', error)
-    if (error instanceof Error) {
-      console.error('Error details:', error.message)
-      console.error('Error stack:', error.stack)
+    console.log('Schools API Response:', response.data)
+
+    // Check if response has data property
+    if (response.data && response.data.data) {
+      schools.value = response.data.data
+
+      // Update pagination info
+      // Since the new API doesn't provide total count, we'll use the current page size
+      // and adjust when we get less than pageSize items
+      totalItems.value = currentPage.value * pageSize
+      if (response.data.data.length < pageSize) {
+        totalItems.value = (currentPage.value - 1) * pageSize + response.data.data.length
+      }
+        totalPages.value = Math.ceil(totalItems.value / pageSize)
+
+      console.log('Processed schools:', schools.value)
+    } else {
+      schools.value = []
+      error.value = 'Failed to load schools. Please try again.'
     }
+  } catch (err) {
+    console.error('Error in fetchSchools:', err)
+    if (err instanceof Error) {
+      console.error('Error details:', err.message)
+      console.error('Error stack:', err.stack)
+    }
+    schools.value = []
+    error.value = 'Failed to load schools. Please try again.'
+  } finally {
+    isLoading.value = false
+    isSearchingSchool.value = false
+    isSearchingBoard.value = false
   }
 }
 
 async function fetchBoards() {
   try {
-    const { data } = await axiosInstance.get('/boards')
-    boards.value = data
+    const response = await axiosInstance.get('/boards')
+    // Extract boards from the data wrapper
+    boards.value = response.data.data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
 }
 
-function clearInput(type: 'school' | 'board') {
-  if (type === 'school') {
-    schoolSearch.value = ''
+// Computed property for visible page numbers
+const visiblePageNumbers = computed(() => {
+  const pages = []
+  const maxVisiblePages = 5
+
+  if (totalPages.value <= maxVisiblePages) {
+    // Show all pages if there are few pages
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i)
+    }
   } else {
-    boardSearch.value = ''
+    // Always show first page
+    pages.push(1)
+
+    // Calculate start and end of visible pages
+    let startPage = Math.max(2, currentPage.value - 1)
+    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1)
+
+    // Adjust if we're near the beginning
+    if (currentPage.value <= 3) {
+      endPage = Math.min(totalPages.value - 1, 4)
+    }
+
+    // Adjust if we're near the end
+    if (currentPage.value >= totalPages.value - 2) {
+      startPage = Math.max(2, totalPages.value - 3)
+    }
+
+    // Add ellipsis if needed before visible pages
+    if (startPage > 2) {
+      pages.push('...')
+    }
+
+    // Add visible pages
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i)
+    }
+
+    // Add ellipsis if needed after visible pages
+    if (endPage < totalPages.value - 1) {
+      pages.push('...')
+    }
+
+    // Always show last page
+    pages.push(totalPages.value)
   }
+
+  return pages
+})
+
+// Function to change page
+const changePage = (page: number) => {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  fetchSchools()
 }
 
-function openViewModal(school: DisplaySchool) {
-  console.log('Opening modal for school:', school)
-  console.log('School address data:', school.address)
-  console.log('Address structure:', {
-    street: school.address.street,
-    postal_code: school.address.postal_code,
-    city: school.address.city,
-    state: school.address.state,
-    country: school.address.country,
-  })
+// Update clearInput function to reset pagination and maintain focus
+function clearInput(type: 'school' | 'board') {
+  if (type === 'school') {
+    schoolSearch.value = '';
+    isSearchingSchool.value = true;
+    // Maintain focus on the school search input after clearing
+    if (schoolSearchInputRef.value) {
+      schoolSearchInputRef.value.focus();
+    }
+  } else {
+    boardSearch.value = '';
+    isSearchingBoard.value = true;
+    // Maintain focus on the board search input after clearing
+    if (boardSearchInputRef.value) {
+      boardSearchInputRef.value.focus();
+    }
+  }
 
-  selectedSchool.value = school
-  const modal = new Modal(document.getElementById('viewSchoolModal') as HTMLElement)
-  modal.show()
+  // Reset to first page when filters change
+  if (currentPage.value !== 1) {
+    currentPage.value = 1;
+  }
+
+  // Fetch schools with updated filters
+  fetchSchools();
+}
+
+function openViewModal(school: SchoolListItem) {
+  console.log('Opening modal for school:', school)
+
+  // Fetch the complete school details with the new API format
+  axiosInstance.get(`/schools/${school.id}`)
+    .then(response => {
+      const schoolData = response.data;
+      console.log('Fetched school details:', schoolData);
+
+      // Map the API response to the expected format
+      selectedSchool.value = {
+        ...school,
+        name: schoolData.name,
+        principal_name: schoolData.principal_name,
+        email: schoolData.email,
+        contact_number: schoolData.contact_number,
+        alternate_contact_number: schoolData.alternate_contact_number,
+        board: {
+          id: schoolData.board.id,
+          name: schoolData.board.name,
+          abbreviation: schoolData.board.abbreviation,
+          address_id: 0, // Not needed for display
+          created_by: 0, // Not needed for display
+          created_at: '',
+          updated_by: 0,
+          updated_at: ''
+        },
+        address: {
+          id: schoolData.address.id,
+          city_id: schoolData.address.city.id,
+          postal_code: schoolData.address.postal_code,
+          street: schoolData.address.street,
+          created_by: 0, // Not needed for display
+          created_at: '',
+          updated_by: 0,
+          updated_at: '',
+          city: schoolData.address.city,
+          state: schoolData.address.city.state,
+          country: schoolData.address.city.state.country
+        },
+        mediums: schoolData.instruction_mediums,
+        standards: schoolData.standards
+      };
+
+      // Show the modal after data is loaded
+      const modal = new Modal(document.getElementById('viewSchoolModal') as HTMLElement)
+      modal.show()
+    })
+    .catch(error => {
+      console.error('Error fetching school details:', error);
+      toastStore.showToast({
+        title: 'Error',
+        message: 'Failed to load school details. Please try again.',
+        type: 'error',
+      });
+    });
 }
 
 const deleteSchool = async () => {
@@ -831,6 +1044,30 @@ function cleanupModals() {
   const viewModal = Modal.getInstance(document.getElementById('viewSchoolModal') as HTMLElement)
   viewModal?.hide()
 }
+
+function handleSortChange() {
+  currentPage.value = 1 // Reset to first page when changing sort
+  fetchSchools()
+}
+
+// Add watchers to maintain focus after data updates
+watch([schools, isSearchingSchool], () => {
+  // If we were searching schools and now we're done, restore focus to school search input
+  if (!isSearchingSchool.value && schoolSearchInputRef.value &&
+      document.activeElement !== schoolSearchInputRef.value &&
+      document.activeElement !== boardSearchInputRef.value) {
+    schoolSearchInputRef.value.focus();
+  }
+});
+
+watch([schools, isSearchingBoard], () => {
+  // If we were searching boards and now we're done, restore focus to board search input
+  if (!isSearchingBoard.value && boardSearchInputRef.value &&
+      document.activeElement !== boardSearchInputRef.value &&
+      document.activeElement !== schoolSearchInputRef.value) {
+    boardSearchInputRef.value.focus();
+  }
+});
 </script>
 
 <style scoped>
@@ -854,6 +1091,11 @@ function cleanupModals() {
   .btn-custom {
     background-color: #dc3545 !important;
     color: white !important;
+  }
+
+  /* Add padding to the bottom of the container to prevent overlap with fixed button */
+  .container.mt-4.mb-5 {
+    padding-bottom: 80px !important;
   }
 }
 
@@ -901,5 +1143,146 @@ function cleanupModals() {
 .spinner-border {
   width: 3rem;
   height: 3rem;
+}
+
+/* Pagination styling */
+.pagination .page-item.active .page-link {
+  background-color: #212529 !important;
+  border-color: #212529 !important;
+  color: white !important;
+}
+
+.pagination .page-link {
+  color: #212529;
+}
+
+.pagination .page-link:focus {
+  box-shadow: 0 0 0 0.25rem rgba(33, 37, 41, 0.25);
+}
+
+/* Modern search styling */
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 40px;
+  padding-right: 40px;
+  height: 48px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.clear-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.clear-search-icon:hover {
+  color: #212529;
+}
+
+/* Sort dropdown styling */
+.sort-wrapper {
+  position: relative;
+}
+
+.sort-select {
+  height: 48px;
+  padding-right: 40px;
+  border-radius: 6px;
+  appearance: none;
+  background-image: none;
+  transition: all 0.3s ease;
+}
+
+.sort-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.sort-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Search loading overlay */
+.search-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.table-searching {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+/* Improved spinner animation */
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.search-loading-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  animation: spin 1s linear infinite;
+}
+
+/* Ensure search input stays in focus */
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
+}
+
+/* Ensure search icons stay visible */
+.search-icon, .clear-search-icon, .search-loading-icon {
+  z-index: 101; /* Higher than the input focus z-index */
+}
+
+/* Ensure the search wrapper maintains its position */
+.search-wrapper {
+  position: relative;
+  z-index: 10;
 }
 </style>

@@ -75,6 +75,13 @@ interface Chapter {
   name: string
 }
 
+interface MediumStandardSubject {
+  id: number
+  instruction_medium_id: number
+  standard_id: number
+  subject_id: number
+}
+
 const route = useRoute()
 const router = useRouter()
 const toastStore = useToastStore()
@@ -117,26 +124,98 @@ const fetchData = async () => {
 
 const saveChapter = async (formData: { chapterName: string; topics: string[] }) => {
   try {
+    // Get the medium_standard_subject_id using the API endpoint
+    const mediumStandardSubjectResponse = await axiosInstance.get('/medium-standard-subjects', {
+      params: {
+        boardId: route.query.board,
+        instruction_medium_id: route.query.medium,
+        standard_id: route.query.standard,
+        subject_id: route.query.subject
+      }
+    })
+
+    // Check if we got a valid response with at least one record
+    if (!mediumStandardSubjectResponse.data || mediumStandardSubjectResponse.data.length === 0) {
+      throw new Error('Could not find medium-standard-subject association')
+    }
+
+    const mediumStandardSubject: MediumStandardSubject = mediumStandardSubjectResponse.data[0]
+
     // First, get all existing chapters to determine the next sequential number
-    const chaptersResponse = await axiosInstance.get(`/chapters?subject_id=${route.query.subject}`)
+    const chaptersResponse = await axiosInstance.get(`/chapters?mediumStandardSubjectId=${mediumStandardSubject.id}`)
     const existingChapters: Chapter[] = chaptersResponse.data
 
-    // Calculate next sequential number
-    const nextChapterNumber =
-      existingChapters.length > 0
-        ? Math.max(...existingChapters.map((ch) => ch.sequential_chapter_number)) + 1
-        : 1
+    console.log('Existing chapters before creation:', existingChapters)
 
-    // Prepare chapter data
+    // Also check if there are any chapters with the same subject_id (across all mediums/standards)
+    const allChaptersForSubjectResponse = await axiosInstance.get(`/chapters?subject_id=${route.query.subject}`)
+    const allChaptersForSubject = allChaptersForSubjectResponse.data
+
+    console.log('All chapters for this subject (across all mediums/standards):', allChaptersForSubject)
+
+    // Calculate next sequential number
+    let nextChapterNumber = 1; // Default to 1 for the first chapter
+
+    if (existingChapters.length > 0) {
+      // Get all existing sequential numbers
+      const existingSequentialNumbers = existingChapters.map(ch => ch.sequential_chapter_number).sort((a, b) => a - b);
+      console.log('Existing sequential numbers (sorted):', existingSequentialNumbers);
+
+      // Find the first gap in the sequence, or use max + 1 if no gaps
+      let foundGap = false;
+      for (let i = 0; i < existingSequentialNumbers.length; i++) {
+        // Check if the expected number at this position matches the actual number
+        const expectedNumber = i + 1;
+        if (existingSequentialNumbers[i] !== expectedNumber) {
+          // Found a gap, use this number
+          nextChapterNumber = expectedNumber;
+          foundGap = true;
+          console.log(`Found gap at position ${i}, using sequential number ${nextChapterNumber}`);
+          break;
+        }
+      }
+
+      // If no gaps found, use max + 1
+      if (!foundGap) {
+        nextChapterNumber = Math.max(...existingSequentialNumbers) + 1;
+        console.log(`No gaps found, using max + 1: ${nextChapterNumber}`);
+      }
+    } else {
+      console.log('No existing chapters found, using sequential number 1');
+    }
+
+    console.log('Final calculated next chapter number:', nextChapterNumber);
+
+    // Prepare chapter data with the correct medium_standard_subject_id
     const chapterData = {
-      medium_standard_subject_id: Number(route.query.subject),
-      sequential_chapter_number: nextChapterNumber,
+      medium_standard_subject_id: mediumStandardSubject.id,
+      sequential_chapter_number: nextChapterNumber, // Use the calculated sequential number
       name: formData.chapterName,
     }
+
+    console.log('Chapter data being sent to API:', chapterData)
 
     // Save chapter
     const chapterResponse = await axiosInstance.post('/chapters', chapterData)
     const savedChapter = chapterResponse.data
+
+    console.log('API response after creating chapter:', savedChapter)
+
+    // Check if the API returned a different sequential chapter number
+    if (savedChapter.sequential_chapter_number !== nextChapterNumber) {
+      console.warn('WARNING: API returned a different sequential chapter number than what was sent!');
+      console.warn(`Sent: ${nextChapterNumber}, Received: ${savedChapter.sequential_chapter_number}`);
+      console.warn('This suggests the backend API is overriding the sequential number we sent.');
+
+      // Show a toast notification to alert the user
+      toastStore.showToast({
+        title: 'Warning',
+        message: 'The chapter was created but with an unexpected chapter number. Please contact the development team.',
+        type: 'warning',
+      });
+    } else {
+      console.log('API respected our sequential chapter number:', nextChapterNumber);
+    }
 
     // Save topics with sequential numbers
     await Promise.all(
@@ -167,6 +246,12 @@ const saveChapter = async (formData: { chapterName: string; topics: string[] }) 
         standard: route.query.standard,
       },
     })
+
+    // After creating the chapter, check again to see what chapters exist
+    const chaptersAfterResponse = await axiosInstance.get(`/chapters?mediumStandardSubjectId=${mediumStandardSubject.id}`)
+    const chaptersAfter = chaptersAfterResponse.data
+
+    console.log('Chapters after creation:', chaptersAfter)
   } catch (error) {
     console.error('Error saving chapter:', error)
     toastStore.showToast({

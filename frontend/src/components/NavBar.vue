@@ -57,7 +57,14 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <a class="nav-link pb-0 disabled" id="navQuestion" href="#">Question Bank</a>
+              <router-link
+                to="/admin/questionBank"
+                class="nav-link pb-0"
+                id="navQuestion"
+                @click="closeOffcanvas"
+              >
+                Question Bank
+              </router-link>
             </li>
             <li class="nav-item">
               <router-link

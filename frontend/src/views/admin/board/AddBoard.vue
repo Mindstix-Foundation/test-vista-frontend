@@ -77,15 +77,30 @@ const createEntity = async <T,>(
   }
 }
 
-const createRelatedEntities = async <T extends { board_id?: number }>(
+const createRelatedEntities = async <T extends { board_id?: number; sequence_number?: number }>(
   entities: T[],
   endpoint: string,
   boardId: number,
   entityName: string,
 ): Promise<void> => {
-  for (const entity of entities) {
-    entity.board_id = boardId
-    await createEntity(endpoint, entity, `Failed to create ${entityName}`)
+  // For standards, ensure sequence numbers are set based on their order in the list
+  if (endpoint === '/standards') {
+    // Assign sequence numbers based on the order in the array
+    entities.forEach((entity, index) => {
+      entity.board_id = boardId;
+      entity.sequence_number = index + 1; // 1-based sequence numbers
+    });
+
+    // Create standards in sequence to maintain order
+    for (const entity of entities) {
+      await createEntity(endpoint, entity, `Failed to create ${entityName}`);
+    }
+  } else {
+    // For other entities, use the original implementation
+    for (const entity of entities) {
+      entity.board_id = boardId;
+      await createEntity(endpoint, entity, `Failed to create ${entityName}`);
+    }
   }
 }
 
@@ -114,19 +129,22 @@ const handleBoardSubmit = async (formData: {
       'Failed to create board',
     )
 
-    // Create related entities in sequence
+    // Create related entities
+    // Process standards separately to ensure sequence
+    await createRelatedEntities<CreateStandardDto>(
+      formData.standards,
+      '/standards',
+      boardData.id,
+      'standard',
+    );
+
+    // Process other entities in parallel
     await Promise.all([
       createRelatedEntities<CreateInstructionMediumDto>(
         formData.mediums,
         '/instruction-mediums',
         boardData.id,
         'instruction medium',
-      ),
-      createRelatedEntities<CreateStandardDto>(
-        formData.standards,
-        '/standards',
-        boardData.id,
-        'standard',
       ),
       createRelatedEntities<CreateSubjectDto>(
         formData.subjects,

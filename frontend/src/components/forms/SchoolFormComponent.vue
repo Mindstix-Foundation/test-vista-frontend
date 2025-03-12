@@ -1632,7 +1632,8 @@ const goBack = () => {
 const fetchBoards = async () => {
   try {
     const { data } = await axiosInstance.get('/boards')
-    boards.value = data
+    // Handle both paginated and non-paginated response formats
+    boards.value = data.data || data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }

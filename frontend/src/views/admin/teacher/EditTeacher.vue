@@ -261,7 +261,7 @@ const addSubject = async (
   mediumStandardSubjectId: number,
 ) => {
   await axiosInstance.post('/teacher-subjects', {
-    user_id: userId,
+    user_id: parseInt(userId, 10),
     school_standard_id: schoolStandardId,
     medium_standard_subject_id: mediumStandardSubjectId,
   })

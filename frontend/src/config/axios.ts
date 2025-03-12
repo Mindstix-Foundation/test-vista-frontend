@@ -1,7 +1,9 @@
 import axios from 'axios'
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL: import.meta.env.PROD
+    ? import.meta.env.VITE_API_URL
+    : '/api', // Use proxy in development
   headers: {
     'Content-Type': 'application/json',
   },

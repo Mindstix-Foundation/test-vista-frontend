@@ -68,6 +68,7 @@ import { useRouter, useRoute } from 'vue-router'
 import SchoolFormComponent from '@/components/forms/SchoolFormComponent.vue'
 import axiosInstance from '@/config/axios'
 import type { SchoolFormData } from '@/models/School'
+import { useToastStore } from '@/store/toast'
 import * as bootstrap from 'bootstrap'
 
 interface OperationResult {
@@ -76,14 +77,17 @@ interface OperationResult {
   message?: string
 }
 
-interface SchoolMedium {
-  id: number
-  instruction_medium_id: number
-}
-
-interface SchoolStandard {
-  id: number
-  standard_id: number
+// Define the type for the form component instance
+type SchoolFormComponentType = InstanceType<typeof SchoolFormComponent> & {
+  availableMediums: { id: number; name: string }[]
+  availableStandards: { id: number; name: string }[]
+  boardSearch: string
+  countrySearch: string
+  stateSearch: string
+  citySearch: string
+  selectedCountry: { id: number; name: string } | null
+  selectedState: { id: number; name: string; country_id: number } | null
+  selectedCity: { id: number; name: string; state_id: number } | null
 }
 
 const router = useRouter()
@@ -94,8 +98,8 @@ const schoolData = ref<SchoolFormData | null>(null)
 const operationResults = ref<OperationResult[]>([])
 let operationResultModal: bootstrap.Modal | null = null
 
-// Add ref for the form component
-const schoolFormRef = ref<InstanceType<typeof SchoolFormComponent> | null>(null)
+// Update the ref type to use our custom type
+const schoolFormRef = ref<SchoolFormComponentType | null>(null)
 
 onMounted(() => {
   operationResultModal = new bootstrap.Modal(document.getElementById('operationResultModal')!)
@@ -119,13 +123,9 @@ onMounted(async () => {
     const [
       { data: boardMediums },
       { data: boardStandards },
-      { data: schoolMediums },
-      { data: schoolStandards },
     ] = await Promise.all([
-      axiosInstance.get(`/instruction-mediums/board/${school.board_id}`),
-      axiosInstance.get(`/standards/board/${school.board_id}`),
-      axiosInstance.get(`/school-instruction-mediums/school/${schoolId.value}`),
-      axiosInstance.get(`/school-standards/school/${schoolId.value}`),
+      axiosInstance.get(`/instruction-mediums/board/${school.board.id}`),
+      axiosInstance.get(`/standards/board/${school.board.id}`),
     ])
 
     // Map board mediums and standards to the format expected by the form
@@ -141,16 +141,14 @@ onMounted(async () => {
     }))
 
     // Get the IDs of the school's selected mediums and standards
-    const selectedMediumIds = schoolMediums.map(
-      (m: { instruction_medium_id: number }) => m.instruction_medium_id,
-    )
-    const selectedStandardIds = schoolStandards.map((s: { standard_id: number }) => s.standard_id)
+    const selectedMediumIds = school.instruction_mediums.map((m: { id: number }) => m.id)
+    const selectedStandardIds = school.standards.map((s: { id: number }) => s.id)
 
-    // Construct form data
+    // Construct form data using the new API response format
     schoolData.value = {
       name: school.name,
-      board_id: school.board_id,
-      address_id: school.address_id,
+      board_id: school.board.id,
+      address_id: school.address.id,
       principal_name: school.principal_name,
       email: school.email,
       contact_number: school.contact_number,
@@ -158,9 +156,9 @@ onMounted(async () => {
       address: {
         street: school.address.street,
         postal_code: school.address.postal_code,
-        city_id: school.address.city_id,
-        state_id: school.address.state_id,
-        country_id: school.address.country_id,
+        city_id: school.address.city.id,
+        state_id: school.address.city.state.id,
+        country_id: school.address.city.state.country.id,
       },
       mediums: selectedMediumIds,
       standards: selectedStandardIds,
@@ -170,13 +168,39 @@ onMounted(async () => {
     if (schoolFormRef.value) {
       schoolFormRef.value.availableMediums = mappedBoardMediums
       schoolFormRef.value.availableStandards = mappedBoardStandards
-      schoolFormRef.value.boardSearch = school.name
+      schoolFormRef.value.boardSearch = school.board.name
+
+      // Set the location data in the form component
+      schoolFormRef.value.selectedCountry = {
+        id: school.address.city.state.country.id,
+        name: school.address.city.state.country.name
+      }
+      schoolFormRef.value.selectedState = {
+        id: school.address.city.state.id,
+        name: school.address.city.state.name,
+        country_id: school.address.city.state.country.id
+      }
+      schoolFormRef.value.selectedCity = {
+        id: school.address.city.id,
+        name: school.address.city.name,
+        state_id: school.address.city.state.id
+      }
+
+      // Set the search values for location fields
+      schoolFormRef.value.countrySearch = school.address.city.state.country.name
+      schoolFormRef.value.stateSearch = school.address.city.state.name
+      schoolFormRef.value.citySearch = school.address.city.name
     }
 
     console.log('Constructed initial data:', schoolData.value)
   } catch (error) {
     console.error('Error fetching school data:', error)
-    alert('Failed to load school data. Please try again.')
+    const toastStore = useToastStore()
+    toastStore.showToast({
+      type: 'error',
+      title: 'Error',
+      message: 'Failed to load school data. Please try again.',
+    })
   } finally {
     isLoading.value = false
   }
@@ -194,11 +218,11 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
     const hasAddressChanged =
       currentSchool.address.street !== updatedData.address.street ||
       currentSchool.address.postal_code !== updatedData.address.postal_code ||
-      currentSchool.address.city_id !== updatedData.address.city_id
+      currentSchool.address.city.id !== updatedData.address.city_id
 
     const hasSchoolDetailsChanged =
       currentSchool.name !== updatedData.name ||
-      currentSchool.board_id !== updatedData.board_id ||
+      currentSchool.board.id !== updatedData.board_id ||
       currentSchool.principal_name !== updatedData.principal_name ||
       currentSchool.email !== updatedData.email ||
       currentSchool.contact_number !== updatedData.contact_number ||
@@ -254,38 +278,34 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
 
     // Update instruction mediums
     try {
-      const { data: existingMediums } = await axiosInstance.get(
-        `/school-instruction-mediums/school/${schoolId.value}`,
-      )
-      const existingMediumIds = existingMediums.map(
-        (m: { instruction_medium_id: number }) => m.instruction_medium_id,
-      )
+      // Get current medium IDs from the API response
+      const currentMediumIds = currentSchool.instruction_mediums.map((m: { id: number }) => m.id)
 
-      const mediumsToAdd = updatedData.mediums.filter((id) => !existingMediumIds.includes(id))
-      const mediumsToRemove = existingMediums.filter(
-        (medium: { instruction_medium_id: number }) =>
-          !updatedData.mediums.includes(medium.instruction_medium_id),
+      // Compare with updated medium IDs
+      const mediumsToAdd = updatedData.mediums.filter((id) => !currentMediumIds.includes(id))
+      const mediumsToRemove = currentSchool.instruction_mediums.filter(
+        (medium: { id: number }) => !updatedData.mediums.includes(medium.id)
       )
 
       // Only proceed if there are changes
       if (mediumsToAdd.length > 0 || mediumsToRemove.length > 0) {
         // Process removals
-        for (const medium of mediumsToRemove as SchoolMedium[]) {
+        for (const medium of mediumsToRemove) {
           try {
-            await axiosInstance.delete(`/school-instruction-mediums/${medium.id}`)
+            await axiosInstance.delete(`/school-instruction-mediums/school/${schoolId.value}/medium/${medium.id}`)
             const mediumInfo = schoolFormRef.value?.availableMediums.find(
-              (m) => m.id === medium.instruction_medium_id,
+              (m) => m.id === medium.id
             )
             operationResults.value.push({
-              operation: `Remove Medium: ${mediumInfo?.name || 'Unknown Medium'}`,
+              operation: `Remove Medium: ${mediumInfo?.name || medium.name || 'Unknown Medium'}`,
               status: 'success',
             })
           } catch (error) {
             const mediumInfo = schoolFormRef.value?.availableMediums.find(
-              (m) => m.id === medium.instruction_medium_id,
+              (m) => m.id === medium.id
             )
             operationResults.value.push({
-              operation: `Remove Medium: ${mediumInfo?.name || 'Unknown Medium'}`,
+              operation: `Remove Medium: ${mediumInfo?.name || medium.name || 'Unknown Medium'}`,
               status: 'error',
               message: error instanceof Error ? error.message : 'Failed to remove medium',
             })
@@ -324,38 +344,34 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
 
     // Update standards
     try {
-      const { data: existingStandards } = await axiosInstance.get(
-        `/school-standards/school/${schoolId.value}`,
-      )
-      const existingStandardIds = existingStandards.map(
-        (s: { standard_id: number }) => s.standard_id,
-      )
+      // Get current standard IDs from the API response
+      const currentStandardIds = currentSchool.standards.map((s: { id: number }) => s.id)
 
-      const standardsToAdd = updatedData.standards.filter((id) => !existingStandardIds.includes(id))
-      const standardsToRemove = existingStandards.filter(
-        (standard: { standard_id: number }) =>
-          !updatedData.standards.includes(standard.standard_id),
+      // Compare with updated standard IDs
+      const standardsToAdd = updatedData.standards.filter((id) => !currentStandardIds.includes(id))
+      const standardsToRemove = currentSchool.standards.filter(
+        (standard: { id: number }) => !updatedData.standards.includes(standard.id)
       )
 
       // Only proceed if there are changes
       if (standardsToAdd.length > 0 || standardsToRemove.length > 0) {
         // Process removals
-        for (const standard of standardsToRemove as SchoolStandard[]) {
+        for (const standard of standardsToRemove) {
           try {
-            await axiosInstance.delete(`/school-standards/${standard.id}`)
+            await axiosInstance.delete(`/school-standards/school/${schoolId.value}/standard/${standard.id}`)
             const standardInfo = schoolFormRef.value?.availableStandards.find(
-              (s) => s.id === standard.standard_id,
+              (s) => s.id === standard.id
             )
             operationResults.value.push({
-              operation: `Remove Standard: ${standardInfo?.name || 'Unknown Standard'}`,
+              operation: `Remove Standard: ${standardInfo?.name || standard.name || 'Unknown Standard'}`,
               status: 'success',
             })
           } catch (error) {
             const standardInfo = schoolFormRef.value?.availableStandards.find(
-              (s) => s.id === standard.standard_id,
+              (s) => s.id === standard.id
             )
             operationResults.value.push({
-              operation: `Remove Standard: ${standardInfo?.name || 'Unknown Standard'}`,
+              operation: `Remove Standard: ${standardInfo?.name || standard.name || 'Unknown Standard'}`,
               status: 'error',
               message: error instanceof Error ? error.message : 'Failed to remove standard',
             })
@@ -370,7 +386,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
               standard_id: standardId,
             })
             const standardInfo = schoolFormRef.value?.availableStandards.find(
-              (s) => s.id === standardId,
+              (s) => s.id === standardId
             )
             operationResults.value.push({
               operation: `Add Standard: ${standardInfo?.name || 'Unknown Standard'}`,
@@ -378,7 +394,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
             })
           } catch (error) {
             const standardInfo = schoolFormRef.value?.availableStandards.find(
-              (s) => s.id === standardId,
+              (s) => s.id === standardId
             )
             operationResults.value.push({
               operation: `Add Standard: ${standardInfo?.name || 'Unknown Standard'}`,

@@ -11,17 +11,29 @@
       @focus="showDropdown = true"
       @click="showDropdown = true"
       @blur="handleBlur"
-      autocomplete="off"
+      :autocomplete="($attrs.autocomplete as string) || 'chrome-off'"
+      :name="($attrs.name as string) || `no-autofill-${id}`"
+      :data-form-type="'other'"
       required
       :disabled="disabled"
       @keydown="handleKeydown"
     />
     <div
       class="dropdown-menu"
-      :class="{ show: showDropdown && filteredItems.length > 0 }"
+      :class="{ show: showDropdown }"
       style="position: absolute; width: 100%; z-index: 1000"
     >
+      <!-- Show "No data available" message when there are no items -->
+      <div v-if="items.length === 0" class="dropdown-item no-data-item">
+        No data available
+      </div>
+      <!-- Show "No results found" when there are items but none match the search -->
+      <div v-else-if="filteredItems.length === 0" class="dropdown-item no-data-item">
+        No results found
+      </div>
+      <!-- Show filtered items when available -->
       <button
+        v-else
         v-for="(item, index) in filteredItems"
         :key="getItemKey(item)"
         class="dropdown-item"
@@ -41,7 +53,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
-interface Item {
+export interface Item {
   id: number | string
   [key: string]: unknown
 }
@@ -267,6 +279,17 @@ defineExpose({
   text-align: left;
   display: block;
   color: #212529;
+}
+
+.no-data-item {
+  color: #6c757d;
+  font-style: italic;
+  cursor: default;
+}
+
+.no-data-item:hover {
+  background-color: transparent;
+  color: #6c757d;
 }
 
 .dropdown-item:hover,

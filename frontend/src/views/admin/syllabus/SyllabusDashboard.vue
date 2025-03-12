@@ -208,9 +208,18 @@ const handleStandardInput = (value: unknown) => {
 onMounted(async () => {
   try {
     const response = await axiosInstance.get('/boards')
-    boards.value = response.data
+    // Check if the response has the new format with pagination
+    if (response.data && response.data.data) {
+      // New format with pagination
+      boards.value = response.data.data
+    } else {
+      // Old format (direct array)
+      boards.value = response.data
+    }
   } catch (error) {
     console.error('Error fetching boards:', error)
+    // Set boards to empty array to show "No data available" message
+    boards.value = []
   }
 })
 
@@ -229,9 +238,22 @@ const handleBoardChange = async (board: Item | null) => {
 
     // Fetch board details
     const response = await axiosInstance.get(`/boards/${board.id}`)
-    selectedBoard.value = response.data
+
+    // Check if the response has the new format with pagination
+    if (response.data && response.data.data) {
+      // New format with pagination - use the first item in the data array
+      if (response.data.data.length > 0) {
+        selectedBoard.value = response.data.data[0]
+      } else {
+        selectedBoard.value = null
+      }
+    } else {
+      // Old format (direct object)
+      selectedBoard.value = response.data
+    }
   } catch (error) {
     console.error('Error fetching board details:', error)
+    selectedBoard.value = null
   }
 }
 
