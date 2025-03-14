@@ -29,70 +29,48 @@
             <li class="nav-item">
               <router-link
                 class="nav-link pb-0"
-                id="navBoard"
-                to="/admin/board"
+                id="navHome"
+                to="/teacher/home"
                 @click="closeOffcanvas"
               >
-                Board
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                to="/admin/syllabus"
-                class="nav-link pb-0"
-                id="navSyllabus"
-                @click="closeOffcanvas"
-              >
-                Syllabus
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                to="/admin/pattern"
-                class="nav-link pb-0"
-                id="navPattern"
-                @click="closeOffcanvas"
-              >
-                Pattern
+                HOME
               </router-link>
             </li>
             <li class="nav-item">
               <a
                 class="nav-link pb-0 disabled"
-                id="navQuestion"
+                id="navCreateTestPaper"
                 title="Coming soon"
               >
-                Question Bank
+                CREATE TEST PAPER
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link pb-0 disabled"
+                id="navPreviousTestPaper"
+                title="Coming soon"
+              >
+                PREVIOUS TEST PAPER
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link pb-0 disabled"
+                id="navSyllabus"
+                title="Coming soon"
+              >
+                SYLLABUS
               </a>
             </li>
             <li class="nav-item">
               <router-link
-                to="/admin/school"
-                class="nav-link pb-0"
-                id="navSchool"
-                @click="closeOffcanvas"
-              >
-                School
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                to="/admin/teacher"
-                class="nav-link pb-0"
-                id="navTeacher"
-                @click="closeOffcanvas"
-              >
-                Teacher
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                to="/admin/profile"
+                to="/teacher/profile"
                 class="nav-link pb-0"
                 id="navProfile"
                 @click="closeOffcanvas"
               >
-                Profile
+                PROFILE
               </router-link>
             </li>
           </ul>

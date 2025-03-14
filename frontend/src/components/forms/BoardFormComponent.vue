@@ -736,7 +736,7 @@ const fetchBoardData = async (boardId: number) => {
         name: s.name,
         board_id: Number(boardId),
         sequence_number: Number(s.sequence_number) // Ensure it's a number
-      })),
+      })).sort((a, b) => Number(a.sequence_number || 0) - Number(b.sequence_number || 0)),
       subjects: boardData.subjects.map((s: { id: number; name: string }) => ({
         id: s.id,
         name: s.name,

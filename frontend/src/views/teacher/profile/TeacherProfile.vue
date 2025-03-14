@@ -1,58 +1,129 @@
 <template>
-  <div>
-    <!-- Main Container -->
-    <div class="container mt-4 mb-5">
-      <div class="row p-2 g-2 mb-1">
-        <div
-          class="row justify-content-center align-items-center g-2 mb-4"
-          style="margin-left: 4px"
-        >
-          <div class="col-12 col-sm-5">
-            <h5 class="text-left m-0 fw-bolder text-uppercase">profile</h5>
-          </div>
-          <div class="col-12 col-sm-5 text-end"></div>
+  <div class="container mt-4 mb-5">
+    <!-- Header Section -->
+    <div class="row p-2 g-2 mb-1 mt-2">
+      <div class="row g-2 justify-content-center align-items-center mb-4">
+        <div class="col-12 col-sm-10">
+          <h5 class="text-left fw-bolder text-uppercase m-0">My Profile</h5>
         </div>
-        <hr />
       </div>
+      <hr />
+    </div>
 
-      <div class="row justify-content-center align-items-center g-2 mb-4">
-        <div class="col-md-8">
-          <!-- Profile Information -->
-          <div class="profile-info">
-            <div class="mb-3">
-              <label class="form-label">Name:</label>
-              <p>{{ profile.name }}</p>
+    <!-- Profile Card -->
+    <div class="row gy-2 g-3 justify-content-center">
+      <div class="col-12 col-sm-10 col-md-8">
+        <div class="card shadow-sm">
+          <form>
+            <!-- Name -->
+            <div class="row mb-2">
+              <label for="name" class="col-12 col-sm-3 col-form-label fw-bolder">Name:</label>
+              <div class="col-12 col-sm-9">
+                <input
+                  type="text"
+                  class="form-control-plaintext"
+                  id="name"
+                  :value="profile.name"
+                  readonly
+                />
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Email:</label>
-              <p>{{ profile.email_id }}</p>
+            <!-- School Name -->
+            <div class="row mb-2">
+              <label for="schoolName" class="col-12 col-lg-3 col-form-label fw-bold"
+                >School Name:</label
+              >
+              <div class="col-12 col-lg-9">
+                <input
+                  type="text"
+                  readonly
+                  class="form-control-plaintext"
+                  id="schoolName"
+                  :value="profile.user_schools[0].school.name || 'Not assigned'"
+                />
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Contact Number:</label>
-              <p>{{ profile.contact_number }}</p>
+            <!-- Contact Numbers -->
+            <div class="row mb-2">
+              <div class="col-12 col-lg-6">
+                <div class="row">
+                  <label for="contactNumber" class="col-12 col-lg-6 col-form-label fw-bold"
+                    >Contact Number:</label
+                  >
+                  <div class="col-12 col-lg-6">
+                    <input
+                      type="text"
+                      readonly
+                      class="form-control-plaintext"
+                      id="contactNumber"
+                      :value="profile.contact_number"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="row">
+                  <label for="alternateContactNumber" class="col-12 col-lg-6 col-form-label fw-bold"
+                    >Alternate Number:</label
+                  >
+                  <div class="col-12 col-lg-6">
+                    <input
+                      type="text"
+                      readonly
+                      class="form-control-plaintext"
+                      id="alternateContactNumber"
+                      :value="profile.alternate_contact_number || 'Not provided'"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Alternate Contact Number:</label>
-              <p>{{ profile.alternate_contact_number || 'Not provided' }}</p>
+            <!-- Email -->
+            <div class="row mb-2">
+              <label for="emailId" class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
+              <div class="col-12 col-lg-9">
+                <input
+                  type="text"
+                  readonly
+                  class="form-control-plaintext"
+                  id="emailId"
+                  :value="profile.email_id"
+                />
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Highest Qualification:</label>
-              <p>{{ profile.highest_qualification || 'Not provided' }}</p>
+            <!-- Qualification -->
+            <div class="row mb-2">
+              <label for="qualification" class="col-12 col-lg-3 col-form-label fw-bold"
+                >Highest Qualification:</label
+              >
+              <div class="col-12 col-lg-9">
+                <input
+                  type="text"
+                  readonly
+                  class="form-control-plaintext"
+                  id="qualification"
+                  :value="profile.highest_qualification || 'Not provided'"
+                />
+              </div>
             </div>
-
-            <div class="mb-3">
-              <label class="form-label">School:</label>
-              <p>{{ profile.user_schools[0].school.name || 'Not assigned' }}</p>
-            </div>
-
-            <div class="d-flex justify-content-between">
-              <button class="btn btn-primary" disabled title="Coming soon">Reset Password</button>
-              <button class="btn btn-danger" @click="showLogoutModal">Logout</button>
-            </div>
+          </form>
+          <div class="card-footer text-end">
+            <button
+              type="button"
+              class="btn btn-light me-2"
+              style="border: 1px solid gray"
+              disabled
+              title="Coming soon"
+            >
+              Reset Password
+            </button>
+            <button type="button" class="btn btn-danger fw-bold" @click="showLogoutModal">
+              Logout <i class="bi bi-box-arrow-right"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -142,11 +213,34 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.profile-info label {
-  font-weight: bold;
+@media (max-width: 768px) {
+  #navProfile {
+    font-weight: bolder;
+    font-size: 1.1rem !important;
+    text-decoration: none !important;
+  }
 }
 
-.profile-info p {
-  margin-bottom: 0.5rem;
+.form-control-plaintext {
+  font-weight: normal;
+}
+
+.card {
+  border: none;
+}
+
+.card-footer {
+  background-color: transparent;
+  border-top: none;
+  padding: 1rem;
+}
+
+.btn-danger {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.bi-box-arrow-right {
+  margin-left: 0.5rem;
 }
 </style>

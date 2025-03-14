@@ -97,29 +97,43 @@
 
             <!-- Standard Filter -->
             <div class="col-6 col-md-2 mb-2">
-              <SearchableDropdown
-                id="filterStandard"
-                label="Standard"
-                placeholder="Search for Standard"
-                :items="availableStandards"
-                v-model="selectedStandard"
-                :disabled="!selectedBoard"
-                :search-keys="['name']"
-                :next-field-id="'filterSubject'"
-              />
+              <div class="position-relative">
+                <SearchableDropdown
+                  id="filterStandard"
+                  label="Standard"
+                  placeholder="Search for Standard"
+                  :items="availableStandards"
+                  v-model="selectedStandard"
+                  :disabled="!selectedBoard || loadingStandards"
+                  :search-keys="['name']"
+                  :next-field-id="'filterSubject'"
+                />
+                <div v-if="loadingStandards" class="dropdown-loading-overlay">
+                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading standards...</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Subject Filter -->
             <div class="col-12 col-md-2 mb-2">
-              <SearchableDropdown
-                id="filterSubject"
-                label="Subject"
-                placeholder="Search for Subject"
-                :items="availableSubjects"
-                v-model="selectedSubject"
-                :disabled="!selectedBoard"
-                :search-keys="['name']"
-              />
+              <div class="position-relative">
+                <SearchableDropdown
+                  id="filterSubject"
+                  label="Subject"
+                  placeholder="Search for Subject"
+                  :items="availableSubjects"
+                  v-model="selectedSubject"
+                  :disabled="!selectedBoard || loadingSubjects"
+                  :search-keys="['name']"
+                />
+                <div v-if="loadingSubjects" class="dropdown-loading-overlay">
+                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading subjects...</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -134,10 +148,6 @@
           <div class="card-body py-5">
             <i class="bi bi-clipboard2-x fs-1 text-secondary mb-3"></i>
             <h5 class="text-secondary mb-3">No patterns found</h5>
-            <p class="text-muted mb-4">Start by adding your first pattern to get started</p>
-            <router-link class="btn btn-success" :to="{ name: 'createPattern' }">
-              <i class="bi bi-plus-circle me-2"></i>Add Pattern
-            </router-link>
           </div>
         </div>
       </div>
@@ -345,13 +355,47 @@ interface Board {
   id: number
   name: string
   abbreviation: string
-  standards: Array<{
+  address_id?: number
+  created_at?: string
+  updated_at?: string
+  address?: {
     id: number
-    name: string
+    postal_code: string
+    street: string
+    city_id: number
+    city: {
+      id: number
+      name: string
+      state_id: number
+      state: {
+        id: number
+        name: string
+        country_id: number
+        country: {
+          id: number
+          name: string
+        }
+      }
+    }
+  }
+  instruction_mediums?: Array<{
+    id: number
+    instruction_medium: string
+    created_at: string
+    updated_at: string
   }>
-  subjects: Array<{
+  standards?: Array<{
     id: number
     name: string
+    sequence_number: number
+    created_at?: string
+    updated_at?: string
+  }>
+  subjects?: Array<{
+    id: number
+    name: string
+    created_at?: string
+    updated_at?: string
   }>
 }
 
@@ -416,6 +460,10 @@ const pageSize = 15 // Fixed page size
 const totalItems = ref(0)
 const totalPages = ref(0)
 const sortOption = ref('pattern_name_asc')
+
+// Add loading states for standards and subjects
+const loadingStandards = ref(false)
+const loadingSubjects = ref(false)
 
 // Computed properties for sorting
 const sortBy = computed(() => {
@@ -733,7 +781,14 @@ const fetchPatterns = async () => {
 const fetchBoards = async () => {
   try {
     const response = await axiosInstance.get('/boards')
+
+    // The response now only contains basic board data without standards and subjects
     boards.value = response.data
+
+    // If there was a previously selected board, we need to refetch its details
+    if (selectedBoard.value?.id) {
+      await fetchBoardDetails(selectedBoard.value.id)
+    }
   } catch (error) {
     console.error('Error fetching boards:', error)
   }
@@ -834,10 +889,50 @@ watch(isSearching, (newVal) => {
   }
 });
 
-// Watch for changes in filters to refetch patterns
+// Update the fetchBoardDetails function to include loading states
+const fetchBoardDetails = async (boardId: number) => {
+  try {
+    // Set loading states
+    loadingStandards.value = true
+    loadingSubjects.value = true
+
+    const response = await axiosInstance.get(`/boards/${boardId}`)
+
+    // Update the selected board with the detailed data
+    if (response.data) {
+      // Keep the original board reference but update its properties
+      if (selectedBoard.value) {
+        selectedBoard.value.standards = response.data.standards || []
+        selectedBoard.value.subjects = response.data.subjects || []
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching board details:', error)
+  } finally {
+    // Clear loading states
+    loadingStandards.value = false
+    loadingSubjects.value = false
+  }
+}
+
+// Update the watch for selectedBoard to fetch details when it changes
+watch(selectedBoard, async (newBoard) => {
+  // Reset dependent selections
+  selectedStandard.value = null
+  selectedSubject.value = null
+
+  // Fetch board details if a board is selected
+  if (newBoard?.id) {
+    await fetchBoardDetails(newBoard.id)
+  }
+
+  // No need to call fetchPatterns here as it will be triggered by the other watcher
+}, { immediate: false })
+
+// Keep the existing watcher for filter changes
 watch([selectedBoard, selectedStandard, selectedSubject, totalMarks], async () => {
-  await fetchPatterns();
-});
+  await fetchPatterns()
+})
 </script>
 
 <style scoped>
@@ -1153,5 +1248,25 @@ watch([selectedBoard, selectedStandard, selectedSubject, totalMarks], async () =
 .search-field {
   position: relative;
   z-index: 10;
+}
+
+/* Dropdown loading overlay */
+.position-relative {
+  position: relative;
+}
+
+.dropdown-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  border-radius: 6px;
+  pointer-events: none; /* Allow clicks to pass through */
 }
 </style>

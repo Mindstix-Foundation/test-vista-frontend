@@ -69,7 +69,7 @@
               id="floatingSection"
               placeholder="Section Name"
               v-model="formData.sectionName"
-              @input="handleSectionHeaderInput"
+              @input="handleSectionNameInput"
               @blur="handleSectionHeaderBlur"
               required
             />
@@ -587,6 +587,20 @@ const handleSectionHeaderInput = () => {
   if (validationStates.value.sectionHeader.allTouched) {
     validationStates.value.sectionHeader.valid = isSectionHeaderValid.value
   }
+}
+
+// New function to handle section name input specifically
+const handleSectionNameInput = (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const value = input.value
+
+  // Capitalize the first letter if there's any text
+  if (value.length > 0) {
+    formData.value.sectionName = value.charAt(0).toUpperCase() + value.slice(1)
+  }
+
+  // Call the general section header input handler
+  handleSectionHeaderInput()
 }
 
 const handleSectionHeaderBlur = () => {

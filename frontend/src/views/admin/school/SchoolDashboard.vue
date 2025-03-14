@@ -234,7 +234,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="handleCancelDelete">
+            <button type="button" class="btn btn-outline-dark" @click="handleCancelDelete">
               Cancel
             </button>
             <button
@@ -950,6 +950,19 @@ function openViewModal(school: SchoolListItem) {
     });
 }
 
+// Add this function to properly clean up modals
+function cleanupModal(modalId: string) {
+  const modal = Modal.getInstance(document.getElementById(modalId) as HTMLElement)
+  modal?.hide()
+
+  // Remove backdrop manually
+  document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove())
+
+  // Remove modal-open class and inline styles from body
+  document.body.classList.remove('modal-open')
+  document.body.style.removeProperty('padding-right')
+}
+
 const deleteSchool = async () => {
   if (!selectedSchool.value) return
 
@@ -965,9 +978,11 @@ const deleteSchool = async () => {
     // Refresh the schools list
     fetchSchools()
 
-    // Close the view modal
-    const viewModal = Modal.getInstance(document.getElementById('viewSchoolModal') as HTMLElement)
-    viewModal?.hide()
+    // Close and clean up the delete confirmation modal
+    cleanupModal('deleteConfirmationModal')
+
+    // Reset confirmation text
+    confirmationText.value = ''
 
     // Show success toast
     toastStore.showToast({

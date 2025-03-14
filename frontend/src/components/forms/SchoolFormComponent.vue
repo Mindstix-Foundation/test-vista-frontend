@@ -393,7 +393,9 @@
                     @keydown="(e) => handleEnterKey(e, 'email')"
                   />
                   <label for="contactNo2">Alternate Contact Number (Optional)</label>
-                  <div class="invalid-feedback">Please enter a valid contact number</div>
+                  <div class="invalid-feedback">
+                    Please enter a valid contact number that is different from the primary contact number
+                  </div>
                 </div>
               </div>
 
@@ -674,7 +676,7 @@ const props = defineProps<{
 const router = useRouter()
 const isSubmitting = ref(false)
 const availableMediums = ref<{ id: number; name: string }[]>([])
-const availableStandards = ref<{ id: number; name: string }[]>([])
+const availableStandards = ref<{ id: number; name: string; sequence_number: number }[]>([])
 const boards = ref<Board[]>([])
 const boardSearch = ref('')
 const showBoardDropdown = ref(false)
@@ -894,10 +896,13 @@ const selectBoard = async (board: BoardListItem) => {
       id: m.id,
       name: m.instruction_medium,
     }))
-    availableStandards.value = standards.map((s: { id: number; name: string }) => ({
-      id: s.id,
-      name: s.name,
-    }))
+    availableStandards.value = standards
+      .map((s: { id: number; name: string; sequence_number: number }) => ({
+        id: s.id,
+        name: s.name,
+        sequence_number: s.sequence_number
+      }))
+      .sort((a: { sequence_number: number }, b: { sequence_number: number }) => a.sequence_number - b.sequence_number)
 
     // Check if we're returning to a previous board
     const previousSelection = previousSelections.value.get(board.id)
@@ -955,10 +960,12 @@ const fetchSchoolStandards = async (schoolId: number) => {
     console.log('Raw standards data:', data)
 
     // Map the data to the required format
-    const mappedData = data.map((s: { standard: { id: number; name: string } }) => ({
+    const mappedData = data.map((s: { standard: { id: number; name: string; sequence_number: number } }) => ({
       id: s.standard.id,
       name: s.standard.name,
+      sequence_number: s.standard.sequence_number
     }))
+    .sort((a: { sequence_number: number }, b: { sequence_number: number }) => a.sequence_number - b.sequence_number)
     console.log('Mapped standards data:', mappedData)
     return mappedData
   } catch (error) {
@@ -1191,7 +1198,6 @@ const handleEnterKey = (event: KeyboardEvent, nextElementId: string) => {
 
 // Update isFormValid computed
 const isFormValid = computed(() => {
-  console.log('Checking form validity')
   console.log('Form values:', {
     name: form.value.name,
     board_id: form.value.board_id,
@@ -1211,10 +1217,11 @@ const isFormValid = computed(() => {
     validatePostalCode(form.value.address.postal_code)
 
   const contactValid = validateContactNumber(form.value.contact_number)
-  const alternateContactValid =
-    !form.value.alternate_contact_number ||
-    (form.value.alternate_contact_number &&
-      validateContactNumber(form.value.alternate_contact_number))
+
+  // Check if alternate contact is valid and not the same as primary contact
+  const alternateContactValid = !form.value.alternate_contact_number ||
+    (validateContactNumber(form.value.alternate_contact_number) &&
+     form.value.alternate_contact_number !== form.value.contact_number)
 
   const isValid =
     form.value.name.trim() !== '' &&
@@ -1339,7 +1346,9 @@ const handleContactNumberInput = (event: Event, isAlternate = false) => {
   if (isAlternate) {
     form.value.alternate_contact_number = formatted
     if (formatted) {
-      validationStates.value.alternateContactNumber.valid = validateContactNumber(formatted)
+      // Check if alternate contact number is the same as primary contact number
+      const isSameAsPrimary = formatted === form.value.contact_number && formatted !== '';
+      validationStates.value.alternateContactNumber.valid = validateContactNumber(formatted) && !isSameAsPrimary;
     } else {
       validationStates.value.alternateContactNumber.valid = true // Empty is valid for alternate
     }
@@ -1348,6 +1357,12 @@ const handleContactNumberInput = (event: Event, isAlternate = false) => {
     form.value.contact_number = formatted
     validationStates.value.contactNumber.valid = validateContactNumber(formatted)
     validationStates.value.contactNumber.touched = true
+
+    // If primary contact number changes, also validate alternate contact number
+    if (form.value.alternate_contact_number) {
+      const isSameAsPrimary = form.value.alternate_contact_number === formatted && formatted !== '';
+      validationStates.value.alternateContactNumber.valid = validateContactNumber(form.value.alternate_contact_number) && !isSameAsPrimary;
+    }
   }
 }
 
@@ -1604,10 +1619,16 @@ const confirmAndSubmit = async () => {
 
     if (props.isEditMode) {
       // Close the confirmation modal if in edit mode
-      const modal = Modal.getInstance(
-        document.getElementById('saveConfirmationModal') as HTMLElement,
-      )
+      const modalElement = document.getElementById('saveConfirmationModal') as HTMLElement
+      const modal = Modal.getInstance(modalElement)
       modal?.hide()
+
+      // Remove backdrop manually
+      document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove())
+
+      // Remove modal-open class and inline styles from body
+      document.body.classList.remove('modal-open')
+      document.body.style.removeProperty('padding-right')
     }
 
     // Emit the form data to the parent component

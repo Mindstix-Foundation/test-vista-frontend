@@ -52,13 +52,13 @@ const handleSubmit = async (data: {
     if (!teacherRole) throw new Error('Teacher role not found')
 
     await axiosInstance.post('/user-roles', {
-      user_id: userId,
+      user_id: parseInt(userId, 10),
       role_id: teacherRole.id,
     })
 
     // Step 3: Create school assignment
     await axiosInstance.post('/user-schools', {
-      user_id: userId,
+      user_id: parseInt(userId, 10),
       school_id: data.formData.schoolId,
       start_date: new Date().toISOString(),
       end_date: null,
@@ -67,7 +67,7 @@ const handleSubmit = async (data: {
     // Step 4: Create teacher subjects
     for (const subject of data.formData.teacherSubjects) {
       await axiosInstance.post('/teacher-subjects', {
-        user_id: userId,
+        user_id: parseInt(userId, 10),
         school_standard_id: subject.schoolStandardId,
         medium_standard_subject_id: subject.mediumStandardSubjectId,
       })

@@ -243,7 +243,7 @@ const updateSchoolAssignment = async (userId: string, schoolId: number) => {
   if (!activeSchool || activeSchool.school.id !== schoolId) {
     // Create new assignment with null end_date
     await axiosInstance.post('/user-schools', {
-      user_id: userId,
+      user_id: parseInt(userId, 10),
       school_id: schoolId,
       start_date: new Date().toISOString(),
       end_date: null,

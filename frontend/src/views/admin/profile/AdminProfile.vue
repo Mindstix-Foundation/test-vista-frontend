@@ -124,7 +124,8 @@
               type="button"
               class="btn btn-light me-2"
               style="border: 1px solid gray"
-              @click="handleResetPassword"
+              disabled
+              title="Coming soon"
             >
               Reset Password
             </button>
@@ -220,10 +221,6 @@ const fetchUserData = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const handleResetPassword = () => {
-  router.push({ name: 'forgotPassword' })
 }
 
 const handleLogout = () => {

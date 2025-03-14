@@ -360,6 +360,12 @@ onMounted(async () => {
       selectedStandard: null,
       selectedSubject: null,
     }
+
+    // Capitalize the pattern name
+    if (formData.value.patternName) {
+      formData.value.patternName = capitalizeFirstLetter(formData.value.patternName)
+    }
+
     console.log('Form data after setting:', formData.value)
 
     // Validate the initial data
@@ -439,10 +445,18 @@ const availableSubjects = computed(() => {
 })
 
 // Methods
+const capitalizeFirstLetter = (str: string): string => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 const handlePatternNameInput = (e: Event) => {
   const value = (e.target as HTMLInputElement).value
   validationStates.value.patternName.touched = true
   validationStates.value.patternName.valid = value.trim().length > 0
+
+  // Capitalize the first letter of the pattern name
+  formData.value.patternName = capitalizeFirstLetter(value)
 }
 
 const handlePatternNameBlur = () => {
@@ -576,6 +590,9 @@ const handleSubmit = async () => {
     return
   }
 
+  // Ensure pattern name is capitalized before submission
+  formData.value.patternName = capitalizeFirstLetter(formData.value.patternName)
+
   // Only emit submit if not in edit mode
   if (!props.isEditMode) {
     emit('submit', formData.value)
@@ -618,6 +635,9 @@ const addSection = () => {
   if (!formData.value.totalMarks || formData.value.totalMarks <= 0) {
     return
   }
+
+  // Ensure pattern name is capitalized before adding section
+  formData.value.patternName = capitalizeFirstLetter(formData.value.patternName)
 
   emit('addSection', { ...formData.value, remainingMarks: remainingMarks.value })
 }

@@ -133,10 +133,10 @@
                 </td>
               </tr>
               <template v-else>
-                <tr v-for="(teacher, index) in filteredTeachers" :key="teacher.id">
+                <tr v-for="(teacher, index) in filteredAndHighlightedTeachers" :key="teacher.id">
                   <th scope="row">{{ (currentPage - 1) * pageSize + index + 1 }}</th>
-                  <td>{{ teacher.name }}</td>
-                  <td>{{ teacher.school.name }}</td>
+                  <td v-html="teacher.highlightedName"></td>
+                  <td v-html="teacher.highlightedSchoolName"></td>
                   <td>{{ teacher.status ? 'Granted' : 'Revoked' }}</td>
                   <td class="text-center">
                     <i
@@ -445,7 +445,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="handleDeleteCancel">
+            <button type="button" class="btn btn-outline-dark" @click="handleDeleteCancel">
               Cancel
             </button>
             <button
@@ -575,6 +575,7 @@ const isSearchingTeacher = ref(false)
 const isSearchingSchool = ref(false)
 const teacherSearchTimeout = ref<number | null>(null)
 const schoolSearchTimeout = ref<number | null>(null)
+const teacherRoleId = ref<number | null>(null)
 
 // Pagination state
 const currentPage = ref(1)
@@ -660,8 +661,36 @@ const visiblePageNumbers = computed(() => {
   return pages
 })
 
+// Function to fetch teacher role ID
+const fetchTeacherRoleId = async () => {
+  try {
+    const response = await axiosInstance.get('/roles')
+    const teacherRole = response.data.find((role: { role_name: string }) => role.role_name === 'TEACHER')
+    if (teacherRole) {
+      teacherRoleId.value = teacherRole.id
+    } else {
+      console.error('Teacher role not found')
+      toastStore.showToast({
+        title: 'Error',
+        message: 'Failed to find teacher role. Please try again.',
+        type: 'error',
+      })
+    }
+  } catch (error) {
+    console.error('Error fetching roles:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to fetch roles. Please try again.',
+      type: 'error',
+    })
+  }
+}
+
 // Initialize from route query if present
 onMounted(async () => {
+  // First fetch the teacher role ID
+  await fetchTeacherRoleId()
+
   const schoolName = route.query.school as string
   if (schoolName) {
     schoolSearch.value = schoolName
@@ -687,6 +716,11 @@ onMounted(async () => {
 
 const fetchTeachers = async () => {
   try {
+    if (!teacherRoleId.value) {
+      console.error('Teacher role ID not available')
+      return
+    }
+
     if (!isSearchingTeacher.value && !isSearchingSchool.value) {
       loading.value = true
     }
@@ -697,7 +731,8 @@ const fetchTeachers = async () => {
       page: currentPage.value,
       page_size: pageSize,
       sort_by: sortBy.value,
-      sort_order: sortOrder.value
+      sort_order: sortOrder.value,
+      roleId: teacherRoleId.value // Add roleId parameter
     }
 
     // Add search parameter if teacherSearch is provided
@@ -825,6 +860,15 @@ const filteredTeachers = computed(() => {
   // Since we're using server-side filtering, we just return the teachers array
   // The filtering is handled by the API based on the query parameters
   return teachers.value
+})
+
+// Create a computed property that adds highlighting to the filtered teachers
+const filteredAndHighlightedTeachers = computed(() => {
+  return teachers.value.map((teacher) => ({
+    ...teacher,
+    highlightedName: highlightText(teacher.name, teacherSearch.value),
+    highlightedSchoolName: highlightText(teacher.school.name, schoolSearch.value)
+  }))
 })
 
 // Toggle filter visibility
@@ -1168,6 +1212,13 @@ const groupedTeacherSubjects = computed(() => {
 
   return groupedByStandard
 })
+
+// Function to highlight search text
+function highlightText(text: string, search: string): string {
+  if (!search) return text
+  const regex = new RegExp(`(${search})`, 'gi')
+  return text.replace(regex, '<span class="highlight">$1</span>')
+}
 </script>
 
 <style scoped>
@@ -1510,5 +1561,13 @@ const groupedTeacherSubjects = computed(() => {
 .subject-badge i {
   margin-right: 0.5rem;
   color: #6c757d;
+}
+
+/* Highlight style for search results */
+:deep(.highlight) {
+  background-color: #fff3cd;
+  padding: 2px;
+  border-radius: 2px;
+  font-weight: bold;
 }
 </style>

@@ -57,7 +57,20 @@
     <div class="container mt-2 pt-3 mb-5 pb-3">
       <div class="row g-2 justify-content-center align-items-center">
         <div class="col col-12 col-sm-9 p-0 m-0">
-          <ol id="sortable-list" class="list-group list-group-numbered">
+          <!-- Loading Spinner -->
+          <div v-if="isLoading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <!-- No Data Message -->
+          <div v-else-if="chapters.length === 0" class="text-center py-5">
+            <p class="fs-5 text-muted">No chapters added for this subject.</p>
+          </div>
+
+          <!-- Chapters List -->
+          <ol v-else id="sortable-list" class="list-group list-group-numbered">
             <li
               v-for="chapter in chapters"
               :key="chapter.id"
@@ -73,7 +86,7 @@
                   <span class="toggle-card pe-0" @click="toggleChapter(chapter.id)">
                     {{ chapter.sequential_chapter_number }}. {{ chapter.name }}
                     <i
-                      class="bi fs-6 text-secondary toggle-icon"
+                      class="bi bi-caret-down-fill fs-6 text-secondary toggle-icon"
                       :class="chapter.isExpanded ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"
                     ></i>
                   </span>
@@ -85,7 +98,12 @@
                     :class="{ show: chapter.isExpanded }"
                   >
                     <div class="card card-body border-0 p-0">
-                      <ol class="sortable-list list-group">
+                      <!-- No Topics Message -->
+                      <div v-if="chapter.topics.length === 0" class="text-center py-2">
+                        <p class="text-muted mb-0">No topics added for this chapter.</p>
+                      </div>
+
+                      <ol v-else class="sortable-list list-group">
                         <li
                           v-for="topic in chapter.topics"
                           :key="topic.id"
@@ -237,6 +255,7 @@ const chapters = ref<ChapterData[]>([])
 const isQuickEditMode = ref(false)
 const selectedChapterForDelete = ref<ChapterData | null>(null)
 const mediumStandardSubjectId = ref<number | null>(null)
+const isLoading = ref(true)
 
 onMounted(async () => {
   await fetchData()
@@ -244,6 +263,7 @@ onMounted(async () => {
 })
 
 const fetchData = async () => {
+  isLoading.value = true
   try {
     // Fetch board, medium, standard, and subject details
     const boardId = route.query.board
@@ -321,6 +341,8 @@ const fetchData = async () => {
       message: 'Failed to load syllabus data',
       type: 'error',
     })
+  } finally {
+    isLoading.value = false
   }
 }
 

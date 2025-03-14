@@ -11,9 +11,13 @@
       @focus="showDropdown = true"
       @click="showDropdown = true"
       @blur="handleBlur"
-      :autocomplete="($attrs.autocomplete as string) || 'chrome-off'"
-      :name="($attrs.name as string) || `no-autofill-${id}`"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+      :name="($attrs.name as string) || `no-autofill-${Date.now()}-${id}`"
       :data-form-type="'other'"
+      :data-lpignore="true"
       required
       :disabled="disabled"
       @keydown="handleKeydown"
@@ -24,7 +28,7 @@
       style="position: absolute; width: 100%; z-index: 1000"
     >
       <!-- Show "No data available" message when there are no items -->
-      <div v-if="items.length === 0" class="dropdown-item no-data-item">
+      <div v-if="processedItems.length === 0" class="dropdown-item no-data-item">
         No data available
       </div>
       <!-- Show "No results found" when there are items but none match the search -->
@@ -54,7 +58,15 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
 export interface Item {
-  id: number | string
+  id?: number | string
+  value?: number | string
+  key?: number | string
+  code?: string
+  name?: string
+  label?: string
+  title?: string
+  text?: string
+  abbreviation?: string
   [key: string]: unknown
 }
 
@@ -62,23 +74,27 @@ interface Props {
   id: string
   label: string
   placeholder: string
-  items: Item[]
+  items: Item[] | { data: Item[], meta?: Record<string, unknown> }
   modelValue: Item | null
   disabled?: boolean
   required?: boolean
   labelKey?: string
+  valueKey?: string
   searchKeys?: string[]
   itemKey?: string
   nextFieldId?: string
+  dataPath?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   required: false,
   labelKey: 'name',
-  searchKeys: () => ['name'],
+  valueKey: 'id',
+  searchKeys: () => ['name', 'abbreviation'],
   itemKey: 'id',
   nextFieldId: undefined,
+  dataPath: '',
 })
 
 const emit = defineEmits<{
@@ -91,7 +107,9 @@ const showDropdown = ref(false)
 const selectedIndex = ref(-1)
 const dropdownRef = ref<HTMLElement | null>(null)
 
-const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+const getNestedValue = (obj: Record<string, unknown> | null | undefined, path: string): unknown => {
+  if (!obj) return undefined
+
   let current: unknown = obj
   const keys = path.split('.')
 
@@ -108,16 +126,41 @@ const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => 
 
 const getItemLabel = (item: Item): string => {
   if (!item) return ''
+
+  // Try to get the value using the configured labelKey
   const value = getNestedValue(item, props.labelKey)
-  return String(value || '')
+  if (value !== undefined) return String(value)
+
+  // Fallbacks for different data formats
+  if (item.name !== undefined) return String(item.name)
+  if (item.label !== undefined) return String(item.label)
+  if (item.title !== undefined) return String(item.title)
+  if (item.text !== undefined) return String(item.text)
+
+  // Last resort: return the item's ID or value as a string
+  if (item.id !== undefined) return String(item.id)
+  if (item.value !== undefined) return String(item.value)
+  if (item.key !== undefined) return String(item.key)
+  if (item.code !== undefined) return String(item.code)
+
+  return String(item) || ''
 }
 
 const getItemKey = (item: Item): string | number => {
+  // Try to get the key using the configured itemKey
   const value = getNestedValue(item, props.itemKey)
-  if (typeof value === 'string' || typeof value === 'number') {
+  if (value !== undefined && (typeof value === 'string' || typeof value === 'number')) {
     return value
   }
-  return item.id
+
+  // Fallbacks for different data formats
+  if (item.id !== undefined) return item.id
+  if (item.value !== undefined) return item.value
+  if (item.key !== undefined) return item.key
+  if (item.code !== undefined) return item.code
+
+  // Last resort: stringify the item
+  return JSON.stringify(item)
 }
 
 // Watch for external value changes
@@ -133,16 +176,48 @@ watch(
   { immediate: true },
 )
 
+// Process items to handle nested data structures
+const processedItems = computed(() => {
+  // If items is an array, return it directly
+  if (Array.isArray(props.items)) {
+    return props.items
+  }
+
+  // If items has a data property that's an array, return that
+  if (props.items && typeof props.items === 'object' && 'data' in props.items && Array.isArray(props.items.data)) {
+    return props.items.data
+  }
+
+  // If a specific dataPath is provided, try to access that path
+  if (props.dataPath && props.items && typeof props.items === 'object') {
+    const value = getNestedValue(props.items as Record<string, unknown>, props.dataPath)
+    if (Array.isArray(value)) {
+      return value as Item[]
+    }
+  }
+
+  // Fallback to empty array if we can't find valid items
+  return [] as Item[]
+})
+
 const filteredItems = computed(() => {
   const search = searchText.value.toLowerCase()
-  if (!search) return props.items
+  if (!search) return processedItems.value
 
-  return props.items.filter((item) => {
-    return props.searchKeys.some((key) => {
+  return processedItems.value.filter((item) => {
+    // First try the configured search keys
+    const matchesSearchKeys = props.searchKeys.some((key) => {
       const value = getNestedValue(item, key)
-      return String(value || '')
-        .toLowerCase()
-        .includes(search)
+      return value !== undefined && String(value).toLowerCase().includes(search)
+    })
+
+    if (matchesSearchKeys) return true
+
+    // Fallback to checking common properties if no match found
+    const commonKeys = ['name', 'label', 'title', 'text', 'description', 'abbreviation']
+    return commonKeys.some(key => {
+      const value = getNestedValue(item, key)
+      return value !== undefined && String(value).toLowerCase().includes(search)
     })
   })
 })
@@ -242,11 +317,33 @@ const handleBlur = (event: FocusEvent) => {
 // Add lifecycle hooks for event listener
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
+
+  // Clear any browser autofill data
+  clearAutofillData()
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleClickOutside)
 })
+
+// Function to clear browser autofill data
+const clearAutofillData = () => {
+  // For some browsers, we need to set a random value and then clear it
+  // to prevent autofill from working
+  if (dropdownRef.value) {
+    const input = dropdownRef.value.querySelector('input')
+    if (input) {
+      // Set a temporary random value
+      const originalValue = input.value
+      input.value = `no-autofill-${Math.random()}`
+
+      // Then restore the original value
+      setTimeout(() => {
+        input.value = originalValue
+      }, 1)
+    }
+  }
+}
 
 // Expose method to clear selection
 defineExpose({
@@ -305,6 +402,16 @@ defineExpose({
 
 .form-floating > label {
   padding: 1rem 0.75rem;
+}
+
+/* Prevent browser autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #212529 !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Add validation styling */

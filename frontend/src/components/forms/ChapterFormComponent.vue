@@ -9,6 +9,7 @@
             id="chapterName"
             placeholder="Enter Chapter Name"
             v-model="chapterName"
+            @input="handleChapterNameInput"
             @keydown.enter.prevent="focusFirstTopic"
           />
           <label for="chapterName" class="form-label">Chapter Name</label>
@@ -46,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 interface Props {
   initialData?: {
@@ -68,8 +69,32 @@ const emit = defineEmits<{
   (e: 'submit', data: ChapterFormData): void
 }>()
 
-const chapterName = ref(props.initialData?.chapterName || '')
-const topics = ref<string[]>(props.initialData?.topics || [''])
+// Function to capitalize the first letter of a string
+const capitalizeFirstLetter = (str: string): string => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Initialize with capitalized values
+const chapterName = ref(props.initialData?.chapterName ?
+  capitalizeFirstLetter(props.initialData.chapterName) : '')
+
+const topics = ref<string[]>(
+  props.initialData?.topics ?
+  props.initialData.topics.map(topic => capitalizeFirstLetter(topic)) :
+  ['']
+)
+
+// Ensure capitalization on mount
+onMounted(() => {
+  // Capitalize chapter name if it exists
+  if (chapterName.value) {
+    chapterName.value = capitalizeFirstLetter(chapterName.value)
+  }
+
+  // Capitalize all topics
+  topics.value = topics.value.map(topic => capitalizeFirstLetter(topic))
+})
 
 const focusFirstTopic = () => {
   const firstTopicInput = document.getElementById('topic-0')
@@ -115,6 +140,11 @@ const handleTopicEnter = (index: number) => {
 const handleTopicInput = (index: number) => {
   const currentTopic = topics.value[index]
 
+  // Capitalize the first letter of the topic
+  if (currentTopic) {
+    topics.value[index] = capitalizeFirstLetter(currentTopic);
+  }
+
   // Add new input field if the last field is filled
   if (index === topics.value.length - 1 && currentTopic.trim() !== '') {
     topics.value.push('')
@@ -131,6 +161,10 @@ const handleTopicInput = (index: number) => {
       }
     }, 0)
   }
+}
+
+const handleChapterNameInput = () => {
+  chapterName.value = capitalizeFirstLetter(chapterName.value)
 }
 
 const handleSubmit = () => {
