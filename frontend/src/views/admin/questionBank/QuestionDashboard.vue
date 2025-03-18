@@ -33,23 +33,47 @@
       <div class="container mb-4">
         <div class="row g-2 my-2 justify-content-center">
           <div class="col-12 col-md-10">
-            <div class="input-group">
-              <div class="form-floating">
-                <input type="text" class="form-control" id="searchBar" placeholder="Search questions..." v-model="searchQuery" @input="filterCards">
-                <label for="searchBar"><i class="bi bi-search text-secondary"></i> Search questions...</label>
+            <!-- Search, Sort and Filter in One Row (styled like PatternDashboard) -->
+            <div class="d-flex gap-2 mb-2">
+              <!-- Search Bar -->
+              <div class="search-field flex-grow-1">
+                <i class="bi bi-search search-icon"></i>
+                <input
+                  type="text"
+                  class="form-control search-input"
+                  id="searchBar"
+                  placeholder="Search questions..."
+                  v-model="searchQuery"
+                  @input="handleSearchInput"
+                  autocomplete="off"
+                  ref="searchInputRef"
+                />
+                <i v-if="isSearching" class="bi bi-arrow-repeat search-loading-icon"></i>
+                <i v-else-if="searchQuery" class="bi bi-x-circle clear-search-icon" @click="clearSearch"></i>
               </div>
-              <span class="input-group-text clear-icon" @click="clearSearch" style="cursor: pointer;">
-                <i class="bi bi-x-lg"></i>
-              </span>
-              <span
-                class="input-group-text"
-                style="cursor: pointer"
-                @click="toggleFilterIcon"
-                aria-expanded="false"
-                aria-controls="filter"
-              >
-                Filter
-              </span>
+
+              <!-- Sort Dropdown -->
+              <div class="sort-field" style="min-width: 220px;">
+                <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="filterCards">
+                  <option value="question_asc">Sort by Question (A-Z)</option>
+                  <option value="question_desc">Sort by Question (Z-A)</option>
+                  <option value="type_asc">Sort by Type (A-Z)</option>
+                  <option value="type_desc">Sort by Type (Z-A)</option>
+                </select>
+              </div>
+
+              <!-- Filter Button -->
+              <div class="filter-field">
+                <button
+                  class="btn filter-btn"
+                  @click="toggleFilterIcon"
+                  aria-expanded="false"
+                  aria-controls="filter"
+                  :class="{ 'active': isFilterOpen }"
+                >
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -340,6 +364,10 @@ const selectedTopic = ref('')
 const selectedType = ref('')
 const showUnverified = ref(false)
 const isFilterOpen = ref(false)
+const isSearching = ref(false)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+const sortOption = ref('question_asc')
+const searchTimeout = ref<number | null>(null)
 
 // Computed properties for filtered questions
 const filteredVerifiedQuestions = computed(() => {
@@ -367,14 +395,66 @@ function filterQuestions(questions: Question[]) {
   })
 }
 
+function handleSearchInput() {
+  // Set searching state for visual feedback
+  isSearching.value = true;
+
+  // Clear any existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+
+  // Set a new timeout
+  searchTimeout.value = setTimeout(() => {
+    filterCards();
+    isSearching.value = false;
+  }, 500);
+}
+
 function clearSearch() {
-  searchQuery.value = ''
-  filterCards()
+  searchQuery.value = '';
+  filterCards();
+
+  // Maintain focus on the search input after clearing
+  if (searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
 }
 
 function filterCards() {
-  // This function is called when search or filters change
-  // The computed properties will automatically update
+  // Apply sorting
+  applySort();
+  // The computed properties will automatically update based on filters
+}
+
+function applySort() {
+  if (showUnverified.value) {
+    unverifiedQuestions.value = [...unverifiedQuestions.value].sort((a: Question, b: Question) => {
+      return sortQuestions(a, b);
+    });
+  } else {
+    verifiedQuestions.value = [...verifiedQuestions.value].sort((a: Question, b: Question) => {
+      return sortQuestions(a, b);
+    });
+  }
+}
+
+function sortQuestions(a: Question, b: Question) {
+  const [field, order] = sortOption.value.split('_');
+
+  if (field === 'question') {
+    return order === 'asc'
+      ? a.question.localeCompare(b.question)
+      : b.question.localeCompare(a.question);
+  }
+
+  if (field === 'type') {
+    return order === 'asc'
+      ? a.type.localeCompare(b.type)
+      : b.type.localeCompare(a.type);
+  }
+
+  return 0;
 }
 
 function getTopicsDisplay(question: Question) {
@@ -400,36 +480,43 @@ function getUnverifiedCardClass(question: Question) {
 }
 
 function toggleFilterIcon() {
-  // Toggle the icon state
-  isFilterOpen.value = !isFilterOpen.value
+  // Toggle the filter state
+  isFilterOpen.value = !isFilterOpen.value;
 
   // Manually toggle the collapse using Bootstrap's Collapse class
-  const filterElement = document.getElementById('filter')
+  const filterElement = document.getElementById('filter');
   if (filterElement) {
     // Get or create a collapse instance
-    let bsCollapse = Collapse.getInstance(filterElement)
+    let bsCollapse = Collapse.getInstance(filterElement);
     if (!bsCollapse) {
       bsCollapse = new Collapse(filterElement, {
         toggle: false
-      })
+      });
     }
 
     // Toggle the collapse
-    bsCollapse.toggle()
+    bsCollapse.toggle();
 
-    // If we're closing the filter section, clear all filters
-    if (!isFilterOpen.value) {
-      clearFilters()
+    // Toggle active class on the filter button
+    const filterBtn = document.querySelector('.filter-btn');
+    if (filterBtn) {
+      if (isFilterOpen.value) {
+        filterBtn.classList.add('active');
+      } else {
+        filterBtn.classList.remove('active');
+        // Clear filters when closing
+        clearFilters();
+      }
     }
   }
 }
 
 function clearFilters() {
   // Reset filter values
-  selectedTopic.value = ''
-  selectedType.value = ''
+  selectedTopic.value = '';
+  selectedType.value = '';
   // Update filtered results
-  filterCards()
+  filterCards();
 }
 
 function canVerifyQuestion(question: Question) {
@@ -594,6 +681,14 @@ watch(showUnverified, () => {
   fetchQuestions()
 })
 
+// Add watcher to maintain focus after search completes
+watch(isSearching, (newVal) => {
+  // If we were searching and now we're done, restore focus to search input
+  if (!newVal && searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
+});
+
 // Update fetchQuestions to use is_verified query parameter
 async function fetchQuestions() {
   try {
@@ -696,6 +791,12 @@ onMounted(() => {
     // Check if the element has the 'show' class initially
     if (filterElement.classList.contains('show')) {
       isFilterOpen.value = true
+
+      // Update filter button appearance
+      const filterBtn = document.querySelector('.filter-btn')
+      if (filterBtn) {
+        filterBtn.classList.add('active')
+      }
     } else {
       isFilterOpen.value = false
     }
@@ -763,5 +864,137 @@ onMounted(() => {
 
 .input-group-text:hover {
   background-color: #e9ecef;
+}
+
+/* Modern search styling */
+.search-field {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.search-input {
+  padding-left: 40px;
+  padding-right: 40px;
+  height: 48px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+.clear-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.clear-search-icon:hover {
+  color: #212529;
+}
+
+/* Sort dropdown styling */
+.sort-select {
+  height: 48px;
+  padding-right: 40px;
+  border-radius: 6px;
+  appearance: none;
+  background-image: none;
+  transition: all 0.3s ease;
+}
+
+.sort-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #86b7fe;
+  outline: 0;
+}
+
+/* Filter button styling */
+.filter-btn {
+  height: 48px;
+  min-width: 48px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+}
+
+.filter-btn:hover {
+  background-color: #e9ecef;
+  color: #212529;
+}
+
+.filter-btn:focus {
+  box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+  outline: 0;
+}
+
+.filter-btn.active {
+  background-color: #212529;
+  color: white;
+  border-color: #212529;
+}
+
+.filter-btn.active:hover {
+  background-color: #343a40;
+  color: white;
+}
+
+/* Improved spinner animation */
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.search-loading-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .search-input,
+  .sort-select,
+  .filter-btn {
+    height: 42px;
+  }
+
+  /* Adjust flex layout for mobile */
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+
+  .search-field {
+    flex: 1 0 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .sort-field {
+    flex: 1 1 auto;
+    min-width: 0 !important;
+  }
 }
 </style>
