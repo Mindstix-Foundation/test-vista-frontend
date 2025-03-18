@@ -80,7 +80,7 @@
                 :items="subjects"
                 v-model="selectedSubject"
                 :search-keys="['name', 'subject_name', 'subject']"
-                :disabled="!selectedStandard"
+                :disabled="!selectedBoard"
                 required
                 @change="handleSubjectChange"
                 next-field-id="filterChapter"
@@ -182,17 +182,6 @@ interface Chapter {
   description?: string
 }
 
-// Define a flexible subject type for normalization
-interface FlexibleSubject {
-  id?: number;
-  subject_id?: number;
-  name?: string;
-  subject_name?: string;
-  subject?: string;
-  board_id?: number;
-  [key: string]: unknown; // Allow any other properties with unknown type
-}
-
 const router = useRouter()
 
 // Data
@@ -231,18 +220,11 @@ const fetchBoards = async () => {
   }
 }
 
-const handleBoardChange = () => {
+const handleBoardChange = async () => {
   if (!selectedBoard.value) {
     resetForm()
     return
   }
-
-  // Populate standards and mediums from the selected board
-  standards.value = selectedBoard.value.standards || []
-  mediums.value = selectedBoard.value.instruction_mediums || []
-
-  console.log('Board changed, mediums:', mediums.value)
-  console.log('Sample medium:', mediums.value.length > 0 ? mediums.value[0] : 'No mediums')
 
   // Reset dependent fields
   selectedMedium.value = null
@@ -251,7 +233,42 @@ const handleBoardChange = () => {
   selectedChapter.value = null
   chapters.value = []
   subjects.value = []
+  mediums.value = []
   mediumStandardSubjectId.value = null
+
+  try {
+    // Fetch board details using the specific API endpoint that returns all data in one call
+    const response = await axiosInstance.get(`/boards/${selectedBoard.value.id}`)
+
+    // Extract data from the response
+    const boardDetails = response.data
+
+    // Update the selected board with the full details
+    selectedBoard.value = boardDetails
+
+    // Set mediums, standards, and subjects from the API response
+    mediums.value = boardDetails.instruction_mediums || []
+    standards.value = boardDetails.standards || []
+
+    // Make sure we extract subjects properly
+    if (boardDetails.subjects && boardDetails.subjects.length > 0) {
+      subjects.value = boardDetails.subjects.map((subject: Subject) => ({
+        id: subject.id,
+        name: subject.name,
+        board_id: boardDetails.id
+      }))
+    } else {
+      subjects.value = []
+    }
+
+    console.log('Board details fetched successfully:', boardDetails)
+    console.log('Mediums:', mediums.value)
+    console.log('Standards:', standards.value)
+    console.log('Subjects:', subjects.value)
+  } catch (error) {
+    console.error('Error fetching board details:', error)
+    resetForm()
+  }
 }
 
 const handleMediumChange = () => {
@@ -260,120 +277,17 @@ const handleMediumChange = () => {
   selectedSubject.value = null
   selectedChapter.value = null
   chapters.value = []
-  subjects.value = []
   mediumStandardSubjectId.value = null
+  // Do not clear subjects here as they should persist
 }
 
-const handleStandardChange = async () => {
+const handleStandardChange = () => {
   // Reset dependent fields
   selectedSubject.value = null
   selectedChapter.value = null
   chapters.value = []
-  subjects.value = []
   mediumStandardSubjectId.value = null
-
-  // Fetch subjects for the selected medium and standard
-  if (selectedBoard.value && selectedMedium.value && selectedStandard.value) {
-    try {
-      console.log('Fetching subjects with params:', {
-        mediumId: selectedMedium.value.id,
-        standardId: selectedStandard.value.id,
-        boardId: selectedBoard.value.id
-      })
-
-      // First try to get subjects directly from the board
-      if (selectedBoard.value.subjects && selectedBoard.value.subjects.length > 0) {
-        console.log('Using subjects from board data:', selectedBoard.value.subjects)
-        subjects.value = selectedBoard.value.subjects
-      } else {
-        // If not available in board data, fetch from API
-        const response = await axiosInstance.get(
-          `/boards/${selectedBoard.value.id}/subjects`
-        )
-
-        console.log('Raw subject response from board API:', response.data)
-
-        if (Array.isArray(response.data)) {
-          subjects.value = response.data
-        } else if (response.data && Array.isArray(response.data.subjects)) {
-          subjects.value = response.data.subjects
-        } else {
-          console.error('Unexpected subject data structure from board API:', response.data)
-
-          // Try the medium-standard-subjects endpoint as a fallback
-          const mssResponse = await axiosInstance.get(
-            `/medium-standard-subjects/medium/${selectedMedium.value.id}/standard/${selectedStandard.value.id}`,
-            {
-              params: {
-                board_id: selectedBoard.value.id
-              }
-            }
-          )
-
-          console.log('Raw subject response from MSS API:', mssResponse.data)
-
-          // Check for different possible data structures
-          if (Array.isArray(mssResponse.data)) {
-            subjects.value = mssResponse.data
-          } else if (mssResponse.data && Array.isArray(mssResponse.data.subjects)) {
-            subjects.value = mssResponse.data.subjects
-          } else if (mssResponse.data && typeof mssResponse.data === 'object') {
-            // If it's an object, try to extract subject information
-            const extractedSubjects = [];
-
-            // Log all keys to help diagnose the structure
-            console.log('MSS response keys:', Object.keys(mssResponse.data));
-
-            // Check if there's a subject property
-            if (mssResponse.data.subject) {
-              extractedSubjects.push({
-                id: mssResponse.data.subject_id || mssResponse.data.id,
-                name: mssResponse.data.subject_name || mssResponse.data.subject,
-                board_id: selectedBoard.value.id
-              });
-            }
-
-            if (extractedSubjects.length > 0) {
-              subjects.value = extractedSubjects;
-              console.log('Extracted subjects from object:', extractedSubjects);
-            } else {
-              console.error('Could not extract subjects from MSS response');
-              subjects.value = [];
-            }
-          } else {
-            console.error('Unexpected subject data structure from MSS API:', mssResponse.data)
-            subjects.value = []
-          }
-        }
-      }
-
-      // Normalize subject data to ensure it has the correct structure
-      subjects.value = subjects.value.map((subject: FlexibleSubject) => {
-        // Make sure each subject has an id and name property
-        return {
-          id: subject.id || subject.subject_id || 1,
-          name: subject.name || subject.subject_name || subject.subject || 'Unknown Subject',
-          board_id: subject.board_id || selectedBoard.value?.id || 1
-        };
-      });
-
-      console.log('Final normalized subjects:', subjects.value)
-      console.log('Sample subject:', subjects.value.length > 0 ? subjects.value[0] : 'No subjects')
-
-      // If we still don't have subjects, create a dummy one for testing
-      if (subjects.value.length === 0) {
-        console.warn('No subjects found, creating a dummy subject for testing');
-        subjects.value = [{
-          id: 1,
-          name: 'Dummy Subject',
-          board_id: selectedBoard.value.id
-        }];
-      }
-    } catch (error) {
-      console.error('Error fetching subjects:', error)
-      subjects.value = []
-    }
-  }
+  // Do not clear subjects here as they should persist
 }
 
 const handleSubjectChange = async () => {
