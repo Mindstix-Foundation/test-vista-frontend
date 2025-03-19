@@ -124,8 +124,7 @@
               type="button"
               class="btn btn-light me-2"
               style="border: 1px solid gray"
-              disabled
-              title="Coming soon"
+              @click="handleResetPassword"
             >
               Reset Password
             </button>
@@ -237,6 +236,11 @@ const handleLogout = () => {
 
   // Force a page reload to clear any cached data
   window.location.reload()
+}
+
+const handleResetPassword = () => {
+  // Redirect to the change password page
+  router.push({ name: 'changePassword' });
 }
 
 onMounted(() => {
