@@ -2,7 +2,7 @@
   <div class="container my-4">
     <div class="container">
       <div class="row g-2 justify-content-end">
-        <router-link class="btn btn-close" :to="{ name: 'questionBank' }" aria-label="Close"></router-link>
+        <router-link class="btn btn-close" :to="{ name: 'questionDashboard' }" aria-label="Close"></router-link>
       </div>
       <div class="row justify-content-center align-items-center my-2">
         <div class="col col-12 col-sm-10 ">
@@ -10,21 +10,32 @@
             <span class="col-12 col-md-auto">{{ questionBankData.boardName }} |</span>
             <span class="col-12 col-md-auto"> {{ questionBankData.mediumName }}</span>
           </p>
-          <h4 class="fw-bolder text-start text-dark m-0 ">
-            Standard {{ questionBankData.standardName }}
-            <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
-          </h4>
-          <h4 class="text-left fw-bolder text-uppercase mb-2" id="pageHeader">Add Question</h4>
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="fw-bolder text-start text-dark m-0 ">
+              Standard {{ questionBankData.standardName }}
+              <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
+            </h4>
+            <h4 class="fw-bolder text-uppercase mb-0" id="pageHeader">Add Question</h4>
+          </div>
         </div>
       </div>
       <hr>
     </div>
     <div id="questionsSection" class="container">
+      <div v-if="isLoading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
       <QuestionFormComponent
+        v-else-if="validateChapterId()"
         :questionBankData="questionBankData"
         :chapterId="questionBankData.chapterId"
         @save="handleSaveQuestion"
       />
+      <div v-else class="alert alert-danger text-center">
+        Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
+      </div>
     </div>
   </div>
 </template>
@@ -41,6 +52,7 @@ defineOptions({
 })
 
 const router = useRouter()
+const isLoading = ref(true)
 
 // Data from localStorage
 const questionBankData = ref({
@@ -56,6 +68,14 @@ const questionBankData = ref({
   chapterName: '',
   mediumStandardSubjectId: null
 })
+
+// Debug function to validate chapter ID
+function validateChapterId() {
+  if (!questionBankData.value.chapterId) {
+    return false;
+  }
+  return true;
+}
 
 // Handle saving the question
 async function handleSaveQuestion(payload: {
@@ -148,8 +168,7 @@ async function handleSaveQuestion(payload: {
 
     // Success! Navigate back to question dashboard
     router.push({ name: 'questionDashboard' })
-  } catch (error) {
-    console.error('Error saving question:', error)
+  } catch {
     // In a real app, you would show an error message to the user
   }
 }
@@ -159,7 +178,20 @@ onMounted(() => {
   // Load data from localStorage
   const storedData = localStorage.getItem('questionBank')
   if (storedData) {
-    questionBankData.value = JSON.parse(storedData)
+    try {
+      const parsedData = JSON.parse(storedData)
+      questionBankData.value = parsedData
+
+      // Clean up the chapterId if it exists but might be a string "null" or "undefined"
+      if (questionBankData.value.chapterId === "null" || questionBankData.value.chapterId === "undefined") {
+        questionBankData.value.chapterId = ""
+      }
+
+      isLoading.value = false
+    } catch {
+      // Redirect to question bank selection if data is invalid
+      router.push({ name: 'questionBank' })
+    }
   } else {
     // Redirect to question bank selection if no data
     router.push({ name: 'questionBank' })

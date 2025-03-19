@@ -10,11 +10,13 @@
             <span class="col-12 col-md-auto">{{ questionBankData.boardName }} |</span>
             <span class="col-12 col-md-auto"> {{ questionBankData.mediumName }}</span>
           </p>
-          <h4 class="fw-bolder text-start text-dark m-0 ">
-            Standard {{ questionBankData.standardName }}
-            <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
-          </h4>
-          <h4 class="text-left fw-bolder text-uppercase mb-2" id="pageHeader">Edit Question</h4>
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="fw-bolder text-start text-dark m-0 ">
+              Standard {{ questionBankData.standardName }}
+              <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
+            </h4>
+            <h4 class="fw-bolder text-uppercase mb-0" id="pageHeader">Edit Question</h4>
+          </div>
         </div>
       </div>
       <hr>
@@ -100,8 +102,6 @@ async function handleUpdateQuestion(payload: {
 }) {
   try {
     if (!payload.questionId) {
-      console.error('Question ID is missing');
-
       // Show error toast
       toastTitle.value = 'Error';
       toastMessage.value = 'Question ID is missing';
@@ -122,8 +122,6 @@ async function handleUpdateQuestion(payload: {
     }
 
     if (!questionTextId) {
-      console.error('Question text ID not found');
-
       // Show error toast
       toastTitle.value = 'Error';
       toastMessage.value = 'Question text ID not found';
@@ -249,9 +247,7 @@ async function handleUpdateQuestion(payload: {
       router.push({ name: 'questionDashboard' });
     }, 1500);
 
-  } catch (error) {
-    console.error('Error updating question:', error);
-
+  } catch {
     // Show error toast
     toastTitle.value = 'Error';
     toastMessage.value = 'Failed to update question';
