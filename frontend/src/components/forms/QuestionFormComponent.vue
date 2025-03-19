@@ -449,11 +449,12 @@ async function fetchTopics() {
     // Get chapter ID from props or from questionBankData
     const chapterId = props.chapterId || (props.questionBankData?.chapterId ?? null);
 
-    console.log('Fetching topics with chapterId:', chapterId);
-
     if (!chapterId) {
-      console.warn('No chapter ID provided for fetching topics');
       topics.value = [];
+
+      // Add a special "error" topic that will be displayed to the user
+      topics.value.push('Error: Chapter ID is missing. Please go back and select a chapter.');
+      selectedTopic.value = topics.value[0];
       return;
     }
 
@@ -462,12 +463,7 @@ async function fetchTopics() {
       params: {
         chapterId: chapterId
       }
-    }).catch((error) => {
-      console.error('Error fetching topics from API:', error);
-      return { data: [] };
-    }); // Fallback to empty array if API fails
-
-    console.log('Topics API response:', response.data);
+    }).catch(() => ({ data: [] })); // Fallback to empty array if API fails
 
     // Transform the API response to extract topic names
     if (response.data && Array.isArray(response.data)) {
@@ -480,28 +476,42 @@ async function fetchTopics() {
         }
       })
     } else {
-      topics.value = []
+      topics.value = ['Error: Invalid response from API']
     }
 
     // If no topics from API, try to extract from stored questions
-    if (topics.value.length === 0) {
+    if (topics.value.length === 0 || topics.value[0].startsWith('Error:')) {
+      // Try fallback to local storage
       const storedQuestions = localStorage.getItem('questions')
       if (storedQuestions) {
-        const questions = JSON.parse(storedQuestions)
-        const uniqueTopics = new Set<string>()
+        try {
+          const questions = JSON.parse(storedQuestions)
+          const uniqueTopics = new Set<string>()
 
-        questions.forEach((q: { topic?: string; topics?: { topic: string }[] }) => {
-          if (q.topic) uniqueTopics.add(q.topic)
-          if (q.topics) {
-            q.topics.forEach((t: { topic: string }) => uniqueTopics.add(t.topic))
+          questions.forEach((q: { topic?: string; topics?: { topic: string }[] }) => {
+            if (q.topic) uniqueTopics.add(q.topic)
+            if (q.topics) {
+              q.topics.forEach((t: { topic: string }) => uniqueTopics.add(t.topic))
+            }
+          })
+
+          const localTopics = Array.from(uniqueTopics)
+          if (localTopics.length > 0) {
+            topics.value = localTopics
+          } else if (!topics.value.length || topics.value[0].startsWith('Error:')) {
+            topics.value = ['No topics found. Please create topics first.']
           }
-        })
-
-        topics.value = Array.from(uniqueTopics)
+        } catch {
+          if (!topics.value.length || topics.value[0].startsWith('Error:')) {
+            topics.value = ['Error: Could not load topics']
+          }
+        }
+      } else if (topics.value.length === 0) {
+        topics.value = ['No topics found. Please create topics first.']
       }
     }
-  } catch (error) {
-    console.error('Error fetching topics:', error)
+  } catch {
+    topics.value = ['Error: Could not load topics']
   }
 }
 
@@ -743,16 +753,6 @@ watch(selectedTopic, (newTopic) => {
 
 // Initialize textareas and fetch data on mount
 onMounted(() => {
-  console.log('QuestionFormComponent mounted. Props:', {
-    isEditMode: props.isEditMode,
-    questionId: props.questionId,
-    chapterId: props.chapterId,
-    questionBankData: props.questionBankData ? {
-      ...props.questionBankData,
-      chapterId: props.questionBankData.chapterId
-    } : null
-  });
-
   fetchQuestionTypes()
   fetchTopics()
 
@@ -799,5 +799,12 @@ onMounted(() => {
   background-color: #f8f9fa;
   opacity: 0.75;
   cursor: not-allowed;
+}
+
+/* Style for error options in select lists */
+option[value^="Error:"], option[value^="No topics"] {
+  color: #dc3545;
+  font-weight: bold;
+  font-style: italic;
 }
 </style>
