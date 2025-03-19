@@ -156,6 +156,11 @@ const routes: RouteRecordRaw[] = [
         name: 'addChapter',
         component: () => import('@/views/admin/syllabus/subject/AddChapter.vue'),
       },
+      {
+        path: 'questionBank/edit/:id',
+        name: 'editQuestion',
+        component: () => import('@/views/admin/questionBank/EditQuestion.vue'),
+      },
       // Pattern routes
       {
         path: 'pattern/add',

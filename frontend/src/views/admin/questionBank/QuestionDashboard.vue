@@ -57,8 +57,10 @@
                 <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="filterCards">
                   <option value="question_asc">Sort by Question (A-Z)</option>
                   <option value="question_desc">Sort by Question (Z-A)</option>
-                  <option value="type_asc">Sort by Type (A-Z)</option>
-                  <option value="type_desc">Sort by Type (Z-A)</option>
+                  <option value="created_desc">Sort by Created (Newest)</option>
+                  <option value="created_asc">Sort by Created (Oldest)</option>
+                  <option value="updated_desc">Sort by Updated (Newest)</option>
+                  <option value="updated_asc">Sort by Updated (Oldest)</option>
                 </select>
               </div>
 
@@ -86,25 +88,30 @@
                 <div class="container p-0">
                   <div class="row g-2 mb-2">
                     <div class="col-md-6">
-                      <div class="form-floating">
-                        <select id="filterTopic" class="form-select" v-model="selectedTopic" @change="filterCards">
-                          <option value="">Select Topic</option>
-                          <option v-for="topic in topics" :key="topic" :value="topic">{{ topic }}</option>
-                        </select>
-                        <label for="filterTopic" class="form-label"> Filter by Topic </label>
-                      </div>
+                      <SearchableDropdown
+                        id="filterTopic"
+                        label="Filter by Topic"
+                        placeholder="Select Topic"
+                        :items="topics"
+                        v-model="selectedTopicObj"
+                        labelKey="name"
+                        valueKey="id"
+                        @change="filterCards"
+                        :required="false"
+                      />
                     </div>
                     <div class="col-md-6">
-                      <div class="form-floating">
-                        <select id="filterType" class="form-select" v-model="selectedType" @change="filterCards">
-                          <option value="">Select Type</option>
-                          <option value="Descriptive">Descriptive</option>
-                          <option value="MCQ">MCQ</option>
-                          <option value="Fill in the Blanks">Fill in the Blanks</option>
-                          <option value="Match the Pairs">Match the Pairs</option>
-                        </select>
-                        <label for="filterType" class="form-label"> Filter by Type </label>
-                      </div>
+                      <SearchableDropdown
+                        id="filterType"
+                        label="Filter by Type"
+                        placeholder="Select Type"
+                        :items="questionTypes"
+                        v-model="selectedTypeObj"
+                        labelKey="type_name"
+                        valueKey="id"
+                        @change="filterCards"
+                        :required="false"
+                      />
                     </div>
                   </div>
                 </div>
@@ -138,11 +145,26 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="isLoading && !isSearching" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Content when data is loaded -->
       <div class="container mb-5">
         <!-- Verified Questions -->
-        <div class="row g-2 justify-content-center" id="verifiedContainer" v-show="!showUnverified">
+        <div class="row g-2 justify-content-center position-relative" id="verifiedContainer" v-show="!showUnverified">
+          <!-- Loading overlay for search -->
+          <div v-if="isSearching" class="search-loading-overlay">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Searching...</span>
+            </div>
+          </div>
+
           <div v-for="(question, index) in filteredVerifiedQuestions" :key="'verified-' + index" class="col-12 col-md-10">
-            <div class="card" :data-unique-id="'verified-' + index">
+            <div class="card" :data-unique-id="'verified-' + index" :class="{ 'card-searching': isSearching }">
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
@@ -152,7 +174,7 @@
                       <i class="bi bi-trash3 fs-4 ms-2" @click="openDeleteConfirmationModal(index, 'verified')"></i>
                     </div>
                     <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q :</strong> &nbsp; {{ question.question }}</p>
+                      <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
 
                       <!-- MCQ Options -->
                       <div v-if="question.type === 'MCQ'" class="row g-2">
@@ -178,12 +200,24 @@
               </div>
             </div>
           </div>
+
+          <!-- No results message -->
+          <div v-if="filteredVerifiedQuestions.length === 0 && !isSearching" class="col-12 col-md-10 text-center my-5">
+            <p class="text-muted">No matching questions found.</p>
+          </div>
         </div>
 
         <!-- Unverified Questions -->
-        <div class="row g-2 justify-content-center" id="unverifiedContainer" v-show="showUnverified">
+        <div class="row g-2 justify-content-center position-relative" id="unverifiedContainer" v-show="showUnverified">
+          <!-- Loading overlay for search -->
+          <div v-if="isSearching" class="search-loading-overlay">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Searching...</span>
+            </div>
+          </div>
+
           <div v-for="(question, index) in filteredUnverifiedQuestions" :key="'unverified-' + index" class="col-12 col-md-10">
-            <div class="card" :class="getUnverifiedCardClass(question)" :data-unique-id="'unverified-' + index">
+            <div class="card" :class="[getUnverifiedCardClass(question), { 'card-searching': isSearching }]" :data-unique-id="'unverified-' + index">
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
@@ -193,7 +227,7 @@
                       <i v-if="canVerifyQuestion(question)" class="bi bi-check-lg fs-4 ms-2" @click="openVerifyConfirmationModal(index)"></i>
                     </div>
                     <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q :</strong> &nbsp; {{ question.question }}</p>
+                      <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
 
                       <!-- MCQ Options -->
                       <div v-if="question.type === 'MCQ'" class="row g-2">
@@ -210,7 +244,8 @@
                       </ul>
 
                       <footer class="blockquote-footer text-end mt-2">
-                        {{ question.topic }} <br> {{ question.type }}
+                        {{ getTopicsDisplay(question) }} <br> {{ question.type }}
+                        <span v-if="question.isPreviousExam" class="badge bg-info ms-2">Board Exam</span>
                       </footer>
                     </blockquote>
                   </div>
@@ -218,9 +253,62 @@
               </div>
             </div>
           </div>
+
+          <!-- No results message -->
+          <div v-if="filteredUnverifiedQuestions.length === 0 && !isSearching" class="col-12 col-md-10 text-center my-5">
+            <p class="text-muted">No matching questions found.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div v-if="totalPages > 1" class="row mt-3 p-2 justify-content-center mb-5">
+        <div class="col-12 col-md-10">
+          <div class="d-flex justify-content-between align-items-center">
+            <!-- Pagination Info -->
+            <div class="text-muted">
+              Showing {{ (currentPage - 1) * pageSize + 1 }} to
+              {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} entries
+            </div>
+
+            <!-- Pagination Buttons -->
+            <nav aria-label="Question pagination">
+              <ul class="pagination mb-0">
+                <!-- Previous Page Button -->
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                  <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+
+                <!-- Page Numbers -->
+                <li v-for="page in visiblePageNumbers" :key="page" class="page-item"
+                    :class="{ active: page === currentPage, disabled: page === '...' }">
+                  <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(Number(page))">{{ page }}</a>
+                  <span v-else class="page-link">...</span>
+                </li>
+
+                <!-- Next Page Button -->
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                  <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification -->
+    <ToastNotification
+      :show="showToast"
+      :title="toastTitle"
+      :message="toastMessage"
+      :type="toastType"
+      @close="closeToast"
+    />
   </div>
 </template>
 
@@ -229,6 +317,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import { Modal, Collapse } from 'bootstrap'
+import ToastNotification from '@/components/common/ToastNotification.vue'
+import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 
 // Define interfaces for API response
 interface ApiTopic {
@@ -313,13 +403,15 @@ interface ApiQuestion {
 
 // Define interfaces for component's internal use
 interface Topic {
-  topic: string;
+  id: number;
+  name: string;
 }
 
 interface Question {
   id: number;
   question: string;
   type: string;
+  typeId: number;
   topics: Topic[];
   options?: string[];
   correctOption?: string;
@@ -356,45 +448,109 @@ const questionBankData = ref({
 // Questions data
 const verifiedQuestions = ref<Question[]>([])
 const unverifiedQuestions = ref<Question[]>([])
-const topics = ref<string[]>([])
+const topics = ref<Topic[]>([])
+const questionTypes = ref<{ id: number; type_name: string }[]>([])
 
 // UI state
 const searchQuery = ref('')
-const selectedTopic = ref('')
-const selectedType = ref('')
+const selectedTopicObj = ref<{ id: number; name: string } | null>(null)
+const selectedTypeObj = ref<{ id: number; type_name: string } | null>(null)
 const showUnverified = ref(false)
 const isFilterOpen = ref(false)
 const isSearching = ref(false)
+const isLoading = ref(true)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const sortOption = ref('question_asc')
 const searchTimeout = ref<number | null>(null)
 
-// Computed properties for filtered questions
-const filteredVerifiedQuestions = computed(() => {
-  return filterQuestions(verifiedQuestions.value)
-})
+// Pagination state
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalItems = ref(0)
+const totalPages = ref(0)
 
-const filteredUnverifiedQuestions = computed(() => {
-  return filterQuestions(unverifiedQuestions.value)
+// Toast notification state
+const showToast = ref(false)
+const toastTitle = ref('')
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
+
+// Computed properties to extract IDs from selected objects
+const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id || null)
+const selectedType = computed<number | null>(() => selectedTypeObj.value?.id || null)
+
+// Type definitions for sort mappings and type mappings
+interface SortOption {
+  sort_by: string;
+  sort_order: string;
+}
+
+// Mapping for sort options to API parameters
+const sortMappings: Record<string, SortOption> = {
+  'question_asc': { sort_by: 'name', sort_order: 'asc' },
+  'question_desc': { sort_by: 'name', sort_order: 'desc' },
+  'created_asc': { sort_by: 'created_at', sort_order: 'asc' },
+  'created_desc': { sort_by: 'created_at', sort_order: 'desc' },
+  'updated_asc': { sort_by: 'updated_at', sort_order: 'asc' },
+  'updated_desc': { sort_by: 'updated_at', sort_order: 'desc' }
+}
+
+// Computed properties for filtered questions
+const filteredVerifiedQuestions = computed(() => verifiedQuestions.value)
+
+const filteredUnverifiedQuestions = computed(() => unverifiedQuestions.value)
+
+// Computed property to determine which page numbers to show
+const visiblePageNumbers = computed(() => {
+  const pages = []
+  const maxVisiblePages = 5
+
+  if (totalPages.value <= maxVisiblePages) {
+    // Show all pages if there are few pages
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Always show first page
+    pages.push(1)
+
+    // Calculate start and end of visible pages
+    let startPage = Math.max(2, currentPage.value - 1)
+    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1)
+
+    // Adjust if we're near the beginning
+    if (currentPage.value <= 3) {
+      endPage = Math.min(totalPages.value - 1, 4)
+    }
+
+    // Adjust if we're near the end
+    if (currentPage.value >= totalPages.value - 2) {
+      startPage = Math.max(2, totalPages.value - 3)
+    }
+
+    // Add ellipsis if needed before visible pages
+    if (startPage > 2) {
+      pages.push('...')
+    }
+
+    // Add visible pages
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i)
+    }
+
+    // Add ellipsis if needed after visible pages
+    if (endPage < totalPages.value - 1) {
+      pages.push('...')
+    }
+
+    // Always show last page
+    pages.push(totalPages.value)
+  }
+
+  return pages
 })
 
 // Methods
-function filterQuestions(questions: Question[]) {
-  return questions.filter(question => {
-    const matchesSearch = searchQuery.value === '' ||
-      question.question.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (question.options && question.options.some(opt => opt.toLowerCase().includes(searchQuery.value.toLowerCase())))
-
-    const matchesTopic = selectedTopic.value === '' ||
-      (question.topics && question.topics.some(t => t.topic === selectedTopic.value)) ||
-      question.topic === selectedTopic.value
-
-    const matchesType = selectedType.value === '' || question.type === selectedType.value
-
-    return matchesSearch && matchesTopic && matchesType
-  })
-}
-
 function handleSearchInput() {
   // Set searching state for visual feedback
   isSearching.value = true;
@@ -406,14 +562,18 @@ function handleSearchInput() {
 
   // Set a new timeout
   searchTimeout.value = setTimeout(() => {
-    filterCards();
-    isSearching.value = false;
-  }, 500);
+    // Reset to first page when search changes
+    currentPage.value = 1;
+    fetchQuestions();
+  }, 500) as unknown as number; // TypeScript type assertion for timer
 }
 
 function clearSearch() {
   searchQuery.value = '';
-  filterCards();
+  // Reset to first page when clearing search
+  currentPage.value = 1;
+  isSearching.value = true; // Set to loading state for visual feedback
+  fetchQuestions();
 
   // Maintain focus on the search input after clearing
   if (searchInputRef.value) {
@@ -422,44 +582,14 @@ function clearSearch() {
 }
 
 function filterCards() {
-  // Apply sorting
-  applySort();
-  // The computed properties will automatically update based on filters
-}
-
-function applySort() {
-  if (showUnverified.value) {
-    unverifiedQuestions.value = [...unverifiedQuestions.value].sort((a: Question, b: Question) => {
-      return sortQuestions(a, b);
-    });
-  } else {
-    verifiedQuestions.value = [...verifiedQuestions.value].sort((a: Question, b: Question) => {
-      return sortQuestions(a, b);
-    });
-  }
-}
-
-function sortQuestions(a: Question, b: Question) {
-  const [field, order] = sortOption.value.split('_');
-
-  if (field === 'question') {
-    return order === 'asc'
-      ? a.question.localeCompare(b.question)
-      : b.question.localeCompare(a.question);
-  }
-
-  if (field === 'type') {
-    return order === 'asc'
-      ? a.type.localeCompare(b.type)
-      : b.type.localeCompare(a.type);
-  }
-
-  return 0;
+  // Reset to first page when filters change
+  currentPage.value = 1;
+  fetchQuestions();
 }
 
 function getTopicsDisplay(question: Question) {
   if (question.topics && question.topics.length > 0) {
-    return question.topics.map(topic => topic.topic).join(', ')
+    return question.topics.map(topic => topic.name).join(', ')
   }
   return question.topic || ''
 }
@@ -513,8 +643,8 @@ function toggleFilterIcon() {
 
 function clearFilters() {
   // Reset filter values
-  selectedTopic.value = '';
-  selectedType.value = '';
+  selectedTopicObj.value = null;
+  selectedTypeObj.value = null;
   // Update filtered results
   filterCards();
 }
@@ -525,16 +655,13 @@ function canVerifyQuestion(question: Question) {
 }
 
 function editQuestion(question: Question) {
-  // Navigate to edit question page with question data
-  console.log('Edit question functionality is currently unavailable', question)
-  // The EditQuestion.vue file has been removed
-  // router.push({
-  //   name: 'editQuestion',
-  //   query: {
-  //     mode: 'edit',
-  //     question: encodeURIComponent(JSON.stringify(question))
-  //   }
-  // })
+  // Navigate to edit question page with question ID
+  router.push({
+    name: 'editQuestion',
+    params: {
+      id: question.id
+    }
+  })
 }
 
 function openRemoveConfirmationModal(index: number, type: 'verified' | 'unverified') {
@@ -546,12 +673,15 @@ function openRemoveConfirmationModal(index: number, type: 'verified' | 'unverifi
     confirmButtonText: 'Remove',
     onConfirm: () => {
       if (type === 'unverified') {
-        deleteUnverifiedQuestion(index)
+        // For unverified questions, just delete them
+        deleteUnverifiedQuestion(index);
       } else {
-        hideCard(`${type}-${index}`)
+        // For verified questions, remove from this chapter
+        const question = verifiedQuestions.value[index];
+        removeQuestionFromChapter(question.id);
       }
     }
-  })
+  });
 }
 
 function openDeleteConfirmationModal(index: number, type: 'verified' | 'unverified') {
@@ -563,12 +693,14 @@ function openDeleteConfirmationModal(index: number, type: 'verified' | 'unverifi
     confirmButtonText: 'Delete',
     onConfirm: () => {
       if (type === 'unverified') {
-        deleteUnverifiedQuestion(index)
+        deleteUnverifiedQuestion(index);
       } else {
-        hideCard(`${type}-${index}`)
+        // For verified questions, delete them permanently
+        const question = verifiedQuestions.value[index];
+        deleteVerifiedQuestion(question.id, index);
       }
     }
-  })
+  });
 }
 
 function openVerifyConfirmationModal(index: number) {
@@ -642,17 +774,62 @@ function createConfirmationModal(options: {
 }
 
 function deleteUnverifiedQuestion(index: number) {
-  // Remove question from unverified questions
-  unverifiedQuestions.value.splice(index, 1)
-  // Update localStorage
-  localStorage.setItem('questions', JSON.stringify(unverifiedQuestions.value))
+  try {
+    // Get the question before removing it
+    const question = unverifiedQuestions.value[index];
+
+    // Make API call to delete the question
+    axiosInstance.delete(`/questions/${question.id}`)
+      .then(() => {
+        // Remove question from unverified questions
+        unverifiedQuestions.value.splice(index, 1);
+
+        // Show success toast
+        toastTitle.value = 'Success';
+        toastMessage.value = 'Question deleted successfully';
+        toastType.value = 'success';
+        showToast.value = true;
+
+        // Auto hide toast after 3 seconds
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      })
+      .catch(error => {
+        console.error('Error deleting question:', error);
+
+        // Show error toast
+        toastTitle.value = 'Error';
+        toastMessage.value = error.response?.data?.message || 'Failed to delete question';
+        toastType.value = 'error';
+        showToast.value = true;
+
+        // Auto hide toast after 5 seconds
+        setTimeout(() => {
+          showToast.value = false;
+        }, 5000);
+      });
+  } catch (error) {
+    console.error('Error in deleteUnverifiedQuestion:', error);
+
+    // Show error toast
+    toastTitle.value = 'Error';
+    toastMessage.value = 'An unexpected error occurred';
+    toastType.value = 'error';
+    showToast.value = true;
+
+    // Auto hide toast after 5 seconds
+    setTimeout(() => {
+      showToast.value = false;
+    }, 5000);
+  }
 }
 
 function verifyQuestion(index: number) {
   const question = unverifiedQuestions.value[index];
 
   // Make API call to update verification status
-  axiosInstance.patch(`/questions/${question.id}`, { is_verified: true })
+  axiosInstance.put(`/questions/${question.id}`, { is_verified: true })
     .then(() => {
       console.log('Question verified successfully');
       // Remove from unverified list
@@ -661,19 +838,101 @@ function verifyQuestion(index: number) {
       if (!showUnverified.value) {
         fetchQuestions();
       }
+
+      // Show success toast
+      toastTitle.value = 'Success';
+      toastMessage.value = 'Question verified successfully';
+      toastType.value = 'success';
+      showToast.value = true;
+
+      // Auto hide toast after 3 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
     })
     .catch(error => {
       console.error('Error verifying question:', error);
+
+      // Show error toast
+      toastTitle.value = 'Error';
+      toastMessage.value = error.response?.data?.message || 'Failed to verify question';
+      toastType.value = 'error';
+      showToast.value = true;
+
+      // Auto hide toast after 5 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 5000);
     });
 }
 
-function hideCard(uniqueId: string) {
-  // In a real app, this would make an API call to update the question status
-  // For now, we just hide the card visually
-  const card = document.querySelector(`.card[data-unique-id="${uniqueId}"]`)
-  if (card) {
-    card.classList.add('d-none')
-  }
+function deleteVerifiedQuestion(questionId: number, index: number) {
+  // Make API call to delete the question
+  axiosInstance.delete(`/questions/${questionId}`)
+    .then(() => {
+      // Remove question from verified questions
+      verifiedQuestions.value.splice(index, 1);
+
+      // Show success toast
+      toastTitle.value = 'Success';
+      toastMessage.value = 'Question deleted successfully';
+      toastType.value = 'success';
+      showToast.value = true;
+
+      // Auto hide toast after 3 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    })
+    .catch(error => {
+      console.error('Error deleting question:', error);
+
+      // Show error toast
+      toastTitle.value = 'Error';
+      toastMessage.value = error.response?.data?.message || 'Failed to delete question';
+      toastType.value = 'error';
+      showToast.value = true;
+
+      // Auto hide toast after 5 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 5000);
+    });
+}
+
+function removeQuestionFromChapter(questionId: number) {
+  // Make API call to remove the question from this chapter
+  // The exact endpoint would depend on your API structure
+  axiosInstance.delete(`/questions/${questionId}/chapter/${questionBankData.value.chapterId}`)
+    .then(() => {
+      // Refresh questions after removal
+      fetchQuestions();
+
+      // Show success toast
+      toastTitle.value = 'Success';
+      toastMessage.value = 'Question removed from chapter successfully';
+      toastType.value = 'success';
+      showToast.value = true;
+
+      // Auto hide toast after 3 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    })
+    .catch(error => {
+      console.error('Error removing question from chapter:', error);
+
+      // Show error toast
+      toastTitle.value = 'Error';
+      toastMessage.value = error.response?.data?.message || 'Failed to remove question from chapter';
+      toastType.value = 'error';
+      showToast.value = true;
+
+      // Auto hide toast after 5 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 5000);
+    });
 }
 
 // Add a watch for showUnverified to refetch questions when toggle changes
@@ -689,88 +948,144 @@ watch(isSearching, (newVal) => {
   }
 });
 
-// Update fetchQuestions to use is_verified query parameter
+// Function to change page
+function changePage(page: number) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  fetchQuestions()
+}
+
+// Update fetchQuestions to handle loading states properly
 async function fetchQuestions() {
   try {
-    // Fetch questions from API based on questionBankData and verification status
-    const response = await axiosInstance.get<ApiQuestion[]>('/questions', {
-      params: {
-        chapter_id: questionBankData.value.chapterId,
-        is_verified: !showUnverified.value // true for verified, false for unverified
-      }
-    }).catch((error) => {
-      console.error('Error fetching questions:', error);
-      return { data: [] as ApiQuestion[] };
-    });
-
-    // Transform API response to match our component's expected structure
-    const questions = response.data.map((apiQuestion: ApiQuestion) => {
-      // Get the first question text (assuming there's at least one)
-      const questionText = apiQuestion.question_texts.length > 0
-        ? apiQuestion.question_texts[0].question_text
-        : '';
-
-      // Extract topics from question_topics
-      const questionTopics = apiQuestion.question_topics.map(qt => ({
-        topic: qt.topic.name
-      }));
-
-      // Handle MCQ options if present
-      let options = undefined;
-      if (apiQuestion.question_type.type_name === 'MCQ' &&
-          apiQuestion.question_texts.length > 0 &&
-          apiQuestion.question_texts[0].mcq_options.length > 0) {
-        options = apiQuestion.question_texts[0].mcq_options.map(opt => opt.option_text);
-      }
-
-      // Handle match pairs if present
-      let lhs = undefined;
-      let rhs = undefined;
-      if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
-          apiQuestion.question_texts.length > 0 &&
-          apiQuestion.question_texts[0].match_pairs.length > 0) {
-        lhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.left_side);
-        rhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.right_side);
-      }
-
-      return {
-        id: apiQuestion.id,
-        question: questionText,
-        type: apiQuestion.question_type.type_name,
-        topics: questionTopics,
-        options: options,
-        lhs: lhs,
-        rhs: rhs,
-        isPreviousExam: apiQuestion.board_question,
-        isVerified: apiQuestion.is_verified
-      } as Question;
-    });
-
-    // Update the appropriate questions array based on verification status
-    if (showUnverified.value) {
-      unverifiedQuestions.value = questions;
+    // Set appropriate loading state
+    if (searchQuery.value || selectedTopic.value || selectedType.value) {
+      isSearching.value = true;
     } else {
-      verifiedQuestions.value = questions;
+      isLoading.value = true;
     }
 
-    // Extract unique topics from the questions
-    const allTopics = new Set<string>();
+    // Prepare query parameters
+    const params: Record<string, string | number | boolean> = {
+      chapter_id: questionBankData.value.chapterId,
+      is_verified: !showUnverified.value, // true for verified, false for unverified
+      page: currentPage.value,
+      page_size: pageSize.value
+    };
 
-    questions.forEach(q => {
-      if (q.topics) {
-        q.topics.forEach(t => allTopics.add(t.topic));
-      } else if (q.topic) {
-        allTopics.add(q.topic);
+    // Add sort parameters
+    if (sortOption.value && sortMappings[sortOption.value]) {
+      params.sort_by = sortMappings[sortOption.value].sort_by;
+      params.sort_order = sortMappings[sortOption.value].sort_order;
+    }
+
+    // Add search parameter if provided
+    if (searchQuery.value) {
+      params.search = searchQuery.value;
+    }
+
+    // Add topic filter if selected
+    if (selectedTopic.value) {
+      params.topic_id = selectedTopic.value;
+    }
+
+    // Add question type filter if selected
+    if (selectedType.value) {
+      params.question_type_id = selectedType.value;
+    }
+
+    // Make the API call with all parameters
+    const response = await axiosInstance.get('/questions', { params })
+      .catch((error) => {
+        console.error('Error fetching questions:', error);
+        return { data: { data: [], meta: { total: 0, total_pages: 0 } } };
+      });
+
+    // Handle paginated response
+    if (response.data && response.data.data) {
+      // Update pagination data
+      if (response.data.meta) {
+        totalItems.value = response.data.meta.total || 0;
+        totalPages.value = response.data.meta.total_pages || 1;
       }
-    });
 
-    // Merge with existing topics to maintain a complete list
-    const existingTopics = new Set(topics.value);
-    allTopics.forEach(topic => existingTopics.add(topic));
-    topics.value = Array.from(existingTopics);
+      // Transform API response to match our component's expected structure
+      const questions = response.data.data.map((apiQuestion: ApiQuestion) => {
+        // Get the first question text (assuming there's at least one)
+        const questionText = apiQuestion.question_texts.length > 0
+          ? apiQuestion.question_texts[0].question_text
+          : '';
+
+        // Extract topics from question_topics
+        const questionTopics = apiQuestion.question_topics.map(qt => ({
+          id: qt.topic_id,
+          name: qt.topic.name
+        }));
+
+        // Also collect topics for the dropdown
+        apiQuestion.question_topics.forEach(qt => {
+          if (qt.topic && qt.topic_id) {
+            // Add to our topics collection if not already present
+            if (!topics.value.some(t => t.id === qt.topic_id)) {
+              topics.value.push({
+                id: qt.topic_id,
+                name: qt.topic.name
+              });
+            }
+          }
+        });
+
+        // Handle MCQ options if present
+        let options = undefined;
+        if (apiQuestion.question_type.type_name === 'MCQ' &&
+            apiQuestion.question_texts.length > 0 &&
+            apiQuestion.question_texts[0].mcq_options.length > 0) {
+          options = apiQuestion.question_texts[0].mcq_options.map(opt => opt.option_text);
+        }
+
+        // Handle match pairs if present
+        let lhs = undefined;
+        let rhs = undefined;
+        if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
+            apiQuestion.question_texts.length > 0 &&
+            apiQuestion.question_texts[0].match_pairs.length > 0) {
+          lhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.left_side);
+          rhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.right_side);
+        }
+
+        return {
+          id: apiQuestion.id,
+          question: questionText,
+          type: apiQuestion.question_type.type_name,
+          typeId: apiQuestion.question_type_id,
+          topics: questionTopics,
+          options: options,
+          lhs: lhs,
+          rhs: rhs,
+          isPreviousExam: apiQuestion.board_question,
+          isVerified: apiQuestion.is_verified
+        } as Question;
+      });
+
+      // Update the appropriate questions array based on verification status
+      if (showUnverified.value) {
+        unverifiedQuestions.value = questions;
+      } else {
+        verifiedQuestions.value = questions;
+      }
+    }
   } catch (error) {
     console.error('Error fetching questions:', error);
+  } finally {
+    // Always clear the loading states when done, regardless of success or failure
+    isSearching.value = false;
+    isLoading.value = false;
   }
+}
+
+// Close toast function
+const closeToast = () => {
+  showToast.value = false
 }
 
 // Lifecycle hooks
@@ -779,7 +1094,11 @@ onMounted(() => {
   const storedData = localStorage.getItem('questionBank')
   if (storedData) {
     questionBankData.value = JSON.parse(storedData)
+    // Initial data loading
+    isLoading.value = true
     fetchQuestions()
+    // Fetch question types
+    fetchQuestionTypes()
   } else {
     // Redirect to question bank selection if no data
     router.push({ name: 'questionBank' })
@@ -802,6 +1121,18 @@ onMounted(() => {
     }
   }
 })
+
+// Function to fetch question types from API
+async function fetchQuestionTypes() {
+  try {
+    const response = await axiosInstance.get('/question-types');
+    if (response.data) {
+      questionTypes.value = response.data;
+    }
+  } catch (error) {
+    console.error('Error fetching question types:', error);
+  }
+}
 </script>
 
 <style scoped>
@@ -996,5 +1327,52 @@ onMounted(() => {
     flex: 1 1 auto;
     min-width: 0 !important;
   }
+}
+
+/* Pagination styling */
+.pagination .page-item.active .page-link {
+  background-color: #212529 !important;
+  border-color: #212529 !important;
+  color: white !important;
+}
+
+.pagination .page-link {
+  color: #212529;
+}
+
+.pagination .page-link:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Search loading overlay */
+.search-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.card-searching {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+/* Loading spinner styling */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.spinner-border-sm {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 </style>
