@@ -176,6 +176,33 @@
                     <blockquote class="blockquote mb-0">
                       <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
 
+                      <!-- Question Image Loading State -->
+                      <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Loading image...</span>
+                        </div>
+                      </div>
+
+                      <!-- Question Image (if available) -->
+                      <div v-else-if="question.imageUrl" class="question-image-container mb-3">
+                        <div v-if="question.imageLoadingState" class="image-loading-overlay">
+                          <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading image...</span>
+                          </div>
+                        </div>
+                        <img
+                          :src="question.imageUrl"
+                          class="question-image"
+                          alt="Question Image"
+                          @load="handleImageLoad(question)"
+                          @error="handleImageError(question)"
+                        />
+                        <div v-if="question.imageError" class="image-error-message">
+                          <i class="bi bi-exclamation-triangle"></i>
+                          Failed to load image
+                        </div>
+                      </div>
+
                       <!-- MCQ Options -->
                       <div v-if="question.type === 'MCQ'" class="row g-2">
                         <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6 col-lg-3">
@@ -228,6 +255,33 @@
                     </div>
                     <blockquote class="blockquote mb-0">
                       <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
+
+                      <!-- Question Image Loading State -->
+                      <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Loading image...</span>
+                        </div>
+                      </div>
+
+                      <!-- Question Image (if available) -->
+                      <div v-else-if="question.imageUrl" class="question-image-container mb-3">
+                        <div v-if="question.imageLoadingState" class="image-loading-overlay">
+                          <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading image...</span>
+                          </div>
+                        </div>
+                        <img
+                          :src="question.imageUrl"
+                          class="question-image"
+                          alt="Question Image"
+                          @load="handleImageLoad(question)"
+                          @error="handleImageError(question)"
+                        />
+                        <div v-if="question.imageError" class="image-error-message">
+                          <i class="bi bi-exclamation-triangle"></i>
+                          Failed to load image
+                        </div>
+                      </div>
 
                       <!-- MCQ Options -->
                       <div v-if="question.type === 'MCQ'" class="row g-2">
@@ -349,9 +403,14 @@ interface ApiQuestionTopic {
 
 interface ApiImage {
   id: number;
-  image_url: string;
+  original_filename: string;
+  file_size: number;
+  file_type: string;
+  width: number;
+  height: number;
   created_at: string;
   updated_at: string;
+  presigned_url: string;
 }
 
 interface ApiMcqOption {
@@ -399,6 +458,10 @@ interface ApiQuestion {
   question_type: ApiQuestionType;
   question_texts: ApiQuestionText[];
   question_topics: ApiQuestionTopic[];
+  imageId?: number | null;
+  imageUrl?: string | null;
+  imageError?: boolean;
+  imageLoadingState?: boolean;
 }
 
 // Define interfaces for component's internal use
@@ -421,6 +484,11 @@ interface Question {
   topic?: string;
   isPreviousExam: boolean;
   isVerified: boolean;
+  imageId?: number | null;
+  imageUrl?: string | null;
+  imageLoading?: boolean;
+  imageError?: boolean;
+  imageLoadingState?: boolean;
 }
 
 // Component name (for linter)
@@ -835,6 +903,7 @@ function verifyQuestion(index: number) {
       // Remove from unverified list
       unverifiedQuestions.value.splice(index, 1);
       // Refresh verified questions if we're about to switch to that view
+      // This will apply all filters including instruction_medium_id
       if (!showUnverified.value) {
         fetchQuestions();
       }
@@ -906,6 +975,7 @@ function removeQuestionFromChapter(questionId: number) {
   axiosInstance.delete(`/questions/${questionId}/chapter/${questionBankData.value.chapterId}`)
     .then(() => {
       // Refresh questions after removal
+      // This will apply all filters including instruction_medium_id
       fetchQuestions();
 
       // Show success toast
@@ -968,6 +1038,7 @@ async function fetchQuestions() {
     // Prepare query parameters
     const params: Record<string, string | number | boolean> = {
       chapter_id: questionBankData.value.chapterId,
+      instruction_medium_id: questionBankData.value.mediumId,
       is_verified: !showUnverified.value, // true for verified, false for unverified
       page: currentPage.value,
       page_size: pageSize.value
@@ -1016,6 +1087,17 @@ async function fetchQuestions() {
           ? apiQuestion.question_texts[0].question_text
           : '';
 
+        // Get image ID and presigned URL if available
+        let imageId = null;
+        let imageUrl = null;
+
+        if (apiQuestion.question_texts.length > 0 &&
+            apiQuestion.question_texts[0].image_id &&
+            apiQuestion.question_texts[0].image) {
+          imageId = apiQuestion.question_texts[0].image_id;
+          imageUrl = apiQuestion.question_texts[0].image.presigned_url;
+        }
+
         // Extract topics from question_topics
         const questionTopics = apiQuestion.question_topics.map(qt => ({
           id: qt.topic_id,
@@ -1063,8 +1145,13 @@ async function fetchQuestions() {
           lhs: lhs,
           rhs: rhs,
           isPreviousExam: apiQuestion.board_question,
-          isVerified: apiQuestion.is_verified
-        } as Question;
+          isVerified: apiQuestion.is_verified,
+          imageId: imageId,
+          imageUrl: imageUrl,
+          imageLoading: imageId !== null && imageUrl === null,
+          imageError: false,
+          imageLoadingState: imageUrl !== null
+        };
       });
 
       // Update the appropriate questions array based on verification status
@@ -1081,6 +1168,23 @@ async function fetchQuestions() {
     isSearching.value = false;
     isLoading.value = false;
   }
+}
+
+// Handle image load events
+function handleImageLoad(question: Question) {
+  question.imageLoading = false;
+  question.imageLoadingState = false;
+  question.imageError = false;
+  console.log(`Image loaded successfully for question ${question.id}`);
+}
+
+// Handle image error events
+function handleImageError(question: Question) {
+  console.error(`Failed to load image for question ${question.id}`);
+  console.error('Image URL:', question.imageUrl);
+  question.imageLoading = false;
+  question.imageLoadingState = false;
+  question.imageError = true;
 }
 
 // Close toast function
@@ -1374,5 +1478,85 @@ async function fetchQuestionTypes() {
 .spinner-border-sm {
   width: 1.5rem;
   height: 1.5rem;
+}
+
+/* Question image styling */
+.question-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  min-height: 200px;
+  background-color: #f8f9fa;
+}
+
+.question-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+.image-error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #dc3545;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.image-error-message i {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .question-image {
+    max-height: 200px;
+  }
+
+  .question-image-container {
+    min-height: 150px;
+  }
+}
+
+/* Question image loading container */
+.question-image-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .question-image-loading-container {
+    height: 150px;
+  }
+}
+
+/* Question image container with loading overlay */
+.image-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(248, 249, 250, 0.7);
+  z-index: 5;
 }
 </style>
