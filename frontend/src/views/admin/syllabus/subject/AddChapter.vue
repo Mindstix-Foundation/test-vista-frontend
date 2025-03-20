@@ -70,16 +70,10 @@ interface Subject {
 
 interface Chapter {
   id: number
-  medium_standard_subject_id: number
+  subject_id: number
+  standard_id: number
   sequential_chapter_number: number
   name: string
-}
-
-interface MediumStandardSubject {
-  id: number
-  instruction_medium_id: number
-  standard_id: number
-  subject_id: number
 }
 
 const route = useRoute()
@@ -124,34 +118,16 @@ const fetchData = async () => {
 
 const saveChapter = async (formData: { chapterName: string; topics: string[] }) => {
   try {
-    // Get the medium_standard_subject_id using the API endpoint
-    const mediumStandardSubjectResponse = await axiosInstance.get('/medium-standard-subjects', {
+    // First, get all existing chapters for this subject and standard to determine the next sequential number
+    const chaptersResponse = await axiosInstance.get('/chapters', {
       params: {
-        boardId: route.query.board,
-        instruction_medium_id: route.query.medium,
-        standard_id: route.query.standard,
-        subject_id: route.query.subject
+        subject_id: route.query.subject,
+        standard_id: route.query.standard
       }
     })
-
-    // Check if we got a valid response with at least one record
-    if (!mediumStandardSubjectResponse.data || mediumStandardSubjectResponse.data.length === 0) {
-      throw new Error('Could not find medium-standard-subject association')
-    }
-
-    const mediumStandardSubject: MediumStandardSubject = mediumStandardSubjectResponse.data[0]
-
-    // First, get all existing chapters to determine the next sequential number
-    const chaptersResponse = await axiosInstance.get(`/chapters?mediumStandardSubjectId=${mediumStandardSubject.id}`)
     const existingChapters: Chapter[] = chaptersResponse.data
 
     console.log('Existing chapters before creation:', existingChapters)
-
-    // Also check if there are any chapters with the same subject_id (across all mediums/standards)
-    const allChaptersForSubjectResponse = await axiosInstance.get(`/chapters?subject_id=${route.query.subject}`)
-    const allChaptersForSubject = allChaptersForSubjectResponse.data
-
-    console.log('All chapters for this subject (across all mediums/standards):', allChaptersForSubject)
 
     // Calculate next sequential number
     let nextChapterNumber = 1; // Default to 1 for the first chapter
@@ -186,10 +162,11 @@ const saveChapter = async (formData: { chapterName: string; topics: string[] }) 
 
     console.log('Final calculated next chapter number:', nextChapterNumber);
 
-    // Prepare chapter data with the correct medium_standard_subject_id
+    // Prepare chapter data with the new API structure
     const chapterData = {
-      medium_standard_subject_id: mediumStandardSubject.id,
-      sequential_chapter_number: nextChapterNumber, // Use the calculated sequential number
+      subject_id: Number(route.query.subject),
+      standard_id: Number(route.query.standard),
+      sequential_chapter_number: nextChapterNumber,
       name: formData.chapterName,
     }
 
@@ -248,7 +225,12 @@ const saveChapter = async (formData: { chapterName: string; topics: string[] }) 
     })
 
     // After creating the chapter, check again to see what chapters exist
-    const chaptersAfterResponse = await axiosInstance.get(`/chapters?mediumStandardSubjectId=${mediumStandardSubject.id}`)
+    const chaptersAfterResponse = await axiosInstance.get('/chapters', {
+      params: {
+        subject_id: route.query.subject,
+        standard_id: route.query.standard
+      }
+    })
     const chaptersAfter = chaptersAfterResponse.data
 
     console.log('Chapters after creation:', chaptersAfter)

@@ -99,6 +99,9 @@ async function handleUpdateQuestion(payload: {
     lhs?: string[];
     rhs?: string[];
   };
+  imageFile?: File;
+  deleteImage?: boolean;
+  existingImageId?: number | null;
 }) {
   try {
     if (!payload.questionId) {
@@ -131,6 +134,126 @@ async function handleUpdateQuestion(payload: {
       return;
     }
 
+    let imageId = null;
+
+    // Handle image deletion if requested
+    if (payload.deleteImage && payload.existingImageId) {
+      try {
+        await axiosInstance.delete(`/images/${payload.existingImageId}`);
+        console.log('Image deleted successfully');
+
+        // Update question text to remove image reference
+        await axiosInstance.put(
+          `/question-texts/${questionTextId}`,
+          {
+            question_text: payload.questionText,
+            image_id: null // Remove the image association
+          }
+        );
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        // Continue with question update even if image deletion fails
+      }
+    } else if (payload.imageFile) {
+      // If a new image is being uploaded and there's an existing image,
+      // we'll handle the replacement by deleting the old one first
+      if (payload.existingImageId) {
+        try {
+          await axiosInstance.delete(`/images/${payload.existingImageId}`);
+          console.log('Replaced old image successfully');
+        } catch (error) {
+          console.error('Error replacing old image:', error);
+          // Continue with upload even if deletion fails
+        }
+      }
+
+      // Upload the new image
+      try {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', payload.imageFile);
+
+        // Upload the image
+        const uploadResponse = await axiosInstance.post(
+          '/images/upload',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+
+        // Extract image details from upload response
+        const uploadedImageDetails = uploadResponse.data;
+
+        // Create image record with returned details
+        const imageCreateRequest = {
+          image_url: uploadedImageDetails.image_url,
+          original_filename: uploadedImageDetails.original_filename || payload.imageFile.name,
+          file_size: uploadedImageDetails.file_size || payload.imageFile.size,
+          file_type: uploadedImageDetails.file_type || payload.imageFile.type,
+          width: uploadedImageDetails.width,
+          height: uploadedImageDetails.height
+        };
+
+        const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+        imageId = imageResponse.data.id;
+
+        // Update question text with the new image ID
+        await axiosInstance.put(
+          `/question-texts/${questionTextId}`,
+          {
+            question_text: payload.questionText,
+            image_id: imageId
+          }
+        );
+
+        console.log('New image uploaded and associated with question');
+      } catch (error: unknown) {
+        console.error('Error uploading new image:', error);
+
+        // Check if this is a validation error
+        if (error &&
+            typeof error === 'object' &&
+            'response' in error &&
+            error.response &&
+            typeof error.response === 'object' &&
+            'status' in error.response &&
+            'data' in error.response &&
+            error.response.status === 400 &&
+            error.response.data &&
+            typeof error.response.data === 'object' &&
+            'message' in error.response.data) {
+          // Show specific error message to the user
+          toastTitle.value = 'Image Upload Error';
+          toastMessage.value = (error.response.data as { message: string }).message;
+          toastType.value = 'error';
+          showToast.value = true;
+
+          // Return early without completing the question update
+          return;
+        }
+
+        // For other types of errors, continue with question update without the image
+        await axiosInstance.put(
+          `/question-texts/${questionTextId}`,
+          {
+            question_text: payload.questionText
+          }
+        );
+      }
+    } else {
+      // Regular update without changing images
+      // Update the question text
+      await axiosInstance.put(
+        `/question-texts/${questionTextId}`,
+        {
+          question_text: payload.questionText
+        }
+      );
+    }
+
     // Step 1: Update the question
     const questionUpdateRequest = {
       question_type_id: payload.questionTypeId,
@@ -142,15 +265,7 @@ async function handleUpdateQuestion(payload: {
       questionUpdateRequest
     )
 
-    // Step 2: Update the question text using the ID we already fetched
-    await axiosInstance.put(
-      `/question-texts/${questionTextId}`,
-      {
-        question_text: payload.questionText
-      }
-    );
-
-    // Step 3: Update the question-topic association
+    // Step 2: Update the question-topic association
     // First, find existing associations
     const questionTopicsResponse = await axiosInstance.get(`/question-topics?question_id=${payload.questionId}`);
 

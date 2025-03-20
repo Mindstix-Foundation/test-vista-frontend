@@ -37,8 +37,20 @@
             <div class="mb-3 form-floating">
               <textarea id="question" v-model="descriptiveQuestion.question" class="form-control" rows="5" placeholder="Type your question here..." @input="autoResize" required></textarea>
               <label for="question" class="form-label">Question</label>
+              <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
+                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01">
+                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+              </div>
+              <div v-if="imageUploadError" class="alert alert-danger py-1">
+                {{ imageUploadError }}
               </div>
             </div>
             <div class="form-check mt-4">
@@ -62,8 +74,20 @@
             <div class="mb-3 form-floating">
               <textarea id="mcqText" v-model="mcqQuestion.question" class="form-control" rows="3" placeholder="Type your MCQ question here..." @input="autoResize" required></textarea>
               <label for="mcqText" class="form-label">Question</label>
+              <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
+                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01">
+                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+              </div>
+              <div v-if="imageUploadError" class="alert alert-danger py-1">
+                {{ imageUploadError }}
               </div>
             </div>
 
@@ -75,7 +99,7 @@
                     <label for="option1">Option A</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01">
+                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
                   </div>
                 </div>
 
@@ -85,7 +109,7 @@
                     <label for="option2">Option B</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01">
+                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
                   </div>
                 </div>
 
@@ -95,7 +119,7 @@
                     <label for="option3">Option C</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01">
+                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
                   </div>
                 </div>
 
@@ -105,7 +129,7 @@
                     <label for="option4">Option D</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01">
+                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
                   </div>
                 </div>
               </div>
@@ -143,8 +167,20 @@
               <textarea id="fillInTheBlankQuestion" v-model="fillBlankQuestion.question" class="form-control" rows="3"
                         placeholder="Type your question here, use '_____' for blanks." @input="autoResize" required></textarea>
               <label for="fillInTheBlankQuestion" class="form-label">Question</label>
+              <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
+                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-1">
-                <input type="file" class="form-control" id="inputGroupFile01">
+                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+              </div>
+              <div v-if="imageUploadError" class="alert alert-danger py-1">
+                {{ imageUploadError }}
               </div>
               <div class="col text-end">
                 <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" @click="insertBlank">Insert Blank</button>
@@ -177,8 +213,20 @@
             <div class="mb-3">
               <label for="pairQuestion" class="form-label">Question</label>
               <textarea id="pairQuestion" v-model="matchPairQuestion.question" class="form-control" rows="3" placeholder="Enter the question (e.g., Match the terms with their definitions)" @input="autoResize" required></textarea>
+              <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
+                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01">
+                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+              </div>
+              <div v-if="imageUploadError" class="alert alert-danger py-1">
+                {{ imageUploadError }}
               </div>
             </div>
 
@@ -191,7 +239,7 @@
                     <input type="text" v-model="matchPairQuestion.lhs[index]" class="form-control" placeholder="LHS" required>
                     <button type="button" class="btn btn-custom" @click="removeInput('lhs', index)" :disabled="matchPairQuestion.lhs.length <= 1">Remove</button>
                     <div class="input-group input-group-sm mb-3">
-                      <input type="file" class="form-control" id="inputGroupFile01">
+                      <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
                     </div>
                   </div>
                 </div>
@@ -206,7 +254,7 @@
                     <input type="text" v-model="matchPairQuestion.rhs[index]" class="form-control" placeholder="RHS" required>
                     <button type="button" class="btn btn-custom" @click="removeInput('rhs', index)" :disabled="matchPairQuestion.rhs.length <= 2">Remove</button>
                     <div class="input-group input-group-sm mb-3">
-                      <input type="file" class="form-control" id="inputGroupFile01">
+                      <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
                     </div>
                   </div>
                 </div>
@@ -267,6 +315,9 @@ const emit = defineEmits<{
       lhs?: string[]
       rhs?: string[]
     }
+    imageFile?: File
+    deleteImage?: boolean
+    existingImageId?: number | null
   }): void
   (e: 'update', data: {
     questionId?: number
@@ -282,6 +333,9 @@ const emit = defineEmits<{
       lhs?: string[]
       rhs?: string[]
     }
+    imageFile?: File
+    deleteImage?: boolean
+    existingImageId?: number | null
   }): void
 }>()
 
@@ -377,7 +431,7 @@ interface Topic {
   }
 }
 
-// Type definition for question response from API
+// Add interface for question response to include image details
 interface QuestionResponse {
   id: number
   question_type_id: number
@@ -392,6 +446,11 @@ interface QuestionResponse {
     question_id: number
     question_text: string
     image_id: number | null
+    image?: {
+      id: number
+      presigned_url: string
+      original_filename: string
+    } | null
   }>
   question_topics: Array<{
     id: number
@@ -416,6 +475,16 @@ interface QuestionResponse {
     right_text: string
   }>
 }
+
+// Add a ref for the question image file
+const questionImageFile = ref<File | null>(null);
+
+// Add refs for the current image
+const existingImageUrl = ref<string | null>(null);
+const existingImageName = ref<string | null>(null);
+const existingImageId = ref<number | null>(null);
+const shouldDeleteImage = ref<boolean>(false);
+const imageUploadError = ref<string | null>(null);
 
 // Methods
 async function fetchQuestionTypes() {
@@ -533,10 +602,19 @@ async function fetchQuestionData() {
       selectedType.value = questionData.question_type.type_name
     }
 
-    // Fill the appropriate question form based on question type
+    // Check for image and set if available
     if (questionData.question_texts && questionData.question_texts.length > 0) {
       const questionText = questionData.question_texts[0].question_text
 
+      // Check if there's an image associated with this question
+      if (questionData.question_texts[0].image_id && questionData.question_texts[0].image) {
+        existingImageUrl.value = questionData.question_texts[0].image.presigned_url;
+        existingImageName.value = questionData.question_texts[0].image.original_filename || 'question_image';
+        existingImageId.value = questionData.question_texts[0].image.id;
+        console.log('Image found:', existingImageUrl.value);
+      }
+
+      // Fill the appropriate question form based on question type
       switch (selectedType.value) {
         case 'Descriptive':
         case 'True or False':
@@ -657,7 +735,16 @@ function getQuestionPayload() {
     isPreviousExam: isPreviousExam,
     isVerified: false,
     questionText: '',
-    additionalData: {}
+    additionalData: {} as {
+      options?: string[];
+      correctOption?: number;
+      correctAnswer?: string;
+      lhs?: string[];
+      rhs?: string[];
+    },
+    imageFile: questionImageFile.value as File | undefined,
+    deleteImage: shouldDeleteImage.value,
+    existingImageId: existingImageId.value
   }
 
   // Add question-type specific data
@@ -734,9 +821,24 @@ async function saveQuestion() {
 
   try {
     if (isEditMode.value && props.questionId) {
-      emit('update', payload)
+      // Use type casting to satisfy TypeScript
+      emit('update', {
+        ...payload,
+        imageFile: payload.imageFile as File | undefined
+      })
     } else {
-      emit('save', payload)
+      // For save, omit the questionId without destructuring
+      emit('save', {
+        questionTypeId: payload.questionTypeId,
+        topicId: payload.topicId,
+        isPreviousExam: payload.isPreviousExam,
+        isVerified: payload.isVerified,
+        questionText: payload.questionText,
+        additionalData: payload.additionalData,
+        imageFile: payload.imageFile as File | undefined,
+        deleteImage: payload.deleteImage,
+        existingImageId: payload.existingImageId
+      })
     }
   } catch (error) {
     console.error('Error saving question:', error)
@@ -750,6 +852,55 @@ watch(selectedTopic, (newTopic) => {
     selectedType.value = ''
   }
 })
+
+// Function to handle image file selection
+function handleQuestionImageUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  imageUploadError.value = null; // Reset error message
+
+  if (input.files && input.files.length > 0) {
+    const file = input.files[0];
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      imageUploadError.value = 'Only .jpg, .jpeg, and .webp files are allowed';
+      input.value = ''; // Clear the input
+      return;
+    }
+
+    // Validate file size (between 10KB and 5MB)
+    const minSize = 10 * 1024; // 10KB in bytes
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+
+    if (file.size < minSize) {
+      imageUploadError.value = 'Image size must be at least 10KB';
+      input.value = ''; // Clear the input
+      return;
+    }
+
+    if (file.size > maxSize) {
+      imageUploadError.value = 'Image size must not exceed 5MB';
+      input.value = ''; // Clear the input
+      return;
+    }
+
+    // File passed all validations
+    questionImageFile.value = file;
+    shouldDeleteImage.value = false; // Reset deletion flag since we're adding a new image
+  } else {
+    questionImageFile.value = null;
+  }
+}
+
+// Function to handle removing the existing image
+function removeExistingImage() {
+  shouldDeleteImage.value = true;
+  existingImageUrl.value = null;
+  existingImageName.value = null;
+  imageUploadError.value = null; // Clear any error message
+  // Keep the existingImageId value for sending the delete request
+}
 
 // Initialize textareas and fetch data on mount
 onMounted(() => {
@@ -806,5 +957,20 @@ option[value^="Error:"], option[value^="No topics"] {
   color: #dc3545;
   font-weight: bold;
   font-style: italic;
+}
+
+/* Add style for image preview */
+.image-preview {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+}
+
+.image-preview img {
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 </style>

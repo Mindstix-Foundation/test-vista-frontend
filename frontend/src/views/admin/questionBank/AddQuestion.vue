@@ -37,6 +37,13 @@
         Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
       </div>
     </div>
+    <ToastNotification
+      v-if="showToast"
+      :title="toastTitle"
+      :message="toastMessage"
+      :type="toastType"
+      @close="closeToast"
+    />
   </div>
 </template>
 
@@ -45,6 +52,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
+import ToastNotification from '@/components/common/ToastNotification.vue'
 
 // Define component name
 defineOptions({
@@ -69,6 +77,12 @@ const questionBankData = ref({
   mediumStandardSubjectId: null
 })
 
+// Add toast notification state
+const showToast = ref(false)
+const toastTitle = ref('')
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
+
 // Debug function to validate chapter ID
 function validateChapterId() {
   if (!questionBankData.value.chapterId) {
@@ -90,8 +104,67 @@ async function handleSaveQuestion(payload: {
     lhs?: string[];
     rhs?: string[];
   };
+  imageFile?: File;
 }) {
   try {
+    let imageId = null;
+
+    // Step 0: If an image file was uploaded, first upload and create the image
+    if (payload.imageFile) {
+      try {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', payload.imageFile);
+
+        // Upload the image
+        const uploadResponse = await axiosInstance.post(
+          '/images/upload',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+
+        // Extract image details from upload response
+        const uploadedImageDetails = uploadResponse.data;
+
+        // Create image record with returned details
+        const imageCreateRequest = {
+          image_url: uploadedImageDetails.image_url,
+          original_filename: uploadedImageDetails.original_filename || payload.imageFile.name,
+          file_size: uploadedImageDetails.file_size || payload.imageFile.size,
+          file_type: uploadedImageDetails.file_type || payload.imageFile.type,
+          width: uploadedImageDetails.width,
+          height: uploadedImageDetails.height
+        };
+
+        const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+        imageId = imageResponse.data.id;
+      } catch (error: any) {
+        console.error('Error uploading image:', error);
+
+        // Check for specific image validation errors
+        if (error.response?.data?.message) {
+          // Show error toast with the specific message
+          showToast.value = true;
+          toastTitle.value = 'Image Upload Error';
+          toastMessage.value = error.response.data.message;
+          toastType.value = 'error';
+
+          // Auto hide toast after 5 seconds
+          setTimeout(() => {
+            showToast.value = false;
+          }, 5000);
+
+          // Return early, don't create the question if image upload failed
+          return;
+        }
+        // For other errors, continue with question creation without the image
+      }
+    }
+
     // Step 1: Create the question
     const questionCreateRequest = {
       question_type_id: payload.questionTypeId,
@@ -106,10 +179,21 @@ async function handleSaveQuestion(payload: {
 
     const questionId = questionResponse.data.id
 
-    // Step 2: Create the question text
-    const questionTextCreateRequest = {
+    // Step 2: Create the question text with medium id and optional image id
+    const questionTextCreateRequest: {
+      question_id: number;
+      instruction_medium_id: number;
+      question_text: string;
+      image_id?: number;
+    } = {
       question_id: questionId,
+      instruction_medium_id: parseInt(questionBankData.value.mediumId),
       question_text: payload.questionText
+    }
+
+    // Add image_id if an image was uploaded successfully
+    if (imageId) {
+      questionTextCreateRequest.image_id = imageId;
     }
 
     await axiosInstance.post(
@@ -168,9 +252,23 @@ async function handleSaveQuestion(payload: {
 
     // Success! Navigate back to question dashboard
     router.push({ name: 'questionDashboard' })
-  } catch {
-    // In a real app, you would show an error message to the user
+  } catch (error: any) {
+    // Show error toast
+    showToast.value = true;
+    toastTitle.value = 'Error';
+    toastMessage.value = error.response?.data?.message || 'Failed to create question';
+    toastType.value = 'error';
+
+    // Auto hide toast after 5 seconds
+    setTimeout(() => {
+      showToast.value = false;
+    }, 5000);
   }
+}
+
+// Add toast close function
+function closeToast() {
+  showToast.value = false
 }
 
 // Lifecycle hooks
