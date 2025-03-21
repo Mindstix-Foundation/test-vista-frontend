@@ -35,16 +35,41 @@
               <div class="mb-3">
                 <label for="questionTranslate" class="form-label">Original Question</label>
                 <textarea id="questionTranslate" v-model="originalQuestion" readonly class="form-control" @input="autoResize" rows="3"></textarea>
+
+                <!-- Original Question Image (only if available and no new image selected) -->
+                <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
+                  <div v-if="imageLoading" class="image-loading-overlay">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading image...</span>
+                    </div>
+                  </div>
+                  <img
+                    v-if="questionImage.presigned_url || questionImage.image_url"
+                    :src="questionImage.presigned_url || questionImage.image_url"
+                    class="question-image"
+                    alt="Question Image"
+                    @load="imageLoading = false"
+                    @error="handleImageError"
+                  />
+                  <div v-if="imageError" class="image-error-message">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Failed to load image
+                  </div>
+                </div>
+
                 <div class="form-floating">
                   <textarea id="question" v-model="translatedQuestion.question" class="form-control" rows="5" placeholder="Type your question here..." @input="autoResize" required></textarea>
                   <label for="question" class="form-label">Translated Question</label>
                 </div>
                 <div class="input-group input-group-sm mb-3">
-                  <input type="file" class="form-control" id="inputGroupFile01">
+                  <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                 </div>
               </div>
               <div class="mt-5 text-center">
-                <button type="submit" class="btn btn-dark" id="saveButton">Save</button>
+                <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
+                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  {{ isSaving ? 'Saving...' : 'Save' }}
+                </button>
               </div>
             </form>
           </div>
@@ -58,12 +83,34 @@
               <div class="mb-3">
                 <label for="mcqTextTranslate" class="form-label">Original Question</label>
                 <textarea id="mcqTextTranslate" v-model="originalQuestion" readonly class="form-control" @input="autoResize" rows="3"></textarea>
+
+                <!-- Original Question Image (only if available and no new image selected) -->
+                <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
+                  <div v-if="imageLoading" class="image-loading-overlay">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading image...</span>
+                    </div>
+                  </div>
+                  <img
+                    v-if="questionImage.presigned_url || questionImage.image_url"
+                    :src="questionImage.presigned_url || questionImage.image_url"
+                    class="question-image"
+                    alt="Question Image"
+                    @load="imageLoading = false"
+                    @error="handleImageError"
+                  />
+                  <div v-if="imageError" class="image-error-message">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Failed to load image
+                  </div>
+                </div>
+
                 <div class="form-floating">
                   <textarea id="mcqText" v-model="translatedQuestion.question" class="form-control" rows="3" placeholder="Type your MCQ question here..." @input="autoResize" required></textarea>
                   <label for="mcqText" class="form-label">Translated Question</label>
                 </div>
                 <div class="input-group input-group-sm mb-3">
-                  <input type="file" class="form-control" id="inputGroupFile01">
+                  <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                 </div>
               </div>
 
@@ -78,14 +125,17 @@
                       <label :for="'option' + (index + 1)">Option {{ String.fromCharCode(65 + index) }}</label>
                     </div>
                     <div class="input-group input-group-sm mb-3">
-                      <input type="file" class="form-control" id="inputGroupFile01">
+                      <input type="file" class="form-control" :id="'optionImage' + (index + 1)">
                     </div>
                   </div>
                 </div>
               </div>
 
               <div class="text-center mt-3">
-                <button type="submit" class="btn btn-dark" id="saveButton">Save</button>
+                <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
+                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  {{ isSaving ? 'Saving...' : 'Save' }}
+                </button>
               </div>
             </form>
           </div>
@@ -100,13 +150,34 @@
                 <label for="translateFillBlank" class="form-label">Original Question</label>
                 <textarea id="translateFillBlank" v-model="originalQuestion" readonly class="form-control" @input="autoResize" rows="3"></textarea>
 
+                <!-- Original Question Image (only if available and no new image selected) -->
+                <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
+                  <div v-if="imageLoading" class="image-loading-overlay">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading image...</span>
+                    </div>
+                  </div>
+                  <img
+                    v-if="questionImage.presigned_url || questionImage.image_url"
+                    :src="questionImage.presigned_url || questionImage.image_url"
+                    class="question-image"
+                    alt="Question Image"
+                    @load="imageLoading = false"
+                    @error="handleImageError"
+                  />
+                  <div v-if="imageError" class="image-error-message">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Failed to load image
+                  </div>
+                </div>
+
                 <div class="form-floating">
                   <textarea id="fillInTheBlankQuestion" v-model="translatedQuestion.question" class="form-control" rows="3"
                             placeholder="Type your question here, use '_____' for blanks." @input="autoResize" required></textarea>
                   <label for="fillInTheBlankQuestion" class="form-label">Translated Question</label>
                 </div>
                 <div class="input-group input-group-sm mb-3">
-                  <input type="file" class="form-control" id="inputGroupFile01">
+                  <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                 </div>
                 <div class="col text-end">
                   <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" @click="insertBlank">Insert Blank</button>
@@ -114,7 +185,10 @@
               </div>
 
               <div class="text-center">
-                <button type="submit" class="btn btn-dark" id="saveButton">Save</button>
+                <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
+                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  {{ isSaving ? 'Saving...' : 'Save' }}
+                </button>
               </div>
             </form>
           </div>
@@ -126,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 
@@ -153,6 +227,13 @@ const questionBankData = ref({
   mediumStandardSubjectId: null
 })
 
+// Add interfaces for image handling
+interface QuestionImage {
+  id: number;
+  presigned_url?: string;
+  image_url?: string;
+}
+
 // Question data
 const questionId = ref<number | null>(null)
 const questionType = ref('')
@@ -163,18 +244,28 @@ const translatedQuestion = ref({
   type: ''
 })
 const translatedOptions = ref<string[]>(['', '', '', ''])
+const questionImage = ref<QuestionImage | null>(null)
+const imageLoading = ref(false)
+const imageError = ref(false)
+
+// Track if a new image is selected
+const newImageSelected = ref(false)
 
 // Define interfaces for API data
-interface TranslationData {
+interface QuestionTextData {
   question_id: number;
-  translated_text: string;
-  language: string;
-  options?: string[];
+  instruction_medium_id: number;
+  image_id: number | null;
+  question_text: string;
+  is_verified: boolean;
 }
 
 interface McqOption {
   option_text: string;
 }
+
+// Add a loading state for saving
+const isSaving = ref(false)
 
 // Methods
 function autoResize(event: Event) {
@@ -195,6 +286,25 @@ function insertBlank() {
   translatedQuestion.value.question += '_____'
 }
 
+// Add image handling methods
+function handleImageError() {
+  imageLoading.value = false;
+  imageError.value = true;
+  console.error('Failed to load question image');
+}
+
+// Simplified function to just track if a new image is selected
+function handleImageChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    // Simply flag that a new image is selected
+    newImageSelected.value = true;
+  } else {
+    // Reset to show original image if file selection is canceled
+    newImageSelected.value = false;
+  }
+}
+
 async function saveTranslation() {
   try {
     if (!questionId.value) {
@@ -202,29 +312,130 @@ async function saveTranslation() {
       return
     }
 
-    // Prepare the translation data based on question type
-    const translationData: TranslationData = {
-      question_id: questionId.value,
-      translated_text: translatedQuestion.value.question,
-      language: 'hi' // Assuming Hindi translation, adjust as needed
+    isSaving.value = true
+
+    // Get medium ID from localStorage (this is the target language ID)
+    const targetMediumId = questionBankData.value.mediumId
+
+    // Create the translated question text data with the original image ID as default
+    const translatedQuestionData: QuestionTextData = {
+      question_id: questionId.value,                      // Link to the original question
+      instruction_medium_id: parseInt(targetMediumId.toString()), // Target language medium ID
+      image_id: questionImage.value?.id || null,          // Default to original image ID if no new image
+      question_text: translatedQuestion.value.question,   // The TRANSLATED question text
+      is_verified: false
     }
 
-    // Add options for MCQ questions
-    if (questionType.value === 'MCQ' || questionType.value === 'Multiple Choice') {
-      translationData.options = translatedOptions.value
+    // Handle file upload for the question image only if a new image is selected
+    const questionImageInput = document.getElementById('inputGroupFile01') as HTMLInputElement
+    if (newImageSelected.value && questionImageInput && questionImageInput.files && questionImageInput.files.length > 0) {
+      try {
+        // Create FormData for file upload
+        const formData = new FormData()
+        formData.append('file', questionImageInput.files[0])
+
+        // Upload the image
+        const uploadResponse = await axiosInstance.post(
+          '/images/upload',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        )
+
+        // Extract image details from upload response
+        const uploadedImageDetails = uploadResponse.data
+
+        // Create image record with returned details
+        const imageCreateRequest = {
+          image_url: uploadedImageDetails.image_url,
+          original_filename: uploadedImageDetails.original_filename || questionImageInput.files[0].name,
+          file_size: uploadedImageDetails.file_size || questionImageInput.files[0].size,
+          file_type: uploadedImageDetails.file_type || questionImageInput.files[0].type,
+          width: uploadedImageDetails.width,
+          height: uploadedImageDetails.height
+        }
+
+        const imageResponse = await axiosInstance.post('/images', imageCreateRequest)
+
+        // Update the image ID in the translated question data
+        translatedQuestionData.image_id = imageResponse.data.id
+
+        console.log('New image uploaded and associated with translation')
+      } catch (error) {
+        console.error('Error uploading new image:', error)
+        // If image upload fails, we'll use the original image if available
+        if (!questionImage.value?.id) {
+          // If there's no original image either, set to null
+          translatedQuestionData.image_id = null
+        }
+      }
     }
 
-    // Make API call to save translation
-    await axiosInstance.post('/question-translations', translationData)
+    // Create the translated question text in the target language
+    const translationResponse = await axiosInstance.post('/question-texts', translatedQuestionData)
+
+    // If this is an MCQ question, handle the translated options
+    if ((questionType.value === 'MCQ' || questionType.value === 'Multiple Choice') &&
+        translatedOptions.value.length > 0) {
+
+      // Get the new question text ID for the translation
+      const translatedQuestionTextId = translationResponse.data.id
+
+      // Create translated MCQ options
+      for (let i = 0; i < translatedOptions.value.length; i++) {
+        if (translatedOptions.value[i].trim() !== '') {
+          // Determine if this is the correct option based on the original question
+          const isCorrect = originalOptions.value[i] !== undefined &&
+            await isCorrectOption(questionId.value, originalOptions.value[i])
+
+          // Create the translated option
+          await axiosInstance.post('/mcq-options', {
+            question_text_id: translatedQuestionTextId,
+            option_text: translatedOptions.value[i], // The TRANSLATED option text
+            is_correct: isCorrect
+          })
+        }
+      }
+    }
+
+    // Show success message or redirect
+    console.log('Translation saved successfully!')
 
     // Navigate back to translation pending page
     router.push({ name: 'translationPending' })
   } catch (error) {
     console.error('Error saving translation:', error)
+  } finally {
+    isSaving.value = false
   }
 }
 
-// Load question data
+// Helper function to determine if an option is the correct one
+async function isCorrectOption(questionId: number, optionText: string): Promise<boolean> {
+  try {
+    // Get all options for the question
+    const response = await axiosInstance.get(`/question-options?question_id=${questionId}`)
+
+    // Find the matching option and check if it's correct
+    if (response.data && Array.isArray(response.data)) {
+      const matchingOption = response.data.find(
+        (opt: { option_text: string; is_correct: boolean }) => opt.option_text === optionText
+      )
+
+      return matchingOption ? matchingOption.is_correct : false
+    }
+
+    return false
+  } catch (error) {
+    console.error('Error checking correct option:', error)
+    return false
+  }
+}
+
+// Update loadQuestionData to fetch and handle images
 async function loadQuestionData() {
   try {
     // Get question ID from route params or query
@@ -247,6 +458,16 @@ async function loadQuestionData() {
     if (questionData.question_texts && questionData.question_texts.length > 0) {
       originalQuestion.value = questionData.question_texts[0].question_text
       translatedQuestion.value.type = questionType.value
+
+      // Get image if available
+      if (questionData.question_texts[0].image_id && questionData.question_texts[0].image) {
+        imageLoading.value = true;
+        questionImage.value = {
+          id: questionData.question_texts[0].image_id,
+          presigned_url: questionData.question_texts[0].image.presigned_url,
+          image_url: questionData.question_texts[0].image.image_url
+        };
+      }
     }
 
     // Set original options for MCQ
@@ -280,6 +501,11 @@ onMounted(() => {
     router.push({ name: 'questionBank' })
   }
 })
+
+// Clean up resources when component is unmounted
+onUnmounted(() => {
+  // No need for cleanup since we're not using object URLs anymore
+})
 </script>
 
 <style scoped>
@@ -291,5 +517,67 @@ onMounted(() => {
 textarea[readonly] {
   background-color: #f8f9fa;
   border-color: #dee2e6;
+}
+
+/* Question image styling */
+.question-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  min-height: 200px;
+  background-color: #f8f9fa;
+}
+
+.question-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+.image-error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #dc3545;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.image-error-message i {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.image-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(248, 249, 250, 0.7);
+  z-index: 5;
+}
+
+@media (max-width: 768px) {
+  .question-image {
+    max-height: 200px;
+  }
+
+  .question-image-container {
+    min-height: 150px;
+  }
 }
 </style>

@@ -754,18 +754,18 @@ function openRemoveConfirmationModal(index: number, type: 'verified' | 'unverifi
 
 function openDeleteConfirmationModal(index: number, type: 'verified' | 'unverified') {
   createConfirmationModal({
-    title: 'Delete Question',
+    title: 'Delete Question Text',
     titleClass: 'bg-danger text-white',
-    message: 'Are you sure you want to delete this question from the Question Bank?',
+    message: 'Are you sure you want to delete this question text from the Question Bank? This will not delete the entire question itself.',
     confirmButtonClass: 'btn-danger',
     confirmButtonText: 'Delete',
     onConfirm: () => {
       if (type === 'unverified') {
         deleteUnverifiedQuestion(index);
       } else {
-        // For verified questions, delete them permanently
+        // For verified questions, delete the question text, not the entire question
         const question = verifiedQuestions.value[index];
-        deleteVerifiedQuestion(question.id, index);
+        deleteVerifiedQuestion(question, index);
       }
     }
   });
@@ -846,15 +846,28 @@ function deleteUnverifiedQuestion(index: number) {
     // Get the question before removing it
     const question = unverifiedQuestions.value[index];
 
-    // Make API call to delete the question
-    axiosInstance.delete(`/questions/${question.id}`)
+    // First, fetch the question data to get the question text ID
+    axiosInstance.get(`/questions/${question.id}`)
+      .then((response) => {
+        const questionData = response.data;
+
+        // Make sure there's a question text to delete
+        if (questionData.question_texts && questionData.question_texts.length > 0) {
+          const questionTextId = questionData.question_texts[0].id;
+
+          // Delete the question text instead of the entire question
+          return axiosInstance.delete(`/question-texts/${questionTextId}`);
+        } else {
+          throw new Error('Question text not found');
+        }
+      })
       .then(() => {
         // Remove question from unverified questions
         unverifiedQuestions.value.splice(index, 1);
 
         // Show success toast
         toastTitle.value = 'Success';
-        toastMessage.value = 'Question deleted successfully';
+        toastMessage.value = 'Question text deleted successfully';
         toastType.value = 'success';
         showToast.value = true;
 
@@ -864,11 +877,11 @@ function deleteUnverifiedQuestion(index: number) {
         }, 3000);
       })
       .catch(error => {
-        console.error('Error deleting question:', error);
+        console.error('Error deleting question text:', error);
 
         // Show error toast
         toastTitle.value = 'Error';
-        toastMessage.value = error.response?.data?.message || 'Failed to delete question';
+        toastMessage.value = error.response?.data?.message || 'Failed to delete question text';
         toastType.value = 'error';
         showToast.value = true;
 
@@ -896,10 +909,23 @@ function deleteUnverifiedQuestion(index: number) {
 function verifyQuestion(index: number) {
   const question = unverifiedQuestions.value[index];
 
-  // Make API call to update verification status
-  axiosInstance.put(`/questions/${question.id}`, { is_verified: true })
+  // First, fetch the question data to get the question text ID
+  axiosInstance.get(`/questions/${question.id}`)
+    .then((response) => {
+      const questionData = response.data;
+
+      // Make sure there's a question text to verify
+      if (questionData.question_texts && questionData.question_texts.length > 0) {
+        const questionTextId = questionData.question_texts[0].id;
+
+        // Update the verification status of the question text
+        return axiosInstance.put(`/question-texts/${questionTextId}`, { is_verified: true });
+      } else {
+        throw new Error('Question text not found');
+      }
+    })
     .then(() => {
-      console.log('Question verified successfully');
+      console.log('Question text verified successfully');
       // Remove from unverified list
       unverifiedQuestions.value.splice(index, 1);
       // Refresh verified questions if we're about to switch to that view
@@ -910,7 +936,7 @@ function verifyQuestion(index: number) {
 
       // Show success toast
       toastTitle.value = 'Success';
-      toastMessage.value = 'Question verified successfully';
+      toastMessage.value = 'Question text verified successfully';
       toastType.value = 'success';
       showToast.value = true;
 
@@ -920,11 +946,11 @@ function verifyQuestion(index: number) {
       }, 3000);
     })
     .catch(error => {
-      console.error('Error verifying question:', error);
+      console.error('Error verifying question text:', error);
 
       // Show error toast
       toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to verify question';
+      toastMessage.value = error.response?.data?.message || 'Failed to verify question text';
       toastType.value = 'error';
       showToast.value = true;
 
@@ -935,16 +961,29 @@ function verifyQuestion(index: number) {
     });
 }
 
-function deleteVerifiedQuestion(questionId: number, index: number) {
-  // Make API call to delete the question
-  axiosInstance.delete(`/questions/${questionId}`)
+function deleteVerifiedQuestion(question: Question, index: number) {
+  // First, fetch the question data to get the question text ID
+  axiosInstance.get(`/questions/${question.id}`)
+    .then((response) => {
+      const questionData = response.data;
+
+      // Make sure there's a question text to delete
+      if (questionData.question_texts && questionData.question_texts.length > 0) {
+        const questionTextId = questionData.question_texts[0].id;
+
+        // Delete the question text instead of the entire question
+        return axiosInstance.delete(`/question-texts/${questionTextId}`);
+      } else {
+        throw new Error('Question text not found');
+      }
+    })
     .then(() => {
-      // Remove question from verified questions
+      // Remove question from verified questions list
       verifiedQuestions.value.splice(index, 1);
 
       // Show success toast
       toastTitle.value = 'Success';
-      toastMessage.value = 'Question deleted successfully';
+      toastMessage.value = 'Question text deleted successfully';
       toastType.value = 'success';
       showToast.value = true;
 
@@ -954,11 +993,11 @@ function deleteVerifiedQuestion(questionId: number, index: number) {
       }, 3000);
     })
     .catch(error => {
-      console.error('Error deleting question:', error);
+      console.error('Error deleting question text:', error);
 
       // Show error toast
       toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to delete question';
+      toastMessage.value = error.response?.data?.message || 'Failed to delete question text';
       toastType.value = 'error';
       showToast.value = true;
 
