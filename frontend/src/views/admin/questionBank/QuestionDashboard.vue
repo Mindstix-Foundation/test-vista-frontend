@@ -368,11 +368,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import { Modal, Collapse } from 'bootstrap'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import { useToastStore } from '@/store/toast'
 
 // Define interfaces for API response
 interface ApiTopic {
@@ -497,6 +498,8 @@ defineOptions({
 })
 
 const router = useRouter()
+const route = useRoute()
+const toastStore = useToastStore()
 
 // Data from localStorage
 const questionBankData = ref({
@@ -1262,6 +1265,22 @@ onMounted(() => {
     } else {
       isFilterOpen.value = false
     }
+  }
+
+  // Check for success message in route query params
+  if (route.query.success === 'true') {
+    const message = route.query.message as string || 'Operation completed successfully'
+
+    toastStore.showToast({
+      title: 'Success',
+      message: message,
+      type: 'success'
+    })
+
+    // Remove query parameters without page reload
+    router.replace({ query: {} }).catch(() => {
+      // Ignore navigation errors
+    })
   }
 })
 
