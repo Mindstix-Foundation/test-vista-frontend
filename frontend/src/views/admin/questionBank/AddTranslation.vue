@@ -196,6 +196,13 @@
       </div>
 
     </div>
+
+    <!-- Loading overlay shown during submission -->
+    <div v-if="isFullscreenLoading" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
+      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Saving translation...</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -203,6 +210,17 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
+import { useToastStore } from '@/store/toast'
+
+// Define custom error type for Axios errors
+interface AxiosErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+    status?: number;
+  };
+}
 
 // Component name (for linter)
 defineOptions({
@@ -211,6 +229,7 @@ defineOptions({
 
 const router = useRouter()
 const route = useRoute()
+const toastStore = useToastStore()
 
 // Data from localStorage
 const questionBankData = ref({
@@ -264,8 +283,9 @@ interface McqOption {
   option_text: string;
 }
 
-// Add a loading state for saving
+// Add loading states
 const isSaving = ref(false)
+const isFullscreenLoading = ref(false)
 
 // Methods
 function autoResize(event: Event) {
@@ -308,14 +328,20 @@ function handleImageChange(event: Event) {
 async function saveTranslation() {
   try {
     if (!questionId.value) {
-      console.error('Question ID is missing')
-      return
+      toastStore.showToast({
+        title: 'Error',
+        message: 'Question ID is missing',
+        type: 'error'
+      });
+      return;
     }
 
-    isSaving.value = true
+    // Enable both loading indicators
+    isSaving.value = true;
+    isFullscreenLoading.value = true;
 
     // Get medium ID from localStorage (this is the target language ID)
-    const targetMediumId = questionBankData.value.mediumId
+    const targetMediumId = questionBankData.value.mediumId;
 
     // Create the translated question text data with the original image ID as default
     const translatedQuestionData: QuestionTextData = {
@@ -324,15 +350,15 @@ async function saveTranslation() {
       image_id: questionImage.value?.id || null,          // Default to original image ID if no new image
       question_text: translatedQuestion.value.question,   // The TRANSLATED question text
       is_verified: false
-    }
+    };
 
     // Handle file upload for the question image only if a new image is selected
-    const questionImageInput = document.getElementById('inputGroupFile01') as HTMLInputElement
+    const questionImageInput = document.getElementById('inputGroupFile01') as HTMLInputElement;
     if (newImageSelected.value && questionImageInput && questionImageInput.files && questionImageInput.files.length > 0) {
       try {
         // Create FormData for file upload
-        const formData = new FormData()
-        formData.append('file', questionImageInput.files[0])
+        const formData = new FormData();
+        formData.append('file', questionImageInput.files[0]);
 
         // Upload the image
         const uploadResponse = await axiosInstance.post(
@@ -343,10 +369,10 @@ async function saveTranslation() {
               'Content-Type': 'multipart/form-data'
             }
           }
-        )
+        );
 
         // Extract image details from upload response
-        const uploadedImageDetails = uploadResponse.data
+        const uploadedImageDetails = uploadResponse.data;
 
         // Create image record with returned details
         const imageCreateRequest = {
@@ -356,60 +382,87 @@ async function saveTranslation() {
           file_type: uploadedImageDetails.file_type || questionImageInput.files[0].type,
           width: uploadedImageDetails.width,
           height: uploadedImageDetails.height
-        }
+        };
 
-        const imageResponse = await axiosInstance.post('/images', imageCreateRequest)
+        const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
 
         // Update the image ID in the translated question data
-        translatedQuestionData.image_id = imageResponse.data.id
+        translatedQuestionData.image_id = imageResponse.data.id;
 
-        console.log('New image uploaded and associated with translation')
-      } catch (error) {
-        console.error('Error uploading new image:', error)
+        console.log('New image uploaded and associated with translation');
+      } catch (error: unknown) {
+        console.error('Error uploading new image:', error);
+
+        const axiosError = error as AxiosErrorResponse;
+        if (axiosError.response?.status === 400 && axiosError.response?.data?.message) {
+          isSaving.value = false;
+          isFullscreenLoading.value = false;
+
+          toastStore.showToast({
+            title: 'Image Upload Error',
+            message: axiosError.response.data.message,
+            type: 'error'
+          });
+          return;
+        }
+
         // If image upload fails, we'll use the original image if available
         if (!questionImage.value?.id) {
           // If there's no original image either, set to null
-          translatedQuestionData.image_id = null
+          translatedQuestionData.image_id = null;
         }
       }
     }
 
     // Create the translated question text in the target language
-    const translationResponse = await axiosInstance.post('/question-texts', translatedQuestionData)
+    const translationResponse = await axiosInstance.post('/question-texts', translatedQuestionData);
 
     // If this is an MCQ question, handle the translated options
     if ((questionType.value === 'MCQ' || questionType.value === 'Multiple Choice') &&
         translatedOptions.value.length > 0) {
 
       // Get the new question text ID for the translation
-      const translatedQuestionTextId = translationResponse.data.id
+      const translatedQuestionTextId = translationResponse.data.id;
 
       // Create translated MCQ options
       for (let i = 0; i < translatedOptions.value.length; i++) {
         if (translatedOptions.value[i].trim() !== '') {
           // Determine if this is the correct option based on the original question
           const isCorrect = originalOptions.value[i] !== undefined &&
-            await isCorrectOption(questionId.value, originalOptions.value[i])
+            await isCorrectOption(questionId.value, originalOptions.value[i]);
 
           // Create the translated option
           await axiosInstance.post('/mcq-options', {
             question_text_id: translatedQuestionTextId,
             option_text: translatedOptions.value[i], // The TRANSLATED option text
             is_correct: isCorrect
-          })
+          });
         }
       }
     }
 
-    // Show success message or redirect
-    console.log('Translation saved successfully!')
+    // Navigate back to translation pending page with success query param
+    router.push({
+      name: 'translationPending',
+      query: {
+        success: 'true',
+        message: 'Translation added successfully'
+      }
+    });
+  } catch (error: unknown) {
+    console.error('Error saving translation:', error);
 
-    // Navigate back to translation pending page
-    router.push({ name: 'translationPending' })
-  } catch (error) {
-    console.error('Error saving translation:', error)
+    // Show error toast using toast store
+    const axiosError = error as AxiosErrorResponse;
+    toastStore.showToast({
+      title: 'Error',
+      message: axiosError.response?.data?.message || 'Failed to save translation',
+      type: 'error'
+    });
   } finally {
-    isSaving.value = false
+    // Disable both loading indicators
+    isSaving.value = false;
+    isFullscreenLoading.value = false;
   }
 }
 
@@ -417,21 +470,21 @@ async function saveTranslation() {
 async function isCorrectOption(questionId: number, optionText: string): Promise<boolean> {
   try {
     // Get all options for the question
-    const response = await axiosInstance.get(`/question-options?question_id=${questionId}`)
+    const response = await axiosInstance.get(`/question-options?question_id=${questionId}`);
 
     // Find the matching option and check if it's correct
     if (response.data && Array.isArray(response.data)) {
       const matchingOption = response.data.find(
         (opt: { option_text: string; is_correct: boolean }) => opt.option_text === optionText
-      )
+      );
 
-      return matchingOption ? matchingOption.is_correct : false
+      return matchingOption ? matchingOption.is_correct : false;
     }
 
-    return false
+    return false;
   } catch (error) {
-    console.error('Error checking correct option:', error)
-    return false
+    console.error('Error checking correct option:', error);
+    return false;
   }
 }
 
@@ -439,25 +492,31 @@ async function isCorrectOption(questionId: number, optionText: string): Promise<
 async function loadQuestionData() {
   try {
     // Get question ID from route params or query
-    const id = route.params.id || route.query.id
+    const id = route.params.id || route.query.id;
     if (!id) {
-      console.error('Question ID not provided')
-      return
+      console.error('Question ID not provided');
+      toastStore.showToast({
+        title: 'Error',
+        message: 'Question ID not provided',
+        type: 'error'
+      });
+      router.push({ name: 'translationPending' });
+      return;
     }
 
-    questionId.value = Number(id)
+    questionId.value = Number(id);
 
     // Fetch question data from API
-    const response = await axiosInstance.get(`/questions/${questionId.value}`)
-    const questionData = response.data
+    const response = await axiosInstance.get(`/questions/${questionId.value}`);
+    const questionData = response.data;
 
     // Set question type
-    questionType.value = questionData.question_type.type_name
+    questionType.value = questionData.question_type.type_name;
 
     // Set original question text
     if (questionData.question_texts && questionData.question_texts.length > 0) {
-      originalQuestion.value = questionData.question_texts[0].question_text
-      translatedQuestion.value.type = questionType.value
+      originalQuestion.value = questionData.question_texts[0].question_text;
+      translatedQuestion.value.type = questionType.value;
 
       // Get image if available
       if (questionData.question_texts[0].image_id && questionData.question_texts[0].image) {
@@ -473,39 +532,70 @@ async function loadQuestionData() {
     // Set original options for MCQ
     if ((questionType.value === 'MCQ' || questionType.value === 'Multiple Choice') &&
         questionData.question_texts[0].mcq_options) {
-      originalOptions.value = questionData.question_texts[0].mcq_options.map((opt: McqOption) => opt.option_text)
+      originalOptions.value = questionData.question_texts[0].mcq_options.map((opt: McqOption) => opt.option_text);
       // Initialize translated options array with the same length
-      translatedOptions.value = Array(originalOptions.value.length).fill('')
+      translatedOptions.value = Array(originalOptions.value.length).fill('');
     }
 
     // Initialize textareas
     setTimeout(() => {
       document.querySelectorAll('textarea').forEach(textarea => {
-        autoResize({ target: textarea } as unknown as Event)
-      })
-    }, 0)
-  } catch (error) {
-    console.error('Error loading question data:', error)
+        autoResize({ target: textarea } as unknown as Event);
+      });
+    }, 0);
+  } catch (error: unknown) {
+    console.error('Error loading question data:', error);
+
+    const axiosError = error as AxiosErrorResponse;
+    toastStore.showToast({
+      title: 'Error',
+      message: axiosError.response?.data?.message || 'Failed to load question data',
+      type: 'error'
+    });
+
+    // Redirect back if we couldn't load the question
+    router.push({ name: 'translationPending' });
   }
 }
 
 // Lifecycle hooks
 onMounted(() => {
   // Load data from localStorage
-  const storedData = localStorage.getItem('questionBank')
+  const storedData = localStorage.getItem('questionBank');
   if (storedData) {
-    questionBankData.value = JSON.parse(storedData)
-    loadQuestionData()
+    questionBankData.value = JSON.parse(storedData);
+    loadQuestionData();
   } else {
     // Redirect to question bank selection if no data
-    router.push({ name: 'questionBank' })
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Question bank data not found',
+      type: 'error'
+    });
+    router.push({ name: 'questionBank' });
   }
-})
+
+  // Check for success message in route query params (if coming back from another page)
+  if (route.query.success === 'true') {
+    const message = route.query.message as string || 'Operation completed successfully';
+
+    toastStore.showToast({
+      title: 'Success',
+      message: message,
+      type: 'success'
+    });
+
+    // Remove query parameters without page reload
+    router.replace({ query: {} }).catch(() => {
+      // Ignore navigation errors
+    });
+  }
+});
 
 // Clean up resources when component is unmounted
 onUnmounted(() => {
   // No need for cleanup since we're not using object URLs anymore
-})
+});
 </script>
 
 <style scoped>

@@ -37,13 +37,13 @@
         Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
       </div>
     </div>
-    <ToastNotification
-      v-if="showToast"
-      :title="toastTitle"
-      :message="toastMessage"
-      :type="toastType"
-      @close="closeToast"
-    />
+
+    <!-- Loading overlay shown during submission -->
+    <div v-if="isSubmitting" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
+      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Saving...</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -52,7 +52,16 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
-import ToastNotification from '@/components/common/ToastNotification.vue'
+import { useToastStore } from '@/store/toast'
+
+// Define custom error type for Axios errors
+interface AxiosErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 // Define component name
 defineOptions({
@@ -60,7 +69,9 @@ defineOptions({
 })
 
 const router = useRouter()
+const toastStore = useToastStore()
 const isLoading = ref(true)
+const isSubmitting = ref(false)
 
 // Data from localStorage
 const questionBankData = ref({
@@ -76,12 +87,6 @@ const questionBankData = ref({
   chapterName: '',
   mediumStandardSubjectId: null
 })
-
-// Add toast notification state
-const showToast = ref(false)
-const toastTitle = ref('')
-const toastMessage = ref('')
-const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
 
 // Debug function to validate chapter ID
 function validateChapterId() {
@@ -107,6 +112,8 @@ async function handleSaveQuestion(payload: {
   imageFile?: File;
 }) {
   try {
+    // Show loading overlay
+    isSubmitting.value = true;
     let imageId = null;
 
     // Step 0: If an image file was uploaded, first upload and create the image
@@ -142,21 +149,19 @@ async function handleSaveQuestion(payload: {
 
         const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
         imageId = imageResponse.data.id;
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error uploading image:', error);
 
         // Check for specific image validation errors
-        if (error.response?.data?.message) {
-          // Show error toast with the specific message
-          showToast.value = true;
-          toastTitle.value = 'Image Upload Error';
-          toastMessage.value = error.response.data.message;
-          toastType.value = 'error';
-
-          // Auto hide toast after 5 seconds
-          setTimeout(() => {
-            showToast.value = false;
-          }, 5000);
+        const axiosError = error as AxiosErrorResponse;
+        if (axiosError.response?.data?.message) {
+          isSubmitting.value = false;
+          // Show error toast using toast store
+          toastStore.showToast({
+            title: 'Image Upload Error',
+            message: axiosError.response.data.message,
+            type: 'error'
+          });
 
           // Return early, don't create the question if image upload failed
           return;
@@ -250,25 +255,26 @@ async function handleSaveQuestion(payload: {
       }
     }
 
-    // Success! Navigate back to question dashboard
-    router.push({ name: 'questionDashboard' })
-  } catch (error: any) {
-    // Show error toast
-    showToast.value = true;
-    toastTitle.value = 'Error';
-    toastMessage.value = error.response?.data?.message || 'Failed to create question';
-    toastType.value = 'error';
+    // Navigate back to question dashboard with success query param
+    router.push({
+      name: 'questionDashboard',
+      query: {
+        success: 'true',
+        message: 'Question created successfully'
+      }
+    });
+  } catch (error: unknown) {
+    // Hide loading overlay
+    isSubmitting.value = false;
 
-    // Auto hide toast after 5 seconds
-    setTimeout(() => {
-      showToast.value = false;
-    }, 5000);
+    // Show error toast using toast store
+    const axiosError = error as AxiosErrorResponse;
+    toastStore.showToast({
+      title: 'Error',
+      message: axiosError.response?.data?.message || 'Failed to create question',
+      type: 'error'
+    });
   }
-}
-
-// Add toast close function
-function closeToast() {
-  showToast.value = false
 }
 
 // Lifecycle hooks

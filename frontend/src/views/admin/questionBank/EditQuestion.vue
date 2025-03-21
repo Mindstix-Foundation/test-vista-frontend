@@ -35,16 +35,14 @@
         @update="handleUpdateQuestion"
       />
     </div>
-  </div>
 
-  <!-- Toast Notification -->
-  <ToastNotification
-    :show="showToast"
-    :title="toastTitle"
-    :message="toastMessage"
-    :type="toastType"
-    @close="closeToast"
-  />
+    <!-- Loading overlay shown during submission -->
+    <div v-if="isSubmitting" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
+      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Saving...</span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -52,7 +50,17 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
-import ToastNotification from '@/components/common/ToastNotification.vue'
+import { useToastStore } from '@/store/toast'
+
+// Define custom error type for Axios errors
+interface AxiosErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+    status?: number;
+  };
+}
 
 // Define component name
 defineOptions({
@@ -61,7 +69,9 @@ defineOptions({
 
 const router = useRouter()
 const route = useRoute()
+const toastStore = useToastStore()
 const isLoading = ref(true)
+const isSubmitting = ref(false)
 const questionId = ref<number | undefined>(undefined)
 
 // Data from localStorage
@@ -78,12 +88,6 @@ const questionBankData = ref({
   chapterName: '',
   mediumStandardSubjectId: null
 })
-
-// Toast notification state
-const showToast = ref(false)
-const toastTitle = ref('')
-const toastMessage = ref('')
-const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
 
 // Handle updating the question
 async function handleUpdateQuestion(payload: {
@@ -104,13 +108,17 @@ async function handleUpdateQuestion(payload: {
   existingImageId?: number | null;
 }) {
   try {
-    if (!payload.questionId) {
-      // Show error toast
-      toastTitle.value = 'Error';
-      toastMessage.value = 'Question ID is missing';
-      toastType.value = 'error';
-      showToast.value = true;
+    // Show loading overlay
+    isSubmitting.value = true;
 
+    if (!payload.questionId) {
+      // Show error toast using toast store
+      toastStore.showToast({
+        title: 'Error',
+        message: 'Question ID is missing',
+        type: 'error'
+      });
+      isSubmitting.value = false;
       return;
     }
 
@@ -125,12 +133,13 @@ async function handleUpdateQuestion(payload: {
     }
 
     if (!questionTextId) {
-      // Show error toast
-      toastTitle.value = 'Error';
-      toastMessage.value = 'Question text ID not found';
-      toastType.value = 'error';
-      showToast.value = true;
-
+      // Show error toast using toast store
+      toastStore.showToast({
+        title: 'Error',
+        message: 'Question text ID not found',
+        type: 'error'
+      });
+      isSubmitting.value = false;
       return;
     }
 
@@ -214,23 +223,15 @@ async function handleUpdateQuestion(payload: {
         console.error('Error uploading new image:', error);
 
         // Check if this is a validation error
-        if (error &&
-            typeof error === 'object' &&
-            'response' in error &&
-            error.response &&
-            typeof error.response === 'object' &&
-            'status' in error.response &&
-            'data' in error.response &&
-            error.response.status === 400 &&
-            error.response.data &&
-            typeof error.response.data === 'object' &&
-            'message' in error.response.data) {
-          // Show specific error message to the user
-          toastTitle.value = 'Image Upload Error';
-          toastMessage.value = (error.response.data as { message: string }).message;
-          toastType.value = 'error';
-          showToast.value = true;
-
+        const axiosError = error as AxiosErrorResponse;
+        if (axiosError.response?.status === 400 && axiosError.response?.data?.message) {
+          // Show specific error message to the user using toast store
+          toastStore.showToast({
+            title: 'Image Upload Error',
+            message: axiosError.response.data.message,
+            type: 'error'
+          });
+          isSubmitting.value = false;
           // Return early without completing the question update
           return;
         }
@@ -349,30 +350,26 @@ async function handleUpdateQuestion(payload: {
       }
     }
 
-    // Show success toast notification
-    toastTitle.value = 'Success';
-    toastMessage.value = 'Question updated successfully';
-    toastType.value = 'success';
-    showToast.value = true;
+    // Navigate back to question dashboard with success query param
+    router.push({
+      name: 'questionDashboard',
+      query: {
+        success: 'true',
+        message: 'Question updated successfully'
+      }
+    });
 
-    // Auto hide toast after 3 seconds, then navigate
-    setTimeout(() => {
-      showToast.value = false;
-      // Navigate back to question dashboard
-      router.push({ name: 'questionDashboard' });
-    }, 1500);
+  } catch (error: unknown) {
+    // Hide loading overlay
+    isSubmitting.value = false;
 
-  } catch {
-    // Show error toast
-    toastTitle.value = 'Error';
-    toastMessage.value = 'Failed to update question';
-    toastType.value = 'error';
-    showToast.value = true;
-
-    // Auto hide toast after 5 seconds
-    setTimeout(() => {
-      showToast.value = false;
-    }, 5000);
+    // Show error toast using toast store
+    const axiosError = error as AxiosErrorResponse;
+    toastStore.showToast({
+      title: 'Error',
+      message: axiosError.response?.data?.message || 'Failed to update question',
+      type: 'error'
+    });
   }
 }
 
@@ -397,14 +394,6 @@ onMounted(() => {
     router.push({ name: 'questionDashboard' });
   }
 })
-
-// Toast notification functions
-function closeToast() {
-  showToast.value = false
-  toastTitle.value = ''
-  toastMessage.value = ''
-  toastType.value = 'info'
-}
 </script>
 
 <style scoped>
