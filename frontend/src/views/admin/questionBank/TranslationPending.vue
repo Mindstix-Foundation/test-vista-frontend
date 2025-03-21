@@ -577,6 +577,7 @@ async function fetchQuestions() {
     const params: Record<string, string | number | boolean | undefined> = {
       chapter_id: questionBankData.value.chapterId,
       instruction_medium_id: questionBankData.value.mediumId,
+      is_verified: true,
       page: currentPage.value,
       page_size: pageSize.value,
       search: searchQuery.value || undefined,

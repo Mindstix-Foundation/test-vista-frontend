@@ -47,7 +47,16 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                <input type="file" class="form-control" id="inputGroupFile01" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" ref="questionImageFileInput">
+                <button
+                  v-if="questionImageFile"
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  @click="(e) => removeUploadedImage(e, 'question')"
+                  title="Remove uploaded image"
+                >
+                  <i class="bi bi-trash"></i> Remove
+                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -84,7 +93,16 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                <input type="file" class="form-control" id="mcqImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button
+                  v-if="questionImageFile"
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  @click="(e) => removeUploadedImage(e, 'question')"
+                  title="Remove uploaded image"
+                >
+                  <i class="bi bi-trash"></i> Remove
+                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -99,7 +117,16 @@
                     <label for="option1">Option A</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                    <input type="file" class="form-control" id="optionAImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 0)" accept=".jpg,.jpeg,.webp">
+                    <button
+                      v-if="mcqOptionImages[0]"
+                      type="button"
+                      class="btn btn-danger btn-sm"
+                      @click="(e) => removeUploadedImage(e, 'option', 0)"
+                      title="Remove uploaded image"
+                    >
+                      <i class="bi bi-trash"></i> Remove
+                    </button>
                   </div>
                 </div>
 
@@ -109,7 +136,16 @@
                     <label for="option2">Option B</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                    <input type="file" class="form-control" id="optionBImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 1)" accept=".jpg,.jpeg,.webp">
+                    <button
+                      v-if="mcqOptionImages[1]"
+                      type="button"
+                      class="btn btn-danger btn-sm"
+                      @click="(e) => removeUploadedImage(e, 'option', 1)"
+                      title="Remove uploaded image"
+                    >
+                      <i class="bi bi-trash"></i> Remove
+                    </button>
                   </div>
                 </div>
 
@@ -119,7 +155,16 @@
                     <label for="option3">Option C</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                    <input type="file" class="form-control" id="optionCImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 2)" accept=".jpg,.jpeg,.webp">
+                    <button
+                      v-if="mcqOptionImages[2]"
+                      type="button"
+                      class="btn btn-danger btn-sm"
+                      @click="(e) => removeUploadedImage(e, 'option', 2)"
+                      title="Remove uploaded image"
+                    >
+                      <i class="bi bi-trash"></i> Remove
+                    </button>
                   </div>
                 </div>
 
@@ -129,7 +174,16 @@
                     <label for="option4">Option D</label>
                   </div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                    <input type="file" class="form-control" id="optionDImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 3)" accept=".jpg,.jpeg,.webp">
+                    <button
+                      v-if="mcqOptionImages[3]"
+                      type="button"
+                      class="btn btn-danger btn-sm"
+                      @click="(e) => removeUploadedImage(e, 'option', 3)"
+                      title="Remove uploaded image"
+                    >
+                      <i class="bi bi-trash"></i> Remove
+                    </button>
                   </div>
                 </div>
               </div>
@@ -177,7 +231,16 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-1">
-                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                <input type="file" class="form-control" id="fillBlankImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button
+                  v-if="questionImageFile"
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  @click="(e) => removeUploadedImage(e, 'question')"
+                  title="Remove uploaded image"
+                >
+                  <i class="bi bi-trash"></i> Remove
+                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -223,7 +286,16 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                <input type="file" class="form-control" id="matchPairsImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button
+                  v-if="questionImageFile"
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  @click="(e) => removeUploadedImage(e, 'question')"
+                  title="Remove uploaded image"
+                >
+                  <i class="bi bi-trash"></i> Remove
+                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -238,8 +310,17 @@
                   <div v-for="(item, index) in matchPairQuestion.lhs" :key="'lhs-'+index" class="input-group mb-2" :id="'lhsInput'+(index+1)">
                     <input type="text" v-model="matchPairQuestion.lhs[index]" class="form-control" placeholder="LHS" required>
                     <button type="button" class="btn btn-custom" @click="removeInput('lhs', index)" :disabled="matchPairQuestion.lhs.length <= 1">Remove</button>
-                    <div class="input-group input-group-sm mb-3">
-                      <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                    <div class="input-group input-group-sm mt-1 mb-3">
+                      <input type="file" class="form-control" :id="'lhsImageFile'+index" @change="(e) => handleQuestionImageUpload(e, 'option', index)" accept=".jpg,.jpeg,.webp">
+                      <button
+                        v-if="mcqOptionImages[index]"
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        @click="(e) => removeUploadedImage(e, 'option', index)"
+                        title="Remove uploaded image"
+                      >
+                        <i class="bi bi-trash"></i> Remove
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -253,8 +334,17 @@
                   <div v-for="(item, index) in matchPairQuestion.rhs" :key="'rhs-'+index" class="input-group mb-2" :id="'rhsInput'+(index+1)">
                     <input type="text" v-model="matchPairQuestion.rhs[index]" class="form-control" placeholder="RHS" required>
                     <button type="button" class="btn btn-custom" @click="removeInput('rhs', index)" :disabled="matchPairQuestion.rhs.length <= 2">Remove</button>
-                    <div class="input-group input-group-sm mb-3">
-                      <input type="file" class="form-control" id="inputGroupFile01" @change="handleQuestionImageUpload" accept=".jpg,.jpeg,.webp">
+                    <div class="input-group input-group-sm mt-1 mb-3">
+                      <input type="file" class="form-control" :id="'rhsImageFile'+index" @change="(e) => handleQuestionImageUpload(e, 'option', index + 10)" accept=".jpg,.jpeg,.webp">
+                      <button
+                        v-if="mcqOptionImages[index + 10]"
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        @click="(e) => removeUploadedImage(e, 'option', index + 10)"
+                        title="Remove uploaded image"
+                      >
+                        <i class="bi bi-trash"></i> Remove
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -316,6 +406,7 @@ const emit = defineEmits<{
       rhs?: string[]
     }
     imageFile?: File
+    optionImages?: (File | null)[]
     deleteImage?: boolean
     existingImageId?: number | null
   }): void
@@ -334,6 +425,7 @@ const emit = defineEmits<{
       rhs?: string[]
     }
     imageFile?: File
+    optionImages?: (File | null)[]
     deleteImage?: boolean
     existingImageId?: number | null
   }): void
@@ -485,6 +577,9 @@ const existingImageName = ref<string | null>(null);
 const existingImageId = ref<number | null>(null);
 const shouldDeleteImage = ref<boolean>(false);
 const imageUploadError = ref<string | null>(null);
+
+// Add refs to track each option image (MCQ options + match pairs)
+const mcqOptionImages = ref<(File | null)[]>(Array(20).fill(null)); // Increased size to handle all option types
 
 // Methods
 async function fetchQuestionTypes() {
@@ -710,29 +805,13 @@ function removeInput(side: 'lhs' | 'rhs', index: number) {
 
 // Get the question payload based on the current form state
 function getQuestionPayload() {
-  // Get the question type ID from the map
-  const questionTypeId = questionTypeMap.value.get(selectedType.value)
-  if (!questionTypeId) {
-    console.error('Question type ID not found for:', selectedType.value)
-    return null
-  }
+  if (!selectedType.value) return null
 
-  // Get the topic ID from the map
-  const topicId = topicMap.value.get(selectedTopic.value)
-  if (!topicId) {
-    console.error('Topic ID not found for:', selectedTopic.value)
-    return null
-  }
-
-  // Common question data
-  const isPreviousExam = getIsPreviousExam()
-
-  // Create a base question payload
   const payload = {
     questionId: props.questionId,
-    questionTypeId: questionTypeId,
-    topicId: topicId,
-    isPreviousExam: isPreviousExam,
+    questionTypeId: questionTypeMap.value.get(selectedType.value) || 0,
+    topicId: topicMap.value.get(selectedTopic.value) || 0,
+    isPreviousExam: getIsPreviousExam(),
     isVerified: false,
     questionText: '',
     additionalData: {} as {
@@ -742,7 +821,8 @@ function getQuestionPayload() {
       lhs?: string[];
       rhs?: string[];
     },
-    imageFile: questionImageFile.value as File | undefined,
+    imageFile: questionImageFile.value,
+    optionImages: [...mcqOptionImages.value].map(img => img === undefined ? null : img) as (File | null)[],
     deleteImage: shouldDeleteImage.value,
     existingImageId: existingImageId.value
   }
@@ -814,20 +894,27 @@ function getIsPreviousExam() {
   }
 }
 
-// The main save function that will be called when submitting the form
+// Update the save function with proper typing for all fields
 async function saveQuestion() {
   const payload = getQuestionPayload()
   if (!payload) return
 
   try {
     if (isEditMode.value && props.questionId) {
-      // Use type casting to satisfy TypeScript
       emit('update', {
-        ...payload,
-        imageFile: payload.imageFile as File | undefined
+        questionId: props.questionId,
+        questionTypeId: payload.questionTypeId,
+        topicId: payload.topicId,
+        isPreviousExam: payload.isPreviousExam,
+        isVerified: payload.isVerified,
+        questionText: payload.questionText,
+        additionalData: payload.additionalData,
+        imageFile: payload.imageFile as File | undefined,
+        optionImages: payload.optionImages,
+        deleteImage: payload.deleteImage,
+        existingImageId: payload.existingImageId
       })
     } else {
-      // For save, omit the questionId without destructuring
       emit('save', {
         questionTypeId: payload.questionTypeId,
         topicId: payload.topicId,
@@ -836,6 +923,7 @@ async function saveQuestion() {
         questionText: payload.questionText,
         additionalData: payload.additionalData,
         imageFile: payload.imageFile as File | undefined,
+        optionImages: payload.optionImages,
         deleteImage: payload.deleteImage,
         existingImageId: payload.existingImageId
       })
@@ -853,8 +941,8 @@ watch(selectedTopic, (newTopic) => {
   }
 })
 
-// Function to handle image file selection
-function handleQuestionImageUpload(event: Event) {
+// Update the handleQuestionImageUpload function to handle both question images and option images
+function handleQuestionImageUpload(event: Event, type: 'question' | 'option' = 'question', optionIndex?: number) {
   const input = event.target as HTMLInputElement;
   imageUploadError.value = null; // Reset error message
 
@@ -886,10 +974,36 @@ function handleQuestionImageUpload(event: Event) {
     }
 
     // File passed all validations
-    questionImageFile.value = file;
-    shouldDeleteImage.value = false; // Reset deletion flag since we're adding a new image
+    if (type === 'question') {
+      questionImageFile.value = file;
+      shouldDeleteImage.value = false; // Reset deletion flag since we're adding a new image
+    } else if (type === 'option' && optionIndex !== undefined) {
+      mcqOptionImages.value[optionIndex] = file;
+    }
   } else {
-    questionImageFile.value = null;
+    if (type === 'question') {
+      questionImageFile.value = null;
+    } else if (type === 'option' && optionIndex !== undefined) {
+      mcqOptionImages.value[optionIndex] = null;
+    }
+  }
+}
+
+// Update the removeUploadedImage function to handle both question images and option images
+function removeUploadedImage(event: Event, type: 'question' | 'option' = 'question', optionIndex?: number) {
+  const button = event.target as HTMLButtonElement;
+  const fileInput = button.closest('.input-group')?.querySelector('input[type="file"]') as HTMLInputElement;
+
+  if (fileInput) {
+    fileInput.value = ''; // Clear the file input
+
+    if (type === 'question') {
+      questionImageFile.value = null; // Clear the file reference
+    } else if (type === 'option' && optionIndex !== undefined) {
+      mcqOptionImages.value[optionIndex] = null;
+    }
+
+    imageUploadError.value = null; // Clear any error message
   }
 }
 
