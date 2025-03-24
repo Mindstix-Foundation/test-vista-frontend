@@ -104,7 +104,7 @@
                 :items="chapters"
                 v-model="selectedChapter"
                 :search-keys="['name']"
-                :disabled="!selectedSubject || !mediumStandardSubjectId"
+                :disabled="!selectedSubject || !selectedStandard"
                 required
                 label-key="name"
               >
@@ -168,16 +168,8 @@ interface Medium {
   instruction_medium: string
 }
 
-interface MediumStandardSubject {
-  id: number
-  instruction_medium_id: number
-  standard_id: number
-  subject_id: number
-}
-
 interface Chapter {
   id: number
-  medium_standard_subject_id: number
   name: string
   description?: string
 }
@@ -197,7 +189,6 @@ const selectedMedium = ref<Medium | null>(null)
 const selectedStandard = ref<Standard | null>(null)
 const selectedSubject = ref<Subject | null>(null)
 const selectedChapter = ref<Chapter | null>(null)
-const mediumStandardSubjectId = ref<number | null>(null)
 
 // Computed
 const isFormValid = computed(() => {
@@ -234,7 +225,6 @@ const handleBoardChange = async () => {
   chapters.value = []
   subjects.value = []
   mediums.value = []
-  mediumStandardSubjectId.value = null
 
   try {
     // Fetch board details using the specific API endpoint that returns all data in one call
@@ -277,7 +267,6 @@ const handleMediumChange = () => {
   selectedSubject.value = null
   selectedChapter.value = null
   chapters.value = []
-  mediumStandardSubjectId.value = null
   // Do not clear subjects here as they should persist
 }
 
@@ -286,7 +275,6 @@ const handleStandardChange = () => {
   selectedSubject.value = null
   selectedChapter.value = null
   chapters.value = []
-  mediumStandardSubjectId.value = null
   // Do not clear subjects here as they should persist
 }
 
@@ -295,51 +283,22 @@ const handleSubjectChange = async () => {
   selectedChapter.value = null
   chapters.value = []
 
-  // Find medium-standard-subject association
-  await fetchMediumStandardSubject()
-
-  // If we have a medium-standard-subject ID, fetch chapters
-  if (mediumStandardSubjectId.value) {
+  // If we have a standard and subject, fetch chapters
+  if (selectedStandard.value && selectedSubject.value) {
     await fetchChapters()
-  }
-}
-
-const fetchMediumStandardSubject = async () => {
-  try {
-    if (!selectedBoard.value || !selectedMedium.value ||
-        !selectedStandard.value || !selectedSubject.value) {
-      return
-    }
-
-    const response = await axiosInstance.get<MediumStandardSubject[]>('/medium-standard-subjects', {
-      params: {
-        boardId: selectedBoard.value.id,
-        instruction_medium_id: selectedMedium.value.id,
-        standard_id: selectedStandard.value.id,
-        subject_id: selectedSubject.value.id
-      }
-    })
-
-    if (response.data && response.data.length > 0) {
-      mediumStandardSubjectId.value = response.data[0].id
-    } else {
-      mediumStandardSubjectId.value = null
-    }
-  } catch (error) {
-    console.error('Error fetching medium-standard-subject:', error)
-    mediumStandardSubjectId.value = null
   }
 }
 
 const fetchChapters = async () => {
   try {
-    if (!mediumStandardSubjectId.value) return
+    if (!selectedStandard.value || !selectedSubject.value) return
 
-    console.log('Fetching chapters with mediumStandardSubjectId:', mediumStandardSubjectId.value)
+    console.log('Fetching chapters with standardId:', selectedStandard.value.id, 'and subjectId:', selectedSubject.value.id)
 
     const response = await axiosInstance.get('/chapters', {
       params: {
-        mediumStandardSubjectId: mediumStandardSubjectId.value
+        standardId: selectedStandard.value.id,
+        subjectId: selectedSubject.value.id
       }
     })
 
@@ -372,7 +331,6 @@ const resetForm = () => {
   subjects.value = []
   mediums.value = []
   chapters.value = []
-  mediumStandardSubjectId.value = null
 }
 
 const viewQuestions = () => {
@@ -389,8 +347,7 @@ const viewQuestions = () => {
     subjectId: selectedSubject.value?.id,
     subjectName: selectedSubject.value?.name || '',
     chapterId: selectedChapter.value?.id,
-    chapterName: selectedChapter.value?.name || '',
-    mediumStandardSubjectId: mediumStandardSubjectId.value
+    chapterName: selectedChapter.value?.name || ''
   }))
 
   // Navigate to question dashboard page
