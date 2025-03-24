@@ -110,6 +110,7 @@ async function handleSaveQuestion(payload: {
     rhs?: string[];
   };
   imageFile?: File;
+  optionImages?: (File | null)[];
 }) {
   try {
     // Show loading overlay
@@ -170,90 +171,227 @@ async function handleSaveQuestion(payload: {
       }
     }
 
-    // Step 1: Create the question
-    const questionCreateRequest = {
+    // Prepare request payload for the consolidated API endpoint
+    const createQuestionRequest: {
+      question_type_id: number;
+      board_question: boolean;
+      question_text_data: {
+        question_text: string;
+        image_id?: number;
+        mcq_options?: Array<{
+          option_text: string;
+          is_correct: boolean;
+          image_id?: number;
+        }>;
+        match_pairs?: Array<{
+          left_text: string;
+          right_text: string;
+          left_image_id?: number;
+          right_image_id?: number;
+        }>;
+        answer_text?: string;
+      };
+      question_topic_data: {
+        topic_id: number;
+      };
+      question_text_topic_medium_data: {
+        instruction_medium_id: number;
+      };
+    } = {
       question_type_id: payload.questionTypeId,
       board_question: payload.isPreviousExam,
-      is_verified: false // New questions are unverified by default
-    }
+      question_text_data: {
+        question_text: payload.questionText
+      },
+      question_topic_data: {
+        topic_id: payload.topicId
+      },
+      question_text_topic_medium_data: {
+        instruction_medium_id: parseInt(questionBankData.value.mediumId)
+      }
+    };
 
-    const questionResponse = await axiosInstance.post(
-      '/questions',
-      questionCreateRequest
-    )
-
-    const questionId = questionResponse.data.id
-
-    // Step 2: Create the question text with medium id and optional image id
-    const questionTextCreateRequest: {
-      question_id: number;
-      instruction_medium_id: number;
-      question_text: string;
-      image_id?: number;
-    } = {
-      question_id: questionId,
-      instruction_medium_id: parseInt(questionBankData.value.mediumId),
-      question_text: payload.questionText
-    }
-
-    // Add image_id if an image was uploaded successfully
+    // Add image ID if an image was uploaded
     if (imageId) {
-      questionTextCreateRequest.image_id = imageId;
+      createQuestionRequest.question_text_data.image_id = imageId;
     }
 
-    await axiosInstance.post(
-      '/question-texts',
-      questionTextCreateRequest
-    )
+    // Process MCQ options with images if provided
+    if (payload.additionalData?.options && Array.isArray(payload.additionalData.options) &&
+        (payload.questionTypeId === 1 || payload.questionTypeId === 2)) { // MCQ or Odd One Out
+      const correctOptionIndex = payload.additionalData.correctOption;
+      const mcqOptions = [];
 
-    // Step 3: Create the question-topic association
-    const questionTopicCreateRequest = {
-      question_id: questionId,
-      topic_id: payload.topicId
-    }
+      // First, upload all option images (if any)
+      if (payload.optionImages && Array.isArray(payload.optionImages)) {
+        for (let i = 0; i < payload.additionalData.options.length; i++) {
+          if (payload.additionalData.options[i].trim() !== '') {
+            const option: {
+              option_text: string;
+              is_correct: boolean;
+              image_id?: number;
+            } = {
+              option_text: payload.additionalData.options[i],
+              is_correct: i === correctOptionIndex
+            };
 
-    await axiosInstance.post(
-      '/question-topics',
-      questionTopicCreateRequest
-    )
+            // Check if there's an image for this option
+            if (payload.optionImages[i]) {
+              try {
+                // Upload option image
+                const formData = new FormData();
+                formData.append('file', payload.optionImages[i] as File);
 
-    // Step 4: Handle additional data based on question type
-    // Handle type-specific data
-    if (payload.additionalData.options && Array.isArray(payload.additionalData.options)) {
-      // MCQ questions
-      const options = payload.additionalData.options
-      const correctOptionIndex = payload.additionalData.correctOption
+                const uploadResponse = await axiosInstance.post(
+                  '/images/upload',
+                  formData,
+                  {
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                  }
+                );
 
-      for (let i = 0; i < options.length; i++) {
-        if (options[i].trim() !== '') {
-          await axiosInstance.post('/question-options', {
-            question_id: questionId,
-            option_text: options[i],
-            is_correct: i === correctOptionIndex
-          })
+                // Create image record
+                const imageCreateRequest = {
+                  image_url: uploadResponse.data.image_url,
+                  original_filename: uploadResponse.data.original_filename || (payload.optionImages[i] as File).name,
+                  file_size: uploadResponse.data.file_size || (payload.optionImages[i] as File).size,
+                  file_type: uploadResponse.data.file_type || (payload.optionImages[i] as File).type,
+                  width: uploadResponse.data.width,
+                  height: uploadResponse.data.height
+                };
+
+                const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+                option.image_id = imageResponse.data.id;
+              } catch (error) {
+                console.error(`Error uploading image for option ${i+1}:`, error);
+                // Continue without the image if upload fails
+              }
+            }
+
+            mcqOptions.push(option);
+          }
+        }
+      } else {
+        // No option images, just process the options
+        for (let i = 0; i < payload.additionalData.options.length; i++) {
+          if (payload.additionalData.options[i].trim() !== '') {
+            mcqOptions.push({
+              option_text: payload.additionalData.options[i],
+              is_correct: i === correctOptionIndex
+            });
+          }
         }
       }
-    } else if (payload.additionalData.correctAnswer) {
-      // Fill in the blanks
-      await axiosInstance.post('/question-answers', {
-        question_id: questionId,
-        answer_text: payload.additionalData.correctAnswer
-      })
-    } else if (payload.additionalData.lhs && payload.additionalData.rhs) {
-      // Match the pairs
-      const lhs = payload.additionalData.lhs
-      const rhs = payload.additionalData.rhs
 
+      createQuestionRequest.question_text_data.mcq_options = mcqOptions;
+    }
+
+    // Process match pairs with images if provided
+    if (payload.additionalData?.lhs && payload.additionalData?.rhs &&
+        (payload.questionTypeId === 5 || payload.questionTypeId === 3)) { // Match the Pairs or Complete the Correlation
+      const lhs = payload.additionalData.lhs;
+      const rhs = payload.additionalData.rhs;
+      const matchPairs = [];
+
+      // Process each pair and any associated images
       for (let i = 0; i < lhs.length; i++) {
         if (lhs[i].trim() !== '' && i < rhs.length && rhs[i].trim() !== '') {
-          await axiosInstance.post('/matching-pairs', {
-            question_id: questionId,
+          const pair: {
+            left_text: string;
+            right_text: string;
+            left_image_id?: number;
+            right_image_id?: number;
+          } = {
             left_text: lhs[i],
             right_text: rhs[i]
-          })
+          };
+
+          // Check for LHS image (indices 0-9 in optionImages)
+          if (payload.optionImages && payload.optionImages[i]) {
+            try {
+              // Upload LHS image
+              const formData = new FormData();
+              formData.append('file', payload.optionImages[i] as File);
+
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
+              // Create image record
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || (payload.optionImages[i] as File).name,
+                file_size: uploadResponse.data.file_size || (payload.optionImages[i] as File).size,
+                file_type: uploadResponse.data.file_type || (payload.optionImages[i] as File).type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              pair.left_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error(`Error uploading image for left side ${i+1}:`, error);
+              // Continue without the image if upload fails
+            }
+          }
+
+          // Check for RHS image (indices 10-19 in optionImages)
+          if (payload.optionImages && payload.optionImages[i + 10]) {
+            try {
+              // Upload RHS image
+              const formData = new FormData();
+              formData.append('file', payload.optionImages[i + 10] as File);
+
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
+              // Create image record
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || (payload.optionImages[i + 10] as File).name,
+                file_size: uploadResponse.data.file_size || (payload.optionImages[i + 10] as File).size,
+                file_type: uploadResponse.data.file_type || (payload.optionImages[i + 10] as File).type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              pair.right_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error(`Error uploading image for right side ${i+1}:`, error);
+              // Continue without the image if upload fails
+            }
+          }
+
+          matchPairs.push(pair);
         }
       }
+
+      createQuestionRequest.question_text_data.match_pairs = matchPairs;
     }
+
+    // Add correct answer for Fill in the Blanks type
+    if (payload.additionalData?.correctAnswer && payload.questionTypeId === 6) {
+      createQuestionRequest.question_text_data.answer_text = payload.additionalData.correctAnswer;
+    }
+
+    // Make a single API call to create the question and all related data
+    await axiosInstance.post('/questions/add', createQuestionRequest);
 
     // Navigate back to question dashboard with success query param
     router.push({

@@ -46,12 +46,14 @@
               <!-- Sort Dropdown -->
               <div class="sort-field" style="min-width: 220px;">
                 <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="filterCards">
-                  <option value="question_asc">Sort by Question (A-Z)</option>
-                  <option value="question_desc">Sort by Question (Z-A)</option>
-                  <option value="created_desc">Sort by Created (Newest)</option>
-                  <option value="created_asc">Sort by Created (Oldest)</option>
-                  <option value="updated_desc">Sort by Updated (Newest)</option>
-                  <option value="updated_asc">Sort by Updated (Oldest)</option>
+                  <option value="question_text_asc">Sort by Question (A-Z)</option>
+                  <option value="question_text_desc">Sort by Question (Z-A)</option>
+                  <option value="question_type_id_asc">Sort by Question Type (Ascending)</option>
+                  <option value="question_type_id_desc">Sort by Question Type (Descending)</option>
+                  <option value="created_at_asc">Sort by Created Date (Oldest First)</option>
+                  <option value="created_at_desc">Sort by Created Date (Newest First)</option>
+                  <option value="updated_at_asc">Sort by Updated Date (Oldest First)</option>
+                  <option value="updated_at_desc">Sort by Updated Date (Newest First)</option>
                 </select>
               </div>
 
@@ -113,9 +115,16 @@
       </div>
 
       <div class="container mb-5">
-        <div class="row g-2 justify-content-center" id="verifiedContainer">
+        <div class="row g-2 justify-content-center position-relative" id="verifiedContainer">
+          <!-- Loading overlay for search -->
+          <div v-if="isSearching" class="search-loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Searching...</span>
+            </div>
+          </div>
+
           <div v-for="(question, index) in filteredQuestions" :key="'question-' + index" class="col-12 col-md-10">
-            <div class="card">
+            <div class="card" :class="{ 'questions-searching': isSearching }">
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
@@ -176,6 +185,14 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- No Results Message -->
+          <div v-if="!isSearching && filteredQuestions.length === 0" class="col-12 col-md-10 text-center my-4">
+            <div class="alert alert-info">
+              <i class="bi bi-search me-2"></i>
+              No questions found matching your search criteria
             </div>
           </div>
         </div>
@@ -373,6 +390,7 @@ const questionBankData = ref({
 const questions = ref<Question[]>([])
 const topics = ref<string[]>([])
 const topicsWithIds = ref<TopicWithId[]>([])
+const isLoadingTopics = ref(false)
 
 // UI state
 const searchQuery = ref('')
@@ -396,16 +414,18 @@ const totalPages = ref(1)
 const totalItems = ref(0)
 
 // Update sort option to match QuestionDashboard
-const sortOption = ref('created_desc')
+const sortOption = ref('created_at_desc')
 
-// Mapping for sort options to API parameters
+// Mapping for sort options to API parameters (updated to match API options)
 const sortMappings: Record<string, { sort_by: string; sort_order: string }> = {
-  'question_asc': { sort_by: 'question_text', sort_order: 'asc' },
-  'question_desc': { sort_by: 'question_text', sort_order: 'desc' },
-  'created_asc': { sort_by: 'created_at', sort_order: 'asc' },
-  'created_desc': { sort_by: 'created_at', sort_order: 'desc' },
-  'updated_asc': { sort_by: 'updated_at', sort_order: 'asc' },
-  'updated_desc': { sort_by: 'updated_at', sort_order: 'desc' }
+  'question_text_asc': { sort_by: 'question_text', sort_order: 'asc' },
+  'question_text_desc': { sort_by: 'question_text', sort_order: 'desc' },
+  'question_type_id_asc': { sort_by: 'question_type_id', sort_order: 'asc' },
+  'question_type_id_desc': { sort_by: 'question_type_id', sort_order: 'desc' },
+  'created_at_asc': { sort_by: 'created_at', sort_order: 'asc' },
+  'created_at_desc': { sort_by: 'created_at', sort_order: 'desc' },
+  'updated_at_asc': { sort_by: 'updated_at', sort_order: 'asc' },
+  'updated_at_desc': { sort_by: 'updated_at', sort_order: 'desc' }
 }
 
 // Reformat question types for SearchableDropdown
@@ -440,7 +460,7 @@ const displayedPages = computed(() => {
 
 // Methods
 function handleSearchInput() {
-  // Set searching state for visual feedback
+  // Immediately set searching state for visual feedback
   isSearching.value = true;
 
   // Clear any existing timeout
@@ -453,6 +473,9 @@ function handleSearchInput() {
     // Reset to first page when search changes
     currentPage.value = 1;
     fetchQuestions();
+
+    // Update URL params for bookmarking
+    updateUrlParams();
   }, 500) as unknown as number; // TypeScript type assertion for timer
 }
 
@@ -462,6 +485,9 @@ function clearSearch() {
   currentPage.value = 1;
   isSearching.value = true; // Set to loading state for visual feedback
   fetchQuestions();
+
+  // Update URL params
+  updateUrlParams();
 
   // Maintain focus on the search input after clearing
   if (searchInputRef.value) {
@@ -506,13 +532,16 @@ function clearFilters() {
   selectedTopicObj.value = null;
   selectedTypeObj.value = null;
   // Update filtered results
-  filterCards();
+  fetchQuestions();
 }
 
 function filterCards() {
   // Reset to first page when filters change
   currentPage.value = 1;
   fetchQuestions();
+
+  // Update URL params
+  updateUrlParams();
 }
 
 function getTopicsDisplay(question: Question) {
@@ -534,12 +563,15 @@ function translateQuestion(question: Question) {
 
 // Pagination method
 function changePage(page: number) {
-  if (page < 1 || page > totalPages.value) return
-  currentPage.value = page
-  fetchQuestions()
+  if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
+  fetchQuestions();
+
+  // Update URL params
+  updateUrlParams();
 }
 
-// Add watcher to maintain focus after search completes
+// Add watcher to maintain focus after search completes and for search-related UI updates
 watch(isSearching, (newVal) => {
   // If we were searching and now we're done, restore focus to search input
   if (!newVal && searchInputRef.value) {
@@ -561,6 +593,63 @@ function handleImageError(question: Question) {
   question.imageLoading = false;
   question.imageLoadingState = false;
   question.imageError = true;
+}
+
+// Add a function to fetch all available topics for the chapter
+async function fetchTopicsForChapter() {
+  try {
+    isLoadingTopics.value = true;
+
+    // Get chapter ID from stored data
+    const chapterId = questionBankData.value.chapterId;
+
+    if (!chapterId) {
+      console.error('Chapter ID not available');
+      return;
+    }
+
+    // Fetch topics for the chapter
+    const response = await axiosInstance.get(`/topics`, {
+      params: {
+        chapter_id: chapterId
+      }
+    });
+
+    if (response.data && Array.isArray(response.data.data)) {
+      // Transform API response to match our component's structure
+      topicsWithIds.value = response.data.data.map((topic: ApiTopic) => ({
+        id: topic.id,
+        name: topic.name
+      }));
+
+      // Legacy topics array (to maintain compatibility)
+      topics.value = topicsWithIds.value.map(t => t.name);
+    }
+  } catch (error) {
+    console.error('Error fetching topics for chapter:', error);
+    // Fallback to extracting topics from questions when API fails
+    extractTopicsFromQuestions();
+  } finally {
+    isLoadingTopics.value = false;
+  }
+}
+
+// Extract topics from questions as a fallback method
+function extractTopicsFromQuestions() {
+  const topicsMap = new Map<number, string>();
+
+  questions.value.forEach(q => {
+    if (q.topics) {
+      q.topics.forEach(t => {
+        if (t.topic && t.id) {
+          topicsMap.set(t.id, t.topic);
+        }
+      });
+    }
+  });
+
+  topicsWithIds.value = Array.from(topicsMap.entries()).map(([id, name]) => ({ id, name }));
+  topics.value = Array.from(topicsMap.values());
 }
 
 // Update the fetchQuestions function
@@ -590,6 +679,8 @@ async function fetchQuestions() {
       params.sort_by = sortMappings[sortOption.value].sort_by;
       params.sort_order = sortMappings[sortOption.value].sort_order;
     }
+
+    console.log('API Request Params:', params); // Add logging to debug the params
 
     const response = await axiosInstance.get<PaginatedApiResponse<ApiQuestion>>(`/questions/untranslated/${mediumId}`, {
       params: params
@@ -664,23 +755,10 @@ async function fetchQuestions() {
       } as Question;
     });
 
-    // Extract unique topics from the questions with their IDs
-    const topicsMap = new Map<number, string>();
-
-    questions.value.forEach(q => {
-      if (q.topics) {
-        q.topics.forEach(t => {
-          if (t.topic && t.id) {
-            topicsMap.set(t.id, t.topic);
-          }
-        });
-      }
-    });
-
-    topicsWithIds.value = Array.from(topicsMap.entries()).map(([id, name]) => ({ id, name }));
-
-    // Legacy topics array (to maintain compatibility)
-    topics.value = Array.from(topicsMap.values());
+    // If we don't have topics yet or they need refreshing, fetch them
+    if (topicsWithIds.value.length === 0 && !isLoadingTopics.value) {
+      fetchTopicsForChapter();
+    }
   } catch (error) {
     console.error('Error fetching untranslated questions:', error);
   } finally {
@@ -689,36 +767,107 @@ async function fetchQuestions() {
   }
 }
 
+// Add a function to update URL parameters without reloading the page
+function updateUrlParams() {
+  const query: Record<string, string> = {};
+
+  if (searchQuery.value) {
+    query.search = searchQuery.value;
+  }
+
+  if (currentPage.value > 1) {
+    query.page = currentPage.value.toString();
+  }
+
+  if (sortOption.value !== 'created_at_desc') { // Default is created_at_desc
+    query.sort = sortOption.value;
+  }
+
+  if (selectedTopic.value) {
+    query.topic = selectedTopic.value.toString();
+  }
+
+  if (selectedType.value) {
+    query.type = selectedType.value.toString();
+  }
+
+  // Update URL without reloading the page
+  router.replace({ query }).catch(() => {
+    // Ignore navigation errors
+  });
+}
+
 // Lifecycle hooks
 onMounted(() => {
   // Load data from localStorage
-  const storedData = localStorage.getItem('questionBank')
+  const storedData = localStorage.getItem('questionBank');
   if (storedData) {
-    questionBankData.value = JSON.parse(storedData)
-    // Initialize the component by fetching questions
-    fetchQuestions()
+    questionBankData.value = JSON.parse(storedData);
+
+    // Initialize from route query parameters if present
+    const route = useRouter().currentRoute.value;
+
+    if (route.query.search) {
+      searchQuery.value = route.query.search as string;
+    }
+
+    if (route.query.page) {
+      const pageNum = parseInt(route.query.page as string, 10);
+      if (!isNaN(pageNum) && pageNum > 0) {
+        currentPage.value = pageNum;
+      }
+    }
+
+    if (route.query.sort) {
+      sortOption.value = route.query.sort as string;
+    }
+
+    if (route.query.topic) {
+      const topicId = parseInt(route.query.topic as string, 10);
+      // We'll set the selected topic after fetching topics
+      fetchTopicsForChapter().then(() => {
+        const topic = topicsWithIds.value.find(t => t.id === topicId);
+        if (topic) {
+          selectedTopicObj.value = topic;
+        }
+      });
+    }
+
+    if (route.query.type) {
+      const typeId = parseInt(route.query.type as string, 10);
+      const type = questionTypesWithIds.value.find(t => t.id === typeId);
+      if (type) {
+        selectedTypeObj.value = type;
+      }
+    }
+
+    // Initialize the component by fetching questions and topics
+    fetchQuestions();
+    if (!route.query.topic) {
+      fetchTopicsForChapter();
+    }
   } else {
     // Redirect to question bank selection if no data
-    router.push({ name: 'questionBank' })
+    router.push({ name: 'questionBank' });
   }
 
   // Check if the filter element has the 'show' class initially
-  const filterElement = document.getElementById('filter')
+  const filterElement = document.getElementById('filter');
   if (filterElement) {
     // Check if the element has the 'show' class initially
     if (filterElement.classList.contains('show')) {
-      isFilterOpen.value = true
+      isFilterOpen.value = true;
 
       // Update filter button appearance
-      const filterBtn = document.querySelector('.filter-btn')
+      const filterBtn = document.querySelector('.filter-btn');
       if (filterBtn) {
-        filterBtn.classList.add('active')
+        filterBtn.classList.add('active');
       }
     } else {
-      isFilterOpen.value = false
+      isFilterOpen.value = false;
     }
   }
-})
+});
 </script>
 
 <style scoped>
@@ -995,5 +1144,25 @@ onMounted(() => {
   align-items: center;
   background-color: rgba(248, 249, 250, 0.7);
   z-index: 5;
+}
+
+/* Add search loading overlay similar to BoardDashboard */
+.search-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.questions-searching {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
 }
 </style>

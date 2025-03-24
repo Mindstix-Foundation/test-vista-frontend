@@ -104,6 +104,7 @@ async function handleUpdateQuestion(payload: {
     rhs?: string[];
   };
   imageFile?: File;
+  optionImages?: (File | null)[];
   deleteImage?: boolean;
   existingImageId?: number | null;
 }) {
@@ -150,15 +151,7 @@ async function handleUpdateQuestion(payload: {
       try {
         await axiosInstance.delete(`/images/${payload.existingImageId}`);
         console.log('Image deleted successfully');
-
-        // Update question text to remove image reference
-        await axiosInstance.put(
-          `/question-texts/${questionTextId}`,
-          {
-            question_text: payload.questionText,
-            image_id: null // Remove the image association
-          }
-        );
+        imageId = null; // Ensure null image_id is set in request
       } catch (error) {
         console.error('Error deleting image:', error);
         // Continue with question update even if image deletion fails
@@ -208,16 +201,6 @@ async function handleUpdateQuestion(payload: {
 
         const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
         imageId = imageResponse.data.id;
-
-        // Update question text with the new image ID
-        await axiosInstance.put(
-          `/question-texts/${questionTextId}`,
-          {
-            question_text: payload.questionText,
-            image_id: imageId
-          }
-        );
-
         console.log('New image uploaded and associated with question');
       } catch (error: unknown) {
         console.error('Error uploading new image:', error);
@@ -235,120 +218,288 @@ async function handleUpdateQuestion(payload: {
           // Return early without completing the question update
           return;
         }
-
         // For other types of errors, continue with question update without the image
-        await axiosInstance.put(
-          `/question-texts/${questionTextId}`,
-          {
-            question_text: payload.questionText
-          }
-        );
       }
-    } else {
-      // Regular update without changing images
-      // Update the question text
-      await axiosInstance.put(
-        `/question-texts/${questionTextId}`,
-        {
-          question_text: payload.questionText
-        }
-      );
+    } else if (payload.existingImageId) {
+      // Keep existing image
+      imageId = payload.existingImageId;
     }
 
-    // Step 1: Update the question
-    const questionUpdateRequest = {
-      question_type_id: payload.questionTypeId,
-      board_question: payload.isPreviousExam
-    }
-
-    await axiosInstance.put(
-      `/questions/${payload.questionId}`,
-      questionUpdateRequest
-    )
-
-    // Step 2: Update the question-topic association
-    // First, find existing associations
-    const questionTopicsResponse = await axiosInstance.get(`/question-topics?question_id=${payload.questionId}`);
-
-    if (questionTopicsResponse.data && questionTopicsResponse.data.length > 0) {
-      // Delete each existing question-topic association using DELETE /question-topics/{id}
-      for (const topicAssoc of questionTopicsResponse.data) {
-        await axiosInstance.delete(`/question-topics/${topicAssoc.id}`);
-      }
-    }
-
-    // Create new topic association using POST /question-topics
-    await axiosInstance.post(
-      '/question-topics',
-      {
-        question_id: payload.questionId,
+    // Prepare the consolidated update request
+    const updateQuestionRequest: {
+      board_question: boolean;
+      question_text_id: number;
+      question_text_data: {
+        question_text: string;
+        image_id?: number | null;
+        mcq_options?: Array<{
+          option_text: string;
+          is_correct: boolean;
+          id?: number;
+          image_id?: number;
+        }>;
+        match_pairs?: Array<{
+          left_text: string;
+          right_text: string;
+          id?: number;
+          left_image_id?: number;
+          right_image_id?: number;
+        }>;
+        answer_text?: string;
+      };
+      question_topic_data: {
+        topic_id: number;
+      };
+    } = {
+      board_question: payload.isPreviousExam,
+      question_text_id: questionTextId,
+      question_text_data: {
+        question_text: payload.questionText
+      },
+      question_topic_data: {
         topic_id: payload.topicId
       }
-    );
+    };
 
-    // Step 4: Handle additional data based on question type
-    if (payload.additionalData.options && Array.isArray(payload.additionalData.options)) {
-      // MCQ questions
-      // First, delete existing options
-      const optionsResponse = await axiosInstance.get(`/question-options?question_id=${payload.questionId}`);
-      if (optionsResponse.data) {
-        for (const option of optionsResponse.data) {
-          await axiosInstance.delete(`/question-options/${option.id}`);
-        }
-      }
+    // Set image ID if available or explicitly set to null for deletion
+    if (imageId !== undefined) {
+      updateQuestionRequest.question_text_data.image_id = imageId;
+    }
 
-      // Then create new options
-      const options = payload.additionalData.options;
+    // Process MCQ options with images if provided
+    if (payload.additionalData.options && Array.isArray(payload.additionalData.options) &&
+        (payload.questionTypeId === 1 || payload.questionTypeId === 2)) { // MCQ or Odd One Out
       const correctOptionIndex = payload.additionalData.correctOption;
+      const mcqOptions = [];
 
-      for (let i = 0; i < options.length; i++) {
-        if (options[i].trim() !== '') {
-          await axiosInstance.post('/question-options', {
-            question_id: payload.questionId,
-            option_text: options[i],
+      // Get existing options to preserve IDs if possible
+      const optionsResponse = await axiosInstance.get(`/question-options?question_text_id=${questionTextId}`);
+      const existingOptions = optionsResponse.data || [];
+
+      // Process all options and their images
+      for (let i = 0; i < payload.additionalData.options.length; i++) {
+        if (payload.additionalData.options[i].trim() !== '') {
+          const option: {
+            option_text: string;
+            is_correct: boolean;
+            id?: number;
+            image_id?: number;
+          } = {
+            option_text: payload.additionalData.options[i],
             is_correct: i === correctOptionIndex
-          });
-        }
-      }
-    } else if (payload.additionalData.correctAnswer) {
-      // Fill in the blanks
-      // First, delete existing answers
-      const answersResponse = await axiosInstance.get(`/question-answers?question_id=${payload.questionId}`);
-      if (answersResponse.data) {
-        for (const answer of answersResponse.data) {
-          await axiosInstance.delete(`/question-answers/${answer.id}`);
+          };
+
+          // If we have an existing option at this index, use its ID
+          if (i < existingOptions.length) {
+            option.id = existingOptions[i].id;
+
+            // Check if this option had an image before
+            if (existingOptions[i].image_id) {
+              // If there's a new image, we'll replace; otherwise keep existing
+              if (payload.optionImages && payload.optionImages[i]) {
+                try {
+                  // Delete old image
+                  await axiosInstance.delete(`/images/${existingOptions[i].image_id}`);
+                } catch (error) {
+                  console.error(`Error deleting old image for option ${i}:`, error);
+                  // Continue even if deletion fails
+                }
+              } else {
+                // Keep existing image
+                option.image_id = existingOptions[i].image_id;
+              }
+            }
+          }
+
+          // Upload new image if provided
+          if (payload.optionImages && payload.optionImages[i]) {
+            try {
+              // Upload option image
+              const formData = new FormData();
+              formData.append('file', payload.optionImages[i] as File);
+
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
+              // Create image record
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || (payload.optionImages[i] as File).name,
+                file_size: uploadResponse.data.file_size || (payload.optionImages[i] as File).size,
+                file_type: uploadResponse.data.file_type || (payload.optionImages[i] as File).type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              option.image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error(`Error uploading image for option ${i+1}:`, error);
+              // Continue without the image if upload fails
+            }
+          }
+
+          mcqOptions.push(option);
         }
       }
 
-      // Then create new answer
-      await axiosInstance.post('/question-answers', {
-        question_id: payload.questionId,
-        answer_text: payload.additionalData.correctAnswer
-      });
-    } else if (payload.additionalData.lhs && payload.additionalData.rhs) {
-      // Match the pairs
-      // First, delete existing pairs
-      const pairsResponse = await axiosInstance.get(`/matching-pairs?question_id=${payload.questionId}`);
-      if (pairsResponse.data) {
-        for (const pair of pairsResponse.data) {
-          await axiosInstance.delete(`/matching-pairs/${pair.id}`);
-        }
-      }
+      updateQuestionRequest.question_text_data.mcq_options = mcqOptions;
+    }
 
-      // Then create new pairs
+    // Add correct answer for Fill in the Blanks type
+    if (payload.additionalData.correctAnswer && payload.questionTypeId === 6) {
+      updateQuestionRequest.question_text_data.answer_text = payload.additionalData.correctAnswer;
+    }
+
+    // Process match pairs with images if provided
+    if (payload.additionalData.lhs && payload.additionalData.rhs &&
+        (payload.questionTypeId === 5 || payload.questionTypeId === 3)) { // Match the Pairs or Complete the Correlation
       const lhs = payload.additionalData.lhs;
       const rhs = payload.additionalData.rhs;
+      const matchPairs = [];
 
+      // Get existing pairs to preserve IDs if possible
+      const pairsResponse = await axiosInstance.get(`/matching-pairs?question_text_id=${questionTextId}`);
+      const existingPairs = pairsResponse.data || [];
+
+      // Process each pair and any associated images
       for (let i = 0; i < lhs.length; i++) {
         if (lhs[i].trim() !== '' && i < rhs.length && rhs[i].trim() !== '') {
-          await axiosInstance.post('/matching-pairs', {
-            question_id: payload.questionId,
+          const pair: {
+            left_text: string;
+            right_text: string;
+            id?: number;
+            left_image_id?: number;
+            right_image_id?: number;
+          } = {
             left_text: lhs[i],
             right_text: rhs[i]
-          });
+          };
+
+          // If we have an existing pair at this index, use its ID
+          if (i < existingPairs.length) {
+            pair.id = existingPairs[i].id;
+
+            // Check if this pair had left or right images before
+            if (existingPairs[i].left_image_id) {
+              // If there's a new image for left side, we'll replace; otherwise keep existing
+              if (payload.optionImages && payload.optionImages[i]) {
+                try {
+                  // Delete old left image
+                  await axiosInstance.delete(`/images/${existingPairs[i].left_image_id}`);
+                } catch (error) {
+                  console.error(`Error deleting old left image for pair ${i}:`, error);
+                  // Continue even if deletion fails
+                }
+              } else {
+                // Keep existing left image
+                pair.left_image_id = existingPairs[i].left_image_id;
+              }
+            }
+
+            if (existingPairs[i].right_image_id) {
+              // If there's a new image for right side, we'll replace; otherwise keep existing
+              if (payload.optionImages && payload.optionImages[i + 10]) {
+                try {
+                  // Delete old right image
+                  await axiosInstance.delete(`/images/${existingPairs[i].right_image_id}`);
+                } catch (error) {
+                  console.error(`Error deleting old right image for pair ${i}:`, error);
+                  // Continue even if deletion fails
+                }
+              } else {
+                // Keep existing right image
+                pair.right_image_id = existingPairs[i].right_image_id;
+              }
+            }
+          }
+
+          // Upload new left image if provided
+          if (payload.optionImages && payload.optionImages[i]) {
+            try {
+              // Upload LHS image
+              const formData = new FormData();
+              formData.append('file', payload.optionImages[i] as File);
+
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
+              // Create image record
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || (payload.optionImages[i] as File).name,
+                file_size: uploadResponse.data.file_size || (payload.optionImages[i] as File).size,
+                file_type: uploadResponse.data.file_type || (payload.optionImages[i] as File).type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              pair.left_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error(`Error uploading image for left side ${i+1}:`, error);
+              // Continue without the image if upload fails
+            }
+          }
+
+          // Upload new right image if provided
+          if (payload.optionImages && payload.optionImages[i + 10]) {
+            try {
+              // Upload RHS image
+              const formData = new FormData();
+              formData.append('file', payload.optionImages[i + 10] as File);
+
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
+              // Create image record
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || (payload.optionImages[i + 10] as File).name,
+                file_size: uploadResponse.data.file_size || (payload.optionImages[i + 10] as File).size,
+                file_type: uploadResponse.data.file_type || (payload.optionImages[i + 10] as File).type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              pair.right_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error(`Error uploading image for right side ${i+1}:`, error);
+              // Continue without the image if upload fails
+            }
+          }
+
+          matchPairs.push(pair);
         }
       }
+
+      updateQuestionRequest.question_text_data.match_pairs = matchPairs;
     }
+
+    // Make a single API call to update the question and all related data
+    await axiosInstance.put(`/questions/edit/${payload.questionId}`, updateQuestionRequest);
 
     // Navigate back to question dashboard with success query param
     router.push({

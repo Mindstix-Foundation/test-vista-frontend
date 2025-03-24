@@ -23,14 +23,12 @@
       </div>
     </div>
 
-    <div class="container" id="descriptiveQuestion" v-show="selectedType === 'Descriptive' ||
-                                               selectedType === 'True or False' ||
-                                               selectedType === 'Long Answer' ||
-                                               selectedType === 'Short Answer' ||
-                                               selectedType === 'Essay' ||
-                                               selectedType === 'Numerical' ||
-                                               selectedType === 'Coding Problem' ||
-                                               selectedType === 'Case Study'">
+    <div class="container" id="descriptiveQuestion" v-show="selectedType === 'True or False' ||
+                                               selectedType === 'Give Scientific Reasons' ||
+                                               selectedType === 'Short Answer Question' ||
+                                               selectedType === 'Complete and Identify Reaction' ||
+                                               selectedType === 'Short Note' ||
+                                               selectedType === 'One-Word Answer'">
       <div class="row justify-content-center">
         <div class="col col-12 col-sm-10 ">
           <form @submit.prevent="saveQuestion">
@@ -76,7 +74,7 @@
       </div>
     </div>
 
-    <div class="container" id="mcqQuestion" v-show="selectedType === 'MCQ' || selectedType === 'Multiple Choice'">
+    <div class="container" id="mcqQuestion" v-show="selectedType === 'Multiple Choice Question (MCQ)' || selectedType === 'Odd One Out'">
       <div class="row justify-content-center">
         <div class="col col-12 col-sm-10 ">
           <form @submit.prevent="saveQuestion">
@@ -269,7 +267,7 @@
       </div>
     </div>
 
-    <div class="container" id="matchPairQuestion" v-show="selectedType === 'Match the Pairs' || selectedType === 'Matching'">
+    <div class="container" id="matchPairQuestion" v-show="selectedType === 'Match the Pairs' || selectedType === 'Complete the Correlation'">
       <div class="row justify-content-center">
         <div class="col col-12 col-sm-10 ">
           <form @submit.prevent="saveQuestion">
@@ -523,6 +521,27 @@ interface Topic {
   }
 }
 
+// Update the SavePayload interface to include isVerified
+interface SavePayload {
+  questionId?: number;
+  questionTypeId: number;
+  topicId: number;
+  isPreviousExam: boolean;
+  isVerified: boolean;
+  questionText: string;
+  additionalData: {
+    options?: string[];
+    correctOption?: number;
+    correctAnswer?: string;
+    lhs?: string[];
+    rhs?: string[];
+  };
+  imageFile?: File;
+  optionImages?: (File | null)[];
+  deleteImage?: boolean;
+  existingImageId?: number | null;
+}
+
 // Add interface for question response to include image details
 interface QuestionResponse {
   id: number
@@ -599,12 +618,36 @@ async function fetchQuestionTypes() {
       })
     } else {
       // Fallback to default question types if API fails
-      questionTypes.value = ['Descriptive', 'MCQ', 'Fill in the Blanks', 'Match the Pairs']
+      questionTypes.value = [
+        'Multiple Choice Question (MCQ)',
+        'Odd One Out',
+        'Complete the Correlation',
+        'True or False',
+        'Match the Pairs',
+        'Fill in the Blanks',
+        'One-Word Answer',
+        'Give Scientific Reasons',
+        'Short Answer Question',
+        'Complete and Identify Reaction',
+        'Short Note'
+      ]
     }
   } catch (error) {
     console.error('Error fetching question types:', error)
     // Fallback to default question types if API fails
-    questionTypes.value = ['Descriptive', 'MCQ', 'Fill in the Blanks', 'Match the Pairs']
+    questionTypes.value = [
+      'Multiple Choice Question (MCQ)',
+      'Odd One Out',
+      'Complete the Correlation',
+      'True or False',
+      'Match the Pairs',
+      'Fill in the Blanks',
+      'One-Word Answer',
+      'Give Scientific Reasons',
+      'Short Answer Question',
+      'Complete and Identify Reaction',
+      'Short Note'
+    ]
   }
 }
 
@@ -711,20 +754,18 @@ async function fetchQuestionData() {
 
       // Fill the appropriate question form based on question type
       switch (selectedType.value) {
-        case 'Descriptive':
         case 'True or False':
-        case 'Long Answer':
-        case 'Short Answer':
-        case 'Essay':
-        case 'Numerical':
-        case 'Coding Problem':
-        case 'Case Study':
+        case 'Give Scientific Reasons':
+        case 'Short Answer Question':
+        case 'Complete and Identify Reaction':
+        case 'Short Note':
+        case 'One-Word Answer':
           descriptiveQuestion.value.question = questionText
           descriptiveQuestion.value.isPreviousExam = questionData.board_question
           break
 
-        case 'MCQ':
-        case 'Multiple Choice':
+        case 'Multiple Choice Question (MCQ)':
+        case 'Odd One Out':
           mcqQuestion.value.question = questionText
           mcqQuestion.value.isPreviousExam = questionData.board_question
 
@@ -752,7 +793,7 @@ async function fetchQuestionData() {
           break
 
         case 'Match the Pairs':
-        case 'Matching':
+        case 'Complete the Correlation':
           matchPairQuestion.value.question = questionText
           matchPairQuestion.value.isPreviousExam = questionData.board_question
 
@@ -770,7 +811,12 @@ async function fetchQuestionData() {
 }
 
 function toggleQuestionContainer() {
-  // The v-show directives will handle showing/hiding based on selectedType
+  // The v-show directives will handle showing/hiding the appropriate container based on selectedType
+  // Container mapping:
+  // - descriptiveQuestion: True or False, Give Scientific Reasons, Short Answer Question, Complete and Identify Reaction, Short Note, One-Word Answer
+  // - mcqQuestion: Multiple Choice Question (MCQ), Odd One Out
+  // - fillBlankQuestion: Fill in the Blanks
+  // - matchPairQuestion: Match the Pairs, Complete the Correlation
 }
 
 function autoResize(event: Event) {
@@ -803,25 +849,70 @@ function removeInput(side: 'lhs' | 'rhs', index: number) {
   }
 }
 
-// Get the question payload based on the current form state
-function getQuestionPayload() {
-  if (!selectedType.value) return null
+function saveQuestion() {
+  // Validate required fields based on the question type
+  if (selectedTopic.value === '') {
+    alert('Please select a topic')
+    return
+  }
 
-  const payload = {
-    questionId: props.questionId,
-    questionTypeId: questionTypeMap.value.get(selectedType.value) || 0,
-    topicId: topicMap.value.get(selectedTopic.value) || 0,
+  if (selectedType.value === '') {
+    alert('Please select a question type')
+    return
+  }
+
+  let isValid = true
+  const errorMessages: string[] = []
+
+  // Type-specific validation
+  switch (selectedType.value) {
+    case 'True or False':
+    case 'Give Scientific Reasons':
+    case 'Short Answer Question':
+    case 'Complete and Identify Reaction':
+    case 'Short Note':
+    case 'One-Word Answer':
+      if (!isDescriptiveValid.value) {
+        isValid = false
+        errorMessages.push('Please enter the question text')
+      }
+      break
+    case 'Multiple Choice Question (MCQ)':
+    case 'Odd One Out':
+      if (!isMcqValid.value) {
+        isValid = false
+        errorMessages.push('Please fill in the question, at least two options, and select the correct answer')
+      }
+      break
+    case 'Fill in the Blanks':
+      if (!isFillBlankValid.value) {
+        isValid = false
+        errorMessages.push('Please fill in the question with blanks and correct answer')
+      }
+      break
+    case 'Match the Pairs':
+    case 'Complete the Correlation':
+      if (!isMatchPairValid.value) {
+        isValid = false
+        errorMessages.push('Please fill in the question, left-hand items, and right-hand items')
+      }
+      break
+  }
+
+  if (!isValid) {
+    alert(errorMessages.join('\n'))
+    return
+  }
+
+  // Prepare the base payload
+  const payload: SavePayload = {
+    questionTypeId: getQuestionTypeId(),
+    topicId: getTopicId(),
     isPreviousExam: getIsPreviousExam(),
     isVerified: false,
     questionText: '',
-    additionalData: {} as {
-      options?: string[];
-      correctOption?: number;
-      correctAnswer?: string;
-      lhs?: string[];
-      rhs?: string[];
-    },
-    imageFile: questionImageFile.value,
+    additionalData: {},
+    imageFile: questionImageFile.value || undefined,
     optionImages: [...mcqOptionImages.value].map(img => img === undefined ? null : img) as (File | null)[],
     deleteImage: shouldDeleteImage.value,
     existingImageId: existingImageId.value
@@ -829,35 +920,30 @@ function getQuestionPayload() {
 
   // Add question-type specific data
   switch (selectedType.value) {
-    case 'Descriptive':
     case 'True or False':
-    case 'Long Answer':
-    case 'Short Answer':
-    case 'Essay':
-    case 'Numerical':
-    case 'Coding Problem':
-    case 'Case Study':
+    case 'Give Scientific Reasons':
+    case 'Short Answer Question':
+    case 'Complete and Identify Reaction':
+    case 'Short Note':
+    case 'One-Word Answer':
       payload.questionText = descriptiveQuestion.value.question
       break
-
-    case 'MCQ':
-    case 'Multiple Choice':
+    case 'Multiple Choice Question (MCQ)':
+    case 'Odd One Out':
       payload.questionText = mcqQuestion.value.question
       payload.additionalData = {
         options: mcqQuestion.value.options,
-        correctOption: parseInt(mcqQuestion.value.correctOption) - 1 // Convert to 0-based index
+        correctOption: parseInt(mcqQuestion.value.correctOption) - 1
       }
       break
-
     case 'Fill in the Blanks':
       payload.questionText = fillBlankQuestion.value.question
       payload.additionalData = {
         correctAnswer: fillBlankQuestion.value.correctAnswer
       }
       break
-
     case 'Match the Pairs':
-    case 'Matching':
+    case 'Complete the Correlation':
       payload.questionText = matchPairQuestion.value.question
       payload.additionalData = {
         lhs: matchPairQuestion.value.lhs,
@@ -866,71 +952,99 @@ function getQuestionPayload() {
       break
   }
 
-  return payload
+  // Emit the save or update event
+  if (isEditMode.value) {
+    emit('update', {
+      questionId: props.questionId,
+      questionTypeId: payload.questionTypeId,
+      topicId: payload.topicId,
+      isPreviousExam: payload.isPreviousExam,
+      isVerified: payload.isVerified,
+      questionText: payload.questionText,
+      additionalData: payload.additionalData,
+      imageFile: payload.imageFile,
+      optionImages: payload.optionImages,
+      deleteImage: payload.deleteImage,
+      existingImageId: payload.existingImageId
+    })
+  } else {
+    emit('save', {
+      questionTypeId: payload.questionTypeId,
+      topicId: payload.topicId,
+      isPreviousExam: payload.isPreviousExam,
+      isVerified: payload.isVerified,
+      questionText: payload.questionText,
+      additionalData: payload.additionalData,
+      imageFile: payload.imageFile,
+      optionImages: payload.optionImages,
+      deleteImage: payload.deleteImage,
+      existingImageId: payload.existingImageId
+    })
+  }
 }
 
-// Helper function to get isPreviousExam based on the question type
-function getIsPreviousExam() {
+function getQuestionTypeId(): number {
+  // If a type ID map is available, use it
+  if (questionTypeMap.value.has(selectedType.value)) {
+    return questionTypeMap.value.get(selectedType.value) || 0
+  }
+
+  // Otherwise use hardcoded values
   switch (selectedType.value) {
-    case 'Descriptive':
+    case 'Multiple Choice Question (MCQ)':
+      return 1
+    case 'Odd One Out':
+      return 2
+    case 'Complete the Correlation':
+      return 3
     case 'True or False':
-    case 'Long Answer':
-    case 'Short Answer':
-    case 'Essay':
-    case 'Numerical':
-    case 'Coding Problem':
-    case 'Case Study':
+      return 4
+    case 'Match the Pairs':
+      return 5
+    case 'Fill in the Blanks':
+      return 6
+    case 'One-Word Answer':
+      return 7
+    case 'Give Scientific Reasons':
+      return 8
+    case 'Short Answer Question':
+      return 9
+    case 'Complete and Identify Reaction':
+      return 10
+    case 'Short Note':
+      return 11
+    default:
+      return 0 // Default to 0, which should trigger a validation error
+  }
+}
+
+function getIsPreviousExam(): boolean {
+  switch (selectedType.value) {
+    case 'True or False':
+    case 'Give Scientific Reasons':
+    case 'Short Answer Question':
+    case 'Complete and Identify Reaction':
+    case 'Short Note':
+    case 'One-Word Answer':
       return descriptiveQuestion.value.isPreviousExam
-    case 'MCQ':
-    case 'Multiple Choice':
+    case 'Multiple Choice Question (MCQ)':
+    case 'Odd One Out':
       return mcqQuestion.value.isPreviousExam
     case 'Fill in the Blanks':
       return fillBlankQuestion.value.isPreviousExam
     case 'Match the Pairs':
-    case 'Matching':
+    case 'Complete the Correlation':
       return matchPairQuestion.value.isPreviousExam
     default:
       return false
   }
 }
 
-// Update the save function with proper typing for all fields
-async function saveQuestion() {
-  const payload = getQuestionPayload()
-  if (!payload) return
-
-  try {
-    if (isEditMode.value && props.questionId) {
-      emit('update', {
-        questionId: props.questionId,
-        questionTypeId: payload.questionTypeId,
-        topicId: payload.topicId,
-        isPreviousExam: payload.isPreviousExam,
-        isVerified: payload.isVerified,
-        questionText: payload.questionText,
-        additionalData: payload.additionalData,
-        imageFile: payload.imageFile as File | undefined,
-        optionImages: payload.optionImages,
-        deleteImage: payload.deleteImage,
-        existingImageId: payload.existingImageId
-      })
-    } else {
-      emit('save', {
-        questionTypeId: payload.questionTypeId,
-        topicId: payload.topicId,
-        isPreviousExam: payload.isPreviousExam,
-        isVerified: payload.isVerified,
-        questionText: payload.questionText,
-        additionalData: payload.additionalData,
-        imageFile: payload.imageFile as File | undefined,
-        optionImages: payload.optionImages,
-        deleteImage: payload.deleteImage,
-        existingImageId: payload.existingImageId
-      })
-    }
-  } catch (error) {
-    console.error('Error saving question:', error)
+function getTopicId(): number {
+  if (topicMap.value.has(selectedTopic.value)) {
+    return topicMap.value.get(selectedTopic.value) || 0
   }
+  return 0 // Default to 0 if topic is not found
 }
 
 // Watch for changes in selectedTopic
