@@ -385,13 +385,34 @@ async function handleSaveQuestion(payload: {
       createQuestionRequest.question_text_data.match_pairs = matchPairs;
     }
 
-    // Add correct answer for Fill in the Blanks type
-    if (payload.additionalData?.correctAnswer && payload.questionTypeId === 6) {
+    // Handle different question types
+    // True/False (4)
+    if (payload.questionTypeId === 4) {
+      // True/False questions are essentially MCQs with fixed True/False options
+      const trueOption = {
+        option_text: "True",
+        is_correct: payload.additionalData.correctOption === 0
+      };
+
+      const falseOption = {
+        option_text: "False",
+        is_correct: payload.additionalData.correctOption === 1
+      };
+
+      createQuestionRequest.question_text_data.mcq_options = [trueOption, falseOption];
+    }
+
+    // Fill in the Blanks (6)
+    else if (payload.questionTypeId === 6 && payload.additionalData?.correctAnswer) {
       createQuestionRequest.question_text_data.answer_text = payload.additionalData.correctAnswer;
     }
 
+    // Short Note (11), Definition (8), Explanation/Reference (9), Long Answer (7), Very Short Answer (10)
+    // These types typically don't require additional data beyond the question text
+
     // Make a single API call to create the question and all related data
-    await axiosInstance.post('/questions/add', createQuestionRequest);
+    const response = await axiosInstance.post('/questions/add', createQuestionRequest);
+    console.log('Question created successfully:', response.data);
 
     // Navigate back to question dashboard with success query param
     router.push({
