@@ -699,21 +699,32 @@ async function loadQuestionData() {
 
     questionId.value = Number(id);
 
-    // Get topic ID (chapter ID) from stored data
-    topicId.value = Number(questionBankData.value.chapterId);
+    // First, we need to fetch the question to get its associated topic ID
+    // since we can't just use the chapter ID
+    const questionDetailsResponse = await axiosInstance.get(`/questions/${questionId.value}`);
+    const questionDetails = questionDetailsResponse.data;
 
-    if (!topicId.value) {
-      console.error('Topic/Chapter ID not found');
+    // Check if question has any question_texts with topics
+    if (!questionDetails.question_texts ||
+        !questionDetails.question_texts[0] ||
+        !questionDetails.question_texts[0].topic ||
+        !questionDetails.question_texts[0].topic.id) {
+      console.error('Question has no associated topic');
       toastStore.showToast({
         title: 'Error',
-        message: 'Topic/Chapter ID not found',
+        message: 'Question has no associated topic',
         type: 'error'
       });
       router.push({ name: 'translationPending' });
       return;
     }
 
-    // Fetch question data from new API - including verified texts in all languages
+    // Get the topic ID from the question details
+    topicId.value = questionDetails.question_texts[0].topic.id;
+
+    console.log(`Using topic ID: ${topicId.value} for question ID: ${questionId.value}`);
+
+    // Now fetch verified texts using the correct topic ID
     const response = await axiosInstance.get(`/questions/${questionId.value}/topic/${topicId.value}/verified-texts`);
     const questionData = response.data;
 
@@ -728,24 +739,24 @@ async function loadQuestionData() {
       if (availableTranslations.value.length > 0) {
         // Set original question from the first available translation
         originalQuestion.value = availableTranslations.value[0].question_text;
-        translatedQuestion.value.type = questionType.value;
+      translatedQuestion.value.type = questionType.value;
 
-        // Get image if available
+      // Get image if available
         if (availableTranslations.value[0].image_id && availableTranslations.value[0].image) {
-          imageLoading.value = true;
-          questionImage.value = {
+        imageLoading.value = true;
+        questionImage.value = {
             id: availableTranslations.value[0].image_id,
             presigned_url: availableTranslations.value[0].image.presigned_url,
             image_url: availableTranslations.value[0].image.image_url
           };
-        }
+    }
 
-        // Set original options for MCQ
-        if ((questionType.value === 'MCQ' || questionType.value === 'Multiple Choice') &&
+    // Set original options for MCQ
+    if ((questionType.value === 'MCQ' || questionType.value === 'Multiple Choice') &&
             availableTranslations.value[0].mcq_options) {
           originalOptions.value = availableTranslations.value[0].mcq_options.map((opt: McqOption) => opt.option_text);
-          // Initialize translated options array with the same length
-          translatedOptions.value = Array(originalOptions.value.length).fill('');
+      // Initialize translated options array with the same length
+      translatedOptions.value = Array(originalOptions.value.length).fill('');
         }
 
         // Set original match pairs for Matching Questions

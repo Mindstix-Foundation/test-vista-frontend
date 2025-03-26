@@ -219,58 +219,9 @@
                         </div>
                       </div>
 
-                      <!-- Fill in the Blanks -->
-                      <div v-if="question.type === 'Fill in the Blanks'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">Fill in the Blanks</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
-                        <div class="fillblanks-container p-3">
-                          <!-- Highlight blanks within the question by replacing them with a styled span -->
-                          <p class="blanks-question" v-html="highlightBlanks(question.question)"></p>
-                        </div>
-                      </div>
-
-                      <!-- True or False question type -->
-                      <div v-if="question.type === 'True or False'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">True or False</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
-                        <div class="truefalse-container">
-                          <div class="row g-2">
-                            <div class="col-md-6">
-                              <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctAnswer === 'True'}">
-                                <div class="d-flex align-items-center">
-                                  <div class="option-circle me-2" :class="{'option-circle-correct': question.correctAnswer === 'True'}">T</div>
-                                  <div class="option-text">True</div>
-                                  <div v-if="question.correctAnswer === 'True'" class="option-correct-icon ms-2">
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col-md-6">
-                              <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctAnswer === 'False'}">
-                                <div class="d-flex align-items-center">
-                                  <div class="option-circle me-2" :class="{'option-circle-correct': question.correctAnswer === 'False'}">F</div>
-                                  <div class="option-text">False</div>
-                                  <div v-if="question.correctAnswer === 'False'" class="option-correct-icon ms-2">
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      <!-- True or False question type - completely simplified -->
+                      <div v-if="question.type === 'True or False'">
+                        <!-- No additional content needed -->
                       </div>
 
                       <!-- One-Word Answer -->
@@ -308,40 +259,28 @@
                         </div>
                       </div>
 
+                      <!-- MCQ Options in verified questions section -->
                       <!-- MCQ Options -->
                       <div v-if="question.type === 'Multiple Choice Question (MCQ)'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">Multiple Choice Question</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
                         <div class="row g-2">
                           <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
-                            <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctOptionIndex === optIndex}">
-                              <div class="d-flex align-items-center">
-                                <div class="option-circle me-2" :class="{'option-circle-correct': question.correctOptionIndex === optIndex}">
-                                  {{ String.fromCharCode(65 + optIndex) }}
-                                </div>
-                                <div class="option-text">
-                                  <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
-                                    {{ truncateText(option, optionTextMaxLength) }}
-                                    <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-down"></i>
-                                    </button>
-                                  </span>
-                                  <span v-else>
-                                    {{ option }}
-                                    <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-up"></i>
-                                    </button>
-                                  </span>
-                                </div>
-                                <div v-if="question.correctOptionIndex === optIndex" class="option-correct-icon ms-2">
-                                  <i class="bi bi-check-circle-fill text-success"></i>
-                                </div>
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -350,15 +289,6 @@
 
                       <!-- Match the Pairs -->
                       <div v-if="question.type === 'Match the Pairs'" class="mt-3">
-                        <div class="match-header d-flex align-items-center mb-2">
-                          <div class="match-title">
-                            <span class="badge bg-dark me-2">Match the Pairs</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
-
                         <!-- Debug info for development -->
                         <div v-if="!question.lhs || !question.rhs || question.lhs.length === 0 || question.rhs.length === 0" class="alert alert-warning">
                           <i class="bi bi-exclamation-triangle me-2"></i>
@@ -371,77 +301,88 @@
                           </div>
                         </div>
 
-                        <div v-else class="matching-table-container">
-                          <table class="table table-bordered matching-table">
-                            <thead class="table-light">
-                              <tr>
-                                <th width="5%" class="text-center">#</th>
-                                <th width="40%" class="text-center">Column A</th>
-                                <th width="10%" class="text-center">Match</th>
-                                <th width="40%" class="text-center">Column B</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr v-for="(item, idx) in question.lhs" :key="idx">
-                                <td class="text-center align-middle match-number">{{ idx + 1 }}</td>
-                                <td class="align-middle">
-                                  <div class="matching-item">
-                                    {{ item }}
+                        <div v-else>
+                          <div class="match-pairs-container">
+                            <div v-for="(item, idx) in question.lhs" :key="'pair-'+idx" class="match-pair-row mb-3">
+                              <!-- Left Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-letter me-2">
+                                    {{ String.fromCharCode(65 + idx) }}
                                   </div>
-                                </td>
-                                <td class="text-center align-middle match-arrow">
-                                  <i class="bi bi-arrow-right-square-fill"></i>
-                                </td>
-                                <td class="align-middle">
-                                  <div class="matching-item" v-if="question.rhs && question.rhs[idx]">
-                                    {{ question.rhs[idx] }}
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="shouldTruncateOption(item) && !isQuestionExpanded(question.id, 'lhs-'+idx)">
+                                      {{ truncateText(item, optionTextMaxLength) }}
+                                      <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-down"></i>
+                                      </button>
+                                    </span>
+                                    <span v-else>
+                                      {{ item }}
+                                      <button v-if="shouldTruncateOption(item)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-up"></i>
+                                      </button>
+                                    </span>
                                   </div>
-                                  <div class="matching-item missing-match" v-else>
-                                    <span class="text-muted fst-italic">No match available</span>
+                                </div>
+                              </div>
+
+                              <!-- Arrow Between -->
+                              <div class="match-pair-arrow">
+                                <div class="match-arrow-circle">
+                                  <i class="bi bi-arrows"></i>
+                                </div>
+                              </div>
+
+                              <!-- Right Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="question.rhs && idx < question.rhs.length">
+                                      <span v-if="shouldTruncateOption(question.rhs[idx]) && !isQuestionExpanded(question.id, 'rhs-'+idx)">
+                                        {{ truncateText(question.rhs[idx], optionTextMaxLength) }}
+                                        <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                      </span>
+                                      <span v-else>
+                                        {{ question.rhs[idx] }}
+                                        <button v-if="shouldTruncateOption(question.rhs[idx])" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-up"></i>
+                                        </button>
+                                      </span>
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">No matching option</span>
                                   </div>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <!-- Add the Odd One Out component to the verified questions section -->
                       <!-- Odd One Out -->
                       <div v-if="question.type === 'Odd One Out'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">Odd One Out</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
                         <div class="row g-2">
                           <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
-                            <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctOptionIndex === optIndex}">
-                              <div class="d-flex align-items-center">
-                                <div class="option-circle me-2" :class="{'option-circle-correct': question.correctOptionIndex === optIndex}">
-                                  {{ String.fromCharCode(65 + optIndex) }}
-                                </div>
-                                <div class="option-text">
-                                  <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
-                                    {{ truncateText(option, optionTextMaxLength) }}
-                                    <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-down"></i>
-                                    </button>
-                                  </span>
-                                  <span v-else>
-                                    {{ option }}
-                                    <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-up"></i>
-                                    </button>
-                                  </span>
-                                </div>
-                                <div v-if="question.correctOptionIndex === optIndex" class="option-correct-icon ms-2">
-                                  <i class="bi bi-check-circle-fill text-success"></i>
-                                  <span class="ms-1 text-success fw-bold">Odd One</span>
-                                </div>
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -576,58 +517,9 @@
                         </div>
                       </div>
 
-                      <!-- Fill in the Blanks -->
-                      <div v-if="question.type === 'Fill in the Blanks'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">Fill in the Blanks</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
-                        <div class="fillblanks-container p-3">
-                          <!-- Highlight blanks within the question by replacing them with a styled span -->
-                          <p class="blanks-question" v-html="highlightBlanks(question.question)"></p>
-                        </div>
-                      </div>
-
-                      <!-- True or False question type -->
-                      <div v-if="question.type === 'True or False'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">True or False</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
-                        <div class="truefalse-container">
-                          <div class="row g-2">
-                            <div class="col-md-6">
-                              <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctAnswer === 'True'}">
-                                <div class="d-flex align-items-center">
-                                  <div class="option-circle me-2" :class="{'option-circle-correct': question.correctAnswer === 'True'}">T</div>
-                                  <div class="option-text">True</div>
-                                  <div v-if="question.correctAnswer === 'True'" class="option-correct-icon ms-2">
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col-md-6">
-                              <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctAnswer === 'False'}">
-                                <div class="d-flex align-items-center">
-                                  <div class="option-circle me-2" :class="{'option-circle-correct': question.correctAnswer === 'False'}">F</div>
-                                  <div class="option-text">False</div>
-                                  <div v-if="question.correctAnswer === 'False'" class="option-correct-icon ms-2">
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      <!-- True or False question type - completely simplified -->
+                      <div v-if="question.type === 'True or False'">
+                        <!-- No additional content needed -->
                       </div>
 
                       <!-- One-Word Answer -->
@@ -665,40 +557,28 @@
                         </div>
                       </div>
 
+                      <!-- MCQ Options in unverified questions section -->
                       <!-- MCQ Options -->
                       <div v-if="question.type === 'Multiple Choice Question (MCQ)'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">Multiple Choice Question</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
                         <div class="row g-2">
                           <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
-                            <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctOptionIndex === optIndex}">
-                              <div class="d-flex align-items-center">
-                                <div class="option-circle me-2" :class="{'option-circle-correct': question.correctOptionIndex === optIndex}">
-                                  {{ String.fromCharCode(65 + optIndex) }}
-                                </div>
-                                <div class="option-text">
-                                  <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
-                                    {{ truncateText(option, optionTextMaxLength) }}
-                                    <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-down"></i>
-                                    </button>
-                                  </span>
-                                  <span v-else>
-                                    {{ option }}
-                                    <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-up"></i>
-                                    </button>
-                                  </span>
-                                </div>
-                                <div v-if="question.correctOptionIndex === optIndex" class="option-correct-icon ms-2">
-                                  <i class="bi bi-check-circle-fill text-success"></i>
-                                </div>
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -707,15 +587,6 @@
 
                       <!-- Match the Pairs -->
                       <div v-if="question.type === 'Match the Pairs'" class="mt-3">
-                        <div class="match-header d-flex align-items-center mb-2">
-                          <div class="match-title">
-                            <span class="badge bg-dark me-2">Match the Pairs</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
-
                         <!-- Debug info for development -->
                         <div v-if="!question.lhs || !question.rhs || question.lhs.length === 0 || question.rhs.length === 0" class="alert alert-warning">
                           <i class="bi bi-exclamation-triangle me-2"></i>
@@ -728,77 +599,88 @@
                           </div>
                         </div>
 
-                        <div v-else class="matching-table-container">
-                          <table class="table table-bordered matching-table">
-                            <thead class="table-light">
-                              <tr>
-                                <th width="5%" class="text-center">#</th>
-                                <th width="40%" class="text-center">Column A</th>
-                                <th width="10%" class="text-center">Match</th>
-                                <th width="40%" class="text-center">Column B</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr v-for="(item, idx) in question.lhs" :key="idx">
-                                <td class="text-center align-middle match-number">{{ idx + 1 }}</td>
-                                <td class="align-middle">
-                                  <div class="matching-item">
-                                    {{ item }}
+                        <div v-else>
+                          <div class="match-pairs-container">
+                            <div v-for="(item, idx) in question.lhs" :key="'pair-'+idx" class="match-pair-row mb-3">
+                              <!-- Left Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-letter me-2">
+                                    {{ String.fromCharCode(65 + idx) }}
                                   </div>
-                                </td>
-                                <td class="text-center align-middle match-arrow">
-                                  <i class="bi bi-arrow-right-square-fill"></i>
-                                </td>
-                                <td class="align-middle">
-                                  <div class="matching-item" v-if="question.rhs && question.rhs[idx]">
-                                    {{ question.rhs[idx] }}
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="shouldTruncateOption(item) && !isQuestionExpanded(question.id, 'lhs-'+idx)">
+                                      {{ truncateText(item, optionTextMaxLength) }}
+                                      <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-down"></i>
+                                      </button>
+                                    </span>
+                                    <span v-else>
+                                      {{ item }}
+                                      <button v-if="shouldTruncateOption(item)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-up"></i>
+                                      </button>
+                                    </span>
                                   </div>
-                                  <div class="matching-item missing-match" v-else>
-                                    <span class="text-muted fst-italic">No match available</span>
+                                </div>
+                              </div>
+
+                              <!-- Arrow Between -->
+                              <div class="match-pair-arrow">
+                                <div class="match-arrow-circle">
+                                  <i class="bi bi-arrows"></i>
+                                </div>
+                              </div>
+
+                              <!-- Right Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="question.rhs && idx < question.rhs.length">
+                                      <span v-if="shouldTruncateOption(question.rhs[idx]) && !isQuestionExpanded(question.id, 'rhs-'+idx)">
+                                        {{ truncateText(question.rhs[idx], optionTextMaxLength) }}
+                                        <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                      </span>
+                                      <span v-else>
+                                        {{ question.rhs[idx] }}
+                                        <button v-if="shouldTruncateOption(question.rhs[idx])" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-up"></i>
+                                        </button>
+                                      </span>
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">No matching option</span>
                                   </div>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <!-- Add the Odd One Out component to the verified questions section -->
                       <!-- Odd One Out -->
                       <div v-if="question.type === 'Odd One Out'" class="mt-3">
-                        <div class="mcq-header d-flex align-items-center mb-2">
-                          <div class="mcq-title">
-                            <span class="badge bg-dark me-2">Odd One Out</span>
-                          </div>
-                          <div class="flex-grow-1">
-                            <hr class="my-0">
-                          </div>
-                        </div>
                         <div class="row g-2">
                           <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
-                            <div class="option-card p-2 mb-2" :class="{'option-correct': question.correctOptionIndex === optIndex}">
-                              <div class="d-flex align-items-center">
-                                <div class="option-circle me-2" :class="{'option-circle-correct': question.correctOptionIndex === optIndex}">
-                                  {{ String.fromCharCode(65 + optIndex) }}
-                                </div>
-                                <div class="option-text">
-                                  <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
-                                    {{ truncateText(option, optionTextMaxLength) }}
-                                    <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-down"></i>
-                                    </button>
-                                  </span>
-                                  <span v-else>
-                                    {{ option }}
-                                    <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
-                                      <i class="bi bi-chevron-up"></i>
-                                    </button>
-                                  </span>
-                                </div>
-                                <div v-if="question.correctOptionIndex === optIndex" class="option-correct-icon ms-2">
-                                  <i class="bi bi-check-circle-fill text-success"></i>
-                                  <span class="ms-1 text-success fw-bold">Odd One</span>
-                                </div>
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1875,20 +1757,6 @@ function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 }
-
-// Add this function to handle text highlighting for Fill in the Blanks
-function highlightBlanks(text: string): string {
-  if (!text) return '';
-
-  // Replace underscores or common blank placeholders with styled spans
-  // This assumes that blanks are represented by one or more underscores or [blank] tags
-  const replacedText = text
-    .replace(/_{2,}/g, '<span class="blank-placeholder">_____</span>')
-    .replace(/\[blank\]/gi, '<span class="blank-placeholder">_____</span>')
-    .replace(/\[\s*\]/g, '<span class="blank-placeholder">_____</span>');
-
-  return replacedText;
-}
 </script>
 
 <style scoped>
@@ -2213,8 +2081,22 @@ function highlightBlanks(text: string): string {
 }
 
 /* MCQ Options Styling */
-.mcq-header, .match-header {
-  margin-top: 1rem;
+.option-letter {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #212529;
+  text-align: center;
+  font-weight: 600;
+  line-height: 22px;
+  font-size: 0.85rem;
+}
+
+.option-text {
+  line-height: 1.4;
 }
 
 .option-card {
@@ -2253,86 +2135,6 @@ function highlightBlanks(text: string): string {
 
 .option-circle-correct {
   background-color: #43a047;
-}
-
-.option-text {
-  flex-grow: 1;
-  line-height: 1.4;
-}
-
-/* Match the Pairs Styling */
-.matching-table {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.matching-table th {
-  background-color: #f1f3f5;
-  font-weight: 600;
-  padding: 0.75rem;
-}
-
-.matching-table td {
-  padding: 0.75rem;
-}
-
-.matching-item {
-  display: block;
-  padding: 0.75rem;
-  background-color: #ffffff;
-  border-radius: 4px;
-  border-left: 4px solid #6c757d;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.matching-item:hover {
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-}
-
-.match-arrow {
-  color: #343a40;
-  font-size: 1.25rem;
-}
-
-.match-number {
-  font-weight: bold;
-  background-color: #f8f9fa;
-}
-
-.missing-match {
-  border-left-color: #dc3545;
-  background-color: #f8f9fa;
-}
-
-.matching-table-container {
-  overflow-x: auto;
-}
-
-/* Responsive styles for mobile */
-@media (max-width: 768px) {
-  .option-card {
-    margin-bottom: 8px;
-  }
-
-  .option-circle {
-    width: 24px;
-    height: 24px;
-    font-size: 0.8rem;
-  }
-
-  .option-text {
-    font-size: 0.95rem;
-  }
-
-  .matching-table td, .matching-table th {
-    padding: 0.5rem;
-  }
-
-  .matching-item {
-    padding: 0.35rem;
-  }
 }
 
 .option-correct-icon {
@@ -2414,13 +2216,6 @@ function highlightBlanks(text: string): string {
   top: -3px;
   margin: 0 5px;
   padding: 0 10px;
-}
-
-/* Styling for True/False questions */
-.truefalse-container .option-card {
-  transition: all 0.2s ease;
-  border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
 }
 
 /* Styling for One-Word Answer */
@@ -2505,5 +2300,54 @@ function highlightBlanks(text: string): string {
 .correlation-number {
   font-weight: 500;
   background-color: #f8f9fa;
+}
+
+/* Match the Pairs Styling */
+.match-pairs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-pair-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.match-pair-item {
+  flex: 1;
+}
+
+.match-pair-arrow {
+  margin: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  min-width: 30px;
+}
+
+.match-arrow-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .match-pair-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+
+  .match-pair-arrow {
+    align-self: center;
+    transform: rotate(90deg);
+    margin: 0.25rem 0;
+  }
 }
 </style>
