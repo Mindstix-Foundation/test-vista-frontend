@@ -55,12 +55,14 @@
               <!-- Sort Dropdown -->
               <div class="sort-field" style="min-width: 220px;">
                 <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="filterCards">
-                  <option value="question_asc">Sort by Question (A-Z)</option>
-                  <option value="question_desc">Sort by Question (Z-A)</option>
-                  <option value="created_desc">Sort by Created (Newest)</option>
-                  <option value="created_asc">Sort by Created (Oldest)</option>
-                  <option value="updated_desc">Sort by Updated (Newest)</option>
-                  <option value="updated_asc">Sort by Updated (Oldest)</option>
+                  <option value="question_text_asc">Sort by Question (A-Z)</option>
+                  <option value="question_text_desc">Sort by Question (Z-A)</option>
+                  <option value="question_type_id_asc">Sort by Question Type (A-Z)</option>
+                  <option value="question_type_id_desc">Sort by Question Type (Z-A)</option>
+                  <option value="created_at_asc">Sort by Created (Oldest)</option>
+                  <option value="created_at_desc">Sort by Created (Newest)</option>
+                  <option value="updated_at_asc">Sort by Updated (Oldest)</option>
+                  <option value="updated_at_desc">Sort by Updated (Newest)</option>
                 </select>
               </div>
 
@@ -174,7 +176,21 @@
                       <i class="bi bi-trash3 fs-4 ms-2" @click="openDeleteConfirmationModal(index, 'verified')"></i>
                     </div>
                     <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
+                      <p class="card-text">
+                        <strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp;
+                        <span v-if="shouldTruncateQuestion(question.question) && !isQuestionExpanded(question.id, 'question')">
+                          {{ truncateText(question.question, questionTextMaxLength) }}
+                          <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'question')">
+                            <i class="bi bi-chevron-down"></i> Show More
+                          </button>
+                        </span>
+                        <span v-else>
+                          {{ question.question }}
+                          <button v-if="shouldTruncateQuestion(question.question)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'question')">
+                            <i class="bi bi-chevron-up"></i> Show Less
+                          </button>
+                        </span>
+                      </p>
 
                       <!-- Question Image Loading State -->
                       <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
@@ -203,19 +219,223 @@
                         </div>
                       </div>
 
+                      <!-- True or False question type - completely simplified -->
+                      <div v-if="question.type === 'True or False'">
+                        <!-- No additional content needed -->
+                      </div>
+
+                      <!-- One-Word Answer -->
+                      <div v-if="question.type === 'One-Word Answer'" class="mt-3">
+                        <div class="mcq-header d-flex align-items-center mb-2">
+                          <div class="mcq-title">
+                            <span class="badge bg-dark me-2">One-Word Answer</span>
+                          </div>
+                          <div class="flex-grow-1">
+                            <hr class="my-0">
+                          </div>
+                        </div>
+                        <div class="oneword-container p-3" v-if="question.correctAnswer">
+                          <div class="correct-answer-container">
+                            <div class="answer-label">Correct Answer:</div>
+                            <div class="answer-value">{{ question.correctAnswer }}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Short Answer Question -->
+                      <div v-if="question.type === 'Short Answer Question'" class="mt-3">
+                        <div class="mcq-header d-flex align-items-center mb-2">
+                          <div class="mcq-title">
+                            <span class="badge bg-dark me-2">Short Answer Question</span>
+                          </div>
+                          <div class="flex-grow-1">
+                            <hr class="my-0">
+                          </div>
+                        </div>
+                        <div class="shortanswer-container p-3 border rounded bg-light">
+                          <div class="text-muted fst-italic">
+                            <i class="bi bi-info-circle me-1"></i> Short answer expected (approximately 2-3 sentences)
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- MCQ Options in verified questions section -->
                       <!-- MCQ Options -->
-                      <div v-if="question.type === 'MCQ'" class="row g-2">
-                        <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6 col-lg-3">
-                          <strong>{{ String.fromCharCode(97 + optIndex) }} : &nbsp;</strong>{{ option }}
+                      <div v-if="question.type === 'Multiple Choice Question (MCQ)'" class="mt-3">
+                        <div class="row g-2">
+                          <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <!-- Match the Pairs -->
-                      <ul v-if="question.type === 'Match the Pairs' && question.rhs" class="list-group">
-                        <li v-for="(rhs, idx) in question.rhs" :key="idx" class="list-group-item" :class="{ 'disabled': !(question.lhs && question.lhs[idx]) }">
-                          {{ (question.lhs && question.lhs[idx]) || '...........' }} <strong>&lt;-&gt;</strong> {{ rhs }}
-                        </li>
-                      </ul>
+                      <div v-if="question.type === 'Match the Pairs'" class="mt-3">
+                        <!-- Debug info for development -->
+                        <div v-if="!question.lhs || !question.rhs || question.lhs.length === 0 || question.rhs.length === 0" class="alert alert-warning">
+                          <i class="bi bi-exclamation-triangle me-2"></i>
+                          No matching pairs data available for this question. Please check the API response.
+                          <div class="small mt-2">
+                            <strong>Question ID:</strong> {{ question.id }}<br>
+                            <strong>Question Type:</strong> {{ question.type }}<br>
+                            <strong>Has LHS:</strong> {{ question.lhs ? 'Yes (' + question.lhs.length + ' items)' : 'No' }}<br>
+                            <strong>Has RHS:</strong> {{ question.rhs ? 'Yes (' + question.rhs.length + ' items)' : 'No' }}
+                          </div>
+                        </div>
+
+                        <div v-else>
+                          <div class="match-pairs-container">
+                            <div v-for="(item, idx) in question.lhs" :key="'pair-'+idx" class="match-pair-row mb-3">
+                              <!-- Left Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-letter me-2">
+                                    {{ String.fromCharCode(65 + idx) }}
+                                  </div>
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="shouldTruncateOption(item) && !isQuestionExpanded(question.id, 'lhs-'+idx)">
+                                      {{ truncateText(item, optionTextMaxLength) }}
+                                      <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-down"></i>
+                                      </button>
+                                    </span>
+                                    <span v-else>
+                                      {{ item }}
+                                      <button v-if="shouldTruncateOption(item)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-up"></i>
+                                      </button>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <!-- Arrow Between -->
+                              <div class="match-pair-arrow">
+                                <div class="match-arrow-circle">
+                                  <i class="bi bi-arrows"></i>
+                                </div>
+                              </div>
+
+                              <!-- Right Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="question.rhs && idx < question.rhs.length">
+                                      <span v-if="shouldTruncateOption(question.rhs[idx]) && !isQuestionExpanded(question.id, 'rhs-'+idx)">
+                                        {{ truncateText(question.rhs[idx], optionTextMaxLength) }}
+                                        <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                      </span>
+                                      <span v-else>
+                                        {{ question.rhs[idx] }}
+                                        <button v-if="shouldTruncateOption(question.rhs[idx])" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-up"></i>
+                                        </button>
+                                      </span>
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">No matching option</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Add the Odd One Out component to the verified questions section -->
+                      <!-- Odd One Out -->
+                      <div v-if="question.type === 'Odd One Out'" class="mt-3">
+                        <div class="row g-2">
+                          <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Complete the Correlation question type -->
+                      <div v-if="question.type === 'Complete the Correlation'" class="mt-3">
+                        <div class="mcq-header d-flex align-items-center mb-2">
+                          <div class="mcq-title">
+                            <span class="badge bg-dark me-2">Complete the Correlation</span>
+                          </div>
+                          <div class="flex-grow-1">
+                            <hr class="my-0">
+                          </div>
+                        </div>
+                        <div class="correlation-container">
+                          <table class="table table-bordered correlation-table">
+                            <thead class="table-light">
+                              <tr>
+                                <th width="5%" class="text-center">#</th>
+                                <th width="40%" class="text-center">Given</th>
+                                <th width="10%" class="text-center"><i class="bi bi-arrow-left-right"></i></th>
+                                <th width="40%" class="text-center">Complete</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr v-for="(rhs, idx) in question.rhs" :key="idx"
+                                  :class="{ 'table-secondary': !(question.lhs && question.lhs[idx]) }">
+                                <td class="text-center align-middle correlation-number">{{ idx + 1 }}</td>
+                                <td class="align-middle">
+                                  <div class="correlation-item">
+                                    <span v-if="question.lhs && question.lhs[idx]">
+                                      {{ question.lhs[idx] }}
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">No correlation available</span>
+                                  </div>
+                                </td>
+                                <td class="text-center align-middle correlation-arrow">
+                                  <i class="bi bi-link-45deg"></i>
+                                </td>
+                                <td class="align-middle">
+                                  <div class="correlation-item" :class="{'correlation-highlight': question.correctCorrelation && question.correctCorrelation.includes(idx)}">
+                                    {{ rhs }}
+                                    <i v-if="question.correctCorrelation && question.correctCorrelation.includes(idx)"
+                                       class="bi bi-check-circle-fill text-success ms-2"></i>
+                                  </div>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
 
                       <footer class="blockquote-footer text-end mt-2">
                         {{ getTopicsDisplay(question) }} <br> {{ question.type }}
@@ -244,17 +464,31 @@
           </div>
 
           <div v-for="(question, index) in filteredUnverifiedQuestions" :key="'unverified-' + index" class="col-12 col-md-10">
-            <div class="card" :class="[getUnverifiedCardClass(question), { 'card-searching': isSearching }]" :data-unique-id="'unverified-' + index">
+            <div class="card" :class="{ 'card-searching': isSearching }" :data-unique-id="'unverified-' + index">
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
                     <div class="col-12 text-end">
                       <i class="bi bi-pencil-square fs-4 me-2" @click="editQuestion(question)"></i>
                       <i class="bi bi-eraser fs-4 mx-2" @click="openRemoveConfirmationModal(index, 'unverified')"></i>
-                      <i v-if="canVerifyQuestion(question)" class="bi bi-check-lg fs-4 ms-2" @click="openVerifyConfirmationModal(index)"></i>
+                      <i class="bi bi-check-lg fs-4 ms-2" @click="openVerifyConfirmationModal(index)"></i>
                     </div>
                     <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
+                      <p class="card-text">
+                        <strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp;
+                        <span v-if="shouldTruncateQuestion(question.question) && !isQuestionExpanded(question.id, 'question')">
+                          {{ truncateText(question.question, questionTextMaxLength) }}
+                          <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'question')">
+                            <i class="bi bi-chevron-down"></i> Show More
+                          </button>
+                        </span>
+                        <span v-else>
+                          {{ question.question }}
+                          <button v-if="shouldTruncateQuestion(question.question)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'question')">
+                            <i class="bi bi-chevron-up"></i> Show Less
+                          </button>
+                        </span>
+                      </p>
 
                       <!-- Question Image Loading State -->
                       <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
@@ -283,19 +517,223 @@
                         </div>
                       </div>
 
+                      <!-- True or False question type - completely simplified -->
+                      <div v-if="question.type === 'True or False'">
+                        <!-- No additional content needed -->
+                      </div>
+
+                      <!-- One-Word Answer -->
+                      <div v-if="question.type === 'One-Word Answer'" class="mt-3">
+                        <div class="mcq-header d-flex align-items-center mb-2">
+                          <div class="mcq-title">
+                            <span class="badge bg-dark me-2">One-Word Answer</span>
+                          </div>
+                          <div class="flex-grow-1">
+                            <hr class="my-0">
+                          </div>
+                        </div>
+                        <div class="oneword-container p-3" v-if="question.correctAnswer">
+                          <div class="correct-answer-container">
+                            <div class="answer-label">Correct Answer:</div>
+                            <div class="answer-value">{{ question.correctAnswer }}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Short Answer Question -->
+                      <div v-if="question.type === 'Short Answer Question'" class="mt-3">
+                        <div class="mcq-header d-flex align-items-center mb-2">
+                          <div class="mcq-title">
+                            <span class="badge bg-dark me-2">Short Answer Question</span>
+                          </div>
+                          <div class="flex-grow-1">
+                            <hr class="my-0">
+                          </div>
+                        </div>
+                        <div class="shortanswer-container p-3 border rounded bg-light">
+                          <div class="text-muted fst-italic">
+                            <i class="bi bi-info-circle me-1"></i> Short answer expected (approximately 2-3 sentences)
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- MCQ Options in unverified questions section -->
                       <!-- MCQ Options -->
-                      <div v-if="question.type === 'MCQ'" class="row g-2">
-                        <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6 col-lg-3">
-                          <strong>{{ String.fromCharCode(97 + optIndex) }} : &nbsp;</strong>{{ option }}
+                      <div v-if="question.type === 'Multiple Choice Question (MCQ)'" class="mt-3">
+                        <div class="row g-2">
+                          <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <!-- Match the Pairs -->
-                      <ul v-if="question.type === 'Match the Pairs' && question.rhs" class="list-group">
-                        <li v-for="(rhs, idx) in question.rhs" :key="idx" class="list-group-item" :class="{ 'disabled': !(question.lhs && question.lhs[idx]) }">
-                          {{ (question.lhs && question.lhs[idx]) || '...........' }} <strong>&lt;-&gt;</strong> {{ rhs }}
-                        </li>
-                      </ul>
+                      <div v-if="question.type === 'Match the Pairs'" class="mt-3">
+                        <!-- Debug info for development -->
+                        <div v-if="!question.lhs || !question.rhs || question.lhs.length === 0 || question.rhs.length === 0" class="alert alert-warning">
+                          <i class="bi bi-exclamation-triangle me-2"></i>
+                          No matching pairs data available for this question. Please check the API response.
+                          <div class="small mt-2">
+                            <strong>Question ID:</strong> {{ question.id }}<br>
+                            <strong>Question Type:</strong> {{ question.type }}<br>
+                            <strong>Has LHS:</strong> {{ question.lhs ? 'Yes (' + question.lhs.length + ' items)' : 'No' }}<br>
+                            <strong>Has RHS:</strong> {{ question.rhs ? 'Yes (' + question.rhs.length + ' items)' : 'No' }}
+                          </div>
+                        </div>
+
+                        <div v-else>
+                          <div class="match-pairs-container">
+                            <div v-for="(item, idx) in question.lhs" :key="'pair-'+idx" class="match-pair-row mb-3">
+                              <!-- Left Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-letter me-2">
+                                    {{ String.fromCharCode(65 + idx) }}
+                                  </div>
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="shouldTruncateOption(item) && !isQuestionExpanded(question.id, 'lhs-'+idx)">
+                                      {{ truncateText(item, optionTextMaxLength) }}
+                                      <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-down"></i>
+                                      </button>
+                                    </span>
+                                    <span v-else>
+                                      {{ item }}
+                                      <button v-if="shouldTruncateOption(item)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'lhs-'+idx)">
+                                        <i class="bi bi-chevron-up"></i>
+                                      </button>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <!-- Arrow Between -->
+                              <div class="match-pair-arrow">
+                                <div class="match-arrow-circle">
+                                  <i class="bi bi-arrows"></i>
+                                </div>
+                              </div>
+
+                              <!-- Right Side Item -->
+                              <div class="match-pair-item">
+                                <div class="d-flex align-items-center">
+                                  <div class="option-text flex-grow-1">
+                                    <span v-if="question.rhs && idx < question.rhs.length">
+                                      <span v-if="shouldTruncateOption(question.rhs[idx]) && !isQuestionExpanded(question.id, 'rhs-'+idx)">
+                                        {{ truncateText(question.rhs[idx], optionTextMaxLength) }}
+                                        <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                      </span>
+                                      <span v-else>
+                                        {{ question.rhs[idx] }}
+                                        <button v-if="shouldTruncateOption(question.rhs[idx])" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'rhs-'+idx)">
+                                          <i class="bi bi-chevron-up"></i>
+                                        </button>
+                                      </span>
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">No matching option</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Add the Odd One Out component to the verified questions section -->
+                      <!-- Odd One Out -->
+                      <div v-if="question.type === 'Odd One Out'" class="mt-3">
+                        <div class="row g-2">
+                          <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6">
+                            <div class="d-flex align-items-center mb-2" :class="{'text-success fw-bold': question.correctOptionIndex === optIndex}">
+                              <div class="option-letter me-2" :class="{'text-success': question.correctOptionIndex === optIndex}">
+                                {{ String.fromCharCode(65 + optIndex) }}
+                              </div>
+                              <div class="option-text flex-grow-1">
+                                <span v-if="shouldTruncateOption(option) && !isQuestionExpanded(question.id, 'option-'+optIndex)">
+                                  {{ truncateText(option, optionTextMaxLength) }}
+                                  <button class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-down"></i>
+                                  </button>
+                                </span>
+                                <span v-else>
+                                  {{ option }}
+                                  <button v-if="shouldTruncateOption(option)" class="btn btn-sm btn-link p-0 ms-1" @click="toggleExpand(question.id, 'option-'+optIndex)">
+                                    <i class="bi bi-chevron-up"></i>
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Complete the Correlation question type -->
+                      <div v-if="question.type === 'Complete the Correlation'" class="mt-3">
+                        <div class="mcq-header d-flex align-items-center mb-2">
+                          <div class="mcq-title">
+                            <span class="badge bg-dark me-2">Complete the Correlation</span>
+                          </div>
+                          <div class="flex-grow-1">
+                            <hr class="my-0">
+                          </div>
+                        </div>
+                        <div class="correlation-container">
+                          <table class="table table-bordered correlation-table">
+                            <thead class="table-light">
+                              <tr>
+                                <th width="5%" class="text-center">#</th>
+                                <th width="40%" class="text-center">Given</th>
+                                <th width="10%" class="text-center"><i class="bi bi-arrow-left-right"></i></th>
+                                <th width="40%" class="text-center">Complete</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr v-for="(rhs, idx) in question.rhs" :key="idx"
+                                  :class="{ 'table-secondary': !(question.lhs && question.lhs[idx]) }">
+                                <td class="text-center align-middle correlation-number">{{ idx + 1 }}</td>
+                                <td class="align-middle">
+                                  <div class="correlation-item">
+                                    <span v-if="question.lhs && question.lhs[idx]">
+                                      {{ question.lhs[idx] }}
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">No correlation available</span>
+                                  </div>
+                                </td>
+                                <td class="text-center align-middle correlation-arrow">
+                                  <i class="bi bi-link-45deg"></i>
+                                </td>
+                                <td class="align-middle">
+                                  <div class="correlation-item" :class="{'correlation-highlight': question.correctCorrelation && question.correctCorrelation.includes(idx)}">
+                                    {{ rhs }}
+                                    <i v-if="question.correctCorrelation && question.correctCorrelation.includes(idx)"
+                                       class="bi bi-check-circle-fill text-success ms-2"></i>
+                                  </div>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
 
                       <footer class="blockquote-footer text-end mt-2">
                         {{ getTopicsDisplay(question) }} <br> {{ question.type }}
@@ -379,27 +817,7 @@ import { useToastStore } from '@/store/toast'
 interface ApiTopic {
   id: number;
   chapter_id: number;
-  sequential_topic_number: number;
   name: string;
-  created_at: string;
-  updated_at: string;
-  chapter?: {
-    id: number;
-    medium_standard_subject_id: number;
-    sequential_chapter_number: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-  };
-}
-
-interface ApiQuestionTopic {
-  id: number;
-  question_id: number;
-  topic_id: number;
-  created_at: string;
-  updated_at: string;
-  topic: ApiTopic;
 }
 
 interface ApiImage {
@@ -426,10 +844,14 @@ interface ApiMcqOption {
 interface ApiMatchPair {
   id: number;
   question_text_id: number;
-  left_side: string;
-  right_side: string;
+  left_text: string;
+  right_text: string;
+  left_image_id: number | null;
+  right_image_id: number | null;
   created_at: string;
   updated_at: string;
+  left_image: ApiImage | null;
+  right_image: ApiImage | null;
 }
 
 interface ApiQuestionText {
@@ -437,11 +859,12 @@ interface ApiQuestionText {
   question_id: number;
   image_id: number | null;
   question_text: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   image: ApiImage | null;
   mcq_options: ApiMcqOption[];
   match_pairs: ApiMatchPair[];
+  topic: ApiTopic;
 }
 
 interface ApiQuestionType {
@@ -451,18 +874,12 @@ interface ApiQuestionType {
 
 interface ApiQuestion {
   id: number;
-  question_type_id: number;
   board_question: boolean;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
   question_type: ApiQuestionType;
   question_texts: ApiQuestionText[];
-  question_topics: ApiQuestionTopic[];
-  imageId?: number | null;
-  imageUrl?: string | null;
-  imageError?: boolean;
-  imageLoadingState?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  is_verified?: boolean;
 }
 
 // Define interfaces for component's internal use
@@ -478,7 +895,7 @@ interface Question {
   typeId: number;
   topics: Topic[];
   options?: string[];
-  correctOption?: string;
+  correctOptionIndex?: number;
   lhs?: string[];
   rhs?: string[];
   correctAnswer?: string;
@@ -490,6 +907,7 @@ interface Question {
   imageLoading?: boolean;
   imageError?: boolean;
   imageLoadingState?: boolean;
+  correctCorrelation?: number[];
 }
 
 // Component name (for linter)
@@ -531,7 +949,7 @@ const isFilterOpen = ref(false)
 const isSearching = ref(false)
 const isLoading = ref(true)
 const searchInputRef = ref<HTMLInputElement | null>(null)
-const sortOption = ref('question_asc')
+const sortOption = ref('question_text_asc')
 const searchTimeout = ref<number | null>(null)
 
 // Pagination state
@@ -546,6 +964,11 @@ const toastTitle = ref('')
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
 
+// Add this to the script section - new data properties
+const expandedQuestions = ref<Set<string>>(new Set());
+const questionTextMaxLength = 250; // Characters before truncating
+const optionTextMaxLength = 80;  // Characters before truncating for options
+
 // Computed properties to extract IDs from selected objects
 const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id || null)
 const selectedType = computed<number | null>(() => selectedTypeObj.value?.id || null)
@@ -558,12 +981,14 @@ interface SortOption {
 
 // Mapping for sort options to API parameters
 const sortMappings: Record<string, SortOption> = {
-  'question_asc': { sort_by: 'name', sort_order: 'asc' },
-  'question_desc': { sort_by: 'name', sort_order: 'desc' },
-  'created_asc': { sort_by: 'created_at', sort_order: 'asc' },
-  'created_desc': { sort_by: 'created_at', sort_order: 'desc' },
-  'updated_asc': { sort_by: 'updated_at', sort_order: 'asc' },
-  'updated_desc': { sort_by: 'updated_at', sort_order: 'desc' }
+  'question_text_asc': { sort_by: 'question_text', sort_order: 'asc' },
+  'question_text_desc': { sort_by: 'question_text', sort_order: 'desc' },
+  'question_type_id_asc': { sort_by: 'question_type_id', sort_order: 'asc' },
+  'question_type_id_desc': { sort_by: 'question_type_id', sort_order: 'desc' },
+  'created_at_asc': { sort_by: 'created_at', sort_order: 'asc' },
+  'created_at_desc': { sort_by: 'created_at', sort_order: 'desc' },
+  'updated_at_asc': { sort_by: 'updated_at', sort_order: 'asc' },
+  'updated_at_desc': { sort_by: 'updated_at', sort_order: 'desc' }
 }
 
 // Computed properties for filtered questions
@@ -665,21 +1090,6 @@ function getTopicsDisplay(question: Question) {
   return question.topic || ''
 }
 
-function normalizeText(text: string) {
-  return text.toLowerCase().trim()
-}
-
-function getUnverifiedCardClass(question: Question) {
-  // Determine card border class based on question status
-  if (verifiedQuestions.value.some(vq => normalizeText(vq.question) === normalizeText(question.question))) {
-    return 'border-danger' // Red border - duplicate of verified question
-  } else if (unverifiedQuestions.value.filter(uq =>
-    normalizeText(uq.question) === normalizeText(question.question)).length > 1) {
-    return 'border-warning' // Yellow border - duplicate in unverified
-  }
-  return 'border-dark' // Default border
-}
-
 function toggleFilterIcon() {
   // Toggle the filter state
   isFilterOpen.value = !isFilterOpen.value;
@@ -718,11 +1128,6 @@ function clearFilters() {
   selectedTypeObj.value = null;
   // Update filtered results
   filterCards();
-}
-
-function canVerifyQuestion(question: Question) {
-  // Check if question can be verified (not a duplicate of verified question)
-  return !verifiedQuestions.value.some(vq => normalizeText(vq.question) === normalizeText(question.question))
 }
 
 function editQuestion(question: Question) {
@@ -912,34 +1317,52 @@ function deleteUnverifiedQuestion(index: number) {
 function verifyQuestion(index: number) {
   const question = unverifiedQuestions.value[index];
 
-  // First, fetch the question data to get the question text ID
+  // First, fetch the question data to get the necessary details
   axiosInstance.get(`/questions/${question.id}`)
     .then((response) => {
       const questionData = response.data;
 
       // Make sure there's a question text to verify
       if (questionData.question_texts && questionData.question_texts.length > 0) {
-        const questionTextId = questionData.question_texts[0].id;
+        const questionText = questionData.question_texts[0];
+        const questionTextId = questionText.id;
 
-        // Update the verification status of the question text
-        return axiosInstance.put(`/question-texts/${questionTextId}`, { is_verified: true });
+        // Make sure there's a topic associated with the question text
+        if (!questionText.topic || !questionText.topic.id) {
+          throw new Error('Question topic not found');
+        }
+
+        const topicId = questionText.topic.id;
+
+        // Prepare the payload for the verification API
+        const payload = {
+          question_id: question.id,
+          question_text_id: questionTextId,
+          topic_id: topicId,
+          instruction_medium_id: Number(questionBankData.value.mediumId),
+          is_verified: true
+        };
+
+        // Call the new verification API endpoint
+        return axiosInstance.patch('/question-text-topic-medium/verify', payload);
       } else {
         throw new Error('Question text not found');
       }
     })
-    .then(() => {
-      console.log('Question text verified successfully');
+    .then((response) => {
+      console.log('Question verified successfully:', response.data);
+
       // Remove from unverified list
       unverifiedQuestions.value.splice(index, 1);
+
       // Refresh verified questions if we're about to switch to that view
-      // This will apply all filters including instruction_medium_id
       if (!showUnverified.value) {
         fetchQuestions();
       }
 
       // Show success toast
       toastTitle.value = 'Success';
-      toastMessage.value = 'Question text verified successfully';
+      toastMessage.value = response.data?.message || 'Question verified successfully';
       toastType.value = 'success';
       showToast.value = true;
 
@@ -949,11 +1372,11 @@ function verifyQuestion(index: number) {
       }, 3000);
     })
     .catch(error => {
-      console.error('Error verifying question text:', error);
+      console.error('Error verifying question:', error);
 
       // Show error toast
       toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to verify question text';
+      toastMessage.value = error.response?.data?.message || 'Failed to verify question';
       toastType.value = 'error';
       showToast.value = true;
 
@@ -1111,14 +1534,14 @@ async function fetchQuestions() {
     const response = await axiosInstance.get('/questions', { params })
       .catch((error) => {
         console.error('Error fetching questions:', error);
-        return { data: { data: [], meta: { total: 0, total_pages: 0 } } };
+        return { data: { data: [], meta: { total_count: 0, total_pages: 0 } } };
       });
 
     // Handle paginated response
     if (response.data && response.data.data) {
-      // Update pagination data
+      // Update pagination data - updated to match new meta structure
       if (response.data.meta) {
-        totalItems.value = response.data.meta.total || 0;
+        totalItems.value = response.data.meta.total_count || 0;
         totalPages.value = response.data.meta.total_pages || 1;
       }
 
@@ -1140,31 +1563,33 @@ async function fetchQuestions() {
           imageUrl = apiQuestion.question_texts[0].image.presigned_url;
         }
 
-        // Extract topics from question_topics
-        const questionTopics = apiQuestion.question_topics.map(qt => ({
-          id: qt.topic_id,
-          name: qt.topic.name
-        }));
+        // Extract topic from question_text instead of question_topics
+        const questionTopics = [];
+        if (apiQuestion.question_texts.length > 0 && apiQuestion.question_texts[0].topic) {
+          const topicData = apiQuestion.question_texts[0].topic;
+          questionTopics.push({
+            id: topicData.id,
+            name: topicData.name
+          });
 
-        // Also collect topics for the dropdown
-        apiQuestion.question_topics.forEach(qt => {
-          if (qt.topic && qt.topic_id) {
-            // Add to our topics collection if not already present
-            if (!topics.value.some(t => t.id === qt.topic_id)) {
-              topics.value.push({
-                id: qt.topic_id,
-                name: qt.topic.name
-              });
-            }
+          // Add to our topics collection if not already present
+          if (!topics.value.some(t => t.id === topicData.id)) {
+            topics.value.push({
+              id: topicData.id,
+              name: topicData.name
+            });
           }
-        });
+        }
 
         // Handle MCQ options if present
         let options = undefined;
-        if (apiQuestion.question_type.type_name === 'MCQ' &&
+        let correctOptionIndex = undefined;
+        if (apiQuestion.question_type.type_name === 'Multiple Choice Question (MCQ)' &&
             apiQuestion.question_texts.length > 0 &&
             apiQuestion.question_texts[0].mcq_options.length > 0) {
           options = apiQuestion.question_texts[0].mcq_options.map(opt => opt.option_text);
+          correctOptionIndex = apiQuestion.question_texts[0].mcq_options.findIndex(opt => opt.is_correct);
+          if (correctOptionIndex === -1) correctOptionIndex = undefined;
         }
 
         // Handle match pairs if present
@@ -1172,22 +1597,32 @@ async function fetchQuestions() {
         let rhs = undefined;
         if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
             apiQuestion.question_texts.length > 0 &&
+            apiQuestion.question_texts[0].match_pairs &&
             apiQuestion.question_texts[0].match_pairs.length > 0) {
-          lhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.left_side);
-          rhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.right_side);
+
+          // Add detailed debug logging for Match the Pairs
+          console.log('Match the Pairs question found:', apiQuestion.id);
+          console.log('Match Pairs data:', apiQuestion.question_texts[0].match_pairs);
+
+          lhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.left_text);
+          rhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.right_text);
+
+          console.log('Extracted LHS:', lhs);
+          console.log('Extracted RHS:', rhs);
         }
 
         return {
           id: apiQuestion.id,
           question: questionText,
           type: apiQuestion.question_type.type_name,
-          typeId: apiQuestion.question_type_id,
+          typeId: apiQuestion.question_type.id,
           topics: questionTopics,
           options: options,
+          correctOptionIndex: correctOptionIndex,
           lhs: lhs,
           rhs: rhs,
           isPreviousExam: apiQuestion.board_question,
-          isVerified: apiQuestion.is_verified,
+          isVerified: apiQuestion.is_verified ?? !showUnverified.value,
           imageId: imageId,
           imageUrl: imageUrl,
           imageLoading: imageId !== null && imageUrl === null,
@@ -1294,6 +1729,33 @@ async function fetchQuestionTypes() {
   } catch (error) {
     console.error('Error fetching question types:', error);
   }
+}
+
+// Add these functions to handle text truncation and expansion
+function isQuestionExpanded(questionId: number, section: string): boolean {
+  return expandedQuestions.value.has(`${questionId}-${section}`);
+}
+
+function toggleExpand(questionId: number, section: string): void {
+  const key = `${questionId}-${section}`;
+  if (expandedQuestions.value.has(key)) {
+    expandedQuestions.value.delete(key);
+  } else {
+    expandedQuestions.value.add(key);
+  }
+}
+
+function shouldTruncateQuestion(text: string): boolean {
+  return text.length > questionTextMaxLength;
+}
+
+function shouldTruncateOption(text: string): boolean {
+  return text.length > optionTextMaxLength;
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
 }
 </script>
 
@@ -1616,5 +2078,276 @@ async function fetchQuestionTypes() {
   align-items: center;
   background-color: rgba(248, 249, 250, 0.7);
   z-index: 5;
+}
+
+/* MCQ Options Styling */
+.option-letter {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #212529;
+  text-align: center;
+  font-weight: 600;
+  line-height: 22px;
+  font-size: 0.85rem;
+}
+
+.option-text {
+  line-height: 1.4;
+}
+
+.option-card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.option-card:hover {
+  background-color: #e9ecef;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.option-card.option-correct {
+  background-color: #e8f5e9;
+  border-color: #81c784;
+}
+
+.option-card.option-correct:hover {
+  background-color: #c8e6c9;
+}
+
+.option-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #212529;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.option-circle-correct {
+  background-color: #43a047;
+}
+
+.option-correct-icon {
+  font-size: 1.2rem;
+}
+
+.btn-link {
+  color: #007bff;
+  font-size: 0.85rem;
+  text-decoration: none;
+  padding: 0 0.25rem;
+  vertical-align: middle;
+}
+
+.btn-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+/* Improve card spacing and mobile responsiveness */
+.card {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Adjustments for mobile view */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+
+  .option-text {
+    font-size: 0.95rem;
+  }
+
+  .btn-link {
+    font-size: 0.8rem;
+  }
+
+  .matching-table {
+    font-size: 0.9rem;
+  }
+
+  .card-text {
+    font-size: 0.95rem;
+  }
+
+  .mcq-title .badge, .match-title .badge {
+    font-size: 0.75rem;
+  }
+}
+
+/* Styling for Fill in the Blanks */
+.fillblanks-container {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+
+.blanks-question {
+  line-height: 1.8;
+}
+
+.blank-placeholder {
+  display: inline-block;
+  min-width: 100px;
+  height: 2px;
+  background-color: #212529;
+  position: relative;
+  top: -3px;
+  margin: 0 5px;
+  padding: 0 10px;
+}
+
+/* Styling for One-Word Answer */
+.oneword-container {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+
+.correct-answer-container {
+  display: flex;
+  align-items: center;
+}
+
+.answer-label {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #6c757d;
+}
+
+.answer-value {
+  font-weight: 500;
+  padding: 5px 15px;
+  background-color: #e8f4f8;
+  border-radius: 4px;
+  border-left: 3px solid #0d6efd;
+}
+
+/* Short Answer Question styling */
+.shortanswer-container {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+
+/* Styling for Odd One Out */
+.odd-one-out-container .option-correct {
+  background-color: rgba(217, 234, 211, 0.7);
+  border-color: #75b798;
+}
+
+.odd-one-out-container .option-correct:hover {
+  background-color: rgba(217, 234, 211, 0.9);
+}
+
+/* Styling for Complete the Correlation */
+.correlation-container {
+  overflow-x: auto;
+}
+
+.correlation-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.correlation-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 3px solid #6c757d;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+}
+
+.correlation-item:hover {
+  background-color: #e9ecef;
+}
+
+.correlation-highlight {
+  border-left: 3px solid #28a745;
+  background-color: rgba(217, 234, 211, 0.7);
+}
+
+.correlation-highlight:hover {
+  background-color: rgba(217, 234, 211, 0.9);
+}
+
+.correlation-arrow {
+  font-size: 1.25rem;
+  color: #6c757d;
+}
+
+.correlation-number {
+  font-weight: 500;
+  background-color: #f8f9fa;
+}
+
+/* Match the Pairs Styling */
+.match-pairs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-pair-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.match-pair-item {
+  flex: 1;
+}
+
+.match-pair-arrow {
+  margin: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  min-width: 30px;
+}
+
+.match-arrow-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .match-pair-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+
+  .match-pair-arrow {
+    align-self: center;
+    transform: rotate(90deg);
+    margin: 0.25rem 0;
+  }
 }
 </style>
