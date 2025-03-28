@@ -56,7 +56,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link pb-0 disabled"
+                class="nav-link pb-0 "
                 id="navSyllabus"
                 title="Coming soon"
               >
