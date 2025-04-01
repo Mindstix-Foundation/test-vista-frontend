@@ -55,13 +55,14 @@
               </a>
             </li>
             <li class="nav-item">
-              <a
-                class="nav-link pb-0 "
+              <router-link
+                to="/teacher/syllabus"
+                class="nav-link pb-0"
                 id="navSyllabus"
-                title="Coming soon"
+                @click="closeOffcanvas"
               >
                 SYLLABUS
-              </a>
+              </router-link>
             </li>
             <li class="nav-item">
               <router-link
