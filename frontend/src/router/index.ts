@@ -213,9 +213,28 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['TEACHER'] },
     children: [
       {
+        path: '',
+        redirect: { name: 'teacherHome' },
+      },
+      {
+        path: 'home',
+        name: 'teacherHome',
+        component: () => import('@/views/teacher/home/TeacherHome.vue'),
+      },
+      {
         path: 'profile',
         name: 'teacherProfile',
         component: TeacherProfile,
+      },
+      {
+        path: 'syllabus',
+        name: 'teacherSyllabus',
+        component: () => import('@/views/teacher/syllabus/ViewSyllabusDashboard.vue'),
+      },
+      {
+        path: 'syllabus/view',
+        name: 'viewSyllabusDetail',
+        component: () => import('@/views/teacher/syllabus/ViewSyllabus.vue'),
       },
     ],
   },
