@@ -190,7 +190,7 @@
                     <div v-if="imageLoading" class="image-loading-overlay">
                       <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading image...</span>
-                      </div
+                      </div>
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
