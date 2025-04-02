@@ -195,6 +195,12 @@ const routes: RouteRecordRaw[] = [
         name: 'addTranslation',
         component: () => import('@/views/admin/questionBank/AddTranslation.vue'),
       },
+      // Edit Translation route
+      {
+        path: 'questionBank/translation/:id/edit',
+        name: 'editTranslation',
+        component: () => import('@/views/admin/questionBank/EditTranslation.vue'),
+      },
     ],
   },
   {

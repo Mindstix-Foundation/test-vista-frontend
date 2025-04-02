@@ -305,10 +305,13 @@ const fetchData = async () => {
     const mediumStandardSubject: MediumStandardSubject = mediumStandardSubjectResponse.data[0]
     mediumStandardSubjectId.value = mediumStandardSubject.id
 
-    // Fetch chapters using the correct medium_standard_subject_id
-    const chaptersResponse = await axiosInstance.get(
-      `/chapters?mediumStandardSubjectId=${mediumStandardSubject.id}`,
-    )
+    // Fetch chapters using only subject ID and standard ID as per updated API
+    const chaptersResponse = await axiosInstance.get('/chapters', {
+      params: {
+        subjectId: subjectId,
+        standardId: standardId
+      }
+    })
 
     // Transform the response data to match our interface
     const chaptersData = chaptersResponse.data
@@ -450,14 +453,9 @@ const handleChapterReorder = async ({ item, newIndex }: Sortable.SortableEvent) 
     // Get the chapter ID from the dragged item
     const chapterId = Number(item.getAttribute('data-chapter-id'))
 
-    // Use the stored mediumStandardSubjectId instead of the route params
-    if (!mediumStandardSubjectId.value) {
-      throw new Error('Medium standard subject ID not found')
-    }
-
     // Make API call to update only the dragged chapter's position
-    await axiosInstance.put(`/chapters/reorder/${chapterId}/${mediumStandardSubjectId.value}`, {
-      sequential_chapter_number: newIndex + 1,
+    await axiosInstance.put(`/chapters/reorder/${chapterId}`, {
+      sequential_chapter_number: newIndex + 1
     })
 
     // Store the expanded states before fetching
@@ -506,7 +504,7 @@ const handleTopicReorder = async ({ item, newIndex }: Sortable.SortableEvent) =>
 
     // Make API call to update only the dragged topic's position
     await axiosInstance.put(`/topics/reorder/${topicId}/${chapterId}`, {
-      sequential_topic_number: newIndex + 1,
+      sequential_topic_number: newIndex + 1
     })
 
     // Store the expanded states before fetching

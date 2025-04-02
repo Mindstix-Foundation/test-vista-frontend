@@ -241,25 +241,15 @@ interface BoardSubject {
   board_id: number
 }
 
-interface MediumStandardSubject {
-  id: number
-  instruction_medium_id: number
-  standard_id: number
-  subject: {
-    id: number
-    name: string
-  }
-}
-
 interface AvailableSubject {
   id: number
   name: string
 }
 
-interface MappedSubject {
-  id: number // mapping id
+// New API response interface
+interface SubjectResponse {
   subject_id: number
-  name: string
+  subject_name: string
 }
 
 const route = useRoute()
@@ -274,7 +264,6 @@ const modalSearchQuery = ref('')
 const selectedSubjectIds = ref<number[]>([])
 const availableSubjects = ref<AvailableSubject[]>([])
 const toastStore = useToastStore()
-const mappedSubjects = ref<MappedSubject[]>([])
 
 // Fetch board, medium, and standard details
 onMounted(async () => {
@@ -315,23 +304,22 @@ const fetchSubjects = async () => {
       `/medium-standard-subjects/medium/${selectedMedium.value?.id}/standard/${selectedStandard.value?.id}?board_id=${selectedBoard.value?.id}`,
     )
 
-    // Store mapped subjects with their mapping IDs
-    mappedSubjects.value = response.data.map((item: MediumStandardSubject) => ({
-      id: item.id, // mapping id
-      subject_id: item.subject.id,
-      name: item.subject.name,
-    }))
+    // Updated to handle new API response format
+    // Store the subjects based on the new response format
+    const subjectData = response.data as SubjectResponse[]
 
-    // Update subjects list
-    subjects.value = mappedSubjects.value.map((item) => ({
+    // Update subjects list directly from the response
+    subjects.value = subjectData.map((item) => ({
       id: item.subject_id,
-      name: item.name,
+      name: item.subject_name,
       isNew: false,
     }))
+
+    // We no longer need to map to mappedSubjects as the response format has changed
+    // This will affect subject removal logic, so we'll need to handle that separately
   } catch (error) {
     console.error('Error fetching subjects:', error)
     subjects.value = []
-    mappedSubjects.value = []
   }
 }
 
@@ -352,8 +340,8 @@ const navigateToAddSubject = async () => {
     const response = await axiosInstance.get(`/subjects/board/${selectedBoard.value?.id}`)
     const boardSubjects = response.data
 
-    // Get the current mapped subject IDs
-    const currentSubjectIds = mappedSubjects.value.map((subject) => subject.subject_id)
+    // Get the current mapped subject IDs from our subjects list
+    const currentSubjectIds = subjects.value.map((subject) => subject.id)
 
     // Set all subjects as available and pre-select mapped ones
     availableSubjects.value = boardSubjects.map((subject: BoardSubject) => ({
@@ -406,29 +394,33 @@ const toggleSubjectSelection = (subjectId: number) => {
 const addSelectedSubjects = async () => {
   try {
     // Find subjects to add and remove
-    const currentMappedIds = mappedSubjects.value.map((m) => m.subject_id)
-    const subjectsToAdd = selectedSubjectIds.value.filter((id) => !currentMappedIds.includes(id))
-    const subjectsToRemove = mappedSubjects.value.filter(
-      (m) => !selectedSubjectIds.value.includes(m.subject_id),
+    const currentSubjectIds = subjects.value.map((subject) => subject.id)
+    const subjectsToAdd = selectedSubjectIds.value.filter((id) => !currentSubjectIds.includes(id))
+    const subjectsToRemove = currentSubjectIds.filter(
+      (id) => !selectedSubjectIds.value.includes(id)
     )
 
-    // Handle deletions
-    for (const mapping of subjectsToRemove) {
+    // Handle removals - we need to use a different API call now
+    for (const subjectId of subjectsToRemove) {
       try {
-        await axiosInstance.delete(`/medium-standard-subjects/${mapping.id}`)
+        // Delete using the compound key instead of mapping ID
+        await axiosInstance.delete(
+          `/medium-standard-subjects/medium/${selectedMedium.value?.id}/standard/${selectedStandard.value?.id}/subject/${subjectId}`
+        )
       } catch (error) {
         const axiosError = error as { response?: { status: number } }
         if (axiosError.response && axiosError.response.status === 409) {
+          const subjectName = subjects.value.find(s => s.id === subjectId)?.name || 'Unknown'
           toastStore.showToast({
             title: 'Error',
-            message: `Cannot remove subject "${mapping.name}" as it has existing relationships.`,
+            message: `Cannot remove subject "${subjectName}" as it has existing relationships.`,
             type: 'error',
           })
           // Keep the subject selected as deletion failed
-          selectedSubjectIds.value.push(mapping.subject_id)
+          selectedSubjectIds.value.push(subjectId)
           continue
         }
-        throw new Error(`Failed to delete subject mapping for "${mapping.name}"`)
+        throw new Error(`Failed to delete subject mapping`)
       }
     }
 

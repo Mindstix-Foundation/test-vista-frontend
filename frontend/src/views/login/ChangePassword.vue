@@ -102,8 +102,10 @@ import { useRouter } from 'vue-router'
 import LoginNavBar from '@/components/LoginNavBar.vue'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import axiosInstance from '@/config/axios'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
@@ -191,9 +193,15 @@ const changePassword = async () => {
     newPassword.value = ''
     confirmPassword.value = ''
 
-    // Wait for 2 seconds before redirecting to profile
+    // Wait for 2 seconds before redirecting to appropriate profile based on user role
     setTimeout(() => {
-      router.push({ name: 'adminProfile' })
+      // Check user role and redirect accordingly
+      const userRole = authStore.userRole
+      if (userRole === 'TEACHER') {
+        router.push({ name: 'teacherProfile' })
+      } else {
+        router.push({ name: 'adminProfile' })
+      }
     }, 2000)
   } catch (error: unknown) {
     console.error('Password change error:', error)
@@ -222,7 +230,13 @@ const changePassword = async () => {
 }
 
 const goToProfile = () => {
-  router.push({ name: 'adminProfile' })
+  // Redirect to appropriate profile based on user role
+  const userRole = authStore.userRole
+  if (userRole === 'TEACHER') {
+    router.push({ name: 'teacherProfile' })
+  } else {
+    router.push({ name: 'adminProfile' })
+  }
 }
 </script>
 

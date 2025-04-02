@@ -55,12 +55,14 @@
               <!-- Sort Dropdown -->
               <div class="sort-field" style="min-width: 220px;">
                 <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="filterCards">
-                  <option value="question_asc">Sort by Question (A-Z)</option>
-                  <option value="question_desc">Sort by Question (Z-A)</option>
-                  <option value="created_desc">Sort by Created (Newest)</option>
-                  <option value="created_asc">Sort by Created (Oldest)</option>
-                  <option value="updated_desc">Sort by Updated (Newest)</option>
-                  <option value="updated_asc">Sort by Updated (Oldest)</option>
+                  <option value="question_text_asc">Sort by Question (A-Z)</option>
+                  <option value="question_text_desc">Sort by Question (Z-A)</option>
+                  <option value="question_type_id_asc">Sort by Question Type (A-Z)</option>
+                  <option value="question_type_id_desc">Sort by Question Type (Z-A)</option>
+                  <option value="created_at_asc">Sort by Created (Oldest)</option>
+                  <option value="created_at_desc">Sort by Created (Newest)</option>
+                  <option value="updated_at_asc">Sort by Updated (Oldest)</option>
+                  <option value="updated_at_desc">Sort by Updated (Newest)</option>
                 </select>
               </div>
 
@@ -168,60 +170,40 @@
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
-                    <div class="col-12 text-end">
-                      <i class="bi bi-pencil-square fs-4 me-2" @click="editQuestion(question)"></i>
-                      <i class="bi bi-eraser fs-4 mx-2" @click="openRemoveConfirmationModal(index, 'verified')"></i>
-                      <i class="bi bi-trash3 fs-4 ms-2" @click="openDeleteConfirmationModal(index, 'verified')"></i>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <span v-if="question.translationStatus" class="badge bg-dark me-1">{{ getTranslationStatusText(question.translationStatus) }}</span>
+                        <span v-if="question.isPreviousExam" class="badge bg-info">Board Exam</span>
+                      </div>
+                      <div class="text-end ms-auto">
+                        <i class="bi bi-pencil-square fs-4 me-2" @click="editQuestion(question)"></i>
+                        <i class="bi bi-eraser fs-4 mx-2" @click="openRemoveConfirmationModal(index, 'verified')"></i>
+                        <i class="bi bi-trash3 fs-4 ms-2" @click="openDeleteConfirmationModal(index, 'verified')"></i>
+                      </div>
                     </div>
-                    <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
 
-                      <!-- Question Image Loading State -->
-                      <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
-                        <div class="spinner-border text-primary" role="status">
-                          <span class="visually-hidden">Loading image...</span>
-                        </div>
-                      </div>
-
-                      <!-- Question Image (if available) -->
-                      <div v-else-if="question.imageUrl" class="question-image-container mb-3">
-                        <div v-if="question.imageLoadingState" class="image-loading-overlay">
-                          <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading image...</span>
-                          </div>
-                        </div>
-                        <img
-                          :src="question.imageUrl"
-                          class="question-image"
-                          alt="Question Image"
-                          @load="handleImageLoad(question)"
-                          @error="handleImageError(question)"
-                        />
-                        <div v-if="question.imageError" class="image-error-message">
-                          <i class="bi bi-exclamation-triangle"></i>
-                          Failed to load image
-                        </div>
-                      </div>
-
-                      <!-- MCQ Options -->
-                      <div v-if="question.type === 'MCQ'" class="row g-2">
-                        <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6 col-lg-3">
-                          <strong>{{ String.fromCharCode(97 + optIndex) }} : &nbsp;</strong>{{ option }}
-                        </div>
-                      </div>
-
-                      <!-- Match the Pairs -->
-                      <ul v-if="question.type === 'Match the Pairs' && question.rhs" class="list-group">
-                        <li v-for="(rhs, idx) in question.rhs" :key="idx" class="list-group-item" :class="{ 'disabled': !(question.lhs && question.lhs[idx]) }">
-                          {{ (question.lhs && question.lhs[idx]) || '...........' }} <strong>&lt;-&gt;</strong> {{ rhs }}
-                        </li>
-                      </ul>
-
-                      <footer class="blockquote-footer text-end mt-2">
-                        {{ getTopicsDisplay(question) }} <br> {{ question.type }}
-                        <span v-if="question.isPreviousExam" class="badge bg-info ms-2">Board Exam</span>
-                      </footer>
-                    </blockquote>
+                    <!-- Replace the blockquote and all question display with QuestionDisplay component -->
+                    <QuestionDisplay
+                      :question="question.question"
+                      :questionId="question.id"
+                      :questionNumber="(currentPage - 1) * pageSize + index + 1"
+                      :questionType="question.type"
+                      :topics="question.topics"
+                      :options="question.options"
+                      :correctOptionIndex="question.correctOptionIndex"
+                      :lhs="question.lhs"
+                      :rhs="question.rhs"
+                      :lhsImages="question.lhsImages"
+                      :rhsImages="question.rhsImages"
+                      :correctAnswer="question.correctAnswer"
+                      :imageUrl="question.imageUrl"
+                      :optionImages="question.optionImages"
+                      :isPreviousExam="question.isPreviousExam"
+                      :showFooter="true"
+                      :highlightCorrect="true"
+                      :questionTextMaxLength="questionTextMaxLength"
+                      :optionTextMaxLength="optionTextMaxLength"
+                    />
                   </div>
                 </div>
               </div>
@@ -244,64 +226,44 @@
           </div>
 
           <div v-for="(question, index) in filteredUnverifiedQuestions" :key="'unverified-' + index" class="col-12 col-md-10">
-            <div class="card" :class="[getUnverifiedCardClass(question), { 'card-searching': isSearching }]" :data-unique-id="'unverified-' + index">
+            <div class="card" :class="{ 'card-searching': isSearching }" :data-unique-id="'unverified-' + index">
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
-                    <div class="col-12 text-end">
-                      <i class="bi bi-pencil-square fs-4 me-2" @click="editQuestion(question)"></i>
-                      <i class="bi bi-eraser fs-4 mx-2" @click="openRemoveConfirmationModal(index, 'unverified')"></i>
-                      <i v-if="canVerifyQuestion(question)" class="bi bi-check-lg fs-4 ms-2" @click="openVerifyConfirmationModal(index)"></i>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <span v-if="question.translationStatus" class="badge bg-dark me-1">{{ getTranslationStatusText(question.translationStatus) }}</span>
+                        <span v-if="question.isPreviousExam" class="badge bg-info">Board Exam</span>
+                      </div>
+                      <div class="text-end ms-auto">
+                        <i class="bi bi-pencil-square fs-4 me-2" @click="editQuestion(question)"></i>
+                        <i class="bi bi-eraser fs-4 mx-2" @click="openRemoveConfirmationModal(index, 'unverified')"></i>
+                        <i class="bi bi-check-lg fs-4 ms-2" @click="openVerifyConfirmationModal(index)"></i>
+                      </div>
                     </div>
-                    <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q{{ (currentPage - 1) * pageSize + index + 1 }}:</strong> &nbsp; {{ question.question }}</p>
 
-                      <!-- Question Image Loading State -->
-                      <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
-                        <div class="spinner-border text-primary" role="status">
-                          <span class="visually-hidden">Loading image...</span>
-                        </div>
-                      </div>
-
-                      <!-- Question Image (if available) -->
-                      <div v-else-if="question.imageUrl" class="question-image-container mb-3">
-                        <div v-if="question.imageLoadingState" class="image-loading-overlay">
-                          <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading image...</span>
-                          </div>
-                        </div>
-                        <img
-                          :src="question.imageUrl"
-                          class="question-image"
-                          alt="Question Image"
-                          @load="handleImageLoad(question)"
-                          @error="handleImageError(question)"
-                        />
-                        <div v-if="question.imageError" class="image-error-message">
-                          <i class="bi bi-exclamation-triangle"></i>
-                          Failed to load image
-                        </div>
-                      </div>
-
-                      <!-- MCQ Options -->
-                      <div v-if="question.type === 'MCQ'" class="row g-2">
-                        <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6 col-lg-3">
-                          <strong>{{ String.fromCharCode(97 + optIndex) }} : &nbsp;</strong>{{ option }}
-                        </div>
-                      </div>
-
-                      <!-- Match the Pairs -->
-                      <ul v-if="question.type === 'Match the Pairs' && question.rhs" class="list-group">
-                        <li v-for="(rhs, idx) in question.rhs" :key="idx" class="list-group-item" :class="{ 'disabled': !(question.lhs && question.lhs[idx]) }">
-                          {{ (question.lhs && question.lhs[idx]) || '...........' }} <strong>&lt;-&gt;</strong> {{ rhs }}
-                        </li>
-                      </ul>
-
-                      <footer class="blockquote-footer text-end mt-2">
-                        {{ getTopicsDisplay(question) }} <br> {{ question.type }}
-                        <span v-if="question.isPreviousExam" class="badge bg-info ms-2">Board Exam</span>
-                      </footer>
-                    </blockquote>
+                    <!-- Replace the blockquote and all question display with QuestionDisplay component -->
+                    <QuestionDisplay
+                      :question="question.question"
+                      :questionId="question.id"
+                      :questionNumber="(currentPage - 1) * pageSize + index + 1"
+                      :questionType="question.type"
+                      :topics="question.topics"
+                      :options="question.options"
+                      :correctOptionIndex="question.correctOptionIndex"
+                      :lhs="question.lhs"
+                      :rhs="question.rhs"
+                      :lhsImages="question.lhsImages"
+                      :rhsImages="question.rhsImages"
+                      :correctAnswer="question.correctAnswer"
+                      :imageUrl="question.imageUrl"
+                      :optionImages="question.optionImages"
+                      :isPreviousExam="question.isPreviousExam"
+                      :showFooter="true"
+                      :highlightCorrect="true"
+                      :questionTextMaxLength="questionTextMaxLength"
+                      :optionTextMaxLength="optionTextMaxLength"
+                    />
                   </div>
                 </div>
               </div>
@@ -374,32 +336,13 @@ import { Modal, Collapse } from 'bootstrap'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 import { useToastStore } from '@/store/toast'
+import QuestionDisplay from '@/components/questiondisplay/QuestionDisplay.vue'
 
 // Define interfaces for API response
 interface ApiTopic {
   id: number;
   chapter_id: number;
-  sequential_topic_number: number;
   name: string;
-  created_at: string;
-  updated_at: string;
-  chapter?: {
-    id: number;
-    medium_standard_subject_id: number;
-    sequential_chapter_number: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-  };
-}
-
-interface ApiQuestionTopic {
-  id: number;
-  question_id: number;
-  topic_id: number;
-  created_at: string;
-  updated_at: string;
-  topic: ApiTopic;
 }
 
 interface ApiImage {
@@ -421,15 +364,21 @@ interface ApiMcqOption {
   is_correct: boolean;
   created_at: string;
   updated_at: string;
+  image_id?: number | null;
+  image?: ApiImage | null;
 }
 
 interface ApiMatchPair {
   id: number;
   question_text_id: number;
-  left_side: string;
-  right_side: string;
+  left_text: string;
+  right_text: string;
+  left_image_id: number | null;
+  right_image_id: number | null;
   created_at: string;
   updated_at: string;
+  left_image: ApiImage | null;
+  right_image: ApiImage | null;
 }
 
 interface ApiQuestionText {
@@ -437,11 +386,14 @@ interface ApiQuestionText {
   question_id: number;
   image_id: number | null;
   question_text: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   image: ApiImage | null;
   mcq_options: ApiMcqOption[];
   match_pairs: ApiMatchPair[];
+  topic: ApiTopic;
+  translation_status?: string;
+  answer_text?: string;
 }
 
 interface ApiQuestionType {
@@ -451,24 +403,19 @@ interface ApiQuestionType {
 
 interface ApiQuestion {
   id: number;
-  question_type_id: number;
   board_question: boolean;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
   question_type: ApiQuestionType;
   question_texts: ApiQuestionText[];
-  question_topics: ApiQuestionTopic[];
-  imageId?: number | null;
-  imageUrl?: string | null;
-  imageError?: boolean;
-  imageLoadingState?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  is_verified?: boolean;
 }
 
 // Define interfaces for component's internal use
 interface Topic {
   id: number;
   name: string;
+  topic: string;  // Make sure the topic property is defined in the interface
 }
 
 interface Question {
@@ -478,7 +425,7 @@ interface Question {
   typeId: number;
   topics: Topic[];
   options?: string[];
-  correctOption?: string;
+  correctOptionIndex?: number;
   lhs?: string[];
   rhs?: string[];
   correctAnswer?: string;
@@ -487,9 +434,12 @@ interface Question {
   isVerified: boolean;
   imageId?: number | null;
   imageUrl?: string | null;
-  imageLoading?: boolean;
-  imageError?: boolean;
-  imageLoadingState?: boolean;
+  correctCorrelation?: number[];
+  question_text_id?: number;
+  optionImages?: string[];
+  translationStatus?: string;
+  lhsImages?: string[];
+  rhsImages?: string[];
 }
 
 // Component name (for linter)
@@ -531,7 +481,7 @@ const isFilterOpen = ref(false)
 const isSearching = ref(false)
 const isLoading = ref(true)
 const searchInputRef = ref<HTMLInputElement | null>(null)
-const sortOption = ref('question_asc')
+const sortOption = ref('question_text_asc')
 const searchTimeout = ref<number | null>(null)
 
 // Pagination state
@@ -546,6 +496,11 @@ const toastTitle = ref('')
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
 
+// Add this to the script section - new data properties
+// expandedQuestions was removed since question display is now handled by QuestionDisplay component
+const questionTextMaxLength = 250; // Characters before truncating
+const optionTextMaxLength = 80;  // Characters before truncating for options
+
 // Computed properties to extract IDs from selected objects
 const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id || null)
 const selectedType = computed<number | null>(() => selectedTypeObj.value?.id || null)
@@ -558,12 +513,14 @@ interface SortOption {
 
 // Mapping for sort options to API parameters
 const sortMappings: Record<string, SortOption> = {
-  'question_asc': { sort_by: 'name', sort_order: 'asc' },
-  'question_desc': { sort_by: 'name', sort_order: 'desc' },
-  'created_asc': { sort_by: 'created_at', sort_order: 'asc' },
-  'created_desc': { sort_by: 'created_at', sort_order: 'desc' },
-  'updated_asc': { sort_by: 'updated_at', sort_order: 'asc' },
-  'updated_desc': { sort_by: 'updated_at', sort_order: 'desc' }
+  'question_text_asc': { sort_by: 'question_text', sort_order: 'asc' },
+  'question_text_desc': { sort_by: 'question_text', sort_order: 'desc' },
+  'question_type_id_asc': { sort_by: 'question_type_id', sort_order: 'asc' },
+  'question_type_id_desc': { sort_by: 'question_type_id', sort_order: 'desc' },
+  'created_at_asc': { sort_by: 'created_at', sort_order: 'asc' },
+  'created_at_desc': { sort_by: 'created_at', sort_order: 'desc' },
+  'updated_at_asc': { sort_by: 'updated_at', sort_order: 'asc' },
+  'updated_at_desc': { sort_by: 'updated_at', sort_order: 'desc' }
 }
 
 // Computed properties for filtered questions
@@ -658,28 +615,6 @@ function filterCards() {
   fetchQuestions();
 }
 
-function getTopicsDisplay(question: Question) {
-  if (question.topics && question.topics.length > 0) {
-    return question.topics.map(topic => topic.name).join(', ')
-  }
-  return question.topic || ''
-}
-
-function normalizeText(text: string) {
-  return text.toLowerCase().trim()
-}
-
-function getUnverifiedCardClass(question: Question) {
-  // Determine card border class based on question status
-  if (verifiedQuestions.value.some(vq => normalizeText(vq.question) === normalizeText(question.question))) {
-    return 'border-danger' // Red border - duplicate of verified question
-  } else if (unverifiedQuestions.value.filter(uq =>
-    normalizeText(uq.question) === normalizeText(question.question)).length > 1) {
-    return 'border-warning' // Yellow border - duplicate in unverified
-  }
-  return 'border-dark' // Default border
-}
-
 function toggleFilterIcon() {
   // Toggle the filter state
   isFilterOpen.value = !isFilterOpen.value;
@@ -720,19 +655,25 @@ function clearFilters() {
   filterCards();
 }
 
-function canVerifyQuestion(question: Question) {
-  // Check if question can be verified (not a duplicate of verified question)
-  return !verifiedQuestions.value.some(vq => normalizeText(vq.question) === normalizeText(question.question))
-}
-
 function editQuestion(question: Question) {
-  // Navigate to edit question page with question ID
-  router.push({
-    name: 'editQuestion',
-    params: {
-      id: question.id
-    }
-  })
+  // Check if this is a translated question
+  if (question.translationStatus === 'translated') {
+    // Navigate to edit translation page with question ID
+    router.push({
+      name: 'editTranslation',
+      params: {
+        id: question.id
+      }
+    });
+  } else {
+    // Navigate to regular edit question page with question ID
+    router.push({
+      name: 'editQuestion',
+      params: {
+        id: question.id
+      }
+    });
+  }
 }
 
 function openRemoveConfirmationModal(index: number, type: 'verified' | 'unverified') {
@@ -775,16 +716,122 @@ function openDeleteConfirmationModal(index: number, type: 'verified' | 'unverifi
 }
 
 function openVerifyConfirmationModal(index: number) {
+  // Get the question from our unverified questions
+  const question = unverifiedQuestions.value[index];
+
+  // Determine if this is a translated question
+  const isTranslated = question.translationStatus === 'translated';
+
+  // Set appropriate message based on translation status
+  const message = isTranslated
+    ? 'Are you sure you want to verify this translated question in the Question Bank?'
+    : 'Are you sure you want to verify this original question in the Question Bank?';
+
+  // If this is a translated question, we need to check if the original is verified
+  if (isTranslated && question.topics && question.topics.length > 0) {
+    const topicId = question.topics[0].id;
+
+    // Show loading message while we check the original
+    const modalElement = document.createElement('div');
+    modalElement.className = 'modal fade';
+    modalElement.id = 'loadingModal';
+    modalElement.setAttribute('tabindex', '-1');
+    modalElement.setAttribute('aria-hidden', 'true');
+    modalElement.setAttribute('data-bs-backdrop', 'static');
+    modalElement.setAttribute('data-bs-keyboard', 'false');
+
+    modalElement.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-body text-center p-4">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mb-0">Checking original question status...</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modalElement);
+    const loadingModal = new Modal(modalElement);
+    loadingModal.show();
+
+    // Function to properly clean up loading modal
+    const cleanupLoadingModal = () => {
+      loadingModal.hide();
+      setTimeout(() => {
+        modalElement.remove();
+
+        // Clean up any remaining backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => {
+          backdrop.remove();
+        });
+
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+      }, 300);
+    };
+
+    // Check if the original question is verified
+    axiosInstance.get(`/questions/${question.id}/topic/${topicId}/verified-texts`)
+      .then(response => {
+        cleanupLoadingModal();
+
+        setTimeout(() => {
+          // If we have verified texts, proceed with normal verify modal
+          if (response.data && response.data.question_texts && response.data.question_texts.length > 0) {
+            showVerifyModal(message, index);
+          } else {
+            // If no verified texts, show error modal instead
+            createConfirmationModal({
+              title: 'Cannot Verify Translation',
+              titleClass: 'bg-warning text-black',
+              message: 'The original question has not been verified yet. You cannot verify a translation before the original question is verified.',
+              confirmButtonClass: 'btn-warning',
+              confirmButtonText: 'OK',
+              onConfirm: () => { /* Do nothing, just close */ }
+            });
+          }
+        }, 350);
+      })
+      .catch(error => {
+        console.error('Error checking original question status:', error);
+        cleanupLoadingModal();
+
+        setTimeout(() => {
+          // Show error modal
+          createConfirmationModal({
+            title: 'Error',
+            titleClass: 'bg-danger text-white',
+            message: 'Failed to check original question status. Please try again.',
+            confirmButtonClass: 'btn-danger',
+            confirmButtonText: 'OK',
+            onConfirm: () => { /* Do nothing, just close */ }
+          });
+        }, 350);
+      });
+  } else {
+    // For original questions, just show the normal verify modal
+    showVerifyModal(message, index);
+  }
+}
+
+// Helper function to show the verification modal
+function showVerifyModal(message: string, index: number) {
   createConfirmationModal({
     title: 'Verify Question',
     titleClass: 'bg-success text-black',
-    message: 'You want to add this question in the Question Bank?',
+    message: message,
     confirmButtonClass: 'btn-success',
     confirmButtonText: 'Yes',
     onConfirm: () => {
-      verifyQuestion(index)
+      verifyQuestion(index);
     }
-  })
+  });
 }
 
 function createConfirmationModal(options: {
@@ -827,21 +874,37 @@ function createConfirmationModal(options: {
   const modal = new Modal(modalElement)
   modal.show()
 
+  // Function to properly cleanup modal
+  const cleanupModal = () => {
+    modal.hide();
+    // Remove the modal element from DOM
+    setTimeout(() => {
+      modalElement.remove();
+
+      // Clean up any remaining backdrops
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(backdrop => {
+        backdrop.remove();
+      });
+
+      // Remove modal-open class from body
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+    }, 300);
+  };
+
   // Add event listeners
   document.getElementById('cancelButton')?.addEventListener('click', () => {
-    modal.hide()
-    setTimeout(() => {
-      modalElement.remove()
-    }, 300)
-  })
+    cleanupModal();
+  });
 
   document.getElementById('confirmButton')?.addEventListener('click', () => {
-    modal.hide()
+    cleanupModal();
     setTimeout(() => {
-      modalElement.remove()
-      options.onConfirm()
-    }, 300)
-  })
+      options.onConfirm();
+    }, 350);
+  });
 }
 
 function deleteUnverifiedQuestion(index: number) {
@@ -910,36 +973,55 @@ function deleteUnverifiedQuestion(index: number) {
 }
 
 function verifyQuestion(index: number) {
+  // Get the question from our existing data
   const question = unverifiedQuestions.value[index];
 
-  // First, fetch the question data to get the question text ID
-  axiosInstance.get(`/questions/${question.id}`)
+  // Check if we have all the required data
+  if (!question || !question.id || !question.topics || question.topics.length === 0 || !question.question_text_id) {
+    // Show error toast if we don't have required data
+    toastTitle.value = 'Error';
+    toastMessage.value = 'Cannot verify question: missing required data';
+    toastType.value = 'error';
+    showToast.value = true;
+
+    // Auto hide toast after 5 seconds
+    setTimeout(() => {
+      showToast.value = false;
+    }, 5000);
+    return;
+  }
+
+  // Extract the needed IDs from our question data
+  const topicId = question.topics[0].id;
+  const questionTextId = question.question_text_id;
+
+  // Determine if this is a translated question for better success message
+  const isTranslated = question.translationStatus === 'translated';
+
+  // Now we have all the data we need from our existing question data
+  const payload = {
+    question_id: question.id,
+    question_text_id: questionTextId,
+    topic_id: topicId,
+    instruction_medium_id: Number(questionBankData.value.mediumId),
+    is_verified: true
+  };
+
+  // Call the verification API
+  axiosInstance.patch('/question-text-topic-medium/verify', payload)
     .then((response) => {
-      const questionData = response.data;
-
-      // Make sure there's a question text to verify
-      if (questionData.question_texts && questionData.question_texts.length > 0) {
-        const questionTextId = questionData.question_texts[0].id;
-
-        // Update the verification status of the question text
-        return axiosInstance.put(`/question-texts/${questionTextId}`, { is_verified: true });
-      } else {
-        throw new Error('Question text not found');
-      }
-    })
-    .then(() => {
-      console.log('Question text verified successfully');
       // Remove from unverified list
       unverifiedQuestions.value.splice(index, 1);
+
       // Refresh verified questions if we're about to switch to that view
-      // This will apply all filters including instruction_medium_id
       if (!showUnverified.value) {
         fetchQuestions();
       }
 
-      // Show success toast
+      // Show success toast with message based on translation status
       toastTitle.value = 'Success';
-      toastMessage.value = 'Question text verified successfully';
+      toastMessage.value = response.data?.message ||
+        (isTranslated ? 'Translation verified successfully' : 'Question verified successfully');
       toastType.value = 'success';
       showToast.value = true;
 
@@ -949,11 +1031,11 @@ function verifyQuestion(index: number) {
       }, 3000);
     })
     .catch(error => {
-      console.error('Error verifying question text:', error);
+      console.error('Error verifying question:', error);
 
       // Show error toast
       toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to verify question text';
+      toastMessage.value = error.response?.data?.message || 'Failed to verify question';
       toastType.value = 'error';
       showToast.value = true;
 
@@ -1111,88 +1193,196 @@ async function fetchQuestions() {
     const response = await axiosInstance.get('/questions', { params })
       .catch((error) => {
         console.error('Error fetching questions:', error);
-        return { data: { data: [], meta: { total: 0, total_pages: 0 } } };
+        return { data: { data: [], meta: { total_count: 0, total_pages: 0 } } };
       });
 
     // Handle paginated response
     if (response.data && response.data.data) {
-      // Update pagination data
+      // Update pagination data - updated to match new meta structure
       if (response.data.meta) {
-        totalItems.value = response.data.meta.total || 0;
+        totalItems.value = response.data.meta.total_count || 0;
         totalPages.value = response.data.meta.total_pages || 1;
       }
 
       // Transform API response to match our component's expected structure
       const questions = response.data.data.map((apiQuestion: ApiQuestion) => {
         // Get the first question text (assuming there's at least one)
-        const questionText = apiQuestion.question_texts.length > 0
-          ? apiQuestion.question_texts[0].question_text
+        const questionTextData = apiQuestion.question_texts.length > 0
+          ? apiQuestion.question_texts[0]
+          : null;
+
+        const questionText = questionTextData
+          ? questionTextData.question_text
           : '';
+
+        // Store the question_text_id
+        const questionTextId = questionTextData
+          ? questionTextData.id
+          : null;
 
         // Get image ID and presigned URL if available
         let imageId = null;
         let imageUrl = null;
 
-        if (apiQuestion.question_texts.length > 0 &&
-            apiQuestion.question_texts[0].image_id &&
-            apiQuestion.question_texts[0].image) {
-          imageId = apiQuestion.question_texts[0].image_id;
-          imageUrl = apiQuestion.question_texts[0].image.presigned_url;
-        }
+        if (questionTextData) {
+          // Simplified logging for debugging
+          if (questionTextData.image_id && questionTextData.image) {
+            imageId = questionTextData.image_id;
+            imageUrl = questionTextData.image.presigned_url;
 
-        // Extract topics from question_topics
-        const questionTopics = apiQuestion.question_topics.map(qt => ({
-          id: qt.topic_id,
-          name: qt.topic.name
-        }));
-
-        // Also collect topics for the dropdown
-        apiQuestion.question_topics.forEach(qt => {
-          if (qt.topic && qt.topic_id) {
-            // Add to our topics collection if not already present
-            if (!topics.value.some(t => t.id === qt.topic_id)) {
-              topics.value.push({
-                id: qt.topic_id,
-                name: qt.topic.name
-              });
+            // Basic validation
+            if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined') {
+              imageUrl = null;
             }
           }
-        });
+        }
+
+        // Extract translation status
+        const translationStatus = questionTextData && questionTextData.translation_status
+          ? questionTextData.translation_status
+          : null;
+
+        // Extract topic from question_text instead of question_topics
+        const questionTopics: Topic[] = [];
+        if (questionTextData && questionTextData.topic) {
+          const topicData = questionTextData.topic;
+          questionTopics.push({
+            id: topicData.id,
+            name: topicData.name,
+            topic: topicData.name // Add topic property to match the Topic interface
+          });
+
+          // Add to our topics collection if not already present
+          if (!topics.value.some(t => t.id === topicData.id)) {
+            topics.value.push({
+              id: topicData.id,
+              name: topicData.name,
+              topic: topicData.name
+            });
+          }
+        }
 
         // Handle MCQ options if present
         let options = undefined;
-        if (apiQuestion.question_type.type_name === 'MCQ' &&
-            apiQuestion.question_texts.length > 0 &&
-            apiQuestion.question_texts[0].mcq_options.length > 0) {
-          options = apiQuestion.question_texts[0].mcq_options.map(opt => opt.option_text);
+        let optionImages = undefined;
+        let correctOptionIndex = undefined;
+        let correctAnswer = undefined;
+
+        // Extract answer_text if available
+        if (questionTextData && questionTextData.answer_text) {
+          correctAnswer = questionTextData.answer_text;
+        }
+
+        // Handle Odd One Out
+        if (apiQuestion.question_type.type_name === 'Odd One Out' &&
+            questionTextData &&
+            questionTextData.mcq_options &&
+            questionTextData.mcq_options.length > 0) {
+
+          // For display purposes only, extract the options and correct index
+          options = questionTextData.mcq_options.map(opt => opt.option_text);
+          correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
+          if (correctOptionIndex !== -1) {
+            // Set the correct answer to the text of the odd one out
+            if (!correctAnswer) {
+              correctAnswer = options[correctOptionIndex];
+            }
+          }
+        }
+        // Handle True/False
+        else if (apiQuestion.question_type.type_name === 'True or False' &&
+            questionTextData) {
+          // If we don't have a correctAnswer already, try to determine it from mcq_options
+          if (!correctAnswer && questionTextData.mcq_options && questionTextData.mcq_options.length > 0) {
+            const trueOption = questionTextData.mcq_options.find(opt => opt.option_text.toLowerCase() === 'true');
+            if (trueOption) {
+              correctAnswer = trueOption.is_correct ? 'True' : 'False';
+            } else {
+              const correctOption = questionTextData.mcq_options.find(opt => opt.is_correct);
+              if (correctOption) {
+                correctAnswer = correctOption.option_text;
+              }
+            }
+          }
+        }
+        // Handle Complete the Correlation
+        else if (apiQuestion.question_type.type_name === 'Complete the Correlation' &&
+            questionTextData &&
+            questionTextData.match_pairs &&
+            questionTextData.match_pairs.length > 0) {
+
+          // If no correctAnswer is set, provide a default
+          if (!correctAnswer) {
+            correctAnswer = "See question for correlation details";
+          }
+        }
+        // Handle MCQ options
+        else if (apiQuestion.question_type.type_name === 'Multiple Choice Question (MCQ)' &&
+            questionTextData &&
+            questionTextData.mcq_options.length > 0) {
+          options = questionTextData.mcq_options.map(opt => opt.option_text);
+          correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
+          if (correctOptionIndex === -1) correctOptionIndex = undefined;
+
+          // Extract option images if available
+          optionImages = questionTextData.mcq_options.map(opt =>
+            opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
+          );
+
+          // Only include optionImages if at least one image exists
+          if (optionImages.every(img => img === null)) {
+            optionImages = undefined;
+          }
         }
 
         // Handle match pairs if present
         let lhs = undefined;
         let rhs = undefined;
+        let lhsImages = undefined;
+        let rhsImages = undefined;
+
         if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
-            apiQuestion.question_texts.length > 0 &&
-            apiQuestion.question_texts[0].match_pairs.length > 0) {
-          lhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.left_side);
-          rhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.right_side);
+            questionTextData &&
+            questionTextData.match_pairs &&
+            questionTextData.match_pairs.length > 0) {
+
+          // Extract text content - keep null values to maintain structure
+          lhs = questionTextData.match_pairs.map(pair => pair.left_text || null);
+          rhs = questionTextData.match_pairs.map(pair => pair.right_text || null);
+
+          // Extract image URLs for left and right sides - keep null values to maintain structure
+          lhsImages = questionTextData.match_pairs.map(pair =>
+            pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
+          );
+
+          rhsImages = questionTextData.match_pairs.map(pair =>
+            pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
+          );
+
+          // Always include the arrays, even if they only contain nulls
+          // This ensures the structure is maintained for display
         }
 
         return {
           id: apiQuestion.id,
           question: questionText,
           type: apiQuestion.question_type.type_name,
-          typeId: apiQuestion.question_type_id,
+          typeId: apiQuestion.question_type.id,
           topics: questionTopics,
           options: options,
+          optionImages: optionImages,
+          correctOptionIndex: correctOptionIndex,
           lhs: lhs,
           rhs: rhs,
+          lhsImages: lhsImages,
+          rhsImages: rhsImages,
           isPreviousExam: apiQuestion.board_question,
-          isVerified: apiQuestion.is_verified,
+          isVerified: apiQuestion.is_verified ?? !showUnverified.value,
           imageId: imageId,
           imageUrl: imageUrl,
-          imageLoading: imageId !== null && imageUrl === null,
-          imageError: false,
-          imageLoadingState: imageUrl !== null
+          question_text_id: questionTextId,
+          translationStatus: translationStatus,
+          correctAnswer: correctAnswer
         };
       });
 
@@ -1212,23 +1402,6 @@ async function fetchQuestions() {
   }
 }
 
-// Handle image load events
-function handleImageLoad(question: Question) {
-  question.imageLoading = false;
-  question.imageLoadingState = false;
-  question.imageError = false;
-  console.log(`Image loaded successfully for question ${question.id}`);
-}
-
-// Handle image error events
-function handleImageError(question: Question) {
-  console.error(`Failed to load image for question ${question.id}`);
-  console.error('Image URL:', question.imageUrl);
-  question.imageLoading = false;
-  question.imageLoadingState = false;
-  question.imageError = true;
-}
-
 // Close toast function
 const closeToast = () => {
   showToast.value = false
@@ -1236,6 +1409,23 @@ const closeToast = () => {
 
 // Lifecycle hooks
 onMounted(() => {
+  // Check for unverified query parameter
+  if (route.query.unverified === 'true') {
+    showUnverified.value = true;
+  }
+
+  // Check for sort parameter in localStorage (highest priority)
+  const savedSort = localStorage.getItem('questionDashboardSort');
+  if (savedSort) {
+    sortOption.value = savedSort;
+    // Remove the localStorage item after using it
+    localStorage.removeItem('questionDashboardSort');
+  }
+  // Then check URL query parameter (lower priority)
+  else if (route.query.sort) {
+    sortOption.value = route.query.sort as string;
+  }
+
   // Load data from localStorage
   const storedData = localStorage.getItem('questionBank')
   if (storedData) {
@@ -1248,6 +1438,11 @@ onMounted(() => {
   } else {
     // Redirect to question bank selection if no data
     router.push({ name: 'questionBank' })
+  }
+
+  // Check for tab parameter to determine which tab to show
+  if (route.query.tab === 'unverified') {
+    showUnverified.value = true
   }
 
   // Check if the filter element has the 'show' class initially
@@ -1277,8 +1472,12 @@ onMounted(() => {
       type: 'success'
     })
 
-    // Remove query parameters without page reload
-    router.replace({ query: {} }).catch(() => {
+    // Remove query parameters without page reload, but preserve tab parameter
+    const newQuery = { ...route.query }
+    delete newQuery.success
+    delete newQuery.message
+
+    router.replace({ query: newQuery }).catch(() => {
       // Ignore navigation errors
     })
   }
@@ -1293,6 +1492,16 @@ async function fetchQuestionTypes() {
     }
   } catch (error) {
     console.error('Error fetching question types:', error);
+  }
+}
+
+function getTranslationStatusText(status: string): string {
+  if (status === 'original') {
+    return 'Original';
+  } else if (status === 'translated') {
+    return 'Translated';
+  } else {
+    return status;
   }
 }
 </script>
@@ -1617,4 +1826,32 @@ async function fetchQuestionTypes() {
   background-color: rgba(248, 249, 250, 0.7);
   z-index: 5;
 }
+
+/* Improve card spacing and mobile responsiveness */
+.card {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Adjustments for mobile view */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-text {
+    font-size: 0.95rem;
+  }
+}
+
+/* REMOVED: Styling for Fill in the Blanks, One-Word Answer, Short Answer, Odd One Out, Complete the Correlation, and Match the Pairs - now handled by QuestionDisplay component */
 </style>
