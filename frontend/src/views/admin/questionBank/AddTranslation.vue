@@ -190,7 +190,7 @@
                     <div v-if="imageLoading" class="image-loading-overlay">
                       <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading image...</span>
-                      </div>
+                      </div
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
@@ -347,8 +347,31 @@
                     <div v-if="imageError" class="image-error-message">
                       <i class="bi bi-exclamation-triangle"></i>
                       Failed to load image
+
+                    </div>
+                    <img
+                      v-if="questionImage.presigned_url || questionImage.image_url"
+                      :src="questionImage.presigned_url || questionImage.image_url"
+                      class="question-image"
+                      alt="Question Image"
+                      @load="imageLoading = false"
+                      @error="handleImageError"
+                    />
+                    <div v-if="imageError" class="image-error-message">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      Failed to load image
                     </div>
                   </div>
+
+                  <div class="form-floating">
+                    <textarea id="fillInTheBlankQuestion" v-model="translatedQuestion.question" class="form-control" rows="3"
+                              placeholder="Type your question here, use '_____' for blanks." @input="autoResize" required></textarea>
+                    <label for="fillInTheBlankQuestion" class="form-label">
+                      Translated Question
+                      <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
+                    </label>
+                  </div>
+
 
                   <div class="form-floating">
                     <textarea id="fillInTheBlankQuestion" v-model="translatedQuestion.question" class="form-control" rows="3"
@@ -515,7 +538,6 @@ const questionBankData = ref({
 })
 
 // Define interfaces for image handling
-// Define interfaces for image handling
 interface QuestionImage {
   id: number;
   presigned_url?: string;
@@ -551,11 +573,6 @@ const translatedOptions = ref<string[]>(['', '', '', ''])
 const questionImage = ref<QuestionImage | null>(null)
 const imageLoading = ref(false)
 const imageError = ref(false)
-
-// New data for multiple translations
-const availableTranslations = ref<QuestionTranslation[]>([])
-const selectedTranslationIndex = ref<number>(0)
-const topicId = ref<number | null>(null)
 
 // New data for multiple translations
 const availableTranslations = ref<QuestionTranslation[]>([])
@@ -658,7 +675,6 @@ async function saveTranslation() {
 
     // Get medium ID from localStorage (this is the target language ID)
     const targetMediumId = parseInt(questionBankData.value.mediumId.toString());
-    const targetMediumId = parseInt(questionBankData.value.mediumId.toString());
 
     // Prepare the translation request object for the new API
     const translationRequest: {
@@ -720,8 +736,6 @@ async function saveTranslation() {
 
         // Update the image ID in the translation request
         translationRequest.image_id = imageResponse.data.id;
-        // Update the image ID in the translation request
-        translationRequest.image_id = imageResponse.data.id;
 
         console.log('New image uploaded and associated with translation');
       } catch (error: unknown) {
@@ -744,7 +758,6 @@ async function saveTranslation() {
         if (!questionImage.value?.id) {
           // If there's no original image either, set to null
           delete translationRequest.image_id;
-          delete translationRequest.image_id;
         }
       }
     }
@@ -761,7 +774,6 @@ async function saveTranslation() {
 
         const selectedTranslation = availableTranslations.value[selectedTranslationIndex.value];
         const options = selectedTranslation.mcq_options as McqOption[];
-
         for (const option of options) {
           if (option.option_text === 'True' && await isCorrectOption(questionId.value, 'True')) {
             trueIsCorrect = true;
@@ -770,6 +782,7 @@ async function saveTranslation() {
           }
         }
       }
+
 
       // Add True and False options to the translation request
       translationRequest.mcq_options = [
@@ -787,8 +800,6 @@ async function saveTranslation() {
     else if ((questionType.value === 'Multiple Choice Question (MCQ)' || questionType.value === 'Odd One Out') &&
         translatedOptions.value.length > 0) {
 
-      // Create translated MCQ options array
-      translationRequest.mcq_options = [];
       // Create translated MCQ options array
       translationRequest.mcq_options = [];
 
@@ -992,40 +1003,12 @@ async function loadQuestionData() {
 
     // Now fetch verified texts using the correct topic ID
     const response = await axiosInstance.get(`/questions/${questionId.value}/topic/${topicId.value}/verified-texts`);
-    // First, we need to fetch the question to get its associated topic ID
-    // since we can't just use the chapter ID
-    const questionDetailsResponse = await axiosInstance.get(`/questions/${questionId.value}`);
-    const questionDetails = questionDetailsResponse.data;
-
-    // Check if question has any question_texts with topics
-    if (!questionDetails.question_texts ||
-        !questionDetails.question_texts[0] ||
-        !questionDetails.question_texts[0].topic ||
-        !questionDetails.question_texts[0].topic.id) {
-      console.error('Question has no associated topic');
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question has no associated topic',
-        type: 'error'
-      });
-      router.push({ name: 'translationPending' });
-      return;
-    }
-
-    // Get the topic ID from the question details
-    topicId.value = questionDetails.question_texts[0].topic.id;
-
-    console.log(`Using topic ID: ${topicId.value} for question ID: ${questionId.value}`);
-
-    // Now fetch verified texts using the correct topic ID
-    const response = await axiosInstance.get(`/questions/${questionId.value}/topic/${topicId.value}/verified-texts`);
     const questionData = response.data;
 
     // Set question type
     questionType.value = questionData.question_type.type_name;
     console.log(`Question type: ${questionType.value}`);
 
-    // Store all available translations
     // Store all available translations
     if (questionData.question_texts && questionData.question_texts.length > 0) {
       availableTranslations.value = questionData.question_texts;

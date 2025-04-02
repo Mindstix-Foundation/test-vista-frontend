@@ -411,8 +411,6 @@ async function handleSaveQuestion(payload: {
     // Make a single API call to create the question and all related data
     const response = await axiosInstance.post('/questions/add', createQuestionRequest);
     console.log('Question created successfully:', response.data);
-    const response = await axiosInstance.post('/questions/add', createQuestionRequest);
-    console.log('Question created successfully:', response.data);
 
     // Navigate back to question dashboard with success query param
     router.push({

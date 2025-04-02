@@ -63,14 +63,7 @@
                   <option value="created_at_desc">Sort by Created (Newest)</option>
                   <option value="updated_at_asc">Sort by Updated (Oldest)</option>
                   <option value="updated_at_desc">Sort by Updated (Newest)</option>
-                  <option value="question_text_asc">Sort by Question (A-Z)</option>
-                  <option value="question_text_desc">Sort by Question (Z-A)</option>
-                  <option value="question_type_id_asc">Sort by Question Type (A-Z)</option>
-                  <option value="question_type_id_desc">Sort by Question Type (Z-A)</option>
-                  <option value="created_at_asc">Sort by Created (Oldest)</option>
-                  <option value="created_at_desc">Sort by Created (Newest)</option>
-                  <option value="updated_at_asc">Sort by Updated (Oldest)</option>
-                  <option value="updated_at_desc">Sort by Updated (Newest)</option>
+
                 </select>
               </div>
 
@@ -235,7 +228,6 @@
 
           <div v-for="(question, index) in filteredUnverifiedQuestions" :key="'unverified-' + index" class="col-12 col-md-10">
             <div class="card" :class="{ 'card-searching': isSearching }" :data-unique-id="'unverified-' + index">
-            <div class="card" :class="{ 'card-searching': isSearching }" :data-unique-id="'unverified-' + index">
               <div class="row g-0">
                 <div class="col-12">
                   <div class="card-body">
@@ -384,14 +376,9 @@ interface ApiMatchPair {
   right_text: string;
   left_image_id: number | null;
   right_image_id: number | null;
-  left_text: string;
-  right_text: string;
-  left_image_id: number | null;
-  right_image_id: number | null;
+
   created_at: string;
   updated_at: string;
-  left_image: ApiImage | null;
-  right_image: ApiImage | null;
   left_image: ApiImage | null;
   right_image: ApiImage | null;
 }
@@ -401,8 +388,6 @@ interface ApiQuestionText {
   question_id: number;
   image_id: number | null;
   question_text: string;
-  created_at?: string;
-  updated_at?: string;
   created_at?: string;
   updated_at?: string;
   image: ApiImage | null;
@@ -426,9 +411,6 @@ interface ApiQuestion {
   created_at?: string;
   updated_at?: string;
   is_verified?: boolean;
-  created_at?: string;
-  updated_at?: string;
-  is_verified?: boolean;
 }
 
 // Define interfaces for component's internal use
@@ -445,7 +427,6 @@ interface Question {
   typeId: number;
   topics: Topic[];
   options?: string[];
-  correctOptionIndex?: number;
   correctOptionIndex?: number;
   lhs?: string[];
   rhs?: string[];
@@ -503,7 +484,6 @@ const isSearching = ref(false)
 const isLoading = ref(true)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const sortOption = ref('question_text_asc')
-const sortOption = ref('question_text_asc')
 const searchTimeout = ref<number | null>(null)
 
 // Pagination state
@@ -535,14 +515,6 @@ interface SortOption {
 
 // Mapping for sort options to API parameters
 const sortMappings: Record<string, SortOption> = {
-  'question_text_asc': { sort_by: 'question_text', sort_order: 'asc' },
-  'question_text_desc': { sort_by: 'question_text', sort_order: 'desc' },
-  'question_type_id_asc': { sort_by: 'question_type_id', sort_order: 'asc' },
-  'question_type_id_desc': { sort_by: 'question_type_id', sort_order: 'desc' },
-  'created_at_asc': { sort_by: 'created_at', sort_order: 'asc' },
-  'created_at_desc': { sort_by: 'created_at', sort_order: 'desc' },
-  'updated_at_asc': { sort_by: 'updated_at', sort_order: 'asc' },
-  'updated_at_desc': { sort_by: 'updated_at', sort_order: 'desc' }
   'question_text_asc': { sort_by: 'question_text', sort_order: 'asc' },
   'question_text_desc': { sort_by: 'question_text', sort_order: 'desc' },
   'question_type_id_asc': { sort_by: 'question_type_id', sort_order: 'asc' },
@@ -1043,7 +1015,6 @@ function verifyQuestion(index: number) {
       // Remove from unverified list
       unverifiedQuestions.value.splice(index, 1);
 
-
       // Refresh verified questions if we're about to switch to that view
       if (!showUnverified.value) {
         fetchQuestions();
@@ -1063,11 +1034,9 @@ function verifyQuestion(index: number) {
     })
     .catch(error => {
       console.error('Error verifying question:', error);
-      console.error('Error verifying question:', error);
 
       // Show error toast
       toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to verify question';
       toastMessage.value = error.response?.data?.message || 'Failed to verify question';
       toastType.value = 'error';
       showToast.value = true;
@@ -1227,15 +1196,12 @@ async function fetchQuestions() {
       .catch((error) => {
         console.error('Error fetching questions:', error);
         return { data: { data: [], meta: { total_count: 0, total_pages: 0 } } };
-        return { data: { data: [], meta: { total_count: 0, total_pages: 0 } } };
       });
 
     // Handle paginated response
     if (response.data && response.data.data) {
       // Update pagination data - updated to match new meta structure
-      // Update pagination data - updated to match new meta structure
       if (response.data.meta) {
-        totalItems.value = response.data.meta.total_count || 0;
         totalItems.value = response.data.meta.total_count || 0;
         totalPages.value = response.data.meta.total_pages || 1;
       }
@@ -1404,7 +1370,6 @@ async function fetchQuestions() {
           question: questionText,
           type: apiQuestion.question_type.type_name,
           typeId: apiQuestion.question_type.id,
-          typeId: apiQuestion.question_type.id,
           topics: questionTopics,
           options: options,
           optionImages: optionImages,
@@ -1414,7 +1379,6 @@ async function fetchQuestions() {
           lhsImages: lhsImages,
           rhsImages: rhsImages,
           isPreviousExam: apiQuestion.board_question,
-          isVerified: apiQuestion.is_verified ?? !showUnverified.value,
           isVerified: apiQuestion.is_verified ?? !showUnverified.value,
           imageId: imageId,
           imageUrl: imageUrl,
