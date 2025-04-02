@@ -283,22 +283,25 @@ const handleSubjectChange = async () => {
   selectedChapter.value = null
   chapters.value = []
 
-  // If we have a standard and subject, fetch chapters
-  if (selectedStandard.value && selectedSubject.value) {
+  // If we have a standard, subject, and medium, fetch chapters
+  if (selectedStandard.value && selectedSubject.value && selectedMedium.value) {
     await fetchChapters()
   }
 }
 
 const fetchChapters = async () => {
   try {
-    if (!selectedStandard.value || !selectedSubject.value) return
+    if (!selectedStandard.value || !selectedSubject.value || !selectedMedium.value) return
 
-    console.log('Fetching chapters with standardId:', selectedStandard.value.id, 'and subjectId:', selectedSubject.value.id)
+    console.log('Fetching chapters with standardId:', selectedStandard.value.id,
+                'subjectId:', selectedSubject.value.id,
+                'and mediumId:', selectedMedium.value.id)
 
     const response = await axiosInstance.get('/chapters', {
       params: {
         standardId: selectedStandard.value.id,
-        subjectId: selectedSubject.value.id
+        subjectId: selectedSubject.value.id,
+        mediumId: selectedMedium.value.id
       }
     })
 

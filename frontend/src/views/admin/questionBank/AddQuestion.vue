@@ -32,6 +32,7 @@
         :questionBankData="questionBankData"
         :chapterId="questionBankData.chapterId"
         @save="handleSaveQuestion"
+        :useSearchableDropdown="true"
       />
       <div v-else class="alert alert-danger text-center">
         Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
@@ -216,9 +217,9 @@ async function handleSaveQuestion(payload: {
       createQuestionRequest.question_text_data.image_id = imageId;
     }
 
-    // Process MCQ options with images if provided
+    // Process MCQ options with images if provided - ONLY for MCQ (type 1)
     if (payload.additionalData?.options && Array.isArray(payload.additionalData.options) &&
-        (payload.questionTypeId === 1 || payload.questionTypeId === 2)) { // MCQ or Odd One Out
+        payload.questionTypeId === 1) { // Only MCQ
       const correctOptionIndex = payload.additionalData.correctOption;
       const mcqOptions = [];
 
@@ -288,28 +289,34 @@ async function handleSaveQuestion(payload: {
       createQuestionRequest.question_text_data.mcq_options = mcqOptions;
     }
 
-    // Process match pairs with images if provided
+    // Process match pairs with images if provided - ONLY for Match the Pairs (type 5)
     if (payload.additionalData?.lhs && payload.additionalData?.rhs &&
-        (payload.questionTypeId === 5 || payload.questionTypeId === 3)) { // Match the Pairs or Complete the Correlation
+        payload.questionTypeId === 5) { // Only Match the Pairs
       const lhs = payload.additionalData.lhs;
       const rhs = payload.additionalData.rhs;
       const matchPairs = [];
 
       // Process each pair and any associated images
-      for (let i = 0; i < lhs.length; i++) {
-        if (lhs[i].trim() !== '' && i < rhs.length && rhs[i].trim() !== '') {
+      // Modified to handle unequal number of fields
+      const maxLength = Math.max(lhs.length, rhs.length);
+      for (let i = 0; i < maxLength; i++) {
+        // Only create a pair if both left and right texts exist and are not empty
+        const leftText = i < lhs.length ? lhs[i].trim() : '';
+        const rightText = i < rhs.length ? rhs[i].trim() : '';
+
+        if (leftText !== '' || rightText !== '') {
           const pair: {
             left_text: string;
             right_text: string;
             left_image_id?: number;
             right_image_id?: number;
           } = {
-            left_text: lhs[i],
-            right_text: rhs[i]
+            left_text: leftText,
+            right_text: rightText
           };
 
           // Check for LHS image (indices 0-9 in optionImages)
-          if (payload.optionImages && payload.optionImages[i]) {
+          if (payload.optionImages && i < lhs.length && payload.optionImages[i]) {
             try {
               // Upload LHS image
               const formData = new FormData();
@@ -344,7 +351,7 @@ async function handleSaveQuestion(payload: {
           }
 
           // Check for RHS image (indices 10-19 in optionImages)
-          if (payload.optionImages && payload.optionImages[i + 10]) {
+          if (payload.optionImages && i < rhs.length && payload.optionImages[i + 10]) {
             try {
               // Upload RHS image
               const formData = new FormData();
@@ -385,26 +392,17 @@ async function handleSaveQuestion(payload: {
       createQuestionRequest.question_text_data.match_pairs = matchPairs;
     }
 
-    // Handle different question types
-    // True/False (4)
-    if (payload.questionTypeId === 4) {
-      // True/False questions are essentially MCQs with fixed True/False options
-      const trueOption = {
-        option_text: "True",
-        is_correct: payload.additionalData.correctOption === 0
-      };
-
-      const falseOption = {
-        option_text: "False",
-        is_correct: payload.additionalData.correctOption === 1
-      };
-
-      createQuestionRequest.question_text_data.mcq_options = [trueOption, falseOption];
-    }
-
-    // Fill in the Blanks (6)
-    else if (payload.questionTypeId === 6 && payload.additionalData?.correctAnswer) {
-      createQuestionRequest.question_text_data.answer_text = payload.additionalData.correctAnswer;
+    // For Odd One Out (2) and Complete the Correlation (3)
+    // We're treating them as standard questions with descriptive answers
+    if (payload.questionTypeId === 2 || payload.questionTypeId === 3) {
+      // For Odd One Out, store the odd one out item
+      if (payload.questionTypeId === 2) {
+        createQuestionRequest.question_text_data.answer_text = payload.additionalData?.correctAnswer || "See question for details";
+      }
+      // For Complete the Correlation, store any additional notes
+      else if (payload.questionTypeId === 3) {
+        createQuestionRequest.question_text_data.answer_text = payload.additionalData?.correctAnswer || "See question for correlation details";
+      }
     }
 
     // Short Note (11), Definition (8), Explanation/Reference (9), Long Answer (7), Very Short Answer (10)
@@ -413,13 +411,16 @@ async function handleSaveQuestion(payload: {
     // Make a single API call to create the question and all related data
     const response = await axiosInstance.post('/questions/add', createQuestionRequest);
     console.log('Question created successfully:', response.data);
+    const response = await axiosInstance.post('/questions/add', createQuestionRequest);
+    console.log('Question created successfully:', response.data);
 
     // Navigate back to question dashboard with success query param
     router.push({
       name: 'questionDashboard',
       query: {
         success: 'true',
-        message: 'Question created successfully'
+        message: 'Question created successfully',
+        tab: 'unverified'
       }
     });
   } catch (error: unknown) {

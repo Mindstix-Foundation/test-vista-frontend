@@ -1,8 +1,10 @@
 <template>
   <div class="container my-4">
+    <!-- Remove full-screen overlay -->
+
     <div class="container">
       <div class="row g-2 justify-content-end">
-        <router-link class="btn btn-close" :to="{ name: 'questionDashboard' }" aria-label="Close"></router-link>
+        <router-link class="btn btn-close" :to="{ name: 'questionDashboard', query: { unverified: 'true' } }" aria-label="Close"></router-link>
       </div>
       <div class="row justify-content-center align-items-center my-2">
         <div class="col col-12 col-sm-10 ">
@@ -116,80 +118,62 @@
 
       <div class="container mb-5">
         <div class="row g-2 justify-content-center position-relative" id="verifiedContainer">
-          <!-- Loading overlay for search -->
-          <div v-if="isSearching" class="search-loading-overlay">
+          <!-- Loading indicators -->
+          <!-- Initial loading spinner (below search/filter, only shown during initial load) -->
+          <div v-if="isInitialLoading" class="col-12 col-md-10 text-center my-5">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+              <span class="visually-hidden">Loading questions...</span>
+            </div>
+            <p class="mt-3 text-primary">Loading translation questions...</p>
+          </div>
+
+          <!-- Loading overlay for search - only shown during search/filtering -->
+          <div v-if="isSearching && !isInitialLoading" class="search-loading-overlay">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Searching...</span>
             </div>
           </div>
 
-          <div v-for="(question, index) in filteredQuestions" :key="'question-' + index" class="col-12 col-md-10">
-            <div class="card" :class="{ 'questions-searching': isSearching }">
-              <div class="row g-0">
-                <div class="col-12">
-                  <div class="card-body">
-                    <div class="col-12 text-end">
-                      <button class="btn btn-light translate-btn" @click="translateQuestion(question)">
-                        <i class="bi bi-vector-pen me-1"></i> Translate
-                      </button>
+          <!-- Questions list - only shown when not in initial loading -->
+          <template v-if="!isInitialLoading && filteredQuestions.length > 0">
+            <div v-for="(question, index) in filteredQuestions" :key="'question-' + index" class="col-12 col-md-10">
+              <div class="card" :class="{ 'questions-searching': isSearching }">
+                <div class="row g-0">
+                  <div class="col-12">
+                    <div class="card-body">
+                      <div class="col-12 text-end">
+                        <button class="btn btn-light translate-btn" @click="translateQuestion(question)">
+                          <i class="bi bi-vector-pen me-1"></i> Translate
+                        </button>
+                      </div>
+
+                      <!-- Pass the question number to QuestionDisplay -->
+                      <QuestionDisplay
+                        :question="question.question"
+                        :questionId="question.id"
+                        :questionType="question.type"
+                        :topics="question.topics"
+                        :options="question.options"
+                        :correctOptionIndex="question.correctOptionIndex"
+                        :lhs="question.lhs"
+                        :rhs="question.rhs"
+                        :correctAnswer="question.correctAnswer"
+                        :imageUrl="question.imageUrl"
+                        :optionImages="question.optionImages"
+                        :isPreviousExam="question.isPreviousExam"
+                        :showFooter="true"
+                        :highlightCorrect="true"
+                        :questionNumber="(currentPage - 1) * pageSize + index + 1"
+                      />
                     </div>
-                    <blockquote class="blockquote mb-0">
-                      <p class="card-text"><strong>Q :</strong> &nbsp; {{ question.question }}</p>
-
-                      <!-- Question Image Loading State -->
-                      <div v-if="question.imageLoading" class="question-image-loading-container mb-3">
-                        <div class="spinner-border text-primary" role="status">
-                          <span class="visually-hidden">Loading image...</span>
-                        </div>
-                      </div>
-
-                      <!-- Question Image (if available) -->
-                      <div v-else-if="question.imageUrl" class="question-image-container mb-3">
-                        <div v-if="question.imageLoadingState" class="image-loading-overlay">
-                          <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading image...</span>
-                          </div>
-                        </div>
-                        <img
-                          :src="question.imageUrl"
-                          class="question-image"
-                          alt="Question Image"
-                          @load="handleImageLoad(question)"
-                          @error="handleImageError(question)"
-                        />
-                        <div v-if="question.imageError" class="image-error-message">
-                          <i class="bi bi-exclamation-triangle"></i>
-                          Failed to load image
-                        </div>
-                      </div>
-
-                      <!-- MCQ Options -->
-                      <div v-if="question.type === 'MCQ'" class="row g-2">
-                        <div v-for="(option, optIndex) in question.options" :key="optIndex" class="col-12 col-md-6 col-lg-3">
-                          <strong>{{ String.fromCharCode(97 + optIndex) }} : &nbsp;</strong>{{ option }}
-                        </div>
-                      </div>
-
-                      <!-- Match the Pairs -->
-                      <ul v-if="question.type === 'Match the Pairs' && question.rhs" class="list-group">
-                        <li v-for="(rhs, idx) in question.rhs" :key="idx" class="list-group-item" :class="{ 'disabled': !(question.lhs && question.lhs[idx]) }">
-                          {{ (question.lhs && question.lhs[idx]) || '...........' }} <strong>&lt;-&gt;</strong> {{ rhs }}
-                        </li>
-                      </ul>
-
-                      <footer class="blockquote-footer text-end mt-2">
-                        {{ getTopicsDisplay(question) }} <br> {{ question.type }}
-                        <span v-if="question.isPreviousExam" class="badge bg-info ms-2">Board Exam</span>
-                      </footer>
-                    </blockquote>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
 
-          <!-- No Results Message -->
-          <div v-if="!isSearching && filteredQuestions.length === 0" class="col-12 col-md-10 text-center my-4">
+          <!-- No Results Message - only shown when not loading and no results -->
+          <div v-if="!isInitialLoading && !isSearching && filteredQuestions.length === 0" class="col-12 col-md-10 text-center my-4">
             <div class="alert alert-info">
               <i class="bi bi-search me-2"></i>
               No questions found matching your search criteria
@@ -197,8 +181,8 @@
           </div>
         </div>
 
-        <!-- Pagination Controls -->
-        <div class="row mt-4 justify-content-center">
+        <!-- Pagination Controls - only shown when there are questions and not in initial loading -->
+        <div v-if="!isInitialLoading && filteredQuestions.length > 0" class="row mt-4 justify-content-center">
           <div class="col-12 col-md-10">
             <nav aria-label="Question pagination">
               <ul class="pagination justify-content-center">
@@ -238,6 +222,9 @@ import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import { Collapse } from 'bootstrap'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import QuestionDisplay from '@/components/questiondisplay/QuestionDisplay.vue'
+
+console.log('QuestionDisplay component imported:', !!QuestionDisplay);
 
 // Define interfaces for API response
 interface ApiTopic {
@@ -281,15 +268,21 @@ interface ApiMcqOption {
   is_correct: boolean;
   created_at: string;
   updated_at: string;
+  image_id?: number | null;
+  image?: ApiImage | null;
 }
 
 interface ApiMatchPair {
   id: number;
   question_text_id: number;
-  left_side: string;
-  right_side: string;
-  created_at: string;
-  updated_at: string;
+  left_text: string;
+  right_text: string;
+  left_image_id: number | null;
+  right_image_id: number | null;
+  left_image?: ApiImage | null;
+  right_image?: ApiImage | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ApiQuestionText {
@@ -302,6 +295,7 @@ interface ApiQuestionText {
   image: ApiImage | null;
   mcq_options: ApiMcqOption[];
   match_pairs: ApiMatchPair[];
+  translation_status?: string | null;
 }
 
 interface ApiQuestionType {
@@ -334,8 +328,8 @@ interface Question {
   topics: Topic[];
   options?: string[];
   correctOption?: string;
-  lhs?: string[];
-  rhs?: string[];
+  lhs?: (string | null)[];
+  rhs?: (string | null)[];
   correctAnswer?: string;
   topic?: string;
   isPreviousExam: boolean;
@@ -345,6 +339,11 @@ interface Question {
   imageLoading?: boolean;
   imageError?: boolean;
   imageLoadingState?: boolean;
+  optionImages?: string[];
+  correctOptionIndex?: number;
+  lhsImages?: (string | null)[];
+  rhsImages?: (string | null)[];
+  translationStatus?: string | null;
 }
 
 // Define interface for paginated API response
@@ -370,6 +369,9 @@ defineOptions({
 })
 
 const router = useRouter()
+
+// Add initial loading state
+const isInitialLoading = ref(true)
 
 // Data from localStorage
 const questionBankData = ref({
@@ -544,13 +546,6 @@ function filterCards() {
   updateUrlParams();
 }
 
-function getTopicsDisplay(question: Question) {
-  if (question.topics && question.topics.length > 0) {
-    return question.topics.map(topic => topic.topic).join(', ')
-  }
-  return question.topic || ''
-}
-
 function translateQuestion(question: Question) {
   // Navigate to add translation page with question ID
   router.push({
@@ -578,22 +573,6 @@ watch(isSearching, (newVal) => {
     searchInputRef.value.focus();
   }
 });
-
-// Add image handling methods
-function handleImageLoad(question: Question) {
-  question.imageLoading = false;
-  question.imageLoadingState = false;
-  question.imageError = false;
-  console.log(`Image loaded successfully for question ${question.id}`);
-}
-
-function handleImageError(question: Question) {
-  console.error(`Failed to load image for question ${question.id}`);
-  console.error('Image URL:', question.imageUrl);
-  question.imageLoading = false;
-  question.imageLoadingState = false;
-  question.imageError = true;
-}
 
 // Add a function to fetch all available topics for the chapter
 async function fetchTopicsForChapter() {
@@ -695,46 +674,66 @@ async function fetchQuestions() {
       totalPages.value = response.data.meta.last_page || 1
     }
 
+    // Inside fetchQuestions function before mapping
+    console.log('API Response:', response.data);
+
     // Transform API response to match our component's expected structure
     questions.value = (response.data.data || []).map((apiQuestion: ApiQuestion) => {
       // Get the first question text (assuming there's at least one)
-      const questionText = apiQuestion.question_texts.length > 0
-        ? apiQuestion.question_texts[0].question_text
+      const questionTextData = apiQuestion.question_texts.length > 0
+        ? apiQuestion.question_texts[0]
+        : null;
+
+      const questionText = questionTextData
+        ? questionTextData.question_text
         : '';
 
       // Get image ID and presigned URL if available
       let imageId = null;
       let imageUrl = null;
 
-      if (apiQuestion.question_texts.length > 0 &&
-          apiQuestion.question_texts[0].image_id &&
-          apiQuestion.question_texts[0].image) {
-        imageId = apiQuestion.question_texts[0].image_id;
-        imageUrl = apiQuestion.question_texts[0].image.presigned_url;
+      if (questionTextData) {
+        if (questionTextData.image_id && questionTextData.image) {
+          imageId = questionTextData.image_id;
+          imageUrl = questionTextData.image.presigned_url;
+        }
       }
 
-      // Extract topics from question_topics
+      // Extract translation status
+      const translationStatus = questionTextData && questionTextData.translation_status
+        ? questionTextData.translation_status
+        : null;
+
+      // Extract topics
       const questionTopics = apiQuestion.question_topics.map(qt => ({
         topic: qt.topic.name,
         id: qt.topic_id
       }));
 
-      // Handle MCQ options if present
-      let options = undefined;
-      if (apiQuestion.question_type.type_name === 'MCQ' &&
-          apiQuestion.question_texts.length > 0 &&
-          apiQuestion.question_texts[0].mcq_options.length > 0) {
-        options = apiQuestion.question_texts[0].mcq_options.map(opt => opt.option_text);
-      }
-
       // Handle match pairs if present
       let lhs = undefined;
       let rhs = undefined;
-      if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
-          apiQuestion.question_texts.length > 0 &&
-          apiQuestion.question_texts[0].match_pairs.length > 0) {
-        lhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.left_side);
-        rhs = apiQuestion.question_texts[0].match_pairs.map(pair => pair.right_side);
+      let lhsImages = undefined;
+      let rhsImages = undefined;
+
+      if ((apiQuestion.question_type.type_name === 'Match the Pairs' || 
+           apiQuestion.question_type.type_name === 'Complete the Correlation') &&
+          questionTextData &&
+          questionTextData.match_pairs &&
+          questionTextData.match_pairs.length > 0) {
+
+        // Extract text content - keep null values to maintain structure
+        lhs = questionTextData.match_pairs.map(pair => pair.left_text || null);
+        rhs = questionTextData.match_pairs.map(pair => pair.right_text || null);
+
+        // Extract image URLs for left and right sides - keep null values to maintain structure
+        lhsImages = questionTextData.match_pairs.map(pair =>
+          pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
+        );
+
+        rhsImages = questionTextData.match_pairs.map(pair =>
+          pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
+        );
       }
 
       return {
@@ -742,27 +741,30 @@ async function fetchQuestions() {
         question: questionText,
         type: apiQuestion.question_type.type_name,
         topics: questionTopics,
-        options: options,
         lhs: lhs,
         rhs: rhs,
+        lhsImages: lhsImages,
+        rhsImages: rhsImages,
         isPreviousExam: apiQuestion.board_question,
         isVerified: apiQuestion.is_verified,
         imageId: imageId,
         imageUrl: imageUrl,
-        imageLoading: imageId !== null && imageUrl === null,
-        imageError: false,
-        imageLoadingState: imageUrl !== null
-      } as Question;
+        translationStatus: translationStatus
+      };
     });
 
     // If we don't have topics yet or they need refreshing, fetch them
     if (topicsWithIds.value.length === 0 && !isLoadingTopics.value) {
       fetchTopicsForChapter();
     }
+
+    return true; // Return true to indicate successful completion
   } catch (error) {
     console.error('Error fetching untranslated questions:', error);
+    return false; // Return false to indicate error
   } finally {
-    // Clear loading state when done
+    // Clear search loading state but NOT the initial loading state
+    // We'll handle isInitialLoading separately in onMounted
     isSearching.value = false;
   }
 }
@@ -798,7 +800,14 @@ function updateUrlParams() {
 }
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
+  // Set initial loading state
+  isInitialLoading.value = true;
+
+  // Record start time for minimum loading duration
+  const minLoadingTime = 800; // Consistent with AddTranslation.vue
+  const startTime = Date.now();
+
   // Load data from localStorage
   const storedData = localStorage.getItem('questionBank');
   if (storedData) {
@@ -825,7 +834,7 @@ onMounted(() => {
     if (route.query.topic) {
       const topicId = parseInt(route.query.topic as string, 10);
       // We'll set the selected topic after fetching topics
-      fetchTopicsForChapter().then(() => {
+      await fetchTopicsForChapter().then(() => {
         const topic = topicsWithIds.value.find(t => t.id === topicId);
         if (topic) {
           selectedTopicObj.value = topic;
@@ -842,12 +851,23 @@ onMounted(() => {
     }
 
     // Initialize the component by fetching questions and topics
-    fetchQuestions();
+    // Wait for fetchQuestions to complete before turning off loading state
+    await fetchQuestions();
     if (!route.query.topic) {
-      fetchTopicsForChapter();
+      await fetchTopicsForChapter();
     }
+
+    // Ensure minimum loading time to avoid flickering UI
+    const elapsedTime = Date.now() - startTime;
+    if (elapsedTime < minLoadingTime) {
+      await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+    }
+
+    // Only turn off loading after everything is complete and minimum time has elapsed
+    isInitialLoading.value = false;
   } else {
     // Redirect to question bank selection if no data
+    isInitialLoading.value = false;
     router.push({ name: 'questionBank' });
   }
 
