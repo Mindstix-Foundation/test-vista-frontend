@@ -190,7 +190,7 @@
                     <div v-if="imageLoading" class="image-loading-overlay">
                       <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading image...</span>
-                      </div>
+                      </div
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
@@ -347,8 +347,31 @@
                     <div v-if="imageError" class="image-error-message">
                       <i class="bi bi-exclamation-triangle"></i>
                       Failed to load image
+
+                    </div>
+                    <img
+                      v-if="questionImage.presigned_url || questionImage.image_url"
+                      :src="questionImage.presigned_url || questionImage.image_url"
+                      class="question-image"
+                      alt="Question Image"
+                      @load="imageLoading = false"
+                      @error="handleImageError"
+                    />
+                    <div v-if="imageError" class="image-error-message">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      Failed to load image
                     </div>
                   </div>
+
+                  <div class="form-floating">
+                    <textarea id="fillInTheBlankQuestion" v-model="translatedQuestion.question" class="form-control" rows="3"
+                              placeholder="Type your question here, use '_____' for blanks." @input="autoResize" required></textarea>
+                    <label for="fillInTheBlankQuestion" class="form-label">
+                      Translated Question
+                      <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
+                    </label>
+                  </div>
+
 
                   <div class="form-floating">
                     <textarea id="fillInTheBlankQuestion" v-model="translatedQuestion.question" class="form-control" rows="3"
@@ -751,7 +774,6 @@ async function saveTranslation() {
 
         const selectedTranslation = availableTranslations.value[selectedTranslationIndex.value];
         const options = selectedTranslation.mcq_options as McqOption[];
-
         for (const option of options) {
           if (option.option_text === 'True' && await isCorrectOption(questionId.value, 'True')) {
             trueIsCorrect = true;
@@ -760,6 +782,7 @@ async function saveTranslation() {
           }
         }
       }
+
 
       // Add True and False options to the translation request
       translationRequest.mcq_options = [

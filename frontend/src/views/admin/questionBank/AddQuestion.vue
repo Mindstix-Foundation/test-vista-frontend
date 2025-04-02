@@ -405,6 +405,9 @@ async function handleSaveQuestion(payload: {
       }
     }
 
+    // Short Note (11), Definition (8), Explanation/Reference (9), Long Answer (7), Very Short Answer (10)
+    // These types typically don't require additional data beyond the question text
+
     // Make a single API call to create the question and all related data
     const response = await axiosInstance.post('/questions/add', createQuestionRequest);
     console.log('Question created successfully:', response.data);
