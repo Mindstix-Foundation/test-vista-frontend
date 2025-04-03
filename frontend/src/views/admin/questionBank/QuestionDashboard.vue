@@ -21,7 +21,13 @@
               <router-link class="btn btn-dark stick-bottom" :to="{ name: 'addQuestion' }" id="addButton">Add Questions</router-link>
             </div>
             <div class="col col-7 col-sm-auto text-end">
-              <router-link class="btn btn-light" style="border: 1px solid gray !important;" id="addButton" :to="{ name: 'translationPending' }">Translation Pending</router-link>
+              <router-link class="btn btn-light position-relative" style="border: 1px solid gray !important;" id="addButton" :to="{ name: 'translationPending' }">
+                Translation Pending
+                <span class="badge bg-danger">
+                  {{ translationPendingCount > 99 ? '99+' : translationPendingCount }}
+                  <span class="visually-hidden">translation pending questions</span>
+                </span>
+              </router-link>
             </div>
           </div>
         </div>
@@ -485,6 +491,7 @@ const isLoading = ref(true)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const sortOption = ref('question_text_asc')
 const searchTimeout = ref<number | null>(null)
+const translationPendingCount = ref(0)
 
 // Pagination state
 const currentPage = ref(1)
@@ -686,14 +693,10 @@ function openRemoveConfirmationModal(index: number, type: 'verified' | 'unverifi
     confirmButtonClass: 'btn-warning',
     confirmButtonText: 'Remove',
     onConfirm: () => {
-      if (type === 'unverified') {
-        // For unverified questions, just delete them
-        deleteUnverifiedQuestion(index);
-      } else {
-        // For verified questions, remove from this chapter
-        const question = verifiedQuestions.value[index];
-        removeQuestionFromChapter(question.id);
-      }
+      // Get the question based on type
+      const question = type === 'verified' ? verifiedQuestions.value[index] : unverifiedQuestions.value[index];
+      // Call removeQuestionFromChapter for both verified and unverified questions
+      removeQuestionFromChapter(question, index, type);
     }
   });
 }
@@ -1095,40 +1098,64 @@ function deleteVerifiedQuestion(question: Question, index: number) {
     });
 }
 
-function removeQuestionFromChapter(questionId: number) {
-  // Make API call to remove the question from this chapter
-  // The exact endpoint would depend on your API structure
-  axiosInstance.delete(`/questions/${questionId}/chapter/${questionBankData.value.chapterId}`)
-    .then(() => {
-      // Refresh questions after removal
-      // This will apply all filters including instruction_medium_id
-      fetchQuestions();
+// Add this interface with the component interfaces
+interface AxiosError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
-      // Show success toast
-      toastTitle.value = 'Success';
-      toastMessage.value = 'Question removed from chapter successfully';
-      toastType.value = 'success';
-      showToast.value = true;
+async function removeQuestionFromChapter(question: Question, index: number, type: 'verified' | 'unverified') {
+  try {
+    // Get topic ID from the question's topics array
+    if (!question.topics || question.topics.length === 0) {
+      throw new Error('Question has no associated topic');
+    }
 
-      // Auto hide toast after 3 seconds
-      setTimeout(() => {
-        showToast.value = false;
-      }, 3000);
-    })
-    .catch(error => {
-      console.error('Error removing question from chapter:', error);
+    const topicId = question.topics[0].id;
+    const mediumId = parseInt(questionBankData.value.mediumId);
 
-      // Show error toast
-      toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to remove question from chapter';
-      toastType.value = 'error';
-      showToast.value = true;
+    // Prepare request body
+    const requestBody = {
+      topic_id: topicId,
+      instruction_medium_id: mediumId
+    };
 
-      // Auto hide toast after 5 seconds
-      setTimeout(() => {
-        showToast.value = false;
-      }, 5000);
+    // Call the new API endpoint
+    const response = await axiosInstance.delete(
+      `/questions/${question.id}/remove-from-chapter`,
+      { data: requestBody }
+    );
+
+    // Remove the question from the appropriate array
+    if (type === 'verified') {
+      verifiedQuestions.value.splice(index, 1);
+    } else {
+      unverifiedQuestions.value.splice(index, 1);
+    }
+
+    // Show success toast with the API response message
+    toastStore.showToast({
+      title: 'Success',
+      message: response.data?.message || 'Question removed from chapter successfully',
+      type: 'success'
     });
+
+    // Refresh questions to update the UI
+    fetchQuestions();
+  } catch (error) {
+    console.error('Error removing question from chapter:', error);
+    
+    const axiosError = error as AxiosError;
+    // Show error toast with type-safe error handling
+    toastStore.showToast({
+      title: 'Error',
+      message: axiosError.response?.data?.message || 'Failed to remove question from chapter',
+      type: 'error'
+    });
+  }
 }
 
 // Add a watch for showUnverified to refetch questions when toggle changes
@@ -1435,8 +1462,8 @@ onMounted(() => {
     // Initial data loading
     isLoading.value = true
     fetchQuestions()
-    // Fetch question types
     fetchQuestionTypes()
+    fetchTranslationPendingCount()
   } else {
     // Redirect to question bank selection if no data
     router.push({ name: 'questionBank' })
@@ -1494,6 +1521,27 @@ async function fetchQuestionTypes() {
     }
   } catch (error) {
     console.error('Error fetching question types:', error);
+  }
+}
+
+// Add this new function after the fetchQuestionTypes function
+async function fetchTranslationPendingCount() {
+  try {
+    const params = {
+      chapter_id: questionBankData.value.chapterId,
+      is_verified: true,
+      translation_status: 'original'
+    };
+
+    const response = await axiosInstance.get(
+      `/questions/untranslated/${questionBankData.value.mediumId}/count`,
+      { params }
+    );
+
+    translationPendingCount.value = response.data.count;
+  } catch (error) {
+    console.error('Error fetching translation pending count:', error);
+    translationPendingCount.value = 0;
   }
 }
 
@@ -1856,4 +1904,13 @@ function getTranslationStatusText(status: string): string {
 }
 
 /* REMOVED: Styling for Fill in the Blanks, One-Word Answer, Short Answer, Odd One Out, Complete the Correlation, and Match the Pairs - now handled by QuestionDisplay component */
+
+.badge.bg-danger {
+  font-size: 0.75rem;
+  min-width: 1.5rem;
+}
+
+.translate-middle {
+  transform: translate(-50%, -50%) !important;
+}
 </style>

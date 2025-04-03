@@ -11,6 +11,8 @@
     </div>
   </div>
 
+  <LoadingSpinner :show="isSubmitting" :showOverlay="true" />
+
   <!-- Operation Result Modal -->
   <div
     class="modal fade"
@@ -66,6 +68,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import BoardFormComponent from '@/components/forms/BoardFormComponent.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import axiosInstance from '@/config/axios'
 import { onMounted, ref } from 'vue'
 import type {
@@ -187,8 +190,8 @@ interface Change {
 
 const router = useRouter()
 const route = useRoute()
-
 const operationResults = ref<OperationResult[]>([])
+const isSubmitting = ref(false)
 
 onMounted(() => {
   console.log('EditBoard mounted with board ID:', route.params.id)
@@ -728,6 +731,7 @@ const handleSubjectChanges = async (
 
 const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
   try {
+    isSubmitting.value = true // Show loading spinner
     operationResults.value = [] // Reset results
 
     // Log the received form data
@@ -912,6 +916,8 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
     }
   } catch (error) {
     console.error('Error in handleSubmit:', error)
+  } finally {
+    isSubmitting.value = false // Hide loading spinner
   }
 }
 

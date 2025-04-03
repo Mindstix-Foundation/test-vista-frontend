@@ -1,6 +1,7 @@
 <template>
   <div class="container-fluid board-form-container">
     <BoardFormComponent :isEditMode="false" @submit="handleBoardSubmit" />
+    <LoadingSpinner :show="isSubmitting" :showOverlay="true" />
   </div>
 </template>
 
@@ -8,6 +9,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BoardFormComponent from '@/components/forms/BoardFormComponent.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useToastStore } from '@/store/toast'
 import axiosInstance from '@/config/axios'
 import type {

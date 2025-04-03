@@ -553,7 +553,7 @@ interface TeachingAssignment {
     id: number
     name: string
   }
-  medium: {
+  medium?: {
     id: number
     name: string
   }
@@ -921,26 +921,25 @@ async function openViewModal(teacher: Teacher) {
       updatedAt: teacherData.updated_at,
       school: teacherData.schools && teacherData.schools.length > 0
         ? {
-            id: teacherData.school_id || 0,
-            name: typeof teacherData.schools[0] === 'string'
-              ? teacherData.schools[0]
-              : teacherData.schools[0].name || ''
+            id: teacherData.schools[0].id || 0,
+            name: teacherData.schools[0].name || ''
           }
         : { id: 0, name: '' },
       // Map teaching assignments to teacherSubjects format for compatibility
       teacherSubjects: teacherData.teaching_assignments ? teacherData.teaching_assignments.map((assignment: TeachingAssignment) => ({
         id: assignment.id,
-        schoolStandardId: assignment.standard.id, // Using standard id as a fallback
-        mediumStandardSubjectId: assignment.id, // Using assignment id as a fallback
+        schoolStandardId: assignment.standard.id,
+        mediumStandardSubjectId: assignment.id,
         mediumStandardSubject: {
           id: assignment.id,
           instructionMedium: {
-            id: assignment.medium.id,
-            instruction_medium: assignment.medium.name
+            id: assignment.medium?.id || 0,
+            instruction_medium: assignment.medium?.name || 'Default'
           },
           standard: {
             id: assignment.standard.id,
-            name: assignment.standard.name
+            name: assignment.standard.name,
+            sequence_number: assignment.standard.sequence_number
           },
           subject: {
             id: assignment.subject.id,

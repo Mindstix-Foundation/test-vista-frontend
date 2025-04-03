@@ -10,6 +10,8 @@
     />
   </div>
 
+  <LoadingSpinner :show="isSubmitting" :showOverlay="true" />
+
   <!-- Operation Result Modal -->
   <div
     class="modal fade"
@@ -66,6 +68,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SchoolFormComponent from '@/components/forms/SchoolFormComponent.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import axiosInstance from '@/config/axios'
 import type { SchoolFormData } from '@/models/School'
 import { useToastStore } from '@/store/toast'
@@ -94,6 +97,7 @@ const router = useRouter()
 const route = useRoute()
 const schoolId = computed(() => route.params.id as string)
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const schoolData = ref<SchoolFormData | null>(null)
 const operationResults = ref<OperationResult[]>([])
 let operationResultModal: bootstrap.Modal | null = null
@@ -222,7 +226,7 @@ onMounted(async () => {
 const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
   try {
     console.log('Starting school update with data:', updatedData)
-    isLoading.value = true
+    isSubmitting.value = true // Show loading spinner during update
     operationResults.value = []
 
     // Get current school data to compare changes
@@ -328,16 +332,33 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
 
       // Only proceed if there are changes
       if (mediumsToAdd.length > 0 || mediumsToRemove.length > 0) {
+        // First get all school-instruction-medium mappings
+        const { data: schoolMediumMappings } = await axiosInstance.get(
+          `/school-instruction-mediums/school/${schoolId.value}`
+        )
+        console.log('School-medium mappings:', schoolMediumMappings)
+
         // Process removals
         for (const medium of mediumsToRemove) {
           try {
-            console.log(`Removing medium ${medium.id}`)
-            await axiosInstance.delete(`/school-instruction-mediums/school/${schoolId.value}/medium/${medium.id}`)
+            // Find the mapping for this medium
+            const mapping = schoolMediumMappings.find(
+              (m: { instruction_medium_id: number }) => m.instruction_medium_id === medium.id
+            )
+
+            if (!mapping) {
+              throw new Error(`School-medium mapping not found for medium ID ${medium.id}`)
+            }
+
+            console.log(`Removing school-medium mapping with ID ${mapping.id} for medium ${medium.instruction_medium}`)
+            // Use the correct API endpoint with the mapping ID
+            await axiosInstance.delete(`/school-instruction-mediums/${mapping.id}`)
+
             const mediumInfo = schoolFormRef.value?.availableMediums.find(
               (m) => m.id === medium.id
             )
             operationResults.value.push({
-              operation: `Remove Medium: ${mediumInfo?.name || medium.name || 'Unknown Medium'}`,
+              operation: `Remove Medium: ${mediumInfo?.name || medium.instruction_medium || 'Unknown Medium'}`,
               status: 'success',
             })
           } catch (error) {
@@ -346,7 +367,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
               (m) => m.id === medium.id
             )
             operationResults.value.push({
-              operation: `Remove Medium: ${mediumInfo?.name || medium.name || 'Unknown Medium'}`,
+              operation: `Remove Medium: ${mediumInfo?.name || medium.instruction_medium || 'Unknown Medium'}`,
               status: 'error',
               message: error instanceof Error ? error.message : 'Failed to remove medium',
             })
@@ -498,6 +519,7 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
       message: 'Failed to update school. Please try again.',
     })
   } finally {
+    isSubmitting.value = false // Hide loading spinner
     isLoading.value = false
   }
 }

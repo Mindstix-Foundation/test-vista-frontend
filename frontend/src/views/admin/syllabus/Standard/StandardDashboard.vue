@@ -13,11 +13,21 @@
           <h3 class="fw-bolder text-start text-dark m-0">Standard {{ selectedStandard?.name }}</h3>
         </div>
         <div class="col col-12 col-sm-5 dynamic-style text-end align-self-end">
-          <div class="row justify-content-end g-2">
-            <div class="col col-12 col-sm-auto text-end">
+          <div class="row justify-content-end align-items-end g-2">
+            <div class="col col-7 col-sm-auto text-end">
+              <button
+                id="removeSubjectButton"
+                class="btn btn-light"
+                style="border: 1px solid gray !important;"
+                @click="navigateToRemoveSubject"
+              >
+                Remove Subject
+              </button>
+            </div>
+            <div class="col col-5 col-sm-auto text-end">
               <button
                 id="addSubjectButton"
-                class="btn btn-success fw-bold stick-bottom"
+                class="btn btn-dark stick-bottom"
                 @click="navigateToAddSubject"
               >
                 Add Subject
@@ -108,7 +118,7 @@
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="addSubjectModalLabel">Add Subjects</h5>
+            <h5 class="modal-title" id="addSubjectModalLabel">Add New Subjects</h5>
             <button
               type="button"
               class="btn-close"
@@ -130,7 +140,7 @@
                       </thead>
                       <tbody>
                         <tr v-if="availableSubjects.length === 0">
-                          <td colspan="2" class="text-center">No subjects available</td>
+                          <td colspan="2" class="text-center">No additional subjects available to add</td>
                         </tr>
                         <tr
                           v-else
@@ -201,6 +211,112 @@
         </div>
       </div>
     </div>
+
+    <!-- Remove Subject Modal -->
+    <div
+      class="modal fade"
+      id="removeSubjectModal"
+      tabindex="-1"
+      aria-labelledby="removeSubjectModalLabel"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title" id="removeSubjectModalLabel">Remove Subjects</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <div class="row">
+                <div class="col-12">
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped table-bordered">
+                      <thead>
+                        <tr>
+                          <th scope="col" style="width: 50px"></th>
+                          <th scope="col">Subject Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-if="subjects.length === 0">
+                          <td colspan="2" class="text-center">No subjects available to remove</td>
+                        </tr>
+                        <tr
+                          v-else
+                          v-for="subject in filteredRemovableSubjects"
+                          :key="subject.id"
+                          class="cursor-pointer"
+                        >
+                          <td
+                            @click.stop="toggleRemoveSubjectSelection(subject.id)"
+                            style="cursor: pointer"
+                          >
+                            <div class="form-check d-flex justify-content-center">
+                              <input
+                                type="checkbox"
+                                class="form-check-input"
+                                :value="subject.id"
+                                v-model="selectedRemoveSubjectIds"
+                                @click.stop
+                              />
+                            </div>
+                          </td>
+                          <td
+                            @click.stop="toggleRemoveSubjectSelection(subject.id)"
+                            style="cursor: pointer"
+                          >
+                            {{ subject.name }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="container-fluid px-0">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="bi bi-search"></i>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Search subjects..."
+                      v-model="removeModalSearchQuery"
+                    />
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    @click="removeSelectedSubjects"
+                    :disabled="selectedRemoveSubjectIds.length === 0"
+                  >
+                    Remove Selected ({{ selectedRemoveSubjectIds.length }})
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -233,6 +349,7 @@ interface Subject {
   id: number
   name: string
   isNew?: boolean
+  mediumStandardSubjectId: number
 }
 
 interface BoardSubject {
@@ -246,10 +363,15 @@ interface AvailableSubject {
   name: string
 }
 
-// New API response interface
-interface SubjectResponse {
+interface MediumStandardSubjectResponse {
+  id: number
+  instruction_medium_id: number
+  standard_id: number
   subject_id: number
-  subject_name: string
+  subject: {
+    id: number
+    name: string
+  }
 }
 
 const route = useRoute()
@@ -261,7 +383,9 @@ const selectedStandard = ref<Standard | null>(null)
 const subjects = ref<Subject[]>([])
 const searchQuery = ref('')
 const modalSearchQuery = ref('')
+const removeModalSearchQuery = ref('')
 const selectedSubjectIds = ref<number[]>([])
+const selectedRemoveSubjectIds = ref<number[]>([])
 const availableSubjects = ref<AvailableSubject[]>([])
 const toastStore = useToastStore()
 
@@ -300,23 +424,18 @@ onMounted(async () => {
 
 const fetchSubjects = async () => {
   try {
+    // Use the new API endpoint with query parameters
     const response = await axiosInstance.get(
-      `/medium-standard-subjects/medium/${selectedMedium.value?.id}/standard/${selectedStandard.value?.id}?board_id=${selectedBoard.value?.id}`,
+      `/medium-standard-subjects?boardId=${selectedBoard.value?.id}&instruction_medium_id=${selectedMedium.value?.id}&standard_id=${selectedStandard.value?.id}`
     )
 
-    // Updated to handle new API response format
-    // Store the subjects based on the new response format
-    const subjectData = response.data as SubjectResponse[]
-
-    // Update subjects list directly from the response
-    subjects.value = subjectData.map((item) => ({
-      id: item.subject_id,
-      name: item.subject_name,
+    // Map the response data to our subjects array
+    subjects.value = response.data.map((item: MediumStandardSubjectResponse) => ({
+      id: item.subject.id,
+      name: item.subject.name,
       isNew: false,
+      mediumStandardSubjectId: item.id
     }))
-
-    // We no longer need to map to mappedSubjects as the response format has changed
-    // This will affect subject removal logic, so we'll need to handle that separately
   } catch (error) {
     console.error('Error fetching subjects:', error)
     subjects.value = []
@@ -325,6 +444,11 @@ const fetchSubjects = async () => {
 
 const filteredSubjects = computed(() => {
   const query = searchQuery.value.toLowerCase()
+  return subjects.value.filter((subject) => subject.name.toLowerCase().includes(query))
+})
+
+const filteredRemovableSubjects = computed(() => {
+  const query = removeModalSearchQuery.value.toLowerCase()
   return subjects.value.filter((subject) => subject.name.toLowerCase().includes(query))
 })
 
@@ -343,14 +467,16 @@ const navigateToAddSubject = async () => {
     // Get the current mapped subject IDs from our subjects list
     const currentSubjectIds = subjects.value.map((subject) => subject.id)
 
-    // Set all subjects as available and pre-select mapped ones
-    availableSubjects.value = boardSubjects.map((subject: BoardSubject) => ({
+    // Set all subjects as available BUT FILTER OUT already mapped subjects
+    availableSubjects.value = boardSubjects
+      .filter((subject: BoardSubject) => !currentSubjectIds.includes(subject.id))
+      .map((subject: BoardSubject) => ({
       id: subject.id,
       name: subject.name,
     }))
 
-    // Pre-select currently mapped subjects
-    selectedSubjectIds.value = [...currentSubjectIds]
+    // No need to pre-select subjects since we're only showing unmapped ones
+    selectedSubjectIds.value = []
 
     // Show modal
     const modal = new Modal(document.getElementById('addSubjectModal') as HTMLElement)
@@ -393,39 +519,11 @@ const toggleSubjectSelection = (subjectId: number) => {
 
 const addSelectedSubjects = async () => {
   try {
-    // Find subjects to add and remove
-    const currentSubjectIds = subjects.value.map((subject) => subject.id)
-    const subjectsToAdd = selectedSubjectIds.value.filter((id) => !currentSubjectIds.includes(id))
-    const subjectsToRemove = currentSubjectIds.filter(
-      (id) => !selectedSubjectIds.value.includes(id)
-    )
-
-    // Handle removals - we need to use a different API call now
-    for (const subjectId of subjectsToRemove) {
-      try {
-        // Delete using the compound key instead of mapping ID
-        await axiosInstance.delete(
-          `/medium-standard-subjects/medium/${selectedMedium.value?.id}/standard/${selectedStandard.value?.id}/subject/${subjectId}`
-        )
-      } catch (error) {
-        const axiosError = error as { response?: { status: number } }
-        if (axiosError.response && axiosError.response.status === 409) {
-          const subjectName = subjects.value.find(s => s.id === subjectId)?.name || 'Unknown'
-          toastStore.showToast({
-            title: 'Error',
-            message: `Cannot remove subject "${subjectName}" as it has existing relationships.`,
-            type: 'error',
-          })
-          // Keep the subject selected as deletion failed
-          selectedSubjectIds.value.push(subjectId)
-          continue
-        }
-        throw new Error(`Failed to delete subject mapping`)
-      }
-    }
+    // Now we only need to handle additions since we're only showing unmapped subjects
+    // No removals needed
 
     // Handle additions
-    for (const subjectId of subjectsToAdd) {
+    for (const subjectId of selectedSubjectIds.value) {
       await axiosInstance.post('/medium-standard-subjects', {
         instruction_medium_id: selectedMedium.value?.id,
         standard_id: selectedStandard.value?.id,
@@ -443,14 +541,189 @@ const addSelectedSubjects = async () => {
     // Show success toast
     toastStore.showToast({
       title: 'Success',
-      message: 'Subject mappings updated successfully',
+      message: 'Subjects added successfully',
       type: 'success',
     })
   } catch (error) {
-    console.error('Error updating subject mappings:', error)
+    console.error('Error adding subjects:', error)
     toastStore.showToast({
       title: 'Error',
-      message: 'Failed to update subject mappings. Please try again.',
+      message: 'Failed to add subjects. Please try again.',
+      type: 'error',
+    })
+  }
+}
+
+const navigateToRemoveSubject = () => {
+  try {
+    removeModalSearchQuery.value = ''
+    selectedRemoveSubjectIds.value = []
+    
+    // Show modal
+    const modal = new Modal(document.getElementById('removeSubjectModal') as HTMLElement)
+    modal.show()
+  } catch (error) {
+    console.error('Error preparing remove subjects modal:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to prepare remove subjects modal. Please try again.',
+      type: 'error',
+    })
+  }
+}
+
+const toggleRemoveSubjectSelection = (subjectId: number) => {
+  const index = selectedRemoveSubjectIds.value.indexOf(subjectId)
+  if (index === -1) {
+    selectedRemoveSubjectIds.value.push(subjectId)
+  } else {
+    selectedRemoveSubjectIds.value.splice(index, 1)
+  }
+}
+
+const removeSelectedSubjects = async () => {
+  try {
+    // Hide the remove subject modal first
+    const removeModal = Modal.getInstance(document.getElementById('removeSubjectModal') as HTMLElement)
+    removeModal?.hide()
+
+    // Create modal element
+    const modalElement = document.createElement('div')
+    modalElement.className = 'modal fade'
+    modalElement.id = 'deleteConfirmationModal'
+    modalElement.setAttribute('tabindex', '-1')
+    modalElement.setAttribute('aria-labelledby', 'deleteConfirmationModalLabel')
+    modalElement.setAttribute('aria-hidden', 'true')
+    modalElement.setAttribute('data-bs-backdrop', 'static')
+
+    modalElement.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteConfirmationModalLabel">Remove Subjects</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning">
+              <p class="mb-0">Warning: Removing subjects will also delete all associated questions and data!</p>
+            </div>
+            <p class="mb-3">
+              Are you sure you want to remove ${selectedRemoveSubjectIds.value.length} subject(s)? This action cannot be undone.
+            </p>
+            <div class="form-group">
+              <label for="confirmText" class="form-label">Type "sure" to confirm removal:</label>
+              <input
+                type="text"
+                class="form-control"
+                id="confirmText"
+                placeholder="Type 'sure' here"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              id="confirmButton"
+              disabled
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modalElement)
+
+    // Initialize and show modal
+    const modal = new Modal(modalElement)
+    modal.show()
+
+    // Add event listener for the confirmation text input
+    const confirmInput = modalElement.querySelector('#confirmText') as HTMLInputElement
+    const confirmButton = modalElement.querySelector('#confirmButton') as HTMLButtonElement
+
+    confirmInput?.addEventListener('input', (e) => {
+      const input = e.target as HTMLInputElement
+      confirmButton.disabled = input.value !== 'sure'
+    })
+
+    // Function to properly cleanup modal
+    const cleanupModal = () => {
+      modal.hide()
+      setTimeout(() => {
+        modalElement.remove()
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove())
+        document.body.classList.remove('modal-open')
+        document.body.style.removeProperty('overflow')
+        document.body.style.removeProperty('padding-right')
+      }, 300)
+    }
+
+    // Add event listeners
+    modalElement.querySelector('.btn-secondary')?.addEventListener('click', () => {
+      cleanupModal()
+    })
+
+    confirmButton?.addEventListener('click', async () => {
+      try {
+        // Process removals using the mediumStandardSubjectId
+        for (const subjectId of selectedRemoveSubjectIds.value) {
+          try {
+            const subject = subjects.value.find(s => s.id === subjectId)
+            if (!subject) continue
+
+            await axiosInstance.delete(
+              `/medium-standard-subjects/${subject.mediumStandardSubjectId}`
+            )
+          } catch (error) {
+            const axiosError = error as { response?: { status: number } }
+            if (axiosError.response && axiosError.response.status === 409) {
+              const subjectName = subjects.value.find(s => s.id === subjectId)?.name || 'Unknown'
+              toastStore.showToast({
+                title: 'Error',
+                message: `Cannot remove subject "${subjectName}" as it has existing relationships.`,
+                type: 'error',
+              })
+              continue
+            }
+            throw new Error(`Failed to delete subject mapping`)
+          }
+        }
+
+        // Refresh subjects list
+        await fetchSubjects()
+
+        // Hide confirmation modal
+        cleanupModal()
+
+        // Show success toast
+        toastStore.showToast({
+          title: 'Success',
+          message: 'Subjects removed successfully',
+          type: 'success',
+        })
+      } catch (error) {
+        console.error('Error removing subjects:', error)
+        toastStore.showToast({
+          title: 'Error',
+          message: 'Failed to remove subjects. Please try again.',
+          type: 'error',
+        })
+      }
+    })
+  } catch (error) {
+    console.error('Error removing subjects:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to remove subjects. Please try again.',
       type: 'error',
     })
   }
@@ -480,8 +753,14 @@ const addSelectedSubjects = async () => {
     z-index: 1000;
   }
 
-  #addSubjectButton {
+  #addSubjectButton,
+  #removeSubjectButton {
     width: 100%;
+  }
+  
+  /* Add margin between buttons on mobile */
+  .col-7 {
+    margin-top: 0.5rem;
   }
 }
 

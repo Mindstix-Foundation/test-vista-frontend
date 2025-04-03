@@ -209,7 +209,7 @@ const routes: RouteRecordRaw[] = [
     component: EditChapter,
     meta: {
       requiresAuth: true,
-      roles: ['admin'],
+      roles: ['ADMIN'],
     },
   },
   // Teacher routes

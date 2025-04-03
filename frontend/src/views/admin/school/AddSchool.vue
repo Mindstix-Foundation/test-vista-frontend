@@ -5,19 +5,22 @@
         <SchoolFormComponent :is-edit-mode="false" @submit="handleSchoolSubmit" />
       </div>
     </div>
+    <LoadingSpinner :show="isSubmitting" :showOverlay="true" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import SchoolFormComponent from '@/components/forms/SchoolFormComponent.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { SchoolFormData } from '@/models/School'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 const router = useRouter()
 const toastStore = useToastStore()
+const isSubmitting = ref(false)
 
 const logDimensions = () => {
   const container = document.querySelector('.school-form-container')
@@ -44,6 +47,8 @@ onUnmounted(() => {
 
 const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
   try {
+    isSubmitting.value = true // Show loading spinner
+
     // Step 1: Create the address first
     const { data: createdAddress } = await axiosInstance.post('/addresses', {
       street: schoolData.address.street,
@@ -108,6 +113,8 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
       message: 'Failed to create school. Please try again.',
       type: 'error',
     })
+  } finally {
+    isSubmitting.value = false // Hide loading spinner
   }
 }
 </script>

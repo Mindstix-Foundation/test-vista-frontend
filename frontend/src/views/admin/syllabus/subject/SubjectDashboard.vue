@@ -132,14 +132,14 @@
               <a
                 href="#"
                 class="text-decoration-none text-black"
-                @click.prevent="editChapter(chapter)"
+                @click.prevent.stop="editChapter(chapter)"
               >
                 <i class="bi bi-pencil-square" :class="{ 'd-none': !isQuickEditMode }"></i>
               </a>
               <i
                 class="bi bi-trash3 ms-2"
                 :class="{ 'd-none': !isQuickEditMode }"
-                @click="showDeleteConfirmation(chapter)"
+                @click.stop="showDeleteConfirmation(chapter)"
               ></i>
             </li>
           </ol>
@@ -241,6 +241,16 @@ interface MediumStandardSubject {
   instruction_medium_id: number
   standard_id: number
   subject_id: number
+}
+
+// Define interface to extend HTMLElement with custom property
+interface SortableElement extends HTMLElement {
+  _sortable?: Sortable
+}
+
+// Define interface to extend Element with custom property
+interface SortableListElement extends Element {
+  _sortable?: Sortable
 }
 
 const route = useRoute()
@@ -346,24 +356,52 @@ const fetchData = async () => {
     })
   } finally {
     isLoading.value = false
+    
+    // After data is loaded, reinitialize sortable
+    // Using setTimeout to ensure DOM has updated
+    setTimeout(() => {
+      initializeSortable()
+    }, 0)
   }
 }
 
 const initializeSortable = () => {
-  // Initialize main chapter list sortable
-  new Sortable(document.getElementById('sortable-list') as HTMLElement, {
-    animation: 150,
-    handle: '.bi-grip-vertical',
-    onEnd: handleChapterReorder,
+  // First, destroy any existing sortable instances
+  const mainList = document.getElementById('sortable-list') as SortableElement
+  if (mainList && mainList._sortable) {
+    mainList._sortable.destroy()
+  }
+  
+  document.querySelectorAll('.sortable-list').forEach((list) => {
+    const sortableList = list as SortableListElement
+    if (sortableList._sortable) {
+      sortableList._sortable.destroy()
+    }
   })
+  
+  // Initialize main chapter list sortable
+  if (mainList) {
+    const chapterSortable = new Sortable(mainList, {
+      animation: 150,
+      handle: '.bi-grip-vertical',
+      onEnd: handleChapterReorder,
+    })
+    
+    // Store sortable instance reference on the DOM element
+    mainList._sortable = chapterSortable
+  }
 
   // Initialize topic lists sortable
   document.querySelectorAll('.sortable-list').forEach((list) => {
-    new Sortable(list as HTMLElement, {
+    const sortableList = list as SortableListElement
+    const topicSortable = new Sortable(list as HTMLElement, {
       animation: 150,
       handle: '.bi-grip-vertical',
       onEnd: handleTopicReorder,
     })
+    
+    // Store sortable instance reference on the DOM element
+    sortableList._sortable = topicSortable
   })
 }
 
@@ -392,10 +430,9 @@ const navigateToAddChapter = () => {
 }
 
 const editChapter = (chapter: ChapterData) => {
-  // Implement navigation to edit chapter form
+  // Navigate to edit chapter form using a full path instead of route name
   router.push({
-    name: 'editChapter',
-    params: { id: chapter.id.toString() },
+    path: `/admin/syllabus/chapter/${chapter.id}/edit`,
     query: {
       board: selectedBoard.value?.id,
       medium: selectedMedium.value?.id,
