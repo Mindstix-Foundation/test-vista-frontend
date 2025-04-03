@@ -41,89 +41,21 @@ const handleSubmit = async (data: {
   try {
     isSubmitting.value = true // Show loading spinner
 
-    // We need to make an API call to fetch the mediumStandardSubjects data
-    // to extract the subject.id for each mediumStandardSubjectId
-    const mediumStandardSubjectIds = data.formData.teacherSubjects.map(
-      subject => subject.mediumStandardSubjectId
-    );
-    
-    console.log('AddTeacher: Fetching medium standard subjects data');
-    
-    // Fetch all required medium standard subjects in a single call
-    // Note: You might need to adjust this API endpoint based on your actual API
-    const { data: mediumStandardSubjectsData } = await axiosInstance.get(
-      `/medium-standard-subjects?ids=${mediumStandardSubjectIds.join(',')}`
-    );
-    
-    console.log('AddTeacher: Received medium standard subjects data:', mediumStandardSubjectsData);
-    
-    // Create a map from mediumStandardSubject.id to actual subject.id
-    const subjectIdMap = new Map<number, number>();
-    
-    // Define the structure for the medium standard subject data
-    interface MediumStandardSubject {
-      id: number;
-      subject: {
-        id: number;
-        name: string;
-      };
-      instruction_medium: {
-        id: number;
-        instruction_medium: string;
-      };
-      standard: {
-        id: number;
-        name: string;
-      };
-      has_chapters: boolean;
-    }
-    
-    // Use the interface for the data
-    mediumStandardSubjectsData.forEach((msSubject: MediumStandardSubject) => {
-      subjectIdMap.set(msSubject.id, msSubject.subject.id);
-    });
-    
-    console.log('AddTeacher: Created subject ID map:', Object.fromEntries(subjectIdMap));
-
-    // Transform the data structure to match the updated API endpoint
+    // Transform the data structure to match the API endpoint format
     const standardSubjects = data.formData.teacherSubjects.reduce((acc, subject) => {
-      console.log('AddTeacher: Processing subject:', subject);
-      
-      // Get the actual subject.id from the mapping
-      const subjectId = subjectIdMap.get(subject.mediumStandardSubjectId);
-      
-      if (!subjectId) {
-        console.warn(
-          `AddTeacher: Could not find subject.id for mediumStandardSubjectId: ${subject.mediumStandardSubjectId}`
-        );
-        return acc; // Skip this subject if we can't find the subject.id
-      }
-      
-      console.log('AddTeacher: Got subject ID:', subjectId, 'for mediumStandardSubjectId:', subject.mediumStandardSubjectId);
-      
       // Find or create an entry for this schoolStandardId
       const existingEntry = acc.find(entry => entry.schoolStandardId === subject.schoolStandardId);
       
       if (existingEntry) {
-        console.log('AddTeacher: Adding to existing entry:', {
-          schoolStandardId: subject.schoolStandardId,
-          subjectId
-        });
-        
         // Add the subject ID if it's not already in the array
-        if (!existingEntry.subjectIds.includes(subjectId)) {
-          existingEntry.subjectIds.push(subjectId);
+        if (!existingEntry.subjectIds.includes(subject.mediumStandardSubjectId)) {
+          existingEntry.subjectIds.push(subject.mediumStandardSubjectId);
         }
       } else {
         // Create a new entry
-        console.log('AddTeacher: Creating new entry:', {
-          schoolStandardId: subject.schoolStandardId,
-          subjectId
-        });
-        
         acc.push({
           schoolStandardId: subject.schoolStandardId,
-          subjectIds: [subjectId]
+          subjectIds: [subject.mediumStandardSubjectId] // This is already the correct subject ID
         });
       }
       
@@ -132,7 +64,7 @@ const handleSubmit = async (data: {
 
     console.log('AddTeacher: Transformed standard subjects:', standardSubjects);
 
-    // Create the payload for the updated API endpoint
+    // Create the payload for the API endpoint
     const payload = {
       name: data.formData.name,
       email_id: data.formData.emailId,

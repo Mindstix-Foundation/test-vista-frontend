@@ -17,8 +17,7 @@
             <div class="col col-7 col-sm-auto text-end">
               <button
                 id="removeSubjectButton"
-                class="btn btn-light"
-                style="border: 1px solid gray !important;"
+                class="btn btn-custom"
                 @click="navigateToRemoveSubject"
               >
                 Remove Subject
@@ -761,6 +760,29 @@ const removeSelectedSubjects = async () => {
   /* Add margin between buttons on mobile */
   .col-7 {
     margin-top: 0.5rem;
+  }
+
+  .btn-custom {
+    background-color: #dc3545 !important;
+    color: white !important;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 577px) {
+  .btn-custom {
+    border: 1px solid gray !important;
+    background-color: #f8f9fa;
+    color: black;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  .btn-custom:hover {
+    border: 1px solid #dc3545 !important;
+    background-color: #dc3545 !important;
+    color: white !important;
   }
 }
 

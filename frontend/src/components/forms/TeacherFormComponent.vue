@@ -1663,7 +1663,7 @@ const addSubjects = () => {
     })
     return {
       schoolStandardId,
-      mediumStandardSubjectId: selectedId, // Use the subject ID directly
+      mediumStandardSubjectId: selectedId, // This is now the actual subject ID from the API
     }
   })
   console.log('[Add Subjects] New subject pairs:', newPairs)
