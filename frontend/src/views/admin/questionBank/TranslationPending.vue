@@ -770,14 +770,14 @@ async function fetchQuestions() {
         correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
         if (correctOptionIndex === -1) correctOptionIndex = undefined;
 
-        // For MCQ options, filter out null values from optionImages
-        const rawOptionImages = questionTextData.mcq_options.map(opt =>
+        // For MCQ options, create option images array that preserves the structure
+        const optionImagesArray = questionTextData.mcq_options.map(opt =>
           opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
         );
 
-        // Filter out null values for optionImages
-        const filteredOptionImages = rawOptionImages.filter((url): url is string => url !== null);
-        optionImages = filteredOptionImages.length > 0 ? filteredOptionImages : undefined;
+        // Filter out null values and set optionImages only if at least one non-null image exists
+        const filteredImages = optionImagesArray.filter((img): img is string => img !== null);
+        optionImages = filteredImages.length > 0 ? filteredImages : undefined;
       }
 
       // Handle match pairs if present

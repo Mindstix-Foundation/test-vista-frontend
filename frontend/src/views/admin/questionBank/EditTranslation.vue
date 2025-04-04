@@ -415,63 +415,197 @@
                 </div>
               </div>
 
-              <div class="mb-3">
+              <div class="mb-4">
+                <h6 class="text-muted mb-3">Original Matching Pairs</h6>
+                
+                <!-- Display original match pairs in a more readable format -->
+                <div v-for="(pair, index) in originalMatchPairs" :key="'original-pair-'+index" class="match-pair-row mb-3">
+                  <div class="card border-light shadow-sm">
+                    <div class="card-body p-3">
                 <div class="row g-3">
-                  <div class="col-12 mb-2">
-                    <div class="d-flex justify-content-between">
-                      <h6 class="text-muted" v-if="selectedTranslationIndex >= 0 && availableTranslations.length > 0">
-                        {{ availableTranslations[selectedTranslationIndex].medium.instruction_medium }} Match Pairs (Original)
-                      </h6>
-                      <h6 class="text-muted" v-else>
-                        Original Match Pairs
-                      </h6>
-                      <h6 class="text-muted">{{ questionBankData.mediumName }} Match Pairs (Translation)</h6>
+                        <!-- Left Side Item -->
+                        <div class="col-md-5">
+                          <div class="d-flex align-items-center">
+                            <div class="option-letter me-2">
+                              {{ String.fromCharCode(65 + index) }}
                     </div>
-                    <hr class="mt-0">
+                            <div class="option-text flex-grow-1">
+                              <strong>{{ pair.left_text || '' }}</strong>
                   </div>
-                  <div class="col-12" v-for="(pair, index) in originalMatchPairs" :key="index">
-                    <div class="row">
-                      <!-- Original Pair (Left Column) -->
-                      <div class="col-md-6">
-                        <div class="card mb-2 border-light">
-                          <div class="card-body p-2">
-                            <div class="row g-2">
-                              <div class="col-6">
-                                <div class="form-floating mb-2">
-                                  <input type="text" :value="pair.left_text" readonly class="form-control" :id="'originalLeftPair' + (index + 1)">
-                                  <label :for="'originalLeftPair' + (index + 1)" class="small">Left Item {{ index + 1 }}</label>
                                 </div>
+
+                          <!-- Left image if available -->
+                          <div v-if="originalMatchPairLeftImages[index]" class="pair-image-container mt-2">
+                            <div v-if="pairLeftImageLoading[index]" class="image-loading-overlay">
+                              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading image...</span>
                               </div>
-                              <div class="col-6">
-                                <div class="form-floating mb-2">
-                                  <input type="text" :value="pair.right_text" readonly class="form-control" :id="'originalRightPair' + (index + 1)">
-                                  <label :for="'originalRightPair' + (index + 1)" class="small">Right Item {{ index + 1 }}</label>
                                 </div>
+                            <img 
+                              v-if="originalMatchPairLeftImages[index]"
+                              :src="originalMatchPairLeftImages[index]"
+                              class="pair-image"
+                              alt="Left Item Image"
+                              @load="() => handlePairLeftImageLoad(index)"
+                              @error="() => handlePairLeftImageError(index)"
+                            />
+                            <div v-if="pairLeftImageError[index]" class="image-error-message small">
+                              <i class="bi bi-exclamation-triangle"></i>
+                              Failed to load image
                               </div>
+                            </div>
+                          </div>
+
+                        <!-- Arrow between left and right -->
+                        <div class="col-md-2 d-flex align-items-center justify-content-center">
+                          <div class="match-arrow-circle">
+                            <i class="bi bi-arrows-angle-expand"></i>
+                        </div>
+                      </div>
+
+                        <!-- Right Side Item -->
+                        <div class="col-md-5">
+                          <div class="d-flex align-items-center">
+                            <div class="option-text flex-grow-1">
+                              <strong>{{ pair.right_text || '' }}</strong>
+                            </div>
+                          </div>
+
+                          <!-- Right image if available -->
+                          <div v-if="originalMatchPairRightImages[index]" class="pair-image-container mt-2">
+                            <div v-if="pairRightImageLoading[index]" class="image-loading-overlay">
+                              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading image...</span>
+                              </div>
+                            </div>
+                            <img 
+                              v-if="originalMatchPairRightImages[index]"
+                              :src="originalMatchPairRightImages[index]"
+                              class="pair-image"
+                              alt="Right Item Image"
+                              @load="() => handlePairRightImageLoad(index)"
+                              @error="() => handlePairRightImageError(index)"
+                            />
+                            <div v-if="pairRightImageError[index]" class="image-error-message small">
+                              <i class="bi bi-exclamation-triangle"></i>
+                              Failed to load image
                             </div>
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
 
-                      <!-- Translated Pair (Right Column) -->
-                      <div class="col-md-6">
-                        <div class="row g-2">
-                          <div class="col-6">
-                            <div class="form-floating mb-2">
-                              <input type="text" v-model="translatedMatchPairs[index].left_text" class="form-control" :id="'translatedLeftPair' + (index + 1)" :placeholder="'Left Item ' + (index + 1)">
-                              <label :for="'translatedLeftPair' + (index + 1)">
-                                Left Item {{ index + 1 }}
+                <!-- Translation section for match pairs -->
+                <h6 class="text-muted mb-3 mt-4">Translation of Match Pairs</h6>
+                <div v-for="(pair, index) in originalMatchPairs" :key="'translation-pair-'+index" class="match-pair-translation-row mb-4">
+                  <div class="card border-light shadow-sm">
+                    <div class="card-header bg-light">
+                      <strong>Pair {{ index + 1 }}</strong>
+                    </div>
+                    <div class="card-body p-3">
+                      <div class="row g-3" :class="{'justify-content-end': !pair.left_text}">
+                        <!-- Left Side Translation - Only show if original has left text -->
+                        <template v-if="pair.left_text">
+                          <div class="col-md-5">
+                            <label :for="'lhs-' + index" class="form-label">
+                              Left Side {{ String.fromCharCode(65 + index) }}
                                 <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
                               </label>
+                            <textarea 
+                              v-model="translatedMatchPairs[index].left_text" 
+                              class="form-control" 
+                              :id="'lhs-' + index" 
+                              rows="2"
+                              :placeholder="'Translate: ' + (pair.left_text || '')" 
+                              required
+                              @input="autoResize"
+                            ></textarea>
+                            
+                            <!-- Left image upload if original has image -->
+                            <div v-if="originalMatchPairLeftImages && originalMatchPairLeftImages[index]" class="mt-2">
+                              <div class="input-group input-group-sm">
+                                <input 
+                                  type="file" 
+                                  class="form-control" 
+                                  :id="'leftPairImage' + index" 
+                                  accept="image/*" 
+                                  @change="e => handlePairLeftImageChange(e, index)"
+                                >
+                                <button 
+                                  v-if="pairLeftImagePreviews[index]" 
+                                  class="btn btn-outline-secondary" 
+                                  type="button" 
+                                  @click="clearPairLeftImage(index)"
+                                >
+                                  <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
+                              
+                              <!-- Preview of selected image -->
+                              <div v-if="pairLeftImagePreviews[index]" class="pair-image-preview-container mt-2">
+                                <img :src="pairLeftImagePreviews[index]" class="pair-image-preview" alt="Left Item Image Preview">
+                                <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearPairLeftImage(index)">
+                                  <i class="bi bi-x"></i>
+                                </button>
+                          </div>
                             </div>
                           </div>
-                          <div class="col-6">
-                            <div class="form-floating mb-2">
-                              <input type="text" v-model="translatedMatchPairs[index].right_text" class="form-control" :id="'translatedRightPair' + (index + 1)" :placeholder="'Right Item ' + (index + 1)">
-                              <label :for="'translatedRightPair' + (index + 1)">
-                                Right Item {{ index + 1 }}
+
+                          <!-- Arrow - Only show if there's a left text -->
+                          <div class="col-md-2 d-flex align-items-center justify-content-center">
+                            <div class="match-arrow-circle">
+                              <i class="bi bi-arrows-angle-expand"></i>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Right Side Translation - Adjust column size based on whether there's a left text -->
+                        <div :class="[
+                          pair.left_text ? 'col-md-5' : 'col-md-5 ms-auto',
+                          {'offset-md-5': !pair.left_text}
+                        ]">
+                          <label :for="'rhs-' + index" class="form-label">
+                            Right Side {{ index + 1 }}
                                 <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
                               </label>
+                          <textarea 
+                            v-model="translatedMatchPairs[index].right_text" 
+                            class="form-control" 
+                            :id="'rhs-' + index" 
+                            rows="2"
+                            :placeholder="'Translate: ' + (pair.right_text || '')" 
+                            required
+                            @input="autoResize"
+                          ></textarea>
+                          
+                          <!-- Right image upload if original has image -->
+                          <div v-if="originalMatchPairRightImages && originalMatchPairRightImages[index]" class="mt-2">
+                            <div class="input-group input-group-sm">
+                              <input 
+                                type="file" 
+                                class="form-control" 
+                                :id="'rightPairImage' + index" 
+                                accept="image/*" 
+                                @change="e => handlePairRightImageChange(e, index)"
+                              >
+                              <button 
+                                v-if="pairRightImagePreviews[index]" 
+                                class="btn btn-outline-secondary" 
+                                type="button" 
+                                @click="clearPairRightImage(index)"
+                              >
+                                <i class="bi bi-x-circle"></i>
+                              </button>
+                            </div>
+                            
+                            <!-- Preview of selected image -->
+                            <div v-if="pairRightImagePreviews[index]" class="pair-image-preview-container mt-2">
+                              <img :src="pairRightImagePreviews[index]" class="pair-image-preview" alt="Right Item Image Preview">
+                              <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearPairRightImage(index)">
+                                <i class="bi bi-x"></i>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -613,10 +747,21 @@ interface McqOption {
 
 // Interface for matching pairs
 interface MatchPair {
+  id?: number;
   left_text: string;
   right_text: string;
   left_image_id?: number;
   right_image_id?: number;
+  left_image?: {
+    id: number;
+    presigned_url?: string;
+    image_url?: string;
+  } | null;
+  right_image?: {
+    id: number;
+    presigned_url?: string;
+    image_url?: string;
+  } | null;
 }
 
 // Add loading states
@@ -634,6 +779,20 @@ const optionImageError = ref<boolean[]>([])
 const originalOptionIsCorrect = ref<boolean[]>([])
 const optionImageIds = ref<(number | null)[]>([]) // To store original image IDs
 const optionImagePreviews = ref<(string | null)[]>([]) // Add this for previewing selected images
+
+// Add states for match pair images
+const originalMatchPairLeftImages = ref<(string | null)[]>([])
+const originalMatchPairRightImages = ref<(string | null)[]>([])
+const pairLeftImageLoading = ref<boolean[]>([])
+const pairLeftImageError = ref<boolean[]>([])
+const pairRightImageLoading = ref<boolean[]>([])
+const pairRightImageError = ref<boolean[]>([])
+const pairLeftImagePreviews = ref<(string | null)[]>([])
+const pairRightImagePreviews = ref<(string | null)[]>([])
+const pairLeftImageIds = ref<(number | null)[]>([])
+const pairRightImageIds = ref<(number | null)[]>([])
+const selectedPairLeftFiles = ref<(File | null)[]>([])
+const selectedPairRightFiles = ref<(File | null)[]>([])
 
 // Add this near the top of the file, with other type definitions
 const QUESTION_TYPES = {
@@ -809,25 +968,23 @@ async function updateTranslation() {
     }
 
     // Prepare the question text data based on question type
-    interface QuestionTextData {
+    const questionTextData: {
       question_text: string;
-      image_id?: number;
+      image_id?: number | null;
       mcq_options?: Array<{
         id?: number;
         option_text: string;
         is_correct: boolean;
-        image_id?: number;
+        image_id?: number | null;
       }>;
       match_pairs?: Array<{
         id?: number;
         left_text: string;
         right_text: string;
-        left_image_id?: number;
-        right_image_id?: number;
+        left_image_id?: number | null;
+        right_image_id?: number | null;
       }>;
-    }
-
-    const questionTextData: QuestionTextData = {
+    } = {
       question_text: translatedQuestion.value.question
     };
 
@@ -845,65 +1002,64 @@ async function updateTranslation() {
     ) {
       const mcqOptions = [];
 
-      // Find the original translation to get correct answers
+      // Find the original translation to get correct answers and existing option IDs
       const originalTranslation = availableTranslations.value[selectedTranslationIndex.value];
 
-      if (originalTranslation && originalTranslation.mcq_options) {
-        for (let i = 0; i < translatedOptions.value.length; i++) {
-          if (!translatedOptions.value[i].trim()) continue;
+      for (let i = 0; i < translatedOptions.value.length; i++) {
+        if (!translatedOptions.value[i].trim()) continue;
 
-          const originalOption = originalTranslation.mcq_options[i];
-          const optionData: {
-            id?: number;
-            option_text: string;
-            is_correct: boolean;
-            image_id?: number;
-          } = {
-            option_text: translatedOptions.value[i],
-            is_correct: originalOption ? originalOption.is_correct : false
-          };
+        const originalOption = originalTranslation?.mcq_options?.[i];
+        const optionData: {
+          id?: number;
+          option_text: string;
+          is_correct: boolean;
+          image_id?: number | null;
+        } = {
+          option_text: translatedOptions.value[i],
+          is_correct: originalOption ? originalOption.is_correct : false
+        };
 
-          // Add option ID if it exists (for updating existing options)
-          if (originalOption && originalOption.id) {
-            optionData.id = originalOption.id;
-          }
-
-          // Handle option images
-          if (selectedOptionFiles.value && selectedOptionFiles.value[i]) {
-            try {
-              const file = selectedOptionFiles.value[i]!;
-              const formData = new FormData();
-              formData.append('file', file);
-
-              const uploadResponse = await axiosInstance.post('/images/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                timeout: 30000
-              });
-
-              if (uploadResponse.data && uploadResponse.data.image_url) {
-                const imageCreateRequest = {
-                  image_url: uploadResponse.data.image_url,
-                  original_filename: file.name,
-                  file_size: file.size,
-                  file_type: file.type,
-                  width: uploadResponse.data.width || 0,
-                  height: uploadResponse.data.height || 0
-                };
-
-                const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-                if (imageResponse.data && imageResponse.data.id) {
-                  optionData.image_id = imageResponse.data.id;
-                }
-              }
-            } catch (error) {
-              console.error(`Error uploading image for option ${i + 1}:`, error);
-            }
-          } else if (originalOption && originalOption.image_id) {
-            optionData.image_id = originalOption.image_id;
-          }
-
-          mcqOptions.push(optionData);
+        // Add option ID if it exists (for updating existing options)
+        if (originalOption?.id) {
+          optionData.id = originalOption.id;
         }
+
+        // Handle new option images
+        if (selectedOptionFiles.value?.[i]) {
+          try {
+            const file = selectedOptionFiles.value[i]!;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadResponse = await axiosInstance.post('/images/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 30000
+            });
+
+            if (uploadResponse.data?.image_url) {
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: file.name,
+                file_size: file.size,
+                file_type: file.type,
+                width: uploadResponse.data.width || 0,
+                height: uploadResponse.data.height || 0
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              if (imageResponse.data?.id) {
+                optionData.image_id = imageResponse.data.id;
+              }
+            }
+          } catch (error) {
+            console.error(`Error uploading image for option ${i + 1}:`, error);
+          }
+        } else if (originalOption?.image_id) {
+          // Preserve existing image ID if no new image was uploaded
+          optionData.image_id = originalOption.image_id;
+        }
+
+        mcqOptions.push(optionData);
       }
 
       questionTextData.mcq_options = mcqOptions;
@@ -915,34 +1071,103 @@ async function updateTranslation() {
        questionType.value === QUESTION_TYPES.COMPLETE_CORRELATION) &&
       translatedMatchPairs.value.length > 0
     ) {
-      interface MatchPair {
-        id?: number;
-        left_text: string;
-        right_text: string;
-        left_image_id?: number;
-        right_image_id?: number;
-      }
+      const matchPairs = [];
 
-      const matchPairs = translatedMatchPairs.value.map((pair, index) => {
-        const originalPair = availableTranslations.value[selectedTranslationIndex.value]?.match_pairs?.[index] as MatchPair | undefined;
-        const newPair: MatchPair = {
+      for (let i = 0; i < translatedMatchPairs.value.length; i++) {
+        const pair = translatedMatchPairs.value[i];
+        const originalPair = availableTranslations.value[selectedTranslationIndex.value]?.match_pairs?.[i];
+        
+        const pairData: {
+          id?: number;
+          left_text: string;
+          right_text: string;
+          left_image_id?: number | null;
+          right_image_id?: number | null;
+        } = {
           left_text: pair.left_text,
-          right_text: pair.right_text,
-          left_image_id: originalPair?.left_image_id,
-          right_image_id: originalPair?.right_image_id
+          right_text: pair.right_text
         };
 
+        // Add pair ID if it exists (for updating existing pairs)
         if (originalPair?.id) {
-          newPair.id = originalPair.id;
+          pairData.id = originalPair.id;
         }
 
-        return newPair;
-      });
+        // Handle left image
+        if (selectedPairLeftFiles.value?.[i]) {
+          try {
+            const file = selectedPairLeftFiles.value[i]!;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadResponse = await axiosInstance.post('/images/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 30000
+            });
+
+            if (uploadResponse.data?.image_url) {
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: file.name,
+                file_size: file.size,
+                file_type: file.type,
+                width: uploadResponse.data.width || 0,
+                height: uploadResponse.data.height || 0
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              if (imageResponse.data?.id) {
+                pairData.left_image_id = imageResponse.data.id;
+              }
+            }
+          } catch (error) {
+            console.error(`Error uploading image for left pair ${i + 1}:`, error);
+          }
+        } else if (originalPair?.left_image_id) {
+          pairData.left_image_id = originalPair.left_image_id;
+        }
+
+        // Handle right image
+        if (selectedPairRightFiles.value?.[i]) {
+          try {
+            const file = selectedPairRightFiles.value[i]!;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadResponse = await axiosInstance.post('/images/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 30000
+            });
+
+            if (uploadResponse.data?.image_url) {
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: file.name,
+                file_size: file.size,
+                file_type: file.type,
+                width: uploadResponse.data.width || 0,
+                height: uploadResponse.data.height || 0
+              };
+
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              if (imageResponse.data?.id) {
+                pairData.right_image_id = imageResponse.data.id;
+              }
+            }
+          } catch (error) {
+            console.error(`Error uploading image for right pair ${i + 1}:`, error);
+          }
+        } else if (originalPair?.right_image_id) {
+          pairData.right_image_id = originalPair.right_image_id;
+        }
+
+        matchPairs.push(pairData);
+      }
 
       questionTextData.match_pairs = matchPairs;
     }
 
-    // Prepare the final request payload
+    // Prepare the final request payload using the new API structure
     const updatePayload = {
       board_question: false, // Since this is a translation, we don't modify board_question status
       question_text_id: translationTextId,
@@ -958,12 +1183,12 @@ async function updateTranslation() {
     const updateResponse = await axiosInstance.put(`/questions/edit/${questionId.value}`, updatePayload);
     console.log('Translation updated successfully:', updateResponse.data);
 
-    // Check if any translations were unverified (though this should be rare for translation edits)
+    // Check if any translations were unverified
     if (updateResponse.data.translations_unverified > 0) {
       console.log(`${updateResponse.data.translations_unverified} translations were unverified due to this update`);
     }
 
-    // Navigation and success handling
+    // Show success message and navigate back
     router.push({
       name: 'questionDashboard',
       query: {
@@ -1189,9 +1414,47 @@ async function loadQuestionData() {
               referenceTranslation.match_pairs &&
               referenceTranslation.match_pairs.length > 0) {
 
+            // Initialize match pair arrays
             originalMatchPairs.value = referenceTranslation.match_pairs.map(
               (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
             );
+            
+            // Initialize arrays for match pair images
+            originalMatchPairLeftImages.value = Array(originalMatchPairs.value.length).fill(null);
+            originalMatchPairRightImages.value = Array(originalMatchPairs.value.length).fill(null);
+            pairLeftImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
+            pairLeftImageError.value = Array(originalMatchPairs.value.length).fill(false);
+            pairRightImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
+            pairRightImageError.value = Array(originalMatchPairs.value.length).fill(false);
+            pairLeftImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
+            pairRightImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
+            pairLeftImageIds.value = Array(originalMatchPairs.value.length).fill(null);
+            pairRightImageIds.value = Array(originalMatchPairs.value.length).fill(null);
+            
+            // Extract image URLs for each pair
+            if (referenceTranslation.match_pairs) {
+              referenceTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
+                // Handle left image
+                if (pair.left_image_id && pair.left_image) {
+                  const leftUrl = pair.left_image.presigned_url || pair.left_image.image_url;
+                  if (leftUrl) {
+                    originalMatchPairLeftImages.value[index] = leftUrl;
+                    pairLeftImageLoading.value[index] = true;
+                  }
+                  pairLeftImageIds.value[index] = pair.left_image_id;
+                }
+                
+                // Handle right image
+                if (pair.right_image_id && pair.right_image) {
+                  const rightUrl = pair.right_image.presigned_url || pair.right_image.image_url;
+                  if (rightUrl) {
+                    originalMatchPairRightImages.value[index] = rightUrl;
+                    pairRightImageLoading.value[index] = true;
+                  }
+                  pairRightImageIds.value[index] = pair.right_image_id;
+                }
+              });
+            }
 
             // Load translated match pairs if available
             if (translationToEdit.match_pairs && translationToEdit.match_pairs.length > 0) {
@@ -1390,6 +1653,19 @@ function cleanupObjectURLs() {
       if (url) URL.revokeObjectURL(url);
     });
   }
+  
+  // Clean up match pair image previews
+  if (pairLeftImagePreviews.value) {
+    pairLeftImagePreviews.value.forEach((url) => {
+      if (url) URL.revokeObjectURL(url);
+    });
+  }
+  
+  if (pairRightImagePreviews.value) {
+    pairRightImagePreviews.value.forEach((url) => {
+      if (url) URL.revokeObjectURL(url);
+    });
+  }
 }
 
 // Function to insert blank in Fill in the Blanks questions
@@ -1419,6 +1695,152 @@ function insertBlank() {
       textarea.focus();
       textarea.setSelectionRange(5, 5);
     }, 0);
+  }
+}
+// Match pair image handling methods
+function handlePairLeftImageLoad(index: number) {
+  if (index >= 0 && index < pairLeftImageLoading.value.length) {
+    pairLeftImageLoading.value[index] = false;
+  }
+  if (index >= 0 && index < pairLeftImageError.value.length) {
+    pairLeftImageError.value[index] = false;
+  }
+}
+
+function handlePairLeftImageError(index: number) {
+  if (index >= 0 && index < pairLeftImageLoading.value.length) {
+    pairLeftImageLoading.value[index] = false;
+  }
+  if (index >= 0 && index < pairLeftImageError.value.length) {
+    pairLeftImageError.value[index] = true;
+  }
+  console.error(`Failed to load left image for pair ${index + 1}`);
+}
+
+function handlePairRightImageLoad(index: number) {
+  if (index >= 0 && index < pairRightImageLoading.value.length) {
+    pairRightImageLoading.value[index] = false;
+  }
+  if (index >= 0 && index < pairRightImageError.value.length) {
+    pairRightImageError.value[index] = false;
+  }
+}
+
+function handlePairRightImageError(index: number) {
+  if (index >= 0 && index < pairRightImageLoading.value.length) {
+    pairRightImageLoading.value[index] = false;
+  }
+  if (index >= 0 && index < pairRightImageError.value.length) {
+    pairRightImageError.value[index] = true;
+  }
+  console.error(`Failed to load right image for pair ${index + 1}`);
+}
+
+function handlePairLeftImageChange(event: Event, index: number) {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    // Store file for upload later
+    if (!selectedPairLeftFiles.value) {
+      selectedPairLeftFiles.value = Array(originalMatchPairs.value.length).fill(null);
+    }
+    selectedPairLeftFiles.value[index] = input.files[0];
+    
+    // Create preview
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        // Create a new array with the updated preview URL for this index
+        const updatedPreviews = [...pairLeftImagePreviews.value];
+        updatedPreviews[index] = e.target.result as string;
+        pairLeftImagePreviews.value = updatedPreviews;
+      }
+    };
+
+    reader.readAsDataURL(file);
+    
+    // Show toast notification
+    toastStore.showToast({
+      title: 'Left Image Selected',
+      message: `Image for left item ${index + 1} will be uploaded when you click Update`,
+      type: 'info'
+    });
+  } else {
+    // If no file selected, remove the preview
+    clearPairLeftImage(index);
+  }
+}
+
+function handlePairRightImageChange(event: Event, index: number) {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    // Store file for upload later
+    if (!selectedPairRightFiles.value) {
+      selectedPairRightFiles.value = Array(originalMatchPairs.value.length).fill(null);
+    }
+    selectedPairRightFiles.value[index] = input.files[0];
+    
+    // Create preview
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        // Create a new array with the updated preview URL for this index
+        const updatedPreviews = [...pairRightImagePreviews.value];
+        updatedPreviews[index] = e.target.result as string;
+        pairRightImagePreviews.value = updatedPreviews;
+      }
+    };
+
+    reader.readAsDataURL(file);
+    
+    // Show toast notification
+    toastStore.showToast({
+      title: 'Right Image Selected',
+      message: `Image for right item ${index + 1} will be uploaded when you click Update`,
+      type: 'info'
+    });
+  } else {
+    // If no file selected, remove the preview
+    clearPairRightImage(index);
+  }
+}
+
+function clearPairLeftImage(index: number) {
+  // Create a new array with the cleared preview for this index
+  const updatedPreviews = [...pairLeftImagePreviews.value];
+  updatedPreviews[index] = null;
+  pairLeftImagePreviews.value = updatedPreviews;
+
+  // Clear the file reference
+  if (selectedPairLeftFiles.value && selectedPairLeftFiles.value[index]) {
+    selectedPairLeftFiles.value[index] = null;
+  }
+
+  // Reset the file input
+  const imageInput = document.getElementById(`leftPairImage${index}`) as HTMLInputElement;
+  if (imageInput) {
+    imageInput.value = '';
+  }
+}
+
+function clearPairRightImage(index: number) {
+  // Create a new array with the cleared preview for this index
+  const updatedPreviews = [...pairRightImagePreviews.value];
+  updatedPreviews[index] = null;
+  pairRightImagePreviews.value = updatedPreviews;
+
+  // Clear the file reference
+  if (selectedPairRightFiles.value && selectedPairRightFiles.value[index]) {
+    selectedPairRightFiles.value[index] = null;
+  }
+
+  // Reset the file input
+  const imageInput = document.getElementById(`rightPairImage${index}`) as HTMLInputElement;
+  if (imageInput) {
+    imageInput.value = '';
   }
 }
 
@@ -1505,7 +1927,7 @@ textarea[readonly] {
   color: #dc3545;
   text-align: center;
   padding: 1rem;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 250, 0.9);
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -1665,5 +2087,76 @@ textarea[readonly] {
   right: 5px;
   padding: 3px;
   font-size: 0.7rem;
+}
+
+/* Add at the end of the style section */
+/* Match the pairs specific styles */
+.match-pair-row,
+.match-pair-translation-row {
+  margin-bottom: 1.5rem;
+}
+
+.match-arrow-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.option-letter {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #212529;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.pair-image-container {
+  position: relative;
+  max-width: 100%;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #f8f9fa;
+}
+
+.pair-image {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.pair-image-preview-container {
+  position: relative;
+  max-width: 100%;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #f8f9fa;
+}
+
+.pair-image-preview {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
 }
 </style>

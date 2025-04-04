@@ -154,8 +154,21 @@
                       <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
                     </label>
                   </div>
-                  <div class="input-group input-group-sm mb-3">
+                  <!-- Only enable image upload if the original question has an image -->
+                  <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Original has image
+                    </span>
+                  </div>
+                  <!-- Disabled image upload with explanation if original has no image -->
+                  <div class="input-group input-group-sm mb-3" v-else>
+                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      No original image
+                    </span>
                   </div>
                 </div>
                 <div class="mt-5 text-center">
@@ -213,25 +226,26 @@
                       <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
                     </label>
                   </div>
-                  <div class="input-group input-group-sm mb-3">
+                  <!-- Only enable image upload if the original question has an image -->
+                  <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Original has image
+                    </span>
+                  </div>
+                  <!-- Disabled image upload with explanation if original has no image -->
+                  <div class="input-group input-group-sm mb-3" v-else>
+                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      No original image
+                    </span>
                   </div>
                 </div>
 
                 <div class="mb-3">
                   <div class="row g-3">
-                    <div class="col-12 mb-2">
-                      <div class="d-flex justify-content-between">
-                        <h6 class="text-muted" v-if="selectedTranslationIndex >= 0 && availableTranslations.length > 0">
-                          {{ availableTranslations[selectedTranslationIndex].medium.instruction_medium }} Options (Original)
-                        </h6>
-                        <h6 class="text-muted" v-else>
-                          Original Options
-                        </h6>
-                        <h6 class="text-muted">{{ questionBankData.mediumName }} Options (Translation)</h6>
-                      </div>
-                      <hr class="mt-0">
-                    </div>
                     <div class="col-md-6" v-for="(option, index) in originalOptions" :key="index">
                       <!-- Original Option with Image (Left Side) -->
                       <div class="card mb-2 border-light">
@@ -372,17 +386,21 @@
                     </label>
                   </div>
 
-
-                  <div class="form-floating">
-                    <textarea id="fillInTheBlankQuestion" v-model="translatedQuestion.question" class="form-control" rows="3"
-                              placeholder="Type your question here, use '_____' for blanks." @input="autoResize" required></textarea>
-                    <label for="fillInTheBlankQuestion" class="form-label">
-                      Translated Question
-                      <span class="badge bg-primary language-badge">{{ questionBankData.mediumName }}</span>
-                    </label>
-                  </div>
-                  <div class="input-group input-group-sm mb-3">
+                  <!-- Only enable image upload if the original question has an image -->
+                  <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Original has image
+                    </span>
+                  </div>
+                  <!-- Disabled image upload with explanation if original has no image -->
+                  <div class="input-group input-group-sm mb-3" v-else>
+                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      No original image
+                    </span>
                   </div>
                   <div class="col text-end">
                     <button type="button" class="btn btn-light" style="border: 1px solid gray !important;" @click="insertBlank">Insert Blank</button>
@@ -447,8 +465,21 @@
                     </label>
                   </div>
                   
-                  <div class="input-group input-group-sm">
+                  <!-- Only enable image upload if the original question has an image -->
+                  <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Original has image
+                    </span>
+                  </div>
+                  <!-- Disabled image upload with explanation if original has no image -->
+                  <div class="input-group input-group-sm mb-3" v-else>
+                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
+                    <span class="input-group-text text-muted small">
+                      <i class="bi bi-info-circle me-1"></i>
+                      No original image
+                    </span>
                   </div>
                 </div>
 
@@ -1055,119 +1086,118 @@ async function saveTranslation() {
 
       for (let i = 0; i < translatedMatchPairs.value.length; i++) {
         const pair = translatedMatchPairs.value[i];
-        if (pair.left_text.trim() !== '' && pair.right_text.trim() !== '') {
-          const pairObj: {
-            left_text: string;
-            right_text: string;
-            left_image_id?: number;
-            right_image_id?: number;
-          } = {
-            left_text: pair.left_text,
-            right_text: pair.right_text
-          };
+        // Remove the condition that requires both left and right text
+        const pairObj: {
+          left_text: string;
+          right_text: string;
+          left_image_id?: number;
+          right_image_id?: number;
+        } = {
+          left_text: pair.left_text || '', // Use empty string if not provided
+          right_text: pair.right_text || '' // Use empty string if not provided
+        };
 
-          // Handle left image
-          const originalHasLeftImage = originalMatchPairLeftImages.value[i] !== null;
-          const leftImageInput = document.getElementById(`leftPairImage${i}`) as HTMLInputElement;
-          const hasNewLeftImage = leftImageInput?.files && leftImageInput.files.length > 0;
+        // Handle left image
+        const originalHasLeftImage = originalMatchPairLeftImages.value[i] !== null;
+        const leftImageInput = document.getElementById(`leftPairImage${i}`) as HTMLInputElement;
+        const hasNewLeftImage = leftImageInput?.files && leftImageInput.files.length > 0;
 
-          if (originalHasLeftImage && pairLeftImageIds.value[i] !== null) {
-            if (hasNewLeftImage && leftImageInput.files) {
-              try {
-                const formData = new FormData();
-                formData.append('file', leftImageInput.files[0]);
+        if (originalHasLeftImage && pairLeftImageIds.value[i] !== null) {
+          if (hasNewLeftImage && leftImageInput.files) {
+            try {
+              const formData = new FormData();
+              formData.append('file', leftImageInput.files[0]);
 
-                const uploadResponse = await axiosInstance.post(
-                  '/images/upload',
-                  formData,
-                  {
-                    headers: {
-                      'Content-Type': 'multipart/form-data'
-                    }
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
                   }
-                );
+                }
+              );
 
-                const imageCreateRequest = {
-                  image_url: uploadResponse.data.image_url,
-                  original_filename: uploadResponse.data.original_filename || leftImageInput.files[0].name,
-                  file_size: uploadResponse.data.file_size || leftImageInput.files[0].size,
-                  file_type: uploadResponse.data.file_type || leftImageInput.files[0].type,
-                  width: uploadResponse.data.width,
-                  height: uploadResponse.data.height
-                };
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || leftImageInput.files[0].name,
+                file_size: uploadResponse.data.file_size || leftImageInput.files[0].size,
+                file_type: uploadResponse.data.file_type || leftImageInput.files[0].type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
 
-                const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-                pairObj.left_image_id = imageResponse.data.id;
-              } catch (error) {
-                console.error('Error uploading left pair image:', error);
-                // If upload fails, use original image ID since we must maintain consistency
-                pairObj.left_image_id = pairLeftImageIds.value[i] as number;
-              }
-            } else {
-              // No new image uploaded, use original image ID
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              pairObj.left_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error('Error uploading left pair image:', error);
+              // If upload fails, use original image ID since we must maintain consistency
               pairObj.left_image_id = pairLeftImageIds.value[i] as number;
             }
-          } else if (hasNewLeftImage) {
-            // Original has no image, warn user and skip image upload
-            toastStore.showToast({
-              title: 'Warning',
-              message: `Cannot add left image to pair ${i + 1} when original pair has no left image`,
-              type: 'warning'
-            });
+          } else {
+            // No new image uploaded, use original image ID
+            pairObj.left_image_id = pairLeftImageIds.value[i] as number;
           }
+        } else if (hasNewLeftImage) {
+          // Original has no image, warn user and skip image upload
+          toastStore.showToast({
+            title: 'Warning',
+            message: `Cannot add left image to pair ${i + 1} when original pair has no left image`,
+            type: 'warning'
+          });
+        }
 
-          // Handle right image
-          const originalHasRightImage = originalMatchPairRightImages.value[i] !== null;
-          const rightImageInput = document.getElementById(`rightPairImage${i}`) as HTMLInputElement;
-          const hasNewRightImage = rightImageInput?.files && rightImageInput.files.length > 0;
+        // Handle right image
+        const originalHasRightImage = originalMatchPairRightImages.value[i] !== null;
+        const rightImageInput = document.getElementById(`rightPairImage${i}`) as HTMLInputElement;
+        const hasNewRightImage = rightImageInput?.files && rightImageInput.files.length > 0;
 
-          if (originalHasRightImage && pairRightImageIds.value[i] !== null) {
-            if (hasNewRightImage && rightImageInput.files) {
-              try {
-                const formData = new FormData();
-                formData.append('file', rightImageInput.files[0]);
+        if (originalHasRightImage && pairRightImageIds.value[i] !== null) {
+          if (hasNewRightImage && rightImageInput.files) {
+            try {
+              const formData = new FormData();
+              formData.append('file', rightImageInput.files[0]);
 
-                const uploadResponse = await axiosInstance.post(
-                  '/images/upload',
-                  formData,
-                  {
-                    headers: {
-                      'Content-Type': 'multipart/form-data'
-                    }
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
                   }
-                );
+                }
+              );
 
-                const imageCreateRequest = {
-                  image_url: uploadResponse.data.image_url,
-                  original_filename: uploadResponse.data.original_filename || rightImageInput.files[0].name,
-                  file_size: uploadResponse.data.file_size || rightImageInput.files[0].size,
-                  file_type: uploadResponse.data.file_type || rightImageInput.files[0].type,
-                  width: uploadResponse.data.width,
-                  height: uploadResponse.data.height
-                };
+              const imageCreateRequest = {
+                image_url: uploadResponse.data.image_url,
+                original_filename: uploadResponse.data.original_filename || rightImageInput.files[0].name,
+                file_size: uploadResponse.data.file_size || rightImageInput.files[0].size,
+                file_type: uploadResponse.data.file_type || rightImageInput.files[0].type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
+              };
 
-                const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-                pairObj.right_image_id = imageResponse.data.id;
-              } catch (error) {
-                console.error('Error uploading right pair image:', error);
-                // If upload fails, use original image ID since we must maintain consistency
-                pairObj.right_image_id = pairRightImageIds.value[i] as number;
-              }
-            } else {
-              // No new image uploaded, use original image ID
+              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+              pairObj.right_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error('Error uploading right pair image:', error);
+              // If upload fails, use original image ID since we must maintain consistency
               pairObj.right_image_id = pairRightImageIds.value[i] as number;
             }
-          } else if (hasNewRightImage) {
-            // Original has no image, warn user and skip image upload
-            toastStore.showToast({
-              title: 'Warning',
-              message: `Cannot add right image to pair ${i + 1} when original pair has no right image`,
-              type: 'warning'
-            });
+          } else {
+            // No new image uploaded, use original image ID
+            pairObj.right_image_id = pairRightImageIds.value[i] as number;
           }
-
-          translationRequest.match_pairs.push(pairObj);
+        } else if (hasNewRightImage) {
+          // Original has no image, warn user and skip image upload
+          toastStore.showToast({
+            title: 'Warning',
+            message: `Cannot add right image to pair ${i + 1} when original pair has no right image`,
+            type: 'warning'
+          });
         }
+
+        translationRequest.match_pairs.push(pairObj);
       }
     }
 
@@ -1818,6 +1848,48 @@ onUnmounted(() => {
   font-size: 0.75rem;
 }
 
+/* Option image containers and preview styling */
+.option-image-container {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  min-height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.option-image {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.option-image-preview-container {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  min-height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px dashed #ced4da;
+}
+
+.option-image-preview {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .question-image {
@@ -1835,6 +1907,15 @@ onUnmounted(() => {
   
   .pair-image-container,
   .pair-image-preview-container {
+    min-height: 80px;
+  }
+  
+  .option-image {
+    max-height: 120px;
+  }
+  
+  .option-image-container,
+  .option-image-preview-container {
     min-height: 80px;
   }
 }
