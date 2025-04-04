@@ -242,6 +242,22 @@ const routes: RouteRecordRaw[] = [
         name: 'viewSyllabusDetail',
         component: () => import('@/views/teacher/syllabus/ViewSyllabus.vue'),
       },
+      {
+        path: 'create-test-paper',
+        name: 'createTestPaper',
+        component: () => import('@/views/teacher/createTestPaper/createTestPaperDashboard.vue'),
+      },
+      {
+        path: 'select-test-pattern',
+        name: 'selectTestPattern',
+        component: () => import('@/views/teacher/createTestPaper/selectPattern.vue'),
+      },
+      {
+        path: 'create-test-paper-detail',
+        name: 'createTestPaperDetail',
+        // This component would need to be created in a future task
+        component: () => import('@/views/teacher/createTestPaper/createTestPaperDetail.vue'),
+      },
     ],
   },
 ]
