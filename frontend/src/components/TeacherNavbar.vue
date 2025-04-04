@@ -37,13 +37,14 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <a
-                class="nav-link pb-0 disabled"
+              <router-link
+                class="nav-link pb-0"
                 id="navCreateTestPaper"
-                title="Coming soon"
+                to="/teacher/create-test-paper"
+                @click="closeOffcanvas"
               >
                 CREATE TEST PAPER
-              </a>
+              </router-link>
             </li>
             <li class="nav-item">
               <a
