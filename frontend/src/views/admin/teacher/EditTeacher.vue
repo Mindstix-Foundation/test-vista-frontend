@@ -20,6 +20,8 @@
       </div>
     </div>
 
+    <LoadingSpinner :show="isSubmitting" :showOverlay="true" />
+
     <!-- Operation Result Modal -->
     <div
       class="modal fade"
@@ -77,6 +79,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TeacherFormComponent from '@/components/forms/TeacherFormComponent.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TeacherFormData } from '@/models/Teacher'
 import axiosInstance from '@/config/axios'
 import * as bootstrap from 'bootstrap'
@@ -88,38 +91,34 @@ interface OperationResult {
   message?: string
 }
 
-interface SchoolAssignment {
-  end_date: string | null
-  school: {
+interface SchoolStandard {
+  id: number
+  school_id: number
+  standard: {
     id: number
     name: string
+    sequence_number: number
     board_id: number
   }
 }
 
-interface SchoolStandard {
-  standard_id: number
+// Add new interface for the teaching assignment structure from API
+interface TeachingAssignmentResponse {
+  id: number
   standard: {
+    id: number
+    name: string
+    sequence_number: number
+  }
+  subject: {
     id: number
     name: string
   }
 }
 
-interface TeacherSubject {
-  id: number
-  school_standard: {
-    id: number
-    standard: {
-      id: number
-      name: string
-    }
-  }
-  medium_standard_subject: {
-    id: number
-    subject: {
-      name: string
-    }
-  }
+interface TeacherSubjectAssignment {
+  schoolStandardId: number;
+  mediumStandardSubjectId: number;
 }
 
 const router = useRouter()
@@ -127,43 +126,57 @@ const route = useRoute()
 const teacherData = ref<TeacherFormData | null>(null)
 const operationResults = ref<OperationResult[]>([])
 const toastStore = useToastStore()
+const isSubmitting = ref(false)
 let operationResultModal: bootstrap.Modal | null = null
 
 const fetchTeacherData = async (id: string) => {
   try {
-    // Fetch user data
+    // Fetch user data with the new API response format
     const { data: userData } = await axiosInstance.get(`/users/${id}`)
+    console.log('Fetched teacher data:', userData)
 
-    // Fetch school data
-    const { data: schoolData } = await axiosInstance.get(`/user-schools/user/${id}`)
-    const activeSchool = schoolData.find((s: SchoolAssignment) => !s.end_date)
-
+    // Extract school information from the updated API response
+    const activeSchool = userData.schools && userData.schools.length > 0 ? userData.schools[0] : null
+    
     let schoolStandards: SchoolStandard[] = []
     if (activeSchool) {
       // Fetch standards from school standard table
       const { data: standards } = await axiosInstance.get(
-        `/school-standards/school/${activeSchool.school.id}`,
+        `/school-standards/school/${activeSchool.id}`,
       )
       schoolStandards = standards
+      console.log('Fetched school standards:', schoolStandards)
     }
 
-    // Fetch teacher subjects
-    const { data: subjectsData } = await axiosInstance.get(`/teacher-subjects?userId=${id}`)
+    // Create a map of standard.id to school_standard.id for easy lookup
+    const standardIdToSchoolStandardId = new Map(
+      schoolStandards.map(ss => [ss.standard.id, ss.id])
+    );
 
+    // Process teaching assignments from the updated API response
+    const teachingAssignments = userData.teaching_assignments || []
+    
     // Process and group subjects by standard
     const standardSubjects = new Map()
-    subjectsData.forEach((subject: TeacherSubject) => {
-      const standardId = subject.school_standard.standard.id
-      const standardName = subject.school_standard.standard.name
+    teachingAssignments.forEach((assignment: TeachingAssignmentResponse) => {
+      const standardId = assignment.standard.id
+      const schoolStandardId = standardIdToSchoolStandardId.get(standardId)
+      if (!schoolStandardId) {
+        console.warn(`No school standard ID found for standard ID ${standardId}`)
+        return
+      }
+
+      const standardName = assignment.standard.name
       if (!standardSubjects.has(standardId)) {
         standardSubjects.set(standardId, {
           name: standardName,
+          schoolStandardId, // Store the school_standard_id
           subjects: [],
         })
       }
       standardSubjects.get(standardId).subjects.push({
-        id: subject.medium_standard_subject.id,
-        name: subject.medium_standard_subject.subject.name,
+        id: assignment.subject.id, // Use the actual subject ID
+        name: assignment.subject.name,
       })
     })
 
@@ -171,31 +184,39 @@ const fetchTeacherData = async (id: string) => {
     const groupedSubjectsArray = Array.from(standardSubjects.entries()).map(
       ([standardId, data]: [
         number,
-        { name: string; subjects: Array<{ id: number; name: string }> },
+        { name: string; schoolStandardId: number; subjects: Array<{ id: number; name: string }> },
       ]) => ({
         standardId,
         standardName: data.name,
+        schoolStandardId: data.schoolStandardId,
         subjects: data.subjects,
       }),
     )
 
-    // Prepare form data
+    // Prepare form data with the new structure
     teacherData.value = {
       name: userData.name,
       emailId: userData.email_id,
       contactNumber: userData.contact_number.toString(),
-      alternateContactNumber: userData.alternate_contact_number?.toString(),
+      alternateContactNumber: userData.alternate_contact_number?.toString() || '',
       highestQualification: userData.highest_qualification || '',
-      schoolId: activeSchool?.school.id || 0,
-      boardId: activeSchool?.school.board_id || 0,
-      teacherSubjects: subjectsData.map((subject: TeacherSubject) => ({
-        schoolStandardId: subject.school_standard.id,
-        mediumStandardSubjectId: subject.medium_standard_subject.id,
-      })),
+      schoolId: activeSchool?.id || 0,
+      boardId: activeSchool?.board_id || 0,
+      teacherSubjects: teachingAssignments.map((assignment: TeachingAssignmentResponse) => {
+        const schoolStandardId = standardIdToSchoolStandardId.get(assignment.standard.id);
+        if (!schoolStandardId) {
+          console.warn(`No school standard ID found for standard ID ${assignment.standard.id}`);
+          return null;
+        }
+        return {
+          schoolStandardId, // Use the correct school_standard_id
+          mediumStandardSubjectId: assignment.subject.id, // Use the actual subject ID
+        };
+      }).filter((assignment: TeacherSubjectAssignment | null): assignment is TeacherSubjectAssignment => assignment !== null),
       userId: parseInt(id),
       groupedSubjects: groupedSubjectsArray,
       schoolStandards: schoolStandards.map((standard: SchoolStandard) => ({
-        id: standard.standard_id,
+        id: standard.id, // Use the school_standard_id
         name: standard.standard.name,
         standard: standard.standard,
       })),
@@ -213,62 +234,21 @@ const fetchTeacherData = async (id: string) => {
   }
 }
 
-const updateUserData = async (userId: string, formData: TeacherFormData) => {
-  await axiosInstance.put(`/users/${userId}`, {
-    name: formData.name,
-    email_id: formData.emailId,
-    contact_number: formData.contactNumber,
-    alternate_contact_number: formData.alternateContactNumber,
-    highest_qualification: formData.highestQualification,
-  })
-}
-
-const updateSchoolAssignment = async (userId: string, schoolId: number) => {
-  // Get current school assignments
-  const { data: schoolData } = await axiosInstance.get(`/user-schools/user/${userId}`)
-
-  // Find the active school assignment (one without an end_date)
-  const activeSchool = schoolData.find((s: SchoolAssignment) => !s.end_date)
-
-  // If there's an active school and it's different from the selected school
-  if (activeSchool && activeSchool.school.id !== schoolId) {
-    // End the current active assignment
-    await axiosInstance.put(`/user-schools/${activeSchool.id}`, {
-      ...activeSchool,
-      end_date: new Date().toISOString(),
-    })
-  }
-
-  // If there's no active school or the school has changed, create a new assignment
-  if (!activeSchool || activeSchool.school.id !== schoolId) {
-    // Create new assignment with null end_date
-    await axiosInstance.post('/user-schools', {
-      user_id: parseInt(userId, 10),
-      school_id: schoolId,
-      start_date: new Date().toISOString(),
-      end_date: null,
-    })
-  }
-}
-
-const deleteSubject = async (subjectId: number) => {
-  await axiosInstance.delete(`/teacher-subjects/${subjectId}`)
-}
-
-const addSubject = async (
-  userId: string,
-  schoolStandardId: number,
-  mediumStandardSubjectId: number,
-) => {
-  await axiosInstance.post('/teacher-subjects', {
-    user_id: parseInt(userId, 10),
-    school_standard_id: schoolStandardId,
-    medium_standard_subject_id: mediumStandardSubjectId,
-  })
-}
-
 const cleanupAndNavigate = () => {
-  operationResultModal?.hide()
+  // Get the modal element
+  const modalElement = document.getElementById('operationResultModal')
+  if (modalElement) {
+    operationResultModal?.hide()
+
+    // Remove backdrop manually
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove())
+
+    // Remove modal-open class and inline styles from body
+    document.body.classList.remove('modal-open')
+    document.body.style.removeProperty('padding-right')
+  }
+
+  // Navigate to teacher list
   router.push('/admin/teacher')
 }
 
@@ -289,23 +269,51 @@ const formatOperationMessage = (operation: string, isResult: boolean) => {
   return operation
 }
 
-const getSubjectDetails = async (mediumStandardSubjectId: number) => {
-  console.log('[getSubjectDetails] Starting with mediumStandardSubjectId:', mediumStandardSubjectId)
-
+// NEW CONSOLIDATED TEACHER UPDATE FUNCTION
+const updateTeacher = async (userId: string, formData: TeacherFormData) => {
   try {
-    const { data } = await axiosInstance.get(`/medium-standard-subjects/${mediumStandardSubjectId}`)
-    console.log('[getSubjectDetails] Response data:', data)
-
-    return {
-      name: data.subject?.name || 'Unknown Subject',
-      standardName: data.standard?.name || 'Unknown Standard',
-    }
+    // Reorganize the teacherSubjects data to match the expected format
+    const standardSubjectsMap = new Map<number, number[]>();
+    
+    // Group subject IDs by schoolStandardId
+    formData.teacherSubjects.forEach(subject => {
+      const schoolStandardId = subject.schoolStandardId;
+      if (!standardSubjectsMap.has(schoolStandardId)) {
+        standardSubjectsMap.set(schoolStandardId, []);
+      }
+      
+      // Use the subject ID directly (mediumStandardSubjectId is now the actual subject ID)
+      standardSubjectsMap.get(schoolStandardId)?.push(subject.mediumStandardSubjectId);
+    });
+    
+    // Convert to the expected format for the API
+    const standard_subjects = Array.from(standardSubjectsMap.entries()).map(([schoolStandardId, subjectIds]) => ({
+      schoolStandardId,
+      subjectIds // These are now the actual subject IDs
+    }));
+    
+    // Prepare the request payload
+    const payload = {
+      name: formData.name,
+      email_id: formData.emailId,
+      contact_number: formData.contactNumber,
+      alternate_contact_number: formData.alternateContactNumber || null,
+      highest_qualification: formData.highestQualification,
+      status: true,
+      school_id: formData.schoolId,
+      start_date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
+      end_date: null,
+      standard_subjects
+    };
+    
+    console.log('Updating teacher with payload:', payload);
+    
+    // Make the API call using the new endpoint
+    const response = await axiosInstance.put(`/users/teachers/${userId}`, payload);
+    return response.data;
   } catch (error) {
-    console.error('[getSubjectDetails] Error:', error)
-    return {
-      name: 'Unknown Subject',
-      standardName: 'Unknown Standard',
-    }
+    console.error('Error updating teacher:', error);
+    throw error;
   }
 }
 
@@ -315,154 +323,77 @@ const handleSubmit = async (data: {
 }) => {
   try {
     console.log('[handleSubmit] Starting with formData:', data.formData)
+    isSubmitting.value = true // Show loading spinner
     operationResults.value = []
     const userId = route.params.id as string
     const { formData, changes } = data
-
-    // Only update user data if there are changes to basic information
-    const hasBasicInfoChanges = changes.some((change) =>
-      ['Name:', 'Email:', 'Contact Number:', 'Alternate Contact:', 'Qualification:'].some(
-        (prefix) => change.message.startsWith(prefix),
-      ),
-    )
-
-    if (hasBasicInfoChanges) {
-      try {
-        await updateUserData(userId, formData)
-        operationResults.value.push({
-          operation: formatOperationMessage('Update Teacher Information', true),
-          status: 'success',
-        })
-      } catch (error) {
-        operationResults.value.push({
-          operation: formatOperationMessage('Update Teacher Information', false),
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Failed to update teacher information',
-        })
-      }
+    
+    // Check if there are any changes to process
+    if (changes.length === 0) {
+      toastStore.showToast({
+        title: 'Info',
+        message: 'No changes detected.',
+        type: 'info',
+      })
+      router.push('/admin/teacher')
+      return
     }
-
-    // Update school assignment if changed
-    if (formData.schoolId !== teacherData.value?.schoolId) {
-      try {
-        await updateSchoolAssignment(userId, formData.schoolId)
+    
+    try {
+      // Use the new consolidated API endpoint
+      const result = await updateTeacher(userId, formData);
+      
+      // Add a success entry for teacher update
+      operationResults.value.push({
+        operation: formatOperationMessage('Update Teacher Information', true),
+        status: 'success',
+      });
+      
+      // Add operation results for each change
+      changes.forEach(change => {
+        const changeType = change.message.split(':')[0].trim();
+        let operation = '';
+        
+        if (changeType === 'School') {
+          operation = 'Update School Assignment';
+        } else if (change.message.includes('added to')) {
+          operation = change.message;
+        } else if (change.message.includes('removed from')) {
+          operation = change.message;
+        } else {
+          operation = change.message;
+        }
+        
         operationResults.value.push({
-          operation: formatOperationMessage('Update School Assignment', true),
+          operation: formatOperationMessage(operation, true),
           status: 'success',
-        })
-
-        // After successful school change, handle subject changes
-        const { data: subjectsData } = await axiosInstance.get(`/teacher-subjects?userId=${userId}`)
-
-        // Remove all existing subject assignments as school has changed
-        for (const subject of subjectsData) {
-          try {
-            await deleteSubject(subject.id)
-          } catch (error) {
-            console.error('[handleSubmit] Error removing old subject:', error)
-          }
+        });
+      });
+      
+      // Show success message
+      console.log('Teacher updated successfully:', result);
+    } catch (error: unknown) {
+      console.error('[handleSubmit] Error updating teacher:', error);
+      
+      // Handle specific error messages from the API
+      let errorMessage = 'Failed to update teacher';
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } };
+        if (apiError.response?.data?.message) {
+          errorMessage = apiError.response.data.message;
         }
-
-        // Add new subject assignments
-        for (const subject of formData.teacherSubjects) {
-          try {
-            const subjectDetails = await getSubjectDetails(subject.mediumStandardSubjectId)
-            await addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId)
-            operationResults.value.push({
-              operation: formatOperationMessage(
-                `Add "${subjectDetails.name}" to Standard ${subjectDetails.standardName}`,
-                true,
-              ),
-              status: 'success',
-            })
-          } catch (error) {
-            operationResults.value.push({
-              operation: 'Add Subject',
-              status: 'error',
-              message: error instanceof Error ? error.message : 'Failed to add subject assignment',
-            })
-          }
-        }
-      } catch (error) {
-        operationResults.value.push({
-          operation: formatOperationMessage('Update School Assignment', false),
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Failed to update school assignment',
-        })
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
-    } else {
-      // If school hasn't changed, handle only subject changes
-      const { data: subjectsData } = await axiosInstance.get(`/teacher-subjects?userId=${userId}`)
-
-      // Find subjects to remove
-      const subjectsToRemove = subjectsData.filter(
-        (current: TeacherSubject) =>
-          !formData.teacherSubjects.some(
-            (newSubj) =>
-              newSubj.schoolStandardId === current.school_standard.id &&
-              newSubj.mediumStandardSubjectId === current.medium_standard_subject.id,
-          ),
-      )
-
-      // Find subjects to add
-      const subjectsToAdd = formData.teacherSubjects.filter(
-        (newSubj) =>
-          !subjectsData.some(
-            (current: TeacherSubject) =>
-              current.school_standard.id === newSubj.schoolStandardId &&
-              current.medium_standard_subject.id === newSubj.mediumStandardSubjectId,
-          ),
-      )
-
-      // Process removals
-      for (const subject of subjectsToRemove) {
-        try {
-          await deleteSubject(subject.id)
-          const standardName = subject.school_standard.standard.name
-          const subjectName = subject.medium_standard_subject.subject.name
-          operationResults.value.push({
-            operation: formatOperationMessage(
-              `Remove "${subjectName}" from Standard ${standardName}`,
-              true,
-            ),
-            status: 'success',
-          })
-        } catch (error) {
-          const standardName = subject.school_standard.standard.name
-          const subjectName = subject.medium_standard_subject.subject.name
-          operationResults.value.push({
-            operation: formatOperationMessage(
-              `Remove "${subjectName}" from Standard ${standardName}`,
-              false,
-            ),
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Failed to remove subject assignment',
-          })
-        }
-      }
-
-      // Process additions
-      for (const subject of subjectsToAdd) {
-        try {
-          const subjectDetails = await getSubjectDetails(subject.mediumStandardSubjectId)
-          await addSubject(userId, subject.schoolStandardId, subject.mediumStandardSubjectId)
-          operationResults.value.push({
-            operation: formatOperationMessage(
-              `Add "${subjectDetails.name}" to Standard ${subjectDetails.standardName}`,
-              true,
-            ),
-            status: 'success',
-          })
-        } catch (error) {
-          operationResults.value.push({
-            operation: 'Add Subject',
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Failed to add subject assignment',
-          })
-        }
-      }
+      
+      operationResults.value.push({
+        operation: 'Update Teacher',
+        status: 'error',
+        message: errorMessage,
+      });
     }
-
+    
     // Show the results modal if there were any operations
     if (operationResults.value.length > 0) {
       operationResultModal?.show()
@@ -477,6 +408,8 @@ const handleSubmit = async (data: {
       message: 'Failed to update teacher information',
       type: 'error',
     })
+  } finally {
+    isSubmitting.value = false // Hide loading spinner
   }
 }
 

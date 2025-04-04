@@ -178,7 +178,7 @@ const updateChapter = async (formData: ChapterData) => {
           // Create new topic
           await axiosInstance.post('/topics', {
             ...topicData,
-            chapter_id: chapterId,
+            chapter_id: parseInt(chapterId as string, 10),
           })
         }
       }),

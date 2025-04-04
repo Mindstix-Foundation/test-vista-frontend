@@ -164,6 +164,8 @@
                         :showFooter="true"
                         :highlightCorrect="true"
                         :questionNumber="(currentPage - 1) * pageSize + index + 1"
+                        :lhsImages="question.lhsImages"
+                        :rhsImages="question.rhsImages"
                       />
                     </div>
                   </div>
@@ -696,6 +698,11 @@ async function fetchQuestions() {
         if (questionTextData.image_id && questionTextData.image) {
           imageId = questionTextData.image_id;
           imageUrl = questionTextData.image.presigned_url;
+
+          // Basic validation
+          if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined') {
+            imageUrl = null;
+          }
         }
       }
 
@@ -710,14 +717,76 @@ async function fetchQuestions() {
         id: qt.topic_id
       }));
 
+      // Handle MCQ options if present
+      let options = undefined;
+      let optionImages = undefined;
+      let correctOptionIndex = undefined;
+      let correctAnswer = undefined;
+
+      // Handle Odd One Out
+      if (apiQuestion.question_type.type_name === 'Odd One Out' &&
+          questionTextData &&
+          questionTextData.mcq_options &&
+          questionTextData.mcq_options.length > 0) {
+
+        // For display purposes only, extract the options and correct index
+        options = questionTextData.mcq_options.map(opt => opt.option_text);
+        correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
+        if (correctOptionIndex !== -1) {
+          // Set the correct answer to the text of the odd one out
+          correctAnswer = options[correctOptionIndex];
+        }
+      }
+      // Handle True/False
+      else if (apiQuestion.question_type.type_name === 'True or False' &&
+          questionTextData) {
+        // Try to determine correct answer from mcq_options
+        if (questionTextData.mcq_options && questionTextData.mcq_options.length > 0) {
+          const trueOption = questionTextData.mcq_options.find(opt => opt.option_text.toLowerCase() === 'true');
+          if (trueOption) {
+            correctAnswer = trueOption.is_correct ? 'True' : 'False';
+          } else {
+            const correctOption = questionTextData.mcq_options.find(opt => opt.is_correct);
+            if (correctOption) {
+              correctAnswer = correctOption.option_text;
+            }
+          }
+        }
+      }
+      // Handle Complete the Correlation
+      else if (apiQuestion.question_type.type_name === 'Complete the Correlation' &&
+          questionTextData &&
+          questionTextData.match_pairs &&
+          questionTextData.match_pairs.length > 0) {
+
+        // If no correctAnswer is set, provide a default
+        correctAnswer = "See question for correlation details";
+      }
+      // Handle MCQ options
+      else if (apiQuestion.question_type.type_name === 'Multiple Choice Question (MCQ)' &&
+          questionTextData &&
+          questionTextData.mcq_options.length > 0) {
+        options = questionTextData.mcq_options.map(opt => opt.option_text);
+        correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
+        if (correctOptionIndex === -1) correctOptionIndex = undefined;
+
+        // For MCQ options, create option images array that preserves the structure
+        const optionImagesArray = questionTextData.mcq_options.map(opt =>
+          opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
+        );
+
+        // Filter out null values and set optionImages only if at least one non-null image exists
+        const filteredImages = optionImagesArray.filter((img): img is string => img !== null);
+        optionImages = filteredImages.length > 0 ? filteredImages : undefined;
+      }
+
       // Handle match pairs if present
       let lhs = undefined;
       let rhs = undefined;
       let lhsImages = undefined;
       let rhsImages = undefined;
 
-      if ((apiQuestion.question_type.type_name === 'Match the Pairs' || 
-           apiQuestion.question_type.type_name === 'Complete the Correlation') &&
+      if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
           questionTextData &&
           questionTextData.match_pairs &&
           questionTextData.match_pairs.length > 0) {
@@ -734,6 +803,9 @@ async function fetchQuestions() {
         rhsImages = questionTextData.match_pairs.map(pair =>
           pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
         );
+
+        // Always include the arrays, even if they only contain nulls
+        // This ensures the structure is maintained for display
       }
 
       return {
@@ -741,6 +813,9 @@ async function fetchQuestions() {
         question: questionText,
         type: apiQuestion.question_type.type_name,
         topics: questionTopics,
+        options: options,
+        optionImages: optionImages,
+        correctOptionIndex: correctOptionIndex,
         lhs: lhs,
         rhs: rhs,
         lhsImages: lhsImages,
@@ -749,7 +824,8 @@ async function fetchQuestions() {
         isVerified: apiQuestion.is_verified,
         imageId: imageId,
         imageUrl: imageUrl,
-        translationStatus: translationStatus
+        translationStatus: translationStatus,
+        correctAnswer: correctAnswer
       };
     });
 

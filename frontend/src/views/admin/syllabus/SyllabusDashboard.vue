@@ -154,9 +154,9 @@ interface BoardDetails extends Board {
   standards: Standard[]
 }
 
-// Add Item interface for dropdown component
+// Update Item interface to match SearchableDropdown's interface
 interface Item {
-  id: number | string
+  id?: number | string
   [key: string]: unknown
 }
 
@@ -234,7 +234,7 @@ const handleBoardChange = async (board: Item | null) => {
     validationStates.value.standard.valid = false
     validationStates.value.standard.touched = false
 
-    if (!board) return
+    if (!board?.id) return
 
     // Fetch board details
     const response = await axiosInstance.get(`/boards/${board.id}`)

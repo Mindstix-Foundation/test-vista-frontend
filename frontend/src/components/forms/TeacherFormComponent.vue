@@ -166,6 +166,7 @@
             v-model="formData.emailId"
             placeholder="Enter Email"
             @input="handleEmailInput"
+            @blur="handleEmailBlur"
             @keydown="handleKeyDown($event, 'contactNumber')"
             required
           />
@@ -580,21 +581,6 @@ const schoolSearch = ref('')
 const showSchoolDropdown = ref(false)
 const selectedSchoolIndex = ref(-1)
 const filteredSchools = ref<Array<{ id: number; name: string }>>([])
-const mediumStandardSubjects = ref<
-  Array<{
-    id: number
-    subject: {
-      id: number
-      name: string
-    }
-    standard: {
-      name: string
-    }
-    instructionMedium: {
-      name: string
-    }
-  }>
->([])
 const selectedStandard = ref<{ id: number; name: string } | null>(null)
 const selectedSubjects = ref<number[]>([])
 const standards = ref<
@@ -863,12 +849,24 @@ watch(
           )
 
           // Store the complete school standards data
-          schoolStandards.value = schoolStandardsData
+          schoolStandards.value = schoolStandardsData.map((item: { 
+            id: number; 
+            school_id: number; 
+            standard: { 
+              id: number; 
+              name: string; 
+            } 
+          }) => ({
+            id: item.id,
+            standard_id: item.standard.id,
+            school_id: item.school_id,
+            standard: item.standard
+          }))
 
           // Map the response to get standard details for display
           standards.value = schoolStandardsData.map(
-            (item: { standard_id: number; standard: { id: number; name: string } }) => ({
-              id: item.standard_id,
+            (item: { id: number; school_id: number; standard: { id: number; name: string } }) => ({
+              id: item.standard.id, // Use standard.id as the id
               name: item.standard.name,
               standard: item.standard,
             }),
@@ -1412,18 +1410,36 @@ const selectSchool = async (school: { id: number; name: string }) => {
     const { data: schoolStandardsData } = await axiosInstance.get(
       `/school-standards/school/${school.id}`,
     )
+    
+    console.log('[School Standards] Raw response:', schoolStandardsData)
 
     // Store the complete school standards data
-    schoolStandards.value = schoolStandardsData
+    schoolStandards.value = schoolStandardsData.map((item: { 
+      id: number; 
+      school_id: number; 
+      standard: { 
+        id: number; 
+        name: string; 
+      } 
+    }) => ({
+      id: item.id,
+      standard_id: item.standard.id,
+      school_id: item.school_id,
+      standard: item.standard
+    }))
+    
+    console.log('[School Standards] Processed school standards:', schoolStandards.value)
 
     // Map the response to get standard details for display
     standards.value = schoolStandardsData.map(
-      (item: { standard_id: number; standard: { id: number; name: string } }) => ({
-        id: item.standard_id,
+      (item: { id: number; school_id: number; standard: { id: number; name: string } }) => ({
+        id: item.standard.id, // Use standard.id as the id
         name: item.standard.name,
         standard: item.standard,
       }),
     )
+    
+    console.log('[School Standards] Processed standards for display:', standards.value)
 
     // Store board info for later use
     selectedSchoolBoard.value = { id: schoolData.board_id, name: schoolData.board.name }
@@ -1456,11 +1472,14 @@ watch(schoolSearch, (newValue) => {
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
   console.log('Click outside event target:', target)
+  
   if (!target.closest('.board-dropdown')) {
     console.log('Closing board dropdown')
     showBoardDropdown.value = false
   }
-  if (!target.closest('.school-dropdown')) {
+  
+  // Only close school dropdown if we're not in transition mode
+  if (!target.closest('.school-dropdown') && !isTransitioningToSchool.value) {
     console.log('Closing school dropdown')
     showSchoolDropdown.value = false
   }
@@ -1547,51 +1566,42 @@ const handleStandardSelect = async () => {
     const schoolStandardId = schoolStandard.id
     console.log('[Subject Selection] Using school standard ID:', schoolStandardId)
 
-    // Fetch subjects for this standard
+    // Fetch subjects using the new API endpoint
+    console.log('[Subject Selection] Fetching subjects with school_id:', formData.schoolId, 'and standard_id:', standard.id)
     const { data: subjects } = await axiosInstance.get(
-      `/medium-standard-subjects?standard_id=${standard.id}`,
+      `/subjects/school-standard?school_id=${formData.schoolId}&standard_id=${standard.id}`,
     )
     console.log('[Subject Selection] Fetched subjects:', subjects)
 
-    // Update mediumStandardSubjects for display
-    mediumStandardSubjects.value = subjects
-
-    // Create unique list by subject ID with correct pairing
+    // Create unique list of subjects
     const uniqueSubjects = new Map()
-    subjects.forEach(
-      (subject: {
-        id: number
-        subject: { id: number; name: string }
-        standard: { name: string }
-      }) => {
-        console.log('[Subject Selection] Processing subject:', {
+    subjects.forEach((subject: { id: number; name: string }) => {
+      console.log('[Subject Selection] Processing subject:', {
+        id: subject.id,
+        name: subject.name,
+        standardName: standard.name,
+      })
+      if (!uniqueSubjects.has(subject.id)) {
+        uniqueSubjects.set(subject.id, {
           id: subject.id,
-          subjectId: subject.subject.id,
-          name: subject.subject.name,
+          name: subject.name,
+          schoolStandardId: schoolStandardId,
           standardName: standard.name,
+          subjectId: subject.id, // The subject.id is now directly the subject ID
         })
-        if (!uniqueSubjects.has(subject.subject.id)) {
-          uniqueSubjects.set(subject.subject.id, {
-            id: subject.id,
-            name: subject.subject.name,
-            schoolStandardId: schoolStandardId,
-            standardName: standard.name,
-            subjectId: subject.subject.id,
-          })
-        }
-      },
-    )
+      }
+    })
 
     availableSubjects.value = Array.from(uniqueSubjects.values())
     console.log('[Subject Selection] Final available subjects:', availableSubjects.value)
 
     // Pre-select already selected subjects for this standard
     if (formData.teacherSubjects) {
-      const selectedMediumSubjectIds = formData.teacherSubjects
+      const selectedSubjectIds = formData.teacherSubjects
         .filter((subject) => subject.schoolStandardId === schoolStandardId)
         .map((subject) => subject.mediumStandardSubjectId)
 
-      selectedSubjects.value = selectedMediumSubjectIds
+      selectedSubjects.value = selectedSubjectIds
       console.log('[Subject Selection] Pre-selected subjects:', selectedSubjects.value)
     }
 
@@ -1643,7 +1653,7 @@ const addSubjects = () => {
   )
   console.log('[Add Subjects] Existing pairs for other standards:', otherStandardsPairs)
 
-  // Create new pairs for selected subjects using the correct medium standard subject ID
+  // Create new pairs for selected subjects using the subject ID directly
   const newPairs = selectedSubjects.value.map((selectedId) => {
     const subject = availableSubjects.value.find((s) => s.id === selectedId)
     console.log('[Add Subjects] Creating pair for subject:', {
@@ -1653,7 +1663,7 @@ const addSubjects = () => {
     })
     return {
       schoolStandardId,
-      mediumStandardSubjectId: subject?.id || selectedId, // Use the correct ID from availableSubjects
+      mediumStandardSubjectId: selectedId, // This is now the actual subject ID from the API
     }
   })
   console.log('[Add Subjects] New subject pairs:', newPairs)
@@ -1671,7 +1681,7 @@ const addSubjects = () => {
       availableSubjects: availableSubjects.value,
     })
     return {
-      id: subject?.id || subjectId,
+      id: subjectId, // Use the subject ID directly
       name: subject?.name || 'Unknown Subject',
     }
   })
@@ -1804,16 +1814,16 @@ const handleEmailInput = async (e: Event) => {
         return
       }
 
-      // Check if email already exists by fetching all users
-      const { data: users } = await axiosInstance.get('/users')
-
-      // Check if any user has this email
-      const exists = users.some((user: { email_id: string }) => user.email_id === value)
-
-      validationStates.emailId.valid = !exists
-      emailErrorMessage.value = exists ? 'This email is already in use' : ''
+      // Use the dedicated API endpoint to check email availability
+      const { data } = await axiosInstance.get(`/users/check-email/${encodeURIComponent(value)}`)
+      
+      // The response structure is: { email, available, message }
+      const isAvailable = data.available === true
+      
+      validationStates.emailId.valid = isAvailable
+      emailErrorMessage.value = isAvailable ? '' : data.message || 'This email is already in use'
     } catch (error) {
-      console.error('Error checking email uniqueness:', error)
+      console.error('Error checking email availability:', error)
       // If there's an error checking, we'll just validate the format
       validationStates.emailId.valid = isValidFormat
       emailErrorMessage.value = ''
@@ -1823,6 +1833,53 @@ const handleEmailInput = async (e: Event) => {
     emailErrorMessage.value = 'Please enter a valid email address'
   }
 
+  v$.value.emailId.$touch()
+}
+
+// Handle email validation when user leaves the email field
+const handleEmailBlur = async () => {
+  const value = formData.emailId.trim()
+  validationStates.emailId.touched = true
+  
+  if (!value) {
+    validationStates.emailId.valid = false
+    emailErrorMessage.value = 'Email is required'
+    v$.value.emailId.$touch()
+    return
+  }
+  
+  const isValidFormat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)
+  
+  if (!isValidFormat) {
+    validationStates.emailId.valid = false
+    emailErrorMessage.value = 'Please enter a valid email address'
+    v$.value.emailId.$touch()
+    return
+  }
+  
+  try {
+    // Skip uniqueness check if we're in edit mode and the email hasn't changed
+    if (isEditMode.value && props.initialData?.emailId === value) {
+      validationStates.emailId.valid = true
+      emailErrorMessage.value = ''
+      return
+    }
+
+    // Use the dedicated API endpoint to check email availability
+    const { data } = await axiosInstance.get(`/users/check-email/${encodeURIComponent(value)}`)
+    
+    // The response structure is: { email, available, message }
+    const isAvailable = data.available === true
+    
+    validationStates.emailId.valid = isAvailable
+    emailErrorMessage.value = isAvailable ? '' : data.message || 'This email is already in use'
+  } catch (error) {
+    console.error('Error checking email availability on blur:', error)
+    // If there's an error checking, we'll just validate the format
+    validationStates.emailId.valid = isValidFormat
+    emailErrorMessage.value = ''
+  }
+  
   v$.value.emailId.$touch()
 }
 
@@ -1874,6 +1931,9 @@ const showBoardDropdown = ref(false)
 const selectedBoardIndex = ref(-1)
 const filteredBoards = ref<Array<{ id: number; name: string }>>([])
 const boardInput = ref<HTMLInputElement | null>(null)
+
+// Add a flag to track if we're transitioning from board to school
+const isTransitioningToSchool = ref(false)
 
 // Add after fetchSchools function
 async function fetchBoards() {
@@ -1954,22 +2014,16 @@ const handleBoardKeydown = (event: KeyboardEvent) => {
       break
     case 'Enter':
       event.preventDefault()
+      
+      // Set the transition flag directly here
+      isTransitioningToSchool.value = true
+      
       if (selectedBoardIndex.value >= 0) {
         console.log('[Board Keydown] Selecting board via keyboard:', filteredBoards.value[selectedBoardIndex.value])
         selectBoard(filteredBoards.value[selectedBoardIndex.value])
-        // Focus school field after selection
-        const schoolInput = document.getElementById('school')
-        if (schoolInput) {
-          schoolInput.focus()
-        }
       } else if (filteredBoards.value.length === 1) {
         console.log('[Board Keydown] Selecting single board match:', filteredBoards.value[0])
         selectBoard(filteredBoards.value[0])
-        // Focus school field after selection
-        const schoolInput = document.getElementById('school')
-        if (schoolInput) {
-          schoolInput.focus()
-        }
       }
       break
     case 'Escape':
@@ -1984,6 +2038,9 @@ const handleBoardKeydown = (event: KeyboardEvent) => {
 // Add board selection function
 const selectBoard = async (board: { id: number; name: string }) => {
   console.log('[Board Selection] Selected board:', board)
+
+  // Set the transition flag
+  isTransitioningToSchool.value = true
 
   // CRITICAL FIX: Directly update the Vuelidate model first
   v$.value.boardId.$model = board.id
@@ -2022,10 +2079,20 @@ const selectBoard = async (board: { id: number; name: string }) => {
   // Fetch schools for selected board
   await fetchSchools()
 
-  // Focus school field after selection
-  const schoolInput = document.getElementById('school')
-  if (schoolInput) {
-    schoolInput.focus()
+  // Focus school field after selection and ensure dropdown stays open
+  const schoolInputElement = document.getElementById('school')
+  if (schoolInputElement) {
+    schoolInputElement.focus()
+    
+    // Set a small timeout to ensure the dropdown opens and stays open after focus
+    setTimeout(() => {
+      showSchoolDropdown.value = true
+      
+      // Reset the transition flag after a brief delay
+      setTimeout(() => {
+        isTransitioningToSchool.value = false
+      }, 300)
+    }, 50)
   }
 }
 
