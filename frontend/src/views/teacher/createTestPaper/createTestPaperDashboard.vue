@@ -70,19 +70,139 @@
                 required
                 label-key="subject_name"
                 item-key="subject_id"
+                @change="handleSubjectChange"
               >
                 <template #label>Subject <span class="text-danger">*</span></template>
               </SearchableDropdown>
             </div>
           </div>
           
+          <!-- Chapter Selection Section (New) -->
+          <div class="col-12 col-sm-10 col-md-8" v-if="chapters.length > 0">
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">Chapter Selection</h6>
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      id="selectAllChapters" 
+                      v-model="selectAllChapters" 
+                      @change="toggleAllChapters"
+                    >
+                    <label class="form-check-label" for="selectAllChapters">
+                      {{ selectAllChapters ? 'Deselect All' : 'Select All' }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row g-2">
+                  <div 
+                    v-for="chapter in chapters" 
+                    :key="chapter.id" 
+                    class="col-12"
+                  >
+                    <div class="form-check">
+                      <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        :id="`chapter-${chapter.id}`" 
+                        v-model="chapter.selected" 
+                        @change="updateSelectedChapters"
+                      >
+                      <label class="form-check-label" :for="`chapter-${chapter.id}`">
+                        {{ chapter.sequential_chapter_number }}. {{ chapter.name }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+    
+          <!-- Question Origin Selection -->
+          <div class="col-12 col-sm-10 col-md-8" v-if="chapters.length > 0">
+            <div class="mb-4">
+              <label class="form-label fw-bold mb-3">Question Source <span class="text-danger">*</span></label>
+              
+              <div class="d-flex flex-column gap-2">
+                <div class="form-check">
+                  <input 
+                    class="form-check-input" 
+                    type="radio" 
+                    name="questionSource" 
+                    id="bothQuestions" 
+                    value="both"
+                    v-model="questionSource"
+                  >
+                  <label class="form-check-label" for="bothQuestions">
+                    Both Board and Other Questions
+                  </label>
+                </div>
+                
+                <div class="form-check">
+                  <input 
+                    class="form-check-input" 
+                    type="radio" 
+                    name="questionSource" 
+                    id="boardQuestionsOnly" 
+                    value="board"
+                    v-model="questionSource"
+                  >
+                  <label class="form-check-label" for="boardQuestionsOnly">
+                    Board Questions Only
+                  </label>
+                </div>
+                
+                <div class="form-check">
+                  <input 
+                    class="form-check-input" 
+                    type="radio" 
+                    name="questionSource" 
+                    id="otherQuestionsOnly" 
+                    value="other"
+                    v-model="questionSource"
+                  >
+                  <label class="form-check-label" for="otherQuestionsOnly">
+                    Other Questions Only
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Total Marks Input (Moved here) -->
+          <div class="col-12 col-sm-10 col-md-8" v-if="chapters.length > 0">
+            <div class="mb-3">
+              <SearchableDropdown
+                id="totalMarks"
+                label="Total Marks"
+                placeholder="Search for Total Marks"
+                :items="availableMarks"
+                v-model="selectedMarksObj"
+                :search-keys="['name']"
+                required
+                @change="handleMarksChange"
+                :disabled="isLoading"
+              >
+                <template #label>Total Marks <span class="text-danger">*</span></template>
+                <template #item="{ item }">
+                  {{ item.name }} Marks
+                </template>
+              </SearchableDropdown>
+            </div>
+          </div>
+
           <div class="col-12 col-sm-10 col-md-8 text-end">
             <!-- View Syllabus Button -->
             <button
               type="submit"
               class="btn btn-dark mt-3"
               id="viewSyllabusBtn"
-              :disabled="!isFormValid || isLoading"
+              :disabled="!isFormValid || isLoading || !totalMarks || selectedChapters.length === 0"
             >
               <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
               Select Pattern
@@ -104,8 +224,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
@@ -115,8 +235,12 @@ defineOptions({
   name: 'CreateTestPaperDashboard'
 })
 
-// Initialize router at the top level of setup
+// Initialize router and route at the top level of setup
 const router = useRouter()
+const route = useRoute()
+
+// Question source selection
+const questionSource = ref('both') // Default selection
 
 // Define interfaces for our data types
 interface SchoolInstructionMedium {
@@ -155,6 +279,12 @@ interface SubjectItem {
   subject_name: string;
 }
 
+// New interface for marks
+interface MarksItem {
+  id: number;
+  name: string;
+}
+
 interface UserProfile {
   id: number;
   name: string;
@@ -182,6 +312,42 @@ interface UserProfile {
   }[];
 }
 
+// Interface for Chapter with additional UI properties
+interface ChapterItem {
+  id: number;
+  subject_id: number;
+  standard_id: number;
+  sequential_chapter_number: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  subject: {
+    id: number;
+    board_id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+  };
+  standard: {
+    id: number;
+    board_id: number;
+    name: string;
+    sequence_number: number;
+    created_at: string;
+    updated_at: string;
+  };
+  topics: Array<{
+    id: number;
+    chapter_id: number;
+    sequential_topic_number: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+  // UI properties
+  selected: boolean;
+}
+
 // User data
 const userProfile = ref<UserProfile | null>(null)
 const schoolId = computed(() => userProfile.value?.schools?.[0]?.id || 0)
@@ -200,6 +366,20 @@ const selectedSubject = computed(() => selectedSubjectObj.value?.subject_id?.toS
 const instructionMediums = ref<InstructionMediumItem[]>([])
 const standards = ref<StandardItem[]>([])
 const subjects = ref<SubjectItem[]>([])
+
+// Chapter-related state
+const chapters = ref<ChapterItem[]>([])
+const selectAllChapters = ref(false)
+const totalMarks = ref<number | null>(null)
+
+// New state for marks dropdown
+const availableMarks = ref<MarksItem[]>([])
+const selectedMarksObj = ref<MarksItem | null>(null)
+
+// Computed property to get only selected chapters
+const selectedChapters = computed(() => {
+  return chapters.value.filter(chapter => chapter.selected)
+})
 
 // Form validation
 const isFormValid = computed(() => {
@@ -346,6 +526,72 @@ const handleStandardChange = async () => {
   }
 }
 
+// Handle subject change to fetch chapters
+const handleSubjectChange = async () => {
+  if (!selectedSubjectObj.value) {
+    chapters.value = []
+    return
+  }
+  
+  try {
+    isLoading.value = true
+    
+    // Fetch chapters for the selected subject, standard, and medium
+    const response = await axiosInstance.get('/chapters', {
+      params: {
+        subjectId: selectedSubject.value,
+        standardId: selectedStandard.value,
+        mediumId: selectedInstructionMedium.value
+      }
+    })
+    
+    // Transform the chapters data with UI properties
+    chapters.value = response.data.map((chapter: ChapterItem) => ({
+      ...chapter,
+      selected: false,
+      marks: 0
+    }))
+    
+    // Reset the "select all" checkbox
+    selectAllChapters.value = false
+    
+    // Reset marks dropdown when subject changes
+    availableMarks.value = []
+    selectedMarksObj.value = null
+    totalMarks.value = null
+  } catch (error) {
+    console.error('Error loading chapters:', error)
+    showErrorToast('Failed to load chapters for the selected subject')
+    chapters.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Toggle all chapters selection
+const toggleAllChapters = () => {
+  chapters.value.forEach(chapter => {
+    chapter.selected = selectAllChapters.value
+  })
+  
+  // Fetch available marks after toggling chapters
+  fetchAvailableMarks()
+}
+
+// Update selected chapters when individual checkboxes change
+const updateSelectedChapters = () => {
+  // Update selectAll checkbox state based on individual selections
+  selectAllChapters.value = chapters.value.length > 0 && chapters.value.every(c => c.selected)
+  
+  // If no chapters are selected, return
+  if (selectedChapters.value.length === 0) {
+    return
+  }
+  
+  // Fetch available marks when chapter selection changes
+  fetchAvailableMarks()
+}
+
 // View syllabus function
 const selectPattern = async () => {
   if (!isFormValid.value) {
@@ -353,8 +599,25 @@ const selectPattern = async () => {
     return
   }
   
+  if (!totalMarks.value || totalMarks.value <= 0) {
+    showErrorToast('Please enter total marks for the test paper')
+    return
+  }
+  
+  if (selectedChapters.value.length === 0) {
+    showErrorToast('Please select at least one chapter')
+    return
+  }
+  
   try {
     isLoading.value = true
+    
+    // Prepare chapter data for passing to the next screen
+    const chapterData = selectedChapters.value.map(chapter => ({
+      id: chapter.id,
+      name: chapter.name,
+      sequential_chapter_number: chapter.sequential_chapter_number
+    }))
     
     // Set test paper details with both display names and IDs
     const queryParams = {
@@ -367,8 +630,16 @@ const selectPattern = async () => {
       mediumId: selectedInstructionMedium.value,
       standardId: selectedStandard.value,
       subjectId: selectedSubject.value,
-      schoolId: schoolId.value.toString()
+      schoolId: schoolId.value.toString(),
+      totalMarks: totalMarks.value.toString(),
+      questionSource: questionSource.value,
+      
+      // Chapter data (encoded as a JSON string)
+      chapters: encodeURIComponent(JSON.stringify(chapterData))
     }
+    
+    // Save form state to localStorage before navigating
+    saveFormState()
     
     // Navigate to the pattern selection page with query parameters
     router.push({
@@ -385,14 +656,45 @@ const selectPattern = async () => {
   }
 }
 
+// Enhanced function to save form state to localStorage
+const saveFormState = () => {
+  try {
+    // Only save if we have selected at least the basic criteria
+    if (!selectedMediumObj.value || !selectedStandardObj.value || !selectedSubjectObj.value) {
+      return
+    }
+    
+    const formState = {
+      selectedMediumObj: selectedMediumObj.value,
+      selectedStandardObj: selectedStandardObj.value,
+      selectedSubjectObj: selectedSubjectObj.value,
+      totalMarks: totalMarks.value,
+      questionSource: questionSource.value,
+      chapters: chapters.value.map(c => ({
+        id: c.id,
+        selected: c.selected
+      })),
+      selectedMarksObj: selectedMarksObj.value,
+      timestamp: new Date().getTime() // Add timestamp for potential expiration check
+    }
+    localStorage.setItem('testPaperDashboardState', JSON.stringify(formState))
+  } catch (error) {
+    console.error('Error saving form state:', error)
+  }
+}
+
 // Reset dependent fields based on starting point
 const resetDependentFields = (startingField: 'medium' | 'standard'): void => {
   if (startingField === 'medium') {
     selectedStandardObj.value = null
     selectedSubjectObj.value = null
     subjects.value = []
+    chapters.value = []
+    totalMarks.value = null
   } else if (startingField === 'standard') {
     selectedSubjectObj.value = null
+    chapters.value = []
+    totalMarks.value = null
   }
 }
 
@@ -415,9 +717,178 @@ const closeToast = (): void => {
   showToast.value = false
 }
 
+// New function to restore form state from localStorage
+const restoreFormState = async () => {
+  try {
+    const savedState = localStorage.getItem('testPaperDashboardState')
+    if (!savedState) return
+    
+    const formState = JSON.parse(savedState)
+    
+    // Restore selected values first
+    if (formState.selectedMediumObj) {
+      selectedMediumObj.value = formState.selectedMediumObj
+      await handleMediumChange()
+    }
+    
+    if (formState.selectedStandardObj) {
+      selectedStandardObj.value = formState.selectedStandardObj
+      await handleStandardChange()
+    }
+    
+    if (formState.selectedSubjectObj) {
+      selectedSubjectObj.value = formState.selectedSubjectObj
+      await handleSubjectChange()
+    }
+    
+    if (formState.questionSource) {
+      questionSource.value = formState.questionSource
+    }
+    
+    // Restore chapter selections
+    if (formState.chapters && chapters.value.length > 0) {
+      formState.chapters.forEach((savedChapter: {id: number, selected: boolean}) => {
+        const matchingChapter = chapters.value.find(c => c.id === savedChapter.id)
+        if (matchingChapter) {
+          matchingChapter.selected = savedChapter.selected
+        }
+      })
+      
+      // Update selectAll checkbox state based on individual selections
+      selectAllChapters.value = chapters.value.length > 0 && chapters.value.every(c => c.selected)
+      
+      // Trigger an update of selected chapters
+      updateSelectedChapters()
+    }
+    
+    // Restore total marks and selected marks object after chapter data is loaded
+    if (formState.totalMarks) {
+      await fetchAvailableMarks()
+      
+      if (formState.selectedMarksObj && availableMarks.value.length > 0) {
+        selectedMarksObj.value = availableMarks.value.find(
+          m => m.name === formState.selectedMarksObj.name
+        ) || null
+        
+        if (selectedMarksObj.value) {
+          totalMarks.value = parseInt(selectedMarksObj.value.name, 10)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error restoring form state:', error)
+  }
+}
+
 // Load initial data
 onMounted(async () => {
   await fetchUserProfile()
+  
+  // Restore form state after initial data is loaded
+  await restoreFormState()
+})
+
+// Watch for changes to total marks and selected chapters to auto-distribute marks
+watch([totalMarks, () => selectedChapters.value.length], () => {
+  if (selectedChapters.value.length === 0 || !totalMarks.value) {
+    return
+  }
+}, { deep: true });
+
+// Watch for changes to questionSource to fetch available marks
+watch(questionSource, () => {
+  if (selectedChapters.value.length > 0) {
+    fetchAvailableMarks()
+  }
+})
+
+// New function to fetch available marks
+const fetchAvailableMarks = async () => {
+  if (selectedChapters.value.length === 0) {
+    availableMarks.value = []
+    return
+  }
+  
+  try {
+    isLoading.value = true
+    
+    // Get the chapter IDs from selected chapters
+    const chapterIds = selectedChapters.value.map(chapter => chapter.id)
+    
+    // Fetch available marks for the selected criteria
+    const response = await axiosInstance.get('/pattern-filter/unique-marks', {
+      params: {
+        mediumId: selectedInstructionMedium.value,
+        standardId: selectedStandard.value,
+        subjectId: selectedSubject.value,
+        chapterIds: chapterIds,
+        questionOrigin: questionSource.value
+      }
+    })
+    
+    // Transform marks for the dropdown
+    if (response.data && response.data.marks) {
+      availableMarks.value = response.data.marks.map((mark: number) => ({
+        id: mark,
+        name: mark.toString()
+      }))
+      
+      // Reset selected marks
+      selectedMarksObj.value = null
+      totalMarks.value = null
+    } else {
+      availableMarks.value = []
+      showErrorToast('No available marks found for the selected criteria')
+    }
+  } catch (error) {
+    console.error('Error loading available marks:', error)
+    showErrorToast('Failed to load available marks')
+    availableMarks.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// New handler for marks dropdown change
+const handleMarksChange = () => {
+  if (selectedMarksObj.value) {
+    totalMarks.value = parseInt(selectedMarksObj.value.name, 10)
+  } else {
+    totalMarks.value = null
+  }
+}
+
+// Watch for changes in the form to automatically save state
+watch(
+  [
+    selectedMediumObj, 
+    selectedStandardObj, 
+    selectedSubjectObj,
+    questionSource,
+    totalMarks,
+    () => chapters.value.map(c => c.selected)
+  ],
+  () => {
+    // Save form state whenever any of these values changes
+    saveFormState()
+  },
+  { deep: true }
+)
+
+// Navigation guard setup
+// Clean up on component unmount if not navigating to related pages
+onBeforeUnmount(() => {
+  // Don't clear if navigating to selectPattern or createTestPaperDetail
+  const currentRoute = router.currentRoute.value
+  
+  // Only save form state while navigating within the test paper flow
+  if (currentRoute.name === 'selectTestPattern' || 
+      currentRoute.name === 'createTestPaperDetail') {
+    // We already saved the state with the watcher, no need to do anything
+  } else {
+    // Clear saved state if navigating away from the test paper flow
+    localStorage.removeItem('testPaperDashboardState')
+  }
 })
 </script>
 
@@ -449,6 +920,89 @@ onMounted(async () => {
   opacity: 0.65;
 }
 
+/* Form check styling */
+.form-check-input:checked {
+  background-color: #212529;
+  border-color: #212529;
+}
+
+.form-check {
+  padding-left: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-check-input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.2rem;
+  margin-left: -1.8rem;
+  cursor: pointer;
+}
+
+.form-check-label {
+  cursor: pointer;
+  font-weight: 500;
+  padding-top: 0.1rem;
+}
+
+/* Chapter marks input styling */
+.input-group .form-control {
+  border-right: none;
+}
+
+.input-group .input-group-text {
+  background-color: #f8f9fa;
+}
+
+/* Custom validation styling without exclamation mark */
+.form-control.is-invalid {
+  border-color: #dc3545;
+  background-image: none;
+}
+
+/* Improved validation border for input group */
+.form-control.is-invalid + .input-group-text {
+  border-color: #dc3545;
+  border-left: none;
+}
+
+/* Ensure text remains centered in invalid inputs */
+.form-control.text-center.is-invalid {
+  text-align: center !important;
+}
+
+/* Additional fix for centering numbers in inputs */
+.marks-input-group input[type="number"] {
+  text-align: center !important;
+}
+
+.marks-input-group input[type="number"].is-invalid {
+  text-align: center !important;
+  padding-right: 0.75rem !important; /* Override Bootstrap's padding for validation icon */
+}
+
+/* Mobile optimized marks input group */
+.marks-input-group {
+  width: 150px;
+}
+
+/* New style for chapter name on small screens */
+@media (max-width: 576px) {
+  .d-flex.flex-column.flex-md-row .me-2.flex-grow-1 {
+    display: block;
+    width: 100%;
+   
+    word-break: break-word;
+  }
+  
+  /* Style for chapter name in single chapter alert */
+  .alert-dark small .chapter-name {
+    display: block;
+    margin-top: 0.5rem;
+    word-break: break-word;
+  }
+}
+
 /* Responsive styles to match TeacherProfile.vue */
 @media (max-width: 768px) {
   /* Font size adjustments to match TeacherProfile.vue */
@@ -457,9 +1011,17 @@ onMounted(async () => {
     font-weight: 600 !important;
   }
   
+  h6 {
+    font-size: 1rem !important;
+  }
+  
   /* Improve form spacing */
   .mb-3 {
     margin-bottom: 1rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 1.5rem !important;
   }
   
   /* Button sizing */
@@ -478,12 +1040,32 @@ onMounted(async () => {
     padding-left: 1rem;
     padding-right: 1rem;
   }
+  
+  /* Increase input area for better touch targets */
+  .marks-input-group {
+    width: 140px;
+  }
+  
+  .marks-input-group .form-control,
+  .marks-input-group .input-group-text {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+  }
+  
+  /* Radio option spacing */
+  .form-check {
+    margin-bottom: 0.5rem;
+  }
 }
 
 @media (max-width: 576px) {
   /* Phone-specific adjustments to match TeacherProfile.vue */
   h5 {
     font-size: 1.15rem !important;
+  }
+  
+  h6 {
+    font-size: 0.95rem !important;
   }
   
   /* Form element spacing */
@@ -508,5 +1090,87 @@ onMounted(async () => {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
+  
+  /* Make inputs larger and more touchable on small screens */
+  .marks-input-group {
+    width: 100%;
+    max-width: 160px;
+  }
+  
+  /* Make percentage and marks row full width on small screens */
+  .chapter-marks-controls {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 0.25rem;
+    justify-content: space-evenly;
+  }
+  
+  .chapter-marks-controls .percent-display {
+    min-width: 50px;
+    text-align: right;
+  }
+  
+  /* Optimize marks summary for small screens */
+  .marks-summary .text-muted {
+    font-size: 0.9rem;
+  }
+  
+  .marks-summary .badge {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .marks-input-group .form-control,
+  .marks-input-group .input-group-text {
+    padding: 0.625rem 0.75rem;
+    font-size: 1.1rem;
+    height: auto;
+  }
+  
+  /* Hide number input spinners ONLY on small screens */
+  .no-spinner-sm::-webkit-inner-spin-button, 
+  .no-spinner-sm::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+  }
+  
+  .no-spinner-sm {
+    appearance: textfield;
+    -moz-appearance: textfield; /* Firefox */
+  }
+}
+
+/* Floating input for total marks */
+.marks-floating-input {
+  position: relative;
+}
+
+.marks-floating-input .form-control {
+  height: calc(3.5rem + 2px);
+  padding: 1rem 0.75rem;
+}
+
+.marks-floating-input label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  padding: 1rem 0.75rem;
+  pointer-events: none;
+  border: 1px solid transparent;
+  transform-origin: 0 0;
+  transition: opacity .1s ease-in-out,transform .1s ease-in-out;
+}
+
+.marks-floating-input .form-control:focus,
+.marks-floating-input .form-control:not(:placeholder-shown) {
+  padding-top: 1.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.marks-floating-input .form-control:focus ~ label,
+.marks-floating-input .form-control:not(:placeholder-shown) ~ label {
+  opacity: 0.65;
+  transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
 }
 </style> 
