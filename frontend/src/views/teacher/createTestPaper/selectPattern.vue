@@ -15,7 +15,10 @@
           </p>
           <h4 class="fw-bolder text-start text-dark mb-2">
             Standard {{ decodeURIComponent(standardName) }}
-            <span class="d-block text-start text-secondary mt-1">{{ decodeURIComponent(subjectName) }}</span>
+            <span class="d-block text-start text-secondary mt-1">
+              {{ decodeURIComponent(subjectName) }}
+              <span class="optional-info-marks-heading fs-5">{{ totalMarksFromPrevious }} Marks</span>
+            </span>
           </h4>
         </div>
       </div>
@@ -49,52 +52,17 @@
             <select class="form-select sort-select" id="sortSelect" v-model="sortOption" @change="applyFilters">
               <option value="name_asc">Sort by Pattern Name (A-Z)</option>
               <option value="name_desc">Sort by Pattern Name (Z-A)</option>
-              <option value="marks_asc">Sort by Marks (Low to High)</option>
-              <option value="marks_desc">Sort by Marks (High to Low)</option>
             </select>
           </div>
 
-          <!-- Filter Button -->
-          <div class="filter-field">
-            <button
-              class="btn filter-btn"
-              @click="toggleFilterIcon"
-              aria-expanded="false"
-              aria-controls="filter"
-            >
-              <i class="bi bi-funnel"></i>
-            </button>
-          </div>
-          
-          <!-- Clear All Button -->
-          <div v-if="isAnyFilterApplied" class="clear-field">
+          <!-- Clear Search Button -->
+          <div v-if="searchQuery" class="clear-field">
             <button 
               class="btn btn-outline-secondary clear-btn"
-              @click="clearAllFilters"
+              @click="clearSearch"
             >
               <i class="bi bi-x-circle me-1"></i> Clear
             </button>
-          </div>
-        </div>
-        
-        <!-- Filter Fields (Collapsible) -->
-        <div class="collapse mb-3" id="filter">
-          <div class="row g-2">
-            <!-- Total Marks Filter -->
-            <div class="col-12 col-md-4">
-              <div class="form-floating">
-                <input
-                  type="number"
-                  class="form-control"
-                  id="totalMarks"
-                  placeholder="Enter Total Marks"
-                  v-model="totalMarks"
-                  @input="applyFilters"
-                  min="0"
-                />
-                <label for="totalMarks" class="form-label">Total Marks</label>
-              </div>
-            </div>
           </div>
         </div>
         
@@ -110,13 +78,13 @@
           <p class="mt-2">Loading available patterns...</p>
         </div>
         
-        <div v-else-if="filteredPatterns.length === 0" class="alert alert-info">
+        <div v-if="!isLoading && filteredPatterns.length === 0" class="alert alert-info">
           <i class="bi bi-info-circle me-2"></i>
           No patterns found for the selected criteria. Please try different filters or contact an administrator.
         </div>
         
-        <div v-else>
-          <div v-for="pattern in filteredPatterns" :key="pattern.id" class="card pattern-card mb-3">
+        <div v-else-if="!isLoading">
+          <div v-for="pattern in paginatedPatterns" :key="pattern.id" class="card pattern-card mb-3">
             <div class="card-body">
               <div class="container p-0">
                 <!-- Total Marks Badge - Now at the top left -->
@@ -195,7 +163,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <!-- Pagination Info -->
           <div class="text-muted small">
-            Showing {{ patterns.length ? (currentPage - 1) * pageSize + 1 : 0 }} to
+            Showing {{ paginatedPatterns.length ? (currentPage - 1) * pageSize + 1 : 0 }} to
             {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} patterns
           </div>
 
@@ -386,8 +354,8 @@ const searchQuery = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const searchTimeout = ref<number | null>(null)
 const sortOption = ref('name_asc')
-const totalMarks = ref('')
-const isFilterOpen = ref(false)
+// Get the total marks from the query parameters as a simple string
+const totalMarksFromPrevious = (route.query.totalMarks as string) || ''
 
 // User profile and school data
 const userProfile = ref<UserProfile | null>(null)
@@ -493,6 +461,8 @@ const boardId = route.query.boardId as string
 const mediumId = route.query.mediumId as string
 const standardId = route.query.standardId as string
 const subjectId = route.query.subjectId as string
+const chaptersData = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : []
+const questionSource = route.query.questionSource as string
 
 // Display names from query parameters - board name now comes from the user profile
 const boardName = computed(() => {
@@ -568,24 +538,12 @@ const filteredPatterns = computed(() => {
     );
   }
 
-  // Apply total marks filter
-  if (totalMarks.value) {
-    const marks = parseInt(totalMarks.value);
-    if (!isNaN(marks)) {
-      result = result.filter(pattern => pattern.total_marks === marks);
-    }
-  }
-
   // Apply sorting
   result.sort((a, b) => {
     if (sortOption.value === 'name_asc') {
       return a.pattern_name.localeCompare(b.pattern_name);
     } else if (sortOption.value === 'name_desc') {
       return b.pattern_name.localeCompare(a.pattern_name);
-    } else if (sortOption.value === 'marks_asc') {
-      return (a.total_marks || 0) - (b.total_marks || 0);
-    } else if (sortOption.value === 'marks_desc') {
-      return (b.total_marks || 0) - (a.total_marks || 0);
     }
     return 0;
   });
@@ -593,33 +551,29 @@ const filteredPatterns = computed(() => {
   return result;
 });
 
+// Computed property for paginated patterns
+const paginatedPatterns = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredPatterns.value.slice(start, end);
+});
+
 // Function to apply filters
 const applyFilters = () => {
-  // This function is just for triggering reactivity on filter changes
-  // The actual filtering is done in the computed property
+  // Update total items and pages based on filtered results
+  totalItems.value = filteredPatterns.value.length
+  totalPages.value = Math.ceil(totalItems.value / pageSize.value)
+  
+  // Reset to first page when filters change
+  if (currentPage.value > totalPages.value && totalPages.value > 0) {
+    currentPage.value = 1
+  }
 }
 
 // Fetch patterns on component mount
 onMounted(async () => {
   // Fetch the user profile, which will then trigger fetching patterns
   await fetchUserProfile()
-  
-  // Check if the filter element has the 'show' class initially
-  const filterElement = document.getElementById('filter')
-  if (filterElement) {
-    // Check if the element has the 'show' class initially
-    if (filterElement.classList.contains('show')) {
-      isFilterOpen.value = true
-
-      // Update filter button appearance
-      const filterBtn = document.querySelector('.filter-btn')
-      if (filterBtn) {
-        filterBtn.classList.add('active')
-      }
-    } else {
-      isFilterOpen.value = false
-    }
-  }
 })
 
 // Function to fetch patterns
@@ -634,50 +588,50 @@ const fetchPatterns = async () => {
 
   try {
     isLoading.value = true
+    
+    // Extract chapter IDs from chapters data
+    const chapterIds = chaptersData.map((chapter: any) => chapter.id)
+    
     // Build query parameters
-    const params: Record<string, string> = {}
-    
-    // Add pagination parameters
-    params.page = currentPage.value.toString()
-    params.page_size = pageSize.value.toString()
-    
-    // Add sorting parameters
-    params.sort_by = sortOption.value.split('_')[0]
-    params.sort_order = sortOption.value.split('_')[1]
-    
-    // Add search parameter if provided
-    if (searchQuery.value.trim()) {
-      params.search = searchQuery.value.trim()
+    const params: Record<string, string | number | (string | number)[]> = {
+      mediumId: mediumId,
+      standardId: standardId,
+      subjectId: subjectId,
+      chapterIds: chapterIds,
+      questionOrigin: questionSource || 'both'
     }
     
-    // Add filter parameters
-    if (boardIdToUse) params.boardId = boardIdToUse
-    if (standardId) params.standardId = standardId
-    if (subjectId) params.subjectId = subjectId
-    if (totalMarks.value) params.totalMarks = totalMarks.value
+    // Add marks from the previous page
+    if (totalMarksFromPrevious) {
+      params.marks = parseInt(totalMarksFromPrevious)
+    }
     
-    // API endpoint
-    const response = await axiosInstance.get('/patterns', { params })
+    // Use the pattern-filter endpoint
+    const response = await axiosInstance.get('/pattern-filter', { params })
     
-    // Process API response
-    if (response.data && response.data.data) {
-      // Initialize the isExpanded property for each pattern
-      patterns.value = response.data.data.map((pattern: Pattern) => ({
-        ...pattern,
-        isExpanded: false
-      }));
-      
-      // Update pagination information if available
-      if (response.data.meta) {
-        totalItems.value = response.data.meta.total || patterns.value.length
-        totalPages.value = response.data.meta.total_pages || 1
-        pageSize.value = response.data.meta.page_size || 10
+    if (response.data) {
+      // Process the response data
+      if (response.data.patterns) {
+        // Initialize the isExpanded property for each pattern
+        patterns.value = response.data.patterns.map((pattern: Pattern) => ({
+          ...pattern,
+          isExpanded: false
+        }));
+        
+        // Set total items and pages
+        totalItems.value = response.data.count || patterns.value.length
+        totalPages.value = Math.ceil(totalItems.value / pageSize.value)
+      } else {
+        patterns.value = []
       }
     } else {
       // Fallback in case of unexpected response format
       patterns.value = []
       console.error('Unexpected API response format:', response.data)
     }
+    
+    // Filter and sort the results client-side
+    applyFilters()
   } catch (error) {
     console.error('Error fetching patterns:', error)
     showErrorToast('Failed to load patterns')
@@ -694,6 +648,13 @@ const selectTestPattern = (pattern: Pattern) => {
     const boardNameToPass = userProfile.value?.schools?.[0]?.board?.name 
       ? encodeURIComponent(userProfile.value.schools[0].board.name)
       : boardName.value;
+    
+    // Preserve the form state in localStorage before navigating
+    const existingFormState = localStorage.getItem('testPaperDashboardState')
+    if (existingFormState) {
+      // We don't modify the form state here, just ensuring it persists
+      // through the navigation to the detail page
+    }
       
     // Navigate to the next step with the selected pattern
     router.push({ 
@@ -748,13 +709,12 @@ watch(isSearching, (newVal) => {
 
 // Computed property to check if any filter is applied
 const isAnyFilterApplied = computed(() => {
-  return searchQuery.value.trim() !== '' || totalMarks.value !== '' || sortOption.value !== 'name_asc';
+  return searchQuery.value.trim() !== '' || sortOption.value !== 'name_asc';
 });
 
 // Function to clear all filters
 const clearAllFilters = () => {
   searchQuery.value = '';
-  totalMarks.value = '';
   sortOption.value = 'name_asc';
   isSearching.value = false;
   
@@ -783,7 +743,7 @@ const togglePatternDetails = (pattern: Pattern) => {
 const changePage = (page: number) => {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
-  fetchPatterns()
+  // Client-side pagination, no need to fetch patterns again
 }
 
 // Computed property to determine which page numbers to show
@@ -835,40 +795,6 @@ const visiblePageNumbers = computed(() => {
 
   return pages;
 });
-
-// Toggle filter dropdown visibility
-const toggleFilterIcon = () => {
-  // Toggle the filter state
-  isFilterOpen.value = !isFilterOpen.value
-  
-  // Manually toggle the collapse using Bootstrap's Collapse class
-  const filterElement = document.getElementById('filter')
-  if (filterElement) {
-    // Get or create a collapse instance
-    let bsCollapse = Collapse.getInstance(filterElement)
-    if (!bsCollapse) {
-      bsCollapse = new Collapse(filterElement, {
-        toggle: false
-      })
-    }
-
-    // Toggle the collapse
-    bsCollapse.toggle()
-
-    // Toggle active class on the filter button
-    const filterBtn = document.querySelector('.filter-btn')
-    if (filterBtn) {
-      if (isFilterOpen.value) {
-        filterBtn.classList.add('active')
-      } else {
-        filterBtn.classList.remove('active')
-        // Only clear total marks when closing the filter
-        totalMarks.value = ''
-        applyFilters()
-      }
-    }
-  }
-}
 </script>
 
 <style scoped>
@@ -1308,7 +1234,14 @@ h6 {
   color: #6c757d;
   font-size: 0.75rem;
 }
-
+.optional-info-marks-heading {
+  background-color: rgba(0,0,0,0.1);
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  display: inline-block;
+  color: #6c757d;
+  
+}
 /* Row animations - make faster for quicker opening */
 .section-preview tr {
   opacity: 0;
