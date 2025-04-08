@@ -118,7 +118,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'questionBank/translation',
         name: 'translationPending',
-        component: () => import('@/views/admin/questionBank/TranslationPending.vue'),
+        component: () => import('../views/admin/questionBank/TranslationPending.vue'),
       },
     ],
   },

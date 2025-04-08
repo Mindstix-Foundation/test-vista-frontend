@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div v-if="toastStore.show" class="toast-container position-fixed bottom-0 end-0 p-3">
     <div
       class="toast show"
       :class="toastClass"
@@ -8,11 +8,11 @@
       aria-atomic="true"
     >
       <div class="toast-header">
-        <strong class="me-auto">{{ title }}</strong>
+        <strong class="me-auto">{{ toastStore.title }}</strong>
         <button type="button" class="btn-close" @click="closeToast" aria-label="Close"></button>
       </div>
       <div class="toast-body">
-        {{ message }}
+        {{ toastStore.message }}
       </div>
     </div>
   </div>
@@ -20,20 +20,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useToastStore } from '@/stores/toast'
 
-const props = defineProps<{
-  show: boolean
-  title: string
-  message: string
-  type?: 'success' | 'error' | 'info' | 'warning'
-}>()
-
-const emit = defineEmits<{
-  (e: 'close'): void
-}>()
+const toastStore = useToastStore()
 
 const toastClass = computed(() => {
-  switch (props.type) {
+  switch (toastStore.type) {
     case 'success':
       return 'bg-success text-white'
     case 'error':
@@ -47,7 +39,7 @@ const toastClass = computed(() => {
 })
 
 const closeToast = () => {
-  emit('close')
+  toastStore.hideToast()
 }
 </script>
 

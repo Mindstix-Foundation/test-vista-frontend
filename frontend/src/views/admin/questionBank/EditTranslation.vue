@@ -1002,13 +1002,18 @@ async function updateTranslation() {
     ) {
       const mcqOptions = [];
 
-      // Find the original translation to get correct answers and existing option IDs
+      // Find both the original translation and the translation we're editing
       const originalTranslation = availableTranslations.value[selectedTranslationIndex.value];
+      const translationToEdit = availableTranslations.value.find(
+        (text) => text.id === translatedQuestion.value.id
+      );
 
       for (let i = 0; i < translatedOptions.value.length; i++) {
         if (!translatedOptions.value[i].trim()) continue;
 
         const originalOption = originalTranslation?.mcq_options?.[i];
+        const existingOption = translationToEdit?.mcq_options?.[i];
+        
         const optionData: {
           id?: number;
           option_text: string;
@@ -1019,9 +1024,9 @@ async function updateTranslation() {
           is_correct: originalOption ? originalOption.is_correct : false
         };
 
-        // Add option ID if it exists (for updating existing options)
-        if (originalOption?.id) {
-          optionData.id = originalOption.id;
+        // Use the ID from the translation we're editing if it exists
+        if (existingOption?.id) {
+          optionData.id = existingOption.id;
         }
 
         // Handle new option images
@@ -1054,9 +1059,9 @@ async function updateTranslation() {
           } catch (error) {
             console.error(`Error uploading image for option ${i + 1}:`, error);
           }
-        } else if (originalOption?.image_id) {
-          // Preserve existing image ID if no new image was uploaded
-          optionData.image_id = originalOption.image_id;
+        } else if (existingOption?.image_id) {
+          // Preserve existing image ID from the translation we're editing
+          optionData.image_id = existingOption.image_id;
         }
 
         mcqOptions.push(optionData);
@@ -1073,9 +1078,16 @@ async function updateTranslation() {
     ) {
       const matchPairs = [];
 
+      // Get the original translation data for reference
+      const originalTranslation = availableTranslations.value[selectedTranslationIndex.value];
+      const translationToEdit = availableTranslations.value.find(
+        (text) => text.id === translatedQuestion.value.id
+      );
+
       for (let i = 0; i < translatedMatchPairs.value.length; i++) {
         const pair = translatedMatchPairs.value[i];
-        const originalPair = availableTranslations.value[selectedTranslationIndex.value]?.match_pairs?.[i];
+        const originalPair = originalTranslation?.match_pairs?.[i];
+        const existingPair = translationToEdit?.match_pairs?.[i];
         
         const pairData: {
           id?: number;
@@ -1084,81 +1096,113 @@ async function updateTranslation() {
           left_image_id?: number | null;
           right_image_id?: number | null;
         } = {
-          left_text: pair.left_text,
-          right_text: pair.right_text
+          left_text: pair.left_text || '',
+          right_text: pair.right_text || ''
         };
 
         // Add pair ID if it exists (for updating existing pairs)
-        if (originalPair?.id) {
-          pairData.id = originalPair.id;
+        if (existingPair?.id) {
+          pairData.id = existingPair.id;
         }
 
         // Handle left image
-        if (selectedPairLeftFiles.value?.[i]) {
-          try {
-            const file = selectedPairLeftFiles.value[i]!;
-            const formData = new FormData();
-            formData.append('file', file);
+        const leftImageInput = document.getElementById(`leftPairImage${i}`) as HTMLInputElement;
+        const hasNewLeftImage = leftImageInput?.files && leftImageInput.files.length > 0;
+        const originalHasLeftImage = originalMatchPairLeftImages.value[i] !== null;
 
-            const uploadResponse = await axiosInstance.post('/images/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              timeout: 30000
-            });
+        if (originalHasLeftImage && pairLeftImageIds.value[i] !== null) {
+          if (hasNewLeftImage && leftImageInput.files) {
+            try {
+              const formData = new FormData();
+              formData.append('file', leftImageInput.files[0]);
 
-            if (uploadResponse.data?.image_url) {
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
               const imageCreateRequest = {
                 image_url: uploadResponse.data.image_url,
-                original_filename: file.name,
-                file_size: file.size,
-                file_type: file.type,
-                width: uploadResponse.data.width || 0,
-                height: uploadResponse.data.height || 0
+                original_filename: uploadResponse.data.original_filename || leftImageInput.files[0].name,
+                file_size: uploadResponse.data.file_size || leftImageInput.files[0].size,
+                file_type: uploadResponse.data.file_type || leftImageInput.files[0].type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
               };
 
               const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              if (imageResponse.data?.id) {
-                pairData.left_image_id = imageResponse.data.id;
-              }
+              pairData.left_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error('Error uploading left pair image:', error);
+              // If upload fails, use original image ID since we must maintain consistency
+              pairData.left_image_id = pairLeftImageIds.value[i] as number;
             }
-          } catch (error) {
-            console.error(`Error uploading image for left pair ${i + 1}:`, error);
+          } else {
+            // No new image uploaded, use original image ID
+            pairData.left_image_id = pairLeftImageIds.value[i] as number;
           }
-        } else if (originalPair?.left_image_id) {
-          pairData.left_image_id = originalPair.left_image_id;
+        } else if (hasNewLeftImage) {
+          // Original has no image, warn user and skip image upload
+          toastStore.showToast({
+            title: 'Warning',
+            message: `Cannot add left image to pair ${i + 1} when original pair has no left image`,
+            type: 'warning'
+          });
         }
 
         // Handle right image
-        if (selectedPairRightFiles.value?.[i]) {
-          try {
-            const file = selectedPairRightFiles.value[i]!;
-            const formData = new FormData();
-            formData.append('file', file);
+        const rightImageInput = document.getElementById(`rightPairImage${i}`) as HTMLInputElement;
+        const hasNewRightImage = rightImageInput?.files && rightImageInput.files.length > 0;
+        const originalHasRightImage = originalMatchPairRightImages.value[i] !== null;
 
-            const uploadResponse = await axiosInstance.post('/images/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              timeout: 30000
-            });
+        if (originalHasRightImage && pairRightImageIds.value[i] !== null) {
+          if (hasNewRightImage && rightImageInput.files) {
+            try {
+              const formData = new FormData();
+              formData.append('file', rightImageInput.files[0]);
 
-            if (uploadResponse.data?.image_url) {
+              const uploadResponse = await axiosInstance.post(
+                '/images/upload',
+                formData,
+                {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }
+              );
+
               const imageCreateRequest = {
                 image_url: uploadResponse.data.image_url,
-                original_filename: file.name,
-                file_size: file.size,
-                file_type: file.type,
-                width: uploadResponse.data.width || 0,
-                height: uploadResponse.data.height || 0
+                original_filename: uploadResponse.data.original_filename || rightImageInput.files[0].name,
+                file_size: uploadResponse.data.file_size || rightImageInput.files[0].size,
+                file_type: uploadResponse.data.file_type || rightImageInput.files[0].type,
+                width: uploadResponse.data.width,
+                height: uploadResponse.data.height
               };
 
               const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              if (imageResponse.data?.id) {
-                pairData.right_image_id = imageResponse.data.id;
-              }
+              pairData.right_image_id = imageResponse.data.id;
+            } catch (error) {
+              console.error('Error uploading right pair image:', error);
+              // If upload fails, use original image ID since we must maintain consistency
+              pairData.right_image_id = pairRightImageIds.value[i] as number;
             }
-          } catch (error) {
-            console.error(`Error uploading image for right pair ${i + 1}:`, error);
+          } else {
+            // No new image uploaded, use original image ID
+            pairData.right_image_id = pairRightImageIds.value[i] as number;
           }
-        } else if (originalPair?.right_image_id) {
-          pairData.right_image_id = originalPair.right_image_id;
+        } else if (hasNewRightImage) {
+          // Original has no image, warn user and skip image upload
+          toastStore.showToast({
+            title: 'Warning',
+            message: `Cannot add right image to pair ${i + 1} when original pair has no right image`,
+            type: 'warning'
+          });
         }
 
         matchPairs.push(pairData);

@@ -109,6 +109,13 @@
                       />
                     </div>
                   </div>
+                  <div class="row g-2">
+                    <div class="col-12 text-end">
+                      <button class="btn btn-outline-secondary btn-sm" @click="clearFilters">
+                        <i class="bi bi-x-circle me-1"></i>Clear Filters
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -225,6 +232,7 @@ import axiosInstance from '@/config/axios'
 import { Collapse } from 'bootstrap'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 import QuestionDisplay from '@/components/questiondisplay/QuestionDisplay.vue'
+import { useToastStore } from '@/stores/toast'
 
 console.log('QuestionDisplay component imported:', !!QuestionDisplay);
 
@@ -371,6 +379,7 @@ defineOptions({
 })
 
 const router = useRouter()
+const toastStore = useToastStore()
 
 // Add initial loading state
 const isInitialLoading = ref(true)
@@ -484,16 +493,22 @@ function handleSearchInput() {
 }
 
 function clearSearch() {
+  console.log('TranslationPending - Clearing search');
   searchQuery.value = '';
-  // Reset to first page when clearing search
   currentPage.value = 1;
-  isSearching.value = true; // Set to loading state for visual feedback
+  isSearching.value = true;
+
+  const currentQuery = { ...router.currentRoute.value.query };
+  delete currentQuery.search;
+  delete currentQuery.page;
+  
+  console.log('TranslationPending - Updating query params after clearing search:', currentQuery);
+  router.replace({ query: currentQuery }).catch(() => {
+    // Ignore navigation errors
+  });
+
   fetchQuestions();
 
-  // Update URL params
-  updateUrlParams();
-
-  // Maintain focus on the search input after clearing
   if (searchInputRef.value) {
     searchInputRef.value.focus();
   }
@@ -524,18 +539,25 @@ function toggleFilterIcon() {
         filterBtn.classList.add('active');
       } else {
         filterBtn.classList.remove('active');
-        // Clear filters when closing
-        clearFilters();
       }
     }
   }
 }
 
 function clearFilters() {
-  // Reset filter values
+  console.log('TranslationPending - Clearing filters');
   selectedTopicObj.value = null;
   selectedTypeObj.value = null;
-  // Update filtered results
+
+  const currentQuery = { ...router.currentRoute.value.query };
+  delete currentQuery.topic;
+  delete currentQuery.type;
+  
+  console.log('TranslationPending - Updating query params after clearing filters:', currentQuery);
+  router.replace({ query: currentQuery }).catch(() => {
+    // Ignore navigation errors
+  });
+
   fetchQuestions();
 }
 
@@ -549,13 +571,23 @@ function filterCards() {
 }
 
 function translateQuestion(question: Question) {
-  // Navigate to add translation page with question ID
+  // Get current query params
+  const currentQuery = router.currentRoute.value.query;
+  
+  // Navigate to add translation page with question ID and preserve query params
   router.push({
     name: 'addTranslation',
     params: {
       id: question.id.toString()
+    },
+    query: {
+      returnPage: currentQuery.page?.toString(),
+      returnSort: currentQuery.sort?.toString(),
+      returnTopic: currentQuery.topic?.toString(),
+      returnType: currentQuery.type?.toString(),
+      returnSearch: currentQuery.search?.toString()
     }
-  })
+  });
 }
 
 // Pagination method
@@ -579,6 +611,7 @@ watch(isSearching, (newVal) => {
 // Add a function to fetch all available topics for the chapter
 async function fetchTopicsForChapter() {
   try {
+    console.log('TranslationPending - Fetching topics');
     isLoadingTopics.value = true;
 
     // Get chapter ID from stored data
@@ -636,15 +669,13 @@ function extractTopicsFromQuestions() {
 // Update the fetchQuestions function
 async function fetchQuestions() {
   try {
-    // Set searching state appropriately
     if (searchQuery.value || selectedTopic.value || selectedType.value) {
       isSearching.value = true;
     }
 
-    const mediumId = questionBankData.value.mediumId
+    const mediumId = questionBankData.value.mediumId;
 
-    // Parameters for the API call including pagination and sorting
-    const params: Record<string, string | number | boolean | undefined> = {
+    const params = {
       chapter_id: questionBankData.value.chapterId,
       instruction_medium_id: questionBankData.value.mediumId,
       is_verified: true,
@@ -653,31 +684,26 @@ async function fetchQuestions() {
       search: searchQuery.value || undefined,
       topic_id: selectedTopic.value || undefined,
       question_type_id: selectedType.value || undefined
-    }
+    };
 
-    // Add sort parameters from sort mapping
     if (sortOption.value && sortMappings[sortOption.value]) {
       params.sort_by = sortMappings[sortOption.value].sort_by;
       params.sort_order = sortMappings[sortOption.value].sort_order;
     }
 
-    console.log('API Request Params:', params); // Add logging to debug the params
+    console.log('TranslationPending - Fetching questions with params:', params);
 
-    const response = await axiosInstance.get<PaginatedApiResponse<ApiQuestion>>(`/questions/untranslated/${mediumId}`, {
+    const response = await axiosInstance.get(`/questions/untranslated/${mediumId}`, {
       params: params
-    }).catch((error) => {
-      console.error('Error fetching untranslated questions:', error);
-      return { data: { data: [], meta: { total: 0, current_page: 1, last_page: 1, per_page: pageSize.value } } };
     });
+
+    console.log('TranslationPending - Questions fetch response:', response.data);
 
     // Update pagination info
     if (response.data.meta) {
       totalItems.value = response.data.meta.total || 0
       totalPages.value = response.data.meta.last_page || 1
     }
-
-    // Inside fetchQuestions function before mapping
-    console.log('API Response:', response.data);
 
     // Transform API response to match our component's expected structure
     questions.value = (response.data.data || []).map((apiQuestion: ApiQuestion) => {
@@ -836,7 +862,7 @@ async function fetchQuestions() {
 
     return true; // Return true to indicate successful completion
   } catch (error) {
-    console.error('Error fetching untranslated questions:', error);
+    console.error('TranslationPending - Error fetching questions:', error);
     return false; // Return false to indicate error
   } finally {
     // Clear search loading state but NOT the initial loading state
@@ -875,93 +901,166 @@ function updateUrlParams() {
   });
 }
 
-// Lifecycle hooks
+// Add logging to onMounted hook
 onMounted(async () => {
-  // Set initial loading state
+  console.log('TranslationPending - Component mounting');
   isInitialLoading.value = true;
 
-  // Record start time for minimum loading duration
-  const minLoadingTime = 800; // Consistent with AddTranslation.vue
+  const minLoadingTime = 800;
   const startTime = Date.now();
 
-  // Load data from localStorage
   const storedData = localStorage.getItem('questionBank');
   if (storedData) {
     questionBankData.value = JSON.parse(storedData);
-
-    // Initialize from route query parameters if present
     const route = useRouter().currentRoute.value;
+    
+    console.log('TranslationPending - Initial route query params:', route.query);
 
-    if (route.query.search) {
-      searchQuery.value = route.query.search as string;
-    }
-
-    if (route.query.page) {
-      const pageNum = parseInt(route.query.page as string, 10);
-      if (!isNaN(pageNum) && pageNum > 0) {
-        currentPage.value = pageNum;
+    // Check for return parameters first
+    if (route.query.returnPage || route.query.returnSort || route.query.returnTopic || route.query.returnType) {
+      console.log('TranslationPending - Found return parameters, restoring state');
+      
+      if (route.query.returnPage) {
+        const pageNum = parseInt(route.query.returnPage as string, 10);
+        if (!isNaN(pageNum) && pageNum > 0) {
+          console.log('TranslationPending - Restoring page number:', pageNum);
+          currentPage.value = pageNum;
+        }
       }
-    }
 
-    if (route.query.sort) {
-      sortOption.value = route.query.sort as string;
-    }
+      if (route.query.returnSort) {
+        const sortValue = route.query.returnSort as string;
+        if (sortMappings[sortValue]) {
+          console.log('TranslationPending - Restoring sort option:', sortValue);
+          sortOption.value = sortValue;
+        }
+      }
 
-    if (route.query.topic) {
-      const topicId = parseInt(route.query.topic as string, 10);
-      // We'll set the selected topic after fetching topics
-      await fetchTopicsForChapter().then(() => {
+      // Remove return parameters and update URL
+      const newQuery = { ...route.query };
+      delete newQuery.returnPage;
+      delete newQuery.returnSort;
+      delete newQuery.returnTopic;
+      delete newQuery.returnType;
+      
+      // Keep success message if present
+      if (route.query.success && route.query.message) {
+        newQuery.success = route.query.success as string;
+        newQuery.message = route.query.message as string;
+      }
+
+      router.replace({ query: newQuery }).catch(() => {
+        // Ignore navigation errors
+      });
+    } else {
+      // Handle regular query parameters as before
+      if (route.query.search) {
+        console.log('TranslationPending - Restoring search query:', route.query.search);
+        searchQuery.value = route.query.search as string;
+      }
+
+      if (route.query.page) {
+        const pageNum = parseInt(route.query.page as string, 10);
+        if (!isNaN(pageNum) && pageNum > 0) {
+          console.log('TranslationPending - Restoring page number:', pageNum);
+          currentPage.value = pageNum;
+        }
+      }
+
+      if (route.query.sort) {
+        const sortValue = route.query.sort as string;
+        if (sortMappings[sortValue]) {
+          console.log('TranslationPending - Restoring sort option:', sortValue);
+          sortOption.value = sortValue;
+        }
+      }
+
+      console.log('TranslationPending - Fetching topics');
+      await fetchTopicsForChapter();
+      console.log('TranslationPending - Available topics:', topicsWithIds.value);
+
+      // Handle topic filter
+      if (route.query.topic) {
+        const topicId = parseInt(route.query.topic as string, 10);
+        console.log('TranslationPending - Attempting to restore topic filter:', topicId);
         const topic = topicsWithIds.value.find(t => t.id === topicId);
         if (topic) {
+          console.log('TranslationPending - Found matching topic:', topic);
           selectedTopicObj.value = topic;
+          isFilterOpen.value = true;
+          const filterElement = document.getElementById('filter');
+          if (filterElement) {
+            console.log('TranslationPending - Showing filter section');
+            new Collapse(filterElement).show();
+            const filterBtn = document.querySelector('.filter-btn');
+            if (filterBtn) {
+              filterBtn.classList.add('active');
+            }
+          }
         }
-      });
-    }
+      }
 
-    if (route.query.type) {
-      const typeId = parseInt(route.query.type as string, 10);
-      const type = questionTypesWithIds.value.find(t => t.id === typeId);
-      if (type) {
-        selectedTypeObj.value = type;
+      // Handle question type filter
+      if (route.query.type) {
+        const typeId = parseInt(route.query.type as string, 10);
+        console.log('TranslationPending - Attempting to restore type filter:', typeId);
+        const type = questionTypesWithIds.value.find(t => t.id === typeId);
+        if (type) {
+          console.log('TranslationPending - Found matching type:', type);
+          selectedTypeObj.value = type;
+          isFilterOpen.value = true;
+          const filterElement = document.getElementById('filter');
+          if (filterElement) {
+            console.log('TranslationPending - Showing filter section');
+            new Collapse(filterElement).show();
+            const filterBtn = document.querySelector('.filter-btn');
+            if (filterBtn) {
+              filterBtn.classList.add('active');
+            }
+          }
+        }
+      }
+
+      console.log('TranslationPending - Current filter state:', {
+        search: searchQuery.value,
+        page: currentPage.value,
+        sort: sortOption.value,
+        topic: selectedTopicObj.value,
+        type: selectedTypeObj.value
+      });
+
+      await fetchQuestions();
+
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < minLoadingTime) {
+        await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+      }
+
+      isInitialLoading.value = false;
+
+      // Handle success message
+      if (route.query.success === 'true' && route.query.message) {
+        console.log('TranslationPending - Showing success message:', route.query.message);
+        toastStore.showToast({
+          title: 'Success',
+          message: route.query.message as string,
+          type: 'success'
+        });
+
+        // Remove success and message params while preserving other query params
+        const newQuery = { ...route.query };
+        delete newQuery.success;
+        delete newQuery.message;
+        console.log('TranslationPending - Updating query params after success:', newQuery);
+        router.replace({ query: newQuery }).catch(() => {
+          // Ignore navigation errors
+        });
       }
     }
-
-    // Initialize the component by fetching questions and topics
-    // Wait for fetchQuestions to complete before turning off loading state
-    await fetchQuestions();
-    if (!route.query.topic) {
-      await fetchTopicsForChapter();
-    }
-
-    // Ensure minimum loading time to avoid flickering UI
-    const elapsedTime = Date.now() - startTime;
-    if (elapsedTime < minLoadingTime) {
-      await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
-    }
-
-    // Only turn off loading after everything is complete and minimum time has elapsed
-    isInitialLoading.value = false;
   } else {
-    // Redirect to question bank selection if no data
+    console.log('TranslationPending - No stored data found, redirecting to questionBank');
     isInitialLoading.value = false;
     router.push({ name: 'questionBank' });
-  }
-
-  // Check if the filter element has the 'show' class initially
-  const filterElement = document.getElementById('filter');
-  if (filterElement) {
-    // Check if the element has the 'show' class initially
-    if (filterElement.classList.contains('show')) {
-      isFilterOpen.value = true;
-
-      // Update filter button appearance
-      const filterBtn = document.querySelector('.filter-btn');
-      if (filterBtn) {
-        filterBtn.classList.add('active');
-      }
-    } else {
-      isFilterOpen.value = false;
-    }
   }
 });
 </script>

@@ -1,11 +1,5 @@
 <template>
-  <ToastNotification
-    :show="toastStore.show"
-    :title="toastStore.title"
-    :message="toastStore.message"
-    :type="toastStore.type"
-    @close="toastStore.hideToast"
-  />
+  <ToastNotification />
   <RouterView v-slot="{ Component, route }">
     <keep-alive :include="['EditPattern', 'EditSection']">
       <component
@@ -21,9 +15,6 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import ToastNotification from '@/components/common/ToastNotification.vue'
-import { useToastStore } from '@/store/toast'
-
-const toastStore = useToastStore()
 </script>
 
 <style>
