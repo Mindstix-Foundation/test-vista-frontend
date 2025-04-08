@@ -23,7 +23,7 @@
             <div class="col col-7 col-sm-auto text-end">
               <router-link class="btn btn-light position-relative" style="border: 1px solid gray !important;" id="addButton" :to="{ name: 'translationPending' }">
                 Translation Pending
-                <span class="badge bg-danger">
+                <span class="badge" :class="translationPendingCount > 0 ? 'bg-danger' : 'bg-success'">
                   {{ translationPendingCount > 99 ? '99+' : translationPendingCount }}
                   <span class="visually-hidden">translation pending questions</span>
                 </span>
@@ -147,7 +147,13 @@
 
               <!-- Third column: Label After -->
               <div class="col-auto text-start">
-                <label id="unverifiedLabel" class="form-check-label fw-bold" :class="{ 'text-dark': showUnverified, 'text-secondary': !showUnverified }" for="flexSwitchCheckBefore">Unverified</label>
+                <label id="unverifiedLabel" class="form-check-label fw-bold" :class="{ 'text-dark': showUnverified, 'text-secondary': !showUnverified }" for="flexSwitchCheckBefore">
+                  Unverified
+                  <span class="badge" :class="unverifiedCount > 0 ? 'bg-danger' : 'bg-success'">
+                    {{ unverifiedCount > 99 ? '99+' : unverifiedCount }}
+                    <span class="visually-hidden">unverified questions</span>
+                  </span>
+                </label>
               </div>
             </div>
           </div>
@@ -492,6 +498,7 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const sortOption = ref('question_text_asc')
 const searchTimeout = ref<number | null>(null)
 const translationPendingCount = ref(0)
+const unverifiedCount = ref(0)
 
 // Pagination state
 const currentPage = ref(1)
@@ -1464,6 +1471,7 @@ onMounted(() => {
     fetchQuestions()
     fetchQuestionTypes()
     fetchTranslationPendingCount()
+    fetchUnverifiedCount()
   } else {
     // Redirect to question bank selection if no data
     router.push({ name: 'questionBank' })
@@ -1542,6 +1550,23 @@ async function fetchTranslationPendingCount() {
   } catch (error) {
     console.error('Error fetching translation pending count:', error);
     translationPendingCount.value = 0;
+  }
+}
+
+// Update the fetchUnverifiedCount function
+async function fetchUnverifiedCount() {
+  try {
+    const params = {
+      chapter_id: questionBankData.value.chapterId,
+      instruction_medium_id: questionBankData.value.mediumId,
+      is_verified: false
+    };
+
+    const response = await axiosInstance.get('/questions/count', { params });
+    unverifiedCount.value = response.data.count;
+  } catch (error) {
+    console.error('Error fetching unverified count:', error);
+    unverifiedCount.value = 0;
   }
 }
 

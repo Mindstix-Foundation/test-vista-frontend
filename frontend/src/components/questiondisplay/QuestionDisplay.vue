@@ -137,10 +137,7 @@
 
     <!-- Question Footer -->
     <footer v-if="showFooter" class="question-footer text-end mt-3">
-      <span v-if="topics && topics.length > 0">{{ getTopicsDisplay() }}</span>
-      <span v-if="topics && topics.length > 0 && questionType">&nbsp;|&nbsp;</span>
       <span v-if="questionType">{{ questionType }}</span>
-      <span v-if="isPreviousExam" class="badge bg-info ms-2">Board Exam</span>
     </footer>
   </div>
 </template>

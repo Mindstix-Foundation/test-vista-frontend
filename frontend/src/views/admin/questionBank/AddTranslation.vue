@@ -2,7 +2,31 @@
   <div class="container my-4">
     <div class="container">
       <div class="row g-2 justify-content-end">
-        <router-link class="btn btn-close" :to="{ name: 'translationPending' }" aria-label="Close"></router-link>
+        <!-- Update the router-link to preserve query parameters -->
+        <button 
+          class="btn btn-close" 
+          @click="() => {
+            const currentRoute = router.currentRoute.value;
+            console.log('AddTranslation - Close button clicked, current route:', currentRoute);
+            console.log('AddTranslation - Current query params:', currentRoute.query);
+            
+            const queryParams = {
+              page: currentRoute.query.returnPage,
+              sort: currentRoute.query.returnSort,
+              topic: currentRoute.query.returnTopic,
+              type: currentRoute.query.returnType,
+              search: currentRoute.query.returnSearch
+            };
+            
+            console.log('AddTranslation - Navigating back with params:', queryParams);
+            
+            router.push({ 
+              name: 'translationPending',
+              query: queryParams
+            });
+          }" 
+          aria-label="Close">
+        </button>
       </div>
       <div class="row justify-content-center align-items-center my-2">
         <div class="col col-12 col-sm-10">
@@ -247,40 +271,36 @@
                 <div class="mb-3">
                   <div class="row g-3">
                     <div class="col-md-6" v-for="(option, index) in originalOptions" :key="index">
-                      <!-- Original Option with Image (Left Side) -->
-                      <div class="card mb-2 border-light">
-                        <div class="card-body p-2">
-                          <div class="form-floating mb-2">
-                            <input type="text" :value="option" readonly class="form-control" :id="'option' + (index + 1) + 'Translate'">
-                            <label :for="'option' + (index + 1) + 'Translate'" class="small">
-                              Option {{ String.fromCharCode(65 + index) }}
-                              <span v-if="originalOptionIsCorrect[index]" class="badge bg-success ms-1">Correct</span>
-                            </label>
-                          </div>
+                      <!-- Original Option -->
+                      <div class="form-floating mb-2">
+                        <input type="text" :value="option" readonly class="form-control" :id="'option' + (index + 1) + 'Translate'">
+                        <label :for="'option' + (index + 1) + 'Translate'" class="small">
+                          Option {{ String.fromCharCode(65 + index) }}
+                          <span v-if="originalOptionIsCorrect[index]" class="badge bg-success ms-1">Correct</span>
+                        </label>
+                      </div>
 
-                          <!-- Original Option Image -->
-                          <div v-if="originalOptionImages && originalOptionImages[index]" class="option-image-container mb-2">
-                            <div v-if="optionImageLoading[index]" class="image-loading-overlay">
-                              <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                <span class="visually-hidden">Loading image...</span>
-                              </div>
-                            </div>
-                            <img
-                              :src="originalOptionImages[index]"
-                              class="option-image"
-                              alt="Option Image"
-                              @load="handleOptionImageLoad(index)"
-                              @error="handleOptionImageError(index)"
-                            />
-                            <div v-if="optionImageError[index]" class="image-error-message small">
-                              <i class="bi bi-exclamation-triangle"></i>
-                              Failed to load image
-                            </div>
+                      <!-- Original Option Image -->
+                      <div v-if="originalOptionImages && originalOptionImages[index]" class="option-image-container mb-2">
+                        <div v-if="optionImageLoading[index]" class="image-loading-overlay">
+                          <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading image...</span>
                           </div>
+                        </div>
+                        <img
+                          :src="originalOptionImages[index]"
+                          class="option-image"
+                          alt="Option Image"
+                          @load="handleOptionImageLoad(index)"
+                          @error="handleOptionImageError(index)"
+                        />
+                        <div v-if="optionImageError[index]" class="image-error-message small">
+                          <i class="bi bi-exclamation-triangle"></i>
+                          Failed to load image
                         </div>
                       </div>
 
-                      <!-- Translated Option with Image Upload (Right Side) -->
+                      <!-- Translated Option -->
                       <div class="form-floating mb-2">
                         <input type="text" v-model="translatedOptions[index]" class="form-control" :id="'option' + (index + 1)" :placeholder="'Option ' + (index + 1)">
                         <label :for="'option' + (index + 1)">
@@ -289,28 +309,34 @@
                           <span v-if="originalOptionIsCorrect[index]" class="badge bg-success ms-1">Correct</span>
                         </label>
                       </div>
+                      
+                      <!-- Image Upload Section -->
                       <!-- Only enable image upload if there's an original image for this option -->
-                      <div class="input-group input-group-sm mb-3" v-if="originalOptionImages && originalOptionImages[index]">
-                        <input type="file" class="form-control" :id="'optionImage' + (index + 1)" accept="image/*" @change="e => handleOptionImageChange(e, index)">
-                        <button v-if="optionImagePreviews[index]" class="btn btn-outline-secondary" type="button" @click="clearOptionImage(index)">
-                          <i class="bi bi-x-circle"></i>
-                        </button>
+                      <div v-if="originalOptionImages && originalOptionImages[index]" class="mb-2">
+                        <div class="input-group input-group-sm">
+                          <input type="file" class="form-control" :id="'optionImage' + (index + 1)" accept="image/*" @change="e => handleOptionImageChange(e, index)">
+                          <button v-if="optionImagePreviews[index]" class="btn btn-outline-secondary" type="button" @click="clearOptionImage(index)">
+                            <i class="bi bi-x-circle"></i>
+                          </button>
+                        </div>
+
+                        <!-- Preview of selected image for translation -->
+                        <div v-if="optionImagePreviews[index]" class="option-image-preview-container mt-2">
+                          <img :src="optionImagePreviews[index]" class="option-image-preview" alt="Option Image Preview">
+                          <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearOptionImage(index)">
+                            <i class="bi bi-x"></i>
+                          </button>
+                        </div>
                       </div>
                       <!-- Disabled image upload with explanation if original has no image -->
-                      <div class="input-group input-group-sm mb-3" v-else>
-                        <input type="file" class="form-control" disabled title="Original option does not have an image. You can only upload images for options that have images in the original question.">
-                        <span class="input-group-text text-muted small">
-                          <i class="bi bi-info-circle me-1"></i>
-                          No original image
-                        </span>
-                      </div>
-
-                      <!-- Preview of selected image for translation -->
-                      <div v-if="optionImagePreviews[index]" class="option-image-preview-container mb-3">
-                        <img :src="optionImagePreviews[index]" class="option-image-preview" alt="Option Image Preview">
-                        <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearOptionImage(index)">
-                          <i class="bi bi-x"></i>
-                        </button>
+                      <div v-else class="mb-2">
+                        <div class="input-group input-group-sm">
+                          <input type="file" class="form-control" disabled title="Original option does not have an image. You can only upload images for options that have images in the original question.">
+                          <span class="input-group-text text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            No original image
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1218,13 +1244,27 @@ async function saveTranslation() {
 
     console.log('Translation saved successfully:', translationResponse.data);
 
-    // Navigate back to translation pending page with success query param
+    // Get the current route query parameters before navigating back
+    const currentRoute = router.currentRoute.value;
+    console.log('AddTranslation - Current route query params:', currentRoute.query);
+
+    const queryParams = {
+      success: 'true',
+      message: 'Translation added successfully',
+      // Preserve filter states from return parameters
+      page: currentRoute.query.returnPage || undefined,
+      sort: currentRoute.query.returnSort || undefined,
+      topic: currentRoute.query.returnTopic || undefined,
+      type: currentRoute.query.returnType || undefined,
+      search: currentRoute.query.returnSearch || undefined
+    };
+
+    console.log('AddTranslation - Navigating back with query params:', queryParams);
+
+    // Navigate back to translation pending page with all query params
     router.push({
       name: 'translationPending',
-      query: {
-        success: 'true',
-        message: 'Translation added successfully'
-      }
+      query: queryParams
     });
   } catch (error: unknown) {
     console.error('Error saving translation:', error);
@@ -1912,6 +1952,63 @@ onUnmounted(() => {
   
   .option-image {
     max-height: 120px;
+  }
+  
+  .option-image-container,
+  .option-image-preview-container {
+    min-height: 80px;
+  }
+}
+
+/* MCQ specific styles */
+.option-image-container,
+.option-image-preview-container {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  min-height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #dee2e6;
+}
+
+.option-image-preview-container {
+  border: 1px dashed #ced4da;
+}
+
+.option-image,
+.option-image-preview {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.form-floating {
+  margin-bottom: 0;
+}
+
+.card {
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 0;
+}
+
+.border-bottom {
+  border-bottom: 1px solid rgba(0,0,0,.125) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .option-image,
+  .option-image-preview {
+    max-height: 100px;
   }
   
   .option-image-container,
