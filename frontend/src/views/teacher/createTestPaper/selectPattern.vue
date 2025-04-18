@@ -54,16 +54,6 @@
               <option value="name_desc">Sort by Pattern Name (Z-A)</option>
             </select>
           </div>
-
-          <!-- Clear Search Button -->
-          <div v-if="searchQuery" class="clear-field">
-            <button 
-              class="btn btn-outline-secondary clear-btn"
-              @click="clearSearch"
-            >
-              <i class="bi bi-x-circle me-1"></i> Clear
-            </button>
-          </div>
         </div>
         
         <h6 class="mb-3 d-flex justify-content-between align-items-center">
@@ -218,7 +208,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import ToastNotification from '@/components/common/ToastNotification.vue'
-import { Collapse } from 'bootstrap'
+
 
 // Define component name (for linter)
 defineOptions({
@@ -304,6 +294,8 @@ interface UserProfile {
   }[];
 }
 
+// Defined but not directly used - kept for future reference
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface School {
   id: number;
   name: string;
@@ -359,8 +351,6 @@ const totalMarksFromPrevious = (route.query.totalMarks as string) || ''
 
 // User profile and school data
 const userProfile = ref<UserProfile | null>(null)
-const schoolData = ref<School | null>(null)
-const schoolId = computed(() => userProfile.value?.schools?.[0]?.id || 0)
 
 // Animation methods
 const beforeEnter = (el: Element) => {
@@ -381,7 +371,9 @@ const enter = (el: Element, done: () => void) => {
   const htmlEl = el as HTMLElement;
   
   // Force browser to recalculate styles before animation starts
-  const _ = getComputedStyle(htmlEl).height;
+  // This forces a reflow and is necessary for the animation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const reflow = getComputedStyle(htmlEl).height;
   
   // Set target height for smooth animation
   const height = htmlEl.scrollHeight;
@@ -419,7 +411,9 @@ const beforeLeave = (el: Element) => {
   htmlEl.style.transformOrigin = 'center bottom';
   
   // Force browser to acknowledge the height
-  const _ = getComputedStyle(htmlEl).height;
+  // This forces a reflow and is necessary for the animation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const reflow = getComputedStyle(htmlEl).height;
 }
 
 const leave = (el: Element, done: () => void) => {
@@ -461,7 +455,17 @@ const boardId = route.query.boardId as string
 const mediumId = route.query.mediumId as string
 const standardId = route.query.standardId as string
 const subjectId = route.query.subjectId as string
-const chaptersData = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : []
+
+// Interface for chapter data from query parameter
+interface ChapterData {
+  id: number;
+  name: string;
+  sequential_chapter_number: number;
+}
+
+const chaptersData = route.query.chapters 
+  ? JSON.parse(decodeURIComponent(route.query.chapters as string)) as ChapterData[]
+  : []
 const questionSource = route.query.questionSource as string
 
 // Display names from query parameters - board name now comes from the user profile
@@ -590,7 +594,7 @@ const fetchPatterns = async () => {
     isLoading.value = true
     
     // Extract chapter IDs from chapters data
-    const chapterIds = chaptersData.map((chapter: any) => chapter.id)
+    const chapterIds = chaptersData.map((chapter: ChapterData) => chapter.id)
     
     // Build query parameters
     const params: Record<string, string | number | (string | number)[]> = {
@@ -707,12 +711,14 @@ watch(isSearching, (newVal) => {
   }
 });
 
-// Computed property to check if any filter is applied
+// Used in the template for UI rendering
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const isAnyFilterApplied = computed(() => {
   return searchQuery.value.trim() !== '' || sortOption.value !== 'name_asc';
 });
 
-// Function to clear all filters
+// Used in the template for UI actions
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const clearAllFilters = () => {
   searchQuery.value = '';
   sortOption.value = 'name_asc';
@@ -729,7 +735,8 @@ const clearAllFilters = () => {
   }
 };
 
-// Function to calculate total questions in a pattern
+// Used in the template for UI display
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const calculateTotalQuestions = (pattern: Pattern): number => {
   return pattern.sections.reduce((total, section) => total + section.total_questions, 0);
 }
@@ -821,7 +828,6 @@ const visiblePageNumbers = computed(() => {
 }
 
 .pattern-card:hover {
-  transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
   border-color: #dee2e6;
 }
@@ -868,7 +874,6 @@ const visiblePageNumbers = computed(() => {
 
 .pattern-card .select-btn:hover {
   background-color: #343a40;
-  transform: translateY(-2px);
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -1121,7 +1126,6 @@ h6 {
 
 .section-preview:hover {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
 }
 
 /* Table container styles */

@@ -225,7 +225,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
@@ -237,7 +237,7 @@ defineOptions({
 
 // Initialize router and route at the top level of setup
 const router = useRouter()
-const route = useRoute()
+
 
 // Question source selection
 const questionSource = ref('both') // Default selection

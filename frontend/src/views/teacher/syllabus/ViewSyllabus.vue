@@ -399,11 +399,11 @@ ol.list-group ol > li::before {
   padding: 0.5rem 0;
   display: flex;
   align-items: center;
-  transition: transform 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .toggle-card:hover {
-  transform: translateX(3px);
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 .toggle-icon {
@@ -452,7 +452,6 @@ ol.list-group ol > li::before {
 /* Topic item hover effect */
 .list-group-item.list-group-item-action.py-2.fs-5:hover {
   background-color: rgba(0, 0, 0, 0.02);
-  transform: translateX(5px);
 }
 
 /* Back to top button */
@@ -473,7 +472,6 @@ ol.list-group ol > li::before {
 #backToTop:hover {
   background-color: #23272b;
   border-color: #23272b;
-  transform: translateY(-3px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
