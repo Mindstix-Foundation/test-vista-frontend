@@ -258,6 +258,11 @@ const routes: RouteRecordRaw[] = [
         // This component would need to be created in a future task
         component: () => import('@/views/teacher/createTestPaper/createTestPaperDetail.vue'),
       },
+      {
+        path: 'test-paper-preview',
+        name: 'testPaperPreview',
+        component: () => import('@/views/teacher/createTestPaper/testPaperPreview.vue'),
+      },
     ],
   },
 ]

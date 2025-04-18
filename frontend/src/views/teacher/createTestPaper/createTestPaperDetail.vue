@@ -226,9 +226,8 @@
                                             <div class="ms-4 d-flex align-items-center justify-content-between flex-column flex-md-row">
                                               <span class="mb-2 mb-md-0 question-type-name">{{ item.number }}) {{ item.typeName }}</span>
                                               <div class="position-relative ms-md-auto">
-                                                <span class="chapter-name-text" @click="handleChapterSelection(section, item.number)" role="button">
+                                                <span class="chapter-name-text">
                                                   {{ getAllocatedChapterName(section.id, item.number) }}
-                                                  <i class="bi bi-pencil-fill ms-1 small"></i>
                                                 </span>
                                               </div>
                                             </div>
@@ -313,9 +312,8 @@
                                             <div class="ms-4 d-flex align-items-center justify-content-between flex-column flex-md-row">
                                               <span class="mb-2 mb-md-0 question-type-name">{{ qType.seqencial_subquestion_number || '-' }}) {{ qType.question_type?.type_name || 'Unknown Type' }}</span>
                                               <div class="position-relative ms-md-auto">
-                                                <span class="chapter-name-text" @click="handleChapterSelection(section, qType.seqencial_subquestion_number)" role="button">
+                                                <span class="chapter-name-text">
                                                   {{ getAllocatedChapterName(section.id, qType.seqencial_subquestion_number) }}
-                                                  <i class="bi bi-pencil-fill ms-1 small"></i>
                                                 </span>
                                               </div>
                                             </div>
@@ -415,7 +413,8 @@
                 type="submit"
                 class="btn btn-dark"
                 id="createTestPaperBtn"
-                :disabled="!isMarksDistributionValid || hasZeroMarksChapters"
+                :disabled="!isMarksDistributionValid || hasZeroMarksChapters || !hasGeneratedDistribution"
+                :title="getCreateButtonTooltip()"
               >
                 Create Test Paper
               </button>
@@ -650,6 +649,9 @@ let allocationUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
 // Add a flag to track manual marks changes
 const marksManuallyChanged = ref(false);
 
+// Add a new state variable to track if the user has generated distribution after changes
+const hasGeneratedDistribution = ref(false);
+
 // Method to update selected chapter for a question
 const updateSelectedChapter = (sectionId: number, questionIndex: number, chapterId: number) => {
   const key = `${sectionId}-${questionIndex}`;
@@ -858,20 +860,27 @@ const parseChaptersFromQuery = () => {
  * This is called after pattern details are loaded to pre-select chapters based on marks distribution
  */
 const initializeChapterSelections = () => {
-  if (!patternDetails.value || !patternDetails.value.sections) {
+  console.log('Initializing chapter selections...');
+  
+  // Get chapters sorted by marks descending
+  const sortedChapters = [...chapters.value].sort((a, b) => b.marks - a.marks);
+  
+  if (sortedChapters.length === 0) {
+    console.warn('No chapters available to initialize selections');
     return;
   }
   
-  console.log('Initializing chapter selections...');
+  // Get pattern sections
+  const sections = patternDetails.value?.sections || [];
+  if (sections.length === 0) {
+    console.warn('No pattern sections available to initialize selections');
+    return;
+  }
   
-  // Set flag to prevent watch handler from triggering API calls during initialization
-  pendingAllocationUpdate.value = true;
+  console.log('Initializing selections for sections:', sections);
   
-  // Sort chapters by marks (highest first) to prioritize chapters with more marks
-  const sortedChapters = [...chapters.value].sort((a, b) => b.marks - a.marks);
-  
-  // For each section in the pattern
-  patternDetails.value.sections.forEach(section => {
+  // For each section, initialize the question-chapter assignments
+  sections.forEach(section => {
     // For sections with only one question type
     if (hasOnlyOneQuestionType(section)) {
       // Assign each numbered question to a chapter, giving priority to chapters with more marks
@@ -921,6 +930,9 @@ const initializeChapterSelections = () => {
     if (testPaperAllocation.value?.chapterMarks) {
       updateChapterMarksFromAllocation();
       
+      // Set hasGeneratedDistribution to true since we just loaded allocation data
+      hasGeneratedDistribution.value = true;
+      
       // Update the available chapters for current view
       if (currentQuestionTypeId.value) {
         fetchAvailableChapters(currentQuestionTypeId.value);
@@ -934,34 +946,26 @@ const initializeChapterSelections = () => {
   });
 }
 
-// Add a new state variable for test paper allocation
-const testPaperAllocation = ref<any>(null)
+// Raw API responses data storage
+const testPaperAllocation = ref<any>(null);
+const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null);
 
 // Add a method to fetch test paper allocation
 const fetchTestPaperAllocation = async () => {
-  if (!patternId || chapters.value.length === 0) {
-    console.warn('Cannot fetch allocation: Pattern ID or chapters missing');
-    return;
-  }
-  
   try {
     isLoading.value = true;
-    console.log('Fetching test paper allocation...');
     
-    // Get chapter IDs from the chapters state
-    const chapterIds = chapters.value.map(chapter => chapter.id);
+    // Get chapter IDs
+    const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
     // Get medium ID from route or profile
     const mediumId = route.query.mediumId || 
                     userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
                     '1';
     
-    // Log the request parameters
-    console.log('Allocation request params:', {
-      patternId,
-      chapterIds,
-      mediumId
-    });
+    // Check if chapter assignments can be included
+    // (they should only be included if at least one assignment exists)
+    console.log('Selected chapters for allocation:', selectedChapters.value);
     
     // Call the API endpoint with the current selected chapters
     const response = await axiosInstance.get('/test-paper/allocation', {
@@ -984,6 +988,11 @@ const fetchTestPaperAllocation = async () => {
     if (response.data) {
       console.log('Allocation API response:', response.data);
       testPaperAllocation.value = response.data;
+      
+      // Store the allocation data and update last used endpoint
+      localStorage.setItem('allocationData', JSON.stringify(response.data));
+      lastUsedEndpoint.value = 'allocation';
+      localStorage.setItem('lastUsedEndpoint', 'allocation');
       
       // Update chapter marks based on the allocation
       if (testPaperAllocation.value?.chapterMarks) {
@@ -1094,6 +1103,9 @@ onMounted(async () => {
     
     // Initialize used questions count after chapter selections
     updateUsedQuestionsCount();
+    
+    // Set initial state of hasGeneratedDistribution based on whether we have allocation data
+    hasGeneratedDistribution.value = false;
   } catch (error) {
     console.error('Error during component initialization:', error);
     // Reset the pending flag even if there was an error
@@ -1101,7 +1113,7 @@ onMounted(async () => {
   }
 });
 
-// Form submission handler (currently disabled)
+// Form submission handler
 const createTestPaper = () => {
   if (!isMarksDistributionValid.value) {
     if (totalAssignedMarks.value > absoluteMarks.value) {
@@ -1129,11 +1141,32 @@ const createTestPaper = () => {
     };
   });
   
-  // This functionality will be implemented in the future
+  // Log data for debugging
   console.log('Creating test paper with question source:', questionSource.value)
   console.log('Chapters with marks distribution:', chapters.value)
   console.log('Pattern details:', patternDetails.value)
   console.log('Question assignments:', questionAssignments)
+  
+  // Prepare query parameters to pass to the test paper preview page
+  const queryParams = {
+    // Display names for UI
+    board: encodeURIComponent(boardName.value),
+    medium: encodeURIComponent(mediumName.value),
+    standard: encodeURIComponent(standardName.value),
+    subject: encodeURIComponent(subjectName.value),
+    patternName: encodeURIComponent(patternName.value),
+    
+    // Other details
+    totalMarks: route.query.totalMarks as string, // Use original totalMarks from route instead of absoluteMarks
+    // Add last used endpoint info
+    lastUsedEndpoint: lastUsedEndpoint.value
+  }
+  
+  // Navigate to the test paper preview page
+  router.push({
+    name: 'testPaperPreview',
+    query: queryParams
+  })
 }
 
 // Fetch user profile to get school ID
@@ -1245,6 +1278,9 @@ const decrementMarks = (chapter: ChapterWithMarks) => {
     // Update the marks
     chapter.marks = getPreviousValidMark(chapter);
     
+    // Reset the generated distribution flag since marks were changed manually
+    hasGeneratedDistribution.value = false;
+    
     // Reset the flags after a short delay to allow other changes
     // without triggering multiple API calls
     setTimeout(() => {
@@ -1263,6 +1299,9 @@ const incrementMarks = (chapter: ChapterWithMarks) => {
     
     // Update the marks
     chapter.marks = getNextValidMark(chapter);
+    
+    // Reset the generated distribution flag since marks were changed manually
+    hasGeneratedDistribution.value = false;
     
     // Reset the flags after a short delay to allow other changes
     // without triggering multiple API calls
@@ -1859,6 +1898,9 @@ const refreshChapterMarksDistribution = async () => {
     // Fetch new allocation from API
     await fetchTestPaperAllocation();
     
+    // Set flag to indicate user has generated distribution after changes
+    hasGeneratedDistribution.value = true;
+    
     // Reset the pending flag AFTER everything is complete
     setTimeout(() => {
       pendingAllocationUpdate.value = false;
@@ -1872,48 +1914,25 @@ const refreshChapterMarksDistribution = async () => {
   }
 };
 
-// Add a function to generate chapter marks distribution
+// Function to generate marks distribution
 const generate = async () => {
-  console.log('Generate button clicked - checking marks allocation');
-  
-  // Validate marks allocation before proceeding
-  if (totalAssignedMarks.value !== absoluteMarks.value) {
-    // Display an error message if marks don't match
-    const errorToast = document.createElement('div');
-    errorToast.className = 'alert alert-danger alert-dismissible fade show fixed-top mx-auto mt-3';
-    errorToast.style.width = '350px';
-    errorToast.style.zIndex = '9999';
-    errorToast.innerHTML = `
-      <strong>Error!</strong> Assigned marks (${totalAssignedMarks.value}) must equal total marks (${absoluteMarks.value}).
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.body.appendChild(errorToast);
-    
-    // Remove the toast after 3 seconds
-    setTimeout(() => {
-      if (errorToast.parentNode) {
-        document.body.removeChild(errorToast);
-      }
-    }, 3000);
-    
-    return; // Exit early if validation fails
-  }
-  
-  // Show loading state
+  if (isLoading.value) return;
   isLoading.value = true;
   
   try {
-    // Get the medium ID from route or profile
+    // Get chapter IDs with marks
+    const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
+    
+    // Get medium ID from route or profile
     const mediumId = route.query.mediumId || 
                     userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
                     '1';
     
-    // Get chapter IDs and their marks
-    const chapterIds = chapters.value.map(chapter => chapter.id);
+    // Extract just the mark values as an array of numbers (not objects)
+    // This is what the API expects for requestedMarks
     const requestedMarks = chapters.value.map(chapter => chapter.marks);
     
-    // Log the parameters for debugging
-    console.log('Calling chapter marks distribution API with params:', {
+    console.log('Generating marks distribution with:', {
       patternId,
       chapterIds,
       mediumIds: [mediumId],
@@ -1936,6 +1955,14 @@ const generate = async () => {
       
       // Update test paper allocation with response data
       testPaperAllocation.value = response.data;
+      
+      // Set flag to indicate user has generated distribution after changes
+      hasGeneratedDistribution.value = true;
+      
+      // Store the distribute data and update last used endpoint
+      localStorage.setItem('distributeData', JSON.stringify(response.data));
+      lastUsedEndpoint.value = 'distribute';
+      localStorage.setItem('lastUsedEndpoint', 'distribute');
       
       // Update question selections based on the new allocation
       if (testPaperAllocation.value.sectionAllocations) {
@@ -2009,6 +2036,34 @@ const updateSelectedChaptersFromAllocation = () => {
   pendingAllocationUpdate.value = false;
   
   console.log('Updated selected chapters from allocation');
+};
+
+// Watch for changes to marks and reset the generated flag
+watch(
+  () => chapters.value.map(chapter => chapter.marks),
+  () => {
+    if (!pendingAllocationUpdate.value && !isLoading.value) {
+      console.log('Chapter marks changed by user, resetting hasGeneratedDistribution flag');
+      hasGeneratedDistribution.value = false;
+    }
+  },
+  { deep: true }
+);
+
+// Method to get tooltip text for Create Test Paper button
+const getCreateButtonTooltip = (): string => {
+  if (!isMarksDistributionValid.value) {
+    if (totalAssignedMarks.value > absoluteMarks.value) {
+      return `Total assigned marks (${totalAssignedMarks.value}) exceed the required ${absoluteMarks.value} marks`;
+    } else {
+      return `Total assigned marks must equal ${absoluteMarks.value} marks`;
+    }
+  } else if (hasZeroMarksChapters.value) {
+    return 'Some chapters have 0 marks';
+  } else if (!hasGeneratedDistribution.value) {
+    return 'Click on Generate or Generate Equally after changing marks';
+  }
+  return 'Create test paper';
 };
 
 </script>
