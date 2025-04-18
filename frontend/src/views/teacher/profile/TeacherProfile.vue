@@ -480,7 +480,6 @@ onMounted(async () => {
 
 .subject-badge:hover {
   background-color: #e9ecef;
-  transform: translateY(-2px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
