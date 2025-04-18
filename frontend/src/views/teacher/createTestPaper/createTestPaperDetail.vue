@@ -440,6 +440,7 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 
+
 // User profile and school data interfaces
 interface UserProfile {
   id: number;
@@ -1901,6 +1902,11 @@ const refreshChapterMarksDistribution = async () => {
     // Set flag to indicate user has generated distribution after changes
     hasGeneratedDistribution.value = true;
     
+    // Update question selections based on the new allocation
+    if (testPaperAllocation.value?.sectionAllocations) {
+      updateSelectedChaptersFromAllocation();
+    }
+    
     // Reset the pending flag AFTER everything is complete
     setTimeout(() => {
       pendingAllocationUpdate.value = false;
@@ -2035,6 +2041,19 @@ const updateSelectedChaptersFromAllocation = () => {
   // Reset the pending flag
   pendingAllocationUpdate.value = false;
   
+  // Trigger UI refresh for the pattern card
+  setTimeout(() => {
+    console.log('Pattern card UI refresh triggered');
+    // Force UI update for the pattern card sections
+    const sections = patternDetails.value?.sections || [];
+    sections.forEach(section => {
+      if (questionTypesVisibility.value[section.id]) {
+        // If section is already expanded, refresh its question types
+        selectQuestionTypeForSection(section);
+      }
+    });
+  }, 100);
+  
   console.log('Updated selected chapters from allocation');
 };
 
@@ -2084,7 +2103,6 @@ h4 {
   padding: 0.15rem 0.35rem;
   border-radius: 3px;
   display: inline-block;
-  color: #6c757d;
 }
 
 /* Button styling */
