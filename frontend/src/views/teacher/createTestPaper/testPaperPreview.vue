@@ -17,40 +17,67 @@
           <div class="row justify-content-center align-items-center g-2 mb-4">
             <div class="col-12 col-sm-4">
               <h5 class="text-start m-0 fw-bolder">TEST PAPER PREVIEW</h5>
-              <!-- Small screen only - Change All Questions button -->
+              <!-- Small screen only - buttons for mobile -->
               <div class="d-sm-none mt-3">
+                <div class="row g-2">
+                  <div class="col-6">
                 <button 
-                  class="btn btn-dark w-100" 
+                      class="btn btn-custom w-100 d-flex justify-content-center align-items-center"
                   id="changeAllButtonMobile" 
                   @click="changeAllQuestions"
                   :disabled="isChangingAllQuestions"
                 >
                   <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   <i v-else class="bi bi-arrow-clockwise me-2"></i> 
-                  {{ isChangingAllQuestions ? 'Changing Questions...' : 'Change All Questions' }}
+                      <span>{{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}</span>
                 </button>
+                  </div>
+                  <div class="col-6">
+                    <button 
+                      class="btn btn-custom w-100 d-flex justify-content-center align-items-center"
+                      id="changeAllLayoutButtonMobile" 
+                      @click="(event) => showGlobalLayoutOptions(event)"
+                    >
+                      <i class="bi bi-grid me-2"></i> <span>Option Style</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="col-12 col-sm-8 dynamic-style text-end">
               <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
-                <!-- Only show these buttons on large screens -->
-                <button class="btn btn-dark d-none d-sm-inline-block" @click="printPage">
-                  <i class="bi bi-printer me-1"></i> Print
-                </button>
-                <button class="btn btn-dark d-none d-sm-inline-block" @click="savePage">
-                  <i class="bi bi-save me-1"></i> Save
-                </button>
-                <!-- Only show this button on large screens -->
+                <!-- Buttons for desktop/tablet screens -->
+                <div class="d-none d-sm-flex gap-2">
                 <button 
-                  class="btn btn-dark d-none d-sm-inline-block" 
-                  id="changeAllButton" 
+                    class="btn btn-custom" 
                   @click="changeAllQuestions"
                   :disabled="isChangingAllQuestions"
                 >
                   <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   <i v-else class="bi bi-arrow-clockwise me-2"></i> 
-                  {{ isChangingAllQuestions ? 'Changing Questions...' : 'Change All Questions' }}
+                    {{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}
                 </button>
+                  <button 
+                    class="btn btn-custom" 
+                    @click="(event) => showGlobalLayoutOptions(event)"
+                  >
+                    <i class="bi bi-grid me-1"></i> Option Style
+                  </button>
+                </div>
+                <div class="d-none d-sm-flex gap-2">
+                  <button 
+                    class="btn btn-dark"
+                    @click="printPage"
+                  >
+                    <i class="bi bi-printer me-1"></i> Print
+                  </button>
+                  <button 
+                    class="btn btn-dark" 
+                    @click="savePage"
+                  >
+                    <i class="bi bi-save me-1"></i> Save
+                  </button>
+                </div>
                 <button type="button" class="btn btn-close ms-2 align-self-center d-none d-sm-inline-block" aria-label="Close" @click="goBack"></button>
               </div>
             </div>
@@ -141,16 +168,23 @@
       >
         <!-- Section Header -->
         <div class="section-header">
-          <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong>   [ Any {{ section.mandotory_questions }} ]</div>
+          <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
          
-          <div class="section-marks"><strong>{{ section.totalMarks }} Marks</strong></div>
+          <div class="section-marks">
+            <strong>
+              <span class="nowrap">
+                {{ section.totalMarks }} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
+              </span>
+            </strong>
+          </div>
         </div>
         
         <!-- Questions List - Plain A4 style -->
         <div class="section-content">
           <div class="question-list">
             <div v-for="(question, questionIndex) in section.questions" :key="questionIndex" class="question-item">
-              <div class="question-wrapper">
+              <div class="question-wrapper" :id="`question-${sectionIndex}-${questionIndex}`">
+                <div class="d-flex w-100">
                 <!-- Question Content -->
                 <div class="question-content">
                   <div class="question-text">
@@ -158,17 +192,17 @@
                     <span v-if="question.questionType" class="question-type-badge">
                       {{ question.questionType }}
                     </span>
-                  </div>
-                  
-                  <!-- MCQ Options -->
-                  <div v-if="question.options && question.options.length > 0" class="options-container mt-2">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                      <div class="options-title">Options</div>
-                      <button class="edit-icon" @click="(event) => showLayoutOptions(sectionIndex, questionIndex, event)" title="Change options layout">
-                        <i class="bi bi-pencil"></i>
+                      <button v-if="question.options && question.options.length > 0" 
+                              class="edit-icon ms-2" 
+                              @click="(event) => showLayoutOptions(sectionIndex, questionIndex, event)" 
+                              title="Change options layout"
+                              style="vertical-align: middle; margin-top: -2px;">
+                        <i class="bi bi-grid"></i>
                       </button>
                     </div>
                     
+                    <!-- MCQ Options -->
+                    <div v-if="question.options && question.options.length > 0" class="options-container">
                     <!-- Layout selector popup -->
                     <div v-if="activeLayoutSelector.sectionIndex === sectionIndex && activeLayoutSelector.questionIndex === questionIndex" 
                         class="layout-selector"
@@ -269,11 +303,12 @@
                 <div class="question-marks">
                   <div class="marks-row">
                     <span class="marks fw-bold me-2">{{ question.marks }}</span>
-                    <button class="btn btn-sm btn-outline-dark shuffle-button" @click="changeQuestion(sectionIndex, questionIndex)">
+                      <button class="btn btn-sm btn-custom shuffle-button" @click="changeQuestion(sectionIndex, questionIndex)">
                       <span class="d-inline-flex align-items-center">
-                        <i class="bi bi-arrow-clockwise me-1"></i><span>Change</span>
+                          <i class="bi bi-arrow-clockwise me-md-1"></i><span class="d-none d-sm-inline">Change</span>
                       </span>
                     </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -286,6 +321,13 @@
       <!-- Back to top button -->
       <div id="backToTop" class="d-flex" @click="scrollToTop" style="display: none !important;">
         <i class="bi bi-arrow-up"></i>
+      </div>
+      
+      <!-- Simple toast notification for layout changes -->
+      <div id="layoutToast" class="layout-toast" :class="{ 'show-toast': showLayoutToast }">
+        <div class="layout-toast-content">
+          <i class="bi bi-check-circle me-2"></i> {{ layoutToastMessage }}
+        </div>
       </div>
       
       <!-- Fixed back button for mobile only -->
@@ -304,12 +346,71 @@
           </button>
         </div>  
       </div>
+      
+      <!-- Global Layout Selector -->
+      <div v-if="globalLayoutSelectorVisible" 
+           class="global-layout-selector"
+           ref="globalLayoutSelectorRef"
+           @click.stop>
+        <div class="layout-options">
+          <div class="layout-option-title">Select Layout for All MCQ Options</div>
+          <div class="layout-cards">
+            <div class="layout-option">
+              <div 
+                class="layout-card" 
+                :class="{ 'active': globalSelectedLayout === 'row' }"
+                @click="applyGlobalLayout('row')"
+              >
+                <div class="layout-preview row-layout">
+                  <div>A</div><div>B</div><div>C</div><div>D</div>
+                </div>
+              </div>
+              <div class="layout-label">Single Row</div>
+            </div>
+            
+            <div class="layout-option">
+              <div 
+                class="layout-card" 
+                :class="{ 'active': globalSelectedLayout === 'grid' }"
+                @click="applyGlobalLayout('grid')"
+              >
+                <div class="layout-preview grid-layout">
+                  <div>A</div><div>B</div>
+                  <div>C</div><div>D</div>
+                </div>
+              </div>
+              <div class="layout-label">2x2 Grid</div>
+            </div>
+            
+            <div class="layout-option">
+              <div 
+                class="layout-card" 
+                :class="{ 'active': globalSelectedLayout === 'column' }"
+                @click="applyGlobalLayout('column')"
+              >
+                <div class="layout-preview column-layout">
+                  <div>A</div>
+                  <div>B</div>
+                  <div>C</div>
+                  <div>D</div>
+                </div>
+              </div>
+              <div class="layout-label">Single Column</div>
+            </div>
+          </div>
+          <div class="text-center mt-3">
+            <button class="btn btn-sm btn-outline-secondary" @click="hideGlobalLayoutOptions">
+              Cancel
+            </button>
+          </div>
+        </div>  
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 
@@ -357,6 +458,35 @@ const showLayoutOptions = (sectionIndex: number, questionIndex: number, event: E
   
   // Add click outside event listener after the DOM updates
   nextTick(() => {
+    // Get the clicked element (pencil icon)
+    const clickedIcon = event.target as HTMLElement;
+    const iconButton = clickedIcon.closest('.edit-icon') as HTMLElement;
+    
+    // Get the layout selector element
+    const layoutSelector = document.querySelector('.layout-selector') as HTMLElement;
+    
+    // If both elements exist, position the layout selector relative to the icon
+    if (iconButton && layoutSelector) {
+      const iconRect = iconButton.getBoundingClientRect();
+      
+      // Position the layout selector below the icon
+      layoutSelector.style.position = 'fixed';
+      layoutSelector.style.top = `${iconRect.bottom + 5}px`;
+      layoutSelector.style.left = `${iconRect.left - layoutSelector.offsetWidth / 2 + iconRect.width / 2}px`;
+      
+      // Make sure it doesn't go off-screen on the right
+      const rightEdge = layoutSelector.getBoundingClientRect().right;
+      const windowWidth = window.innerWidth;
+      if (rightEdge > windowWidth - 10) {
+        layoutSelector.style.left = `${windowWidth - layoutSelector.offsetWidth - 10}px`;
+      }
+      
+      // Make sure it doesn't go off-screen on the left
+      if (parseFloat(layoutSelector.style.left) < 10) {
+        layoutSelector.style.left = '10px';
+      }
+    }
+    
     document.addEventListener('click', handleClickOutside)
   })
 }
@@ -382,6 +512,15 @@ const handleClickOutside = (event: MouseEvent) => {
 // Hide layout options
 const hideLayoutOptions = () => {
   activeLayoutSelector.value = { sectionIndex: -1, questionIndex: -1 }
+  
+  // Reset any inline styles on the layout selector
+  const layoutSelector = document.querySelector('.layout-selector') as HTMLElement;
+  if (layoutSelector) {
+    layoutSelector.style.position = '';
+    layoutSelector.style.top = '';
+    layoutSelector.style.left = '';
+  }
+  
   // Remove the click outside event listener
   document.removeEventListener('click', handleClickOutside)
 }
@@ -459,8 +598,6 @@ const cancelEditingTime = () => {
 
 // Get details from query parameters
 const patternId = computed(() => route.query.patternId as string || '1')
-const boardName = computed(() => decodeURIComponent(route.query.board as string || 'Not Selected'))
-const mediumName = computed(() => decodeURIComponent(route.query.medium as string || 'Not Selected'))
 const standardName = computed(() => decodeURIComponent(route.query.standard as string || 'Not Selected'))
 const subjectName = computed(() => decodeURIComponent(route.query.subject as string || 'Not Selected'))
 const patternName = computed(() => decodeURIComponent(route.query.patternName as string || 'Mid Term Paper'))
@@ -518,13 +655,19 @@ const fetchUserProfile = async () => {
 }
 
 // API Data interfaces
+interface ImageData {
+  id?: number;
+  url?: string;
+  alt?: string;
+}
+
 interface McqOption {
   id: number;
   question_text_id: number;
   option_text: string;
   image_id: number | null;
   is_correct: boolean;
-  image: any;
+  image: ImageData | null;
 }
 
 interface MatchPair {
@@ -534,8 +677,8 @@ interface MatchPair {
   right_text: string;
   left_image_id: number | null;
   right_image_id: number | null;
-  left_image: any;
-  right_image: any;
+  left_image: ImageData | null;
+  right_image: ImageData | null;
 }
 
 interface QuestionText {
@@ -543,14 +686,20 @@ interface QuestionText {
   question_id: number;
   image_id: number | null;
   question_text: string;
-  image: any;
+  image: ImageData | null;
   mcq_options: McqOption[];
   match_pairs: MatchPair[];
-  topic: {
+  topic?: {
     id: number;
     name: string;
     chapter_id: number;
   };
+  question_text_topics?: {
+    id: number;
+    question_text_id: number;
+    question_topic_id: number;
+    instruction_medium_id: number;
+  }[];
 }
 
 interface Question {
@@ -629,6 +778,7 @@ interface DisplayQuestion {
     rightText: string;
   }[];
   originalQuestion: Question;
+  topicId?: number; // Add topic ID for future reference
 }
 
 interface DisplaySection {
@@ -644,13 +794,17 @@ interface DisplaySection {
 // Test paper sections after API transformation
 const testPaperSections = ref<DisplaySection[]>([])
 
-// Raw data from API
-const apiData = ref<ApiResponse | null>(null)
+// Global layout selector state
+const globalLayoutSelectorVisible = ref(false)
+const globalLayoutSelectorRef = ref<HTMLElement | null>(null)
+const globalSelectedLayout = ref(DEFAULT_OPTION_LAYOUT)
 
 // Add state to track data from both endpoints and which was last used
-const allocationData = ref<any>(null)
-const distributeData = ref<any>(null)
+const allocationData = ref<ApiResponse | null>(null)
+const distributeData = ref<ApiResponse | null>(null)
 const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null)
+// Store raw API data for debugging
+const apiData = ref<ApiResponse | null>(null)
 
 // Function to get the latest data based on which endpoint was last used
 const getLatestData = () => {
@@ -712,7 +866,7 @@ const loadStoredData = () => {
 };
 
 // Fetch test paper questions from API
-const fetchTestPaperQuestions = async (storedData?: any) => {
+const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
   try {
     // Use stored data if available, otherwise create request data
     let requestData;
@@ -826,6 +980,22 @@ const fetchTestPaperQuestions = async (storedData?: any) => {
     
     if (response.data) {
       apiData.value = response.data
+      console.log('API Response Data Structure:', response.data)
+      
+      // Check for question_text_topics in the first question if available
+      if (response.data.sectionAllocations && 
+          response.data.sectionAllocations[0] && 
+          response.data.sectionAllocations[0].subsectionAllocations &&
+          response.data.sectionAllocations[0].subsectionAllocations[0] &&
+          response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters &&
+          response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters[0] &&
+          response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters[0].question) {
+        const firstQuestion = response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters[0].question;
+        if (firstQuestion.question_texts && firstQuestion.question_texts[0]) {
+          console.log('First question text structure:', firstQuestion.question_texts[0]);
+        }
+      }
+      
       transformApiDataToDisplayFormat(response.data)
       console.log('Successfully fetched test paper questions using data from:', lastUsedEndpoint.value)
     } else {
@@ -882,13 +1052,22 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
           const question = chapter.question
           const questionText = question.question_texts[0] // Using the first question text
           
+          // Extract topic ID from either topic or question_text_topics
+          let topicId: number | undefined;
+          if (questionText.topic) {
+            topicId = questionText.topic.id;
+          } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+            topicId = questionText.question_text_topics[0].question_topic_id;
+          }
+          
           // Create display question based on question type
           const displayQuestion: DisplayQuestion = {
             questionNumber: questionNumberCounter++,
             questionText: questionText.question_text,
             marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions), // Use marks_per_question if available
             questionType: question.question_type.type_name,
-            originalQuestion: question
+            originalQuestion: question,
+            topicId: topicId
           }
 
           // Process MCQ options if they exist
@@ -925,28 +1104,180 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
 
 // Change a single question - calls the API to get a replacement
 const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
-  console.log(`Change question at section ${sectionIndex}, question ${questionIndex}`)
-  
-  // In a real implementation, you would make an API call to get a new question
-  // For now, just logging that the function was called
-  
-  // Example of what the implementation might look like:
-  // 1. Get the current question
-  // const section = testPaperSections.value[sectionIndex];
-  // const question = section.questions[questionIndex];
-  // const originalQuestion = question.originalQuestion;
-  
-  // 2. Make an API call to get a replacement question
-  // const response = await axiosInstance.post('/replace-question', {
-  //   questionId: originalQuestion.id,
-  //   questionTypeId: originalQuestion.question_type_id,
-  //   chapterId: originalQuestion.question_texts[0].topic.chapter_id
-  // });
-  
-  // 3. Update the question in the UI
-  // if (response.data && response.data.newQuestion) {
-  //   // Update the question
-  // }
+  try {
+    // Show loading state on the button
+    const button = document.querySelector(`#question-${sectionIndex}-${questionIndex} .shuffle-button`) as HTMLButtonElement;
+    if (button) {
+      button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
+      button.disabled = true;
+    }
+
+    // Get the current question
+    const section = testPaperSections.value[sectionIndex];
+    const question = section.questions[questionIndex];
+    const originalQuestion = question.originalQuestion;
+    
+    // Get chapter ID for the selected question
+    let chapterId;
+    if (originalQuestion.question_topics && 
+        originalQuestion.question_topics[0] && 
+        originalQuestion.question_topics[0].topic &&
+        originalQuestion.question_topics[0].topic.chapter) {
+      chapterId = originalQuestion.question_topics[0].topic.chapter.id;
+    } else if (originalQuestion.question_texts && 
+               originalQuestion.question_texts[0] && 
+               originalQuestion.question_texts[0].question_text_topics &&
+               originalQuestion.question_texts[0].question_text_topics[0] &&
+               originalQuestion.question_texts[0].question_text_topics[0].question_topic &&
+               originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic &&
+               originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter) {
+      chapterId = originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter.id;
+    }
+    
+    // Get medium ID from route query parameters (as selected in createTestPaperDashboard.vue)
+    let mediumId = route.query.mediumId as string;
+    
+    // Fallback values if not found
+    if (!chapterId) {
+      console.warn('Chapter ID not found, using default value');
+      chapterId = 1;
+    }
+    
+    if (!mediumId) {
+      console.warn('Medium ID not found in route parameters, falling back to default value');
+      mediumId = '1';
+    }
+    
+    // Collect question IDs from the same chapter as the current question
+    const questionIdsFromSameChapter = []
+    
+    // Add the current question ID
+    questionIdsFromSameChapter.push(originalQuestion.id)
+    
+    // Find all questions from the same chapter in all sections
+    testPaperSections.value.forEach(section => {
+      section.questions.forEach(q => {
+        if (q.originalQuestion.id !== originalQuestion.id) { // Skip the question we're changing
+          // Get the chapter ID for this question
+          let questionChapterId;
+          
+          if (q.originalQuestion.question_topics && 
+              q.originalQuestion.question_topics[0] && 
+              q.originalQuestion.question_topics[0].topic &&
+              q.originalQuestion.question_topics[0].topic.chapter) {
+            questionChapterId = q.originalQuestion.question_topics[0].topic.chapter.id;
+          } else if (q.originalQuestion.question_texts && 
+                     q.originalQuestion.question_texts[0] && 
+                     q.originalQuestion.question_texts[0].question_text_topics &&
+                     q.originalQuestion.question_texts[0].question_text_topics[0] &&
+                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic &&
+                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic &&
+                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter) {
+            questionChapterId = q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter.id;
+          }
+          
+          // If this question is from the same chapter, add its ID to the list
+          if (questionChapterId === chapterId) {
+            questionIdsFromSameChapter.push(q.originalQuestion.id);
+          }
+        }
+      });
+    });
+    
+    // Call the API to get a replacement question
+    const params = {
+      questionId: originalQuestion.id,
+      questionTypeId: originalQuestion.question_type_id,
+      chapterId: chapterId,
+      mediumId: parseInt(mediumId),
+      existingQuestionIds: questionIdsFromSameChapter
+    };
+    
+    console.log('Change question API params:', params);
+    
+    // Convert the existingQuestionIds array to query string format
+    const queryParams = new URLSearchParams();
+    queryParams.append('questionId', params.questionId.toString());
+    queryParams.append('questionTypeId', params.questionTypeId.toString());
+    queryParams.append('chapterId', params.chapterId.toString());
+    queryParams.append('mediumId', params.mediumId.toString());
+    
+    // Add each existing question ID as a separate entry
+    params.existingQuestionIds.forEach(id => {
+      queryParams.append('existingQuestionIds', id.toString());
+    });
+    
+    // Make the API call
+    const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
+    
+    if (response.data && response.data.question) {
+      const newQuestion = response.data.question;
+      console.log('New question received:', newQuestion);
+      
+      // Transform the new question to display format
+      const questionText = newQuestion.question_texts[0]; // Using the first question text
+      
+      // Extract topic ID from either topic or question_text_topics
+      let newTopicId: number | undefined;
+      if (questionText.topic) {
+        newTopicId = questionText.topic.id;
+      } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+        newTopicId = questionText.question_text_topics[0].question_topic_id;
+      }
+      
+      // Create display question based on question type
+      const displayQuestion: DisplayQuestion = {
+        questionNumber: question.questionNumber, // Keep the same question number
+        questionText: questionText.question_text,
+        marks: question.marks, // Keep the same marks
+        questionType: newQuestion.question_type.type_name,
+        originalQuestion: newQuestion,
+        topicId: newTopicId
+      };
+      
+      // Process MCQ options if they exist
+      if (questionText.mcq_options && questionText.mcq_options.length > 0) {
+        displayQuestion.options = questionText.mcq_options.map((option, index) => {
+          return {
+            label: String.fromCharCode(65 + index), // A, B, C, D...
+            text: option.option_text,
+            isCorrect: option.is_correct
+          };
+        });
+      }
+      
+      // Process match pairs if they exist
+      if (questionText.match_pairs && questionText.match_pairs.length > 0) {
+        displayQuestion.matchPairs = questionText.match_pairs.map(pair => {
+          return {
+            leftText: pair.left_text,
+            rightText: pair.right_text
+          };
+        });
+      }
+      
+      // Replace the question in the section
+      section.questions[questionIndex] = displayQuestion;
+      
+      console.log('Question successfully changed');
+    } else {
+      console.error('Unexpected API response format:', response.data);
+      throw new Error('Failed to get replacement question');
+    }
+  } catch (error) {
+    console.error('Error changing question:', error);
+    // Show error message to user
+    alert('Failed to change question. Please try again later.');
+  } finally {
+    // Restore the button to its original state
+    const button = document.querySelector(`#question-${sectionIndex}-${questionIndex} .shuffle-button`) as HTMLButtonElement;
+    if (button) {
+      button.innerHTML = `<span class="d-inline-flex align-items-center">
+        <i class="bi bi-arrow-clockwise me-1"></i><span class="d-none d-sm-inline">Change</span>
+      </span>`;
+      button.disabled = false;
+    }
+  }
 }
 
 // Print page functionality
@@ -1040,12 +1371,10 @@ const printPage = () => {
         .question-text {
           font-weight: normal;
           line-height: 1.5;
-          margin-bottom: 12px;
+          
         }
         .options-container {
-          margin-top: 10px;
           padding: 5px;
-          padding-left: 25px; /* Add left padding to align with question text */
           page-break-inside: avoid; /* Keep options together */
         }
         .options-title {
@@ -1087,52 +1416,55 @@ const printPage = () => {
         /* Row layout for options */
         .options-row {
           display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
+          flex-direction: row;
+          flex-wrap: nowrap;
           justify-content: space-between;
           width: 100%;
+          margin-bottom: 10px;
         }
         .option-item-row {
-          flex: 1 1 22%;
-          min-width: 70px;
+          flex: 1;
           padding: 5px;
+          margin-right: 10px;
           background-color: transparent;
           border: none;
+          white-space: normal;
+        }
+        .option-item-row:last-child {
+          margin-right: 0;
         }
         
         /* Grid layout (2x2) */
         .options-grid {
-          display: flex !important;
-          flex-wrap: wrap !important;
-          gap: 10px !important;
-          justify-content: space-between !important;
-          width: 100% !important;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: auto auto;
+          gap: 10px;
+          width: 100%;
+          margin-bottom: 10px;
         }
         .option-item-grid {
-          flex: 0 0 48% !important;
-          min-width: 120px !important;
-          max-width: 48% !important;
-          width: 48% !important;
-          box-sizing: border-box !important;
-          padding: 5px !important;
-          margin-bottom: 5px !important;
-          background-color: transparent !important;
-          border: none !important;
+          padding: 5px;
+          background-color: transparent;
+          border: none;
         }
         
         /* Column layout (all options in one column) */
         .options-column {
           display: flex;
           flex-direction: column;
-          gap: 5px;
           width: 100%;
+          margin-bottom: 10px;
         }
         .option-item-column {
           width: 100%;
           padding: 5px;
-          margin-bottom: 5px;
+          margin-bottom: 8px;
           background-color: transparent;
           border: none;
+        }
+        .option-item-column:last-child {
+          margin-bottom: 0;
         }
         
         .option-item {
@@ -1189,7 +1521,13 @@ const printPage = () => {
       <div class="a4-paper-section">
         <div class="section-header">
           <div class="section-title"><strong>${section.sectionNumberDisplay || section.sectionNumber} ) ${section.sectionName}</strong>   [ Any ${section.mandotory_questions} ]</div>
-          <div class="section-marks"><strong>${section.totalMarks} Marks</strong></div>
+          <div class="section-marks">
+            <strong>
+              <span class="nowrap">
+                ${section.totalMarks} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
+              </span>
+            </strong>
+          </div>
         </div>
         <div class="section-content">
           <div class="question-list" style="padding-left: 25px;">
@@ -1209,7 +1547,6 @@ const printPage = () => {
       // Add options if present
       if (question.options && question.options.length > 0) {
         printContent += `<div class="options-container">`;
-        printContent += `<div class="options-title">Options</div>`;
         
         // Get the layout for this question with explicit string comparison
         const key = `${sectionIndex}-${questionIndex}`;
@@ -1260,16 +1597,23 @@ const printPage = () => {
         }
         // For row layout
         else if (layout === 'row') {
-          printContent += `<div class="options-row" style="margin-left: 25px;">`;
+          // Use a table with a single row for the row layout to prevent wrapping
+          printContent += `<table style="width:100%; table-layout:fixed; border-collapse:collapse; border:none; margin-left: 25px;">`;
+          printContent += `<tr>`;
+          
+          // Create one cell for each option
+          const optionWidth = `${Math.floor(100 / question.options.length)}%`;
+          
           question.options.forEach(option => {
             printContent += `
-              <div class="option-item-row">
+              <td style="width:${optionWidth}; padding:5px; border:none; vertical-align:top;">
                 <span class="option-label">${option.label})</span>
                 <span class="option-text">${option.text}</span>
-              </div>
+              </td>
             `;
           });
-          printContent += `</div>`;
+          
+          printContent += `</tr></table>`;
         }
         // For column layout or fallback
         else {
@@ -1407,8 +1751,19 @@ onMounted(() => {
   // Add scroll event listener for back-to-top button visibility
   window.addEventListener('scroll', handleScroll)
   
+  // Add scroll event listener to hide layout selectors when scrolling
+  window.addEventListener('scroll', handleLayoutSelectorsOnScroll)
+  
   // Call handleScroll initially to set the correct visibility
   handleScroll()
+})
+
+onBeforeUnmount(() => {
+  // Remove event listeners
+  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('scroll', handleLayoutSelectorsOnScroll)
+  document.removeEventListener('click', handleGlobalLayoutClickOutside)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 // Show/hide back-to-top button based on scroll position
@@ -1428,8 +1783,6 @@ const isChangingAllQuestions = ref(false)
 
 // Change all questions - calls the API again to refresh all questions
 const changeAllQuestions = async () => {
-  // Remove confirmation dialog
-  
   isChangingAllQuestions.value = true
   try {
     console.log('Changing all questions...')
@@ -1437,16 +1790,163 @@ const changeAllQuestions = async () => {
     const previousSections = testPaperSections.value
     
     // Call the same API again with the same request data
-    await fetchTestPaperQuestions()
+    const requestData = getLatestData();
+    if (!requestData) {
+      console.error('No request data available to change questions');
+      throw new Error('Failed to get request data for changing questions');
+    }
     
-    // If the API call fails, restore the previous questions
+    const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData);
+    
+    if (response.data) {
+      console.log('New questions received from API');
+      apiData.value = response.data;
+      transformApiDataToDisplayFormat(response.data);
+    } else {
+      throw new Error('Unexpected API response format when changing questions');
+    }
+    
+    // If the API call fails or returns empty data, restore the previous questions
     if (testPaperSections.value.length === 0) {
-      testPaperSections.value = previousSections
+      console.warn('API returned no sections, restoring previous state');
+      testPaperSections.value = previousSections;
     }
   } catch (error) {
-    console.error('Error changing all questions:', error)
+    console.error('Error changing all questions:', error);
+    // Show error message to user
+    alert('Failed to change questions. Please try again later.');
   } finally {
-    isChangingAllQuestions.value = false
+    isChangingAllQuestions.value = false;
+  }
+}
+
+// Show global layout options
+const showGlobalLayoutOptions = (event: Event) => {
+  // Prevent propagation
+  event.stopPropagation()
+  
+  // Set the global layout selector as visible
+  globalLayoutSelectorVisible.value = true
+  
+  // Add click outside event listener after the DOM updates
+  nextTick(() => {
+    // Get the clicked button
+    const clickedButton = event.target as HTMLElement;
+    const button = clickedButton.closest('.btn') as HTMLElement;
+    
+    // Position the layout selector relative to the button
+    if (button && globalLayoutSelectorRef.value) {
+      // For desktop view, position based on the button
+      if (window.innerWidth >= 576) {
+        const buttonRect = button.getBoundingClientRect();
+        globalLayoutSelectorRef.value.style.position = 'fixed';
+        globalLayoutSelectorRef.value.style.top = `${buttonRect.bottom + 5}px`;
+        globalLayoutSelectorRef.value.style.left = `${buttonRect.left - globalLayoutSelectorRef.value.offsetWidth / 2 + buttonRect.width / 2}px`;
+        globalLayoutSelectorRef.value.style.transform = '';
+        
+        // Make sure it doesn't go off-screen
+        const rect = globalLayoutSelectorRef.value.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 10) {
+          globalLayoutSelectorRef.value.style.left = `${window.innerWidth - globalLayoutSelectorRef.value.offsetWidth - 10}px`;
+        }
+        if (rect.left < 10) {
+          globalLayoutSelectorRef.value.style.left = '10px';
+        }
+      } else {
+        // For mobile view, always center in the screen regardless of click position
+        globalLayoutSelectorRef.value.style.position = 'fixed';
+        globalLayoutSelectorRef.value.style.top = '50%';
+        globalLayoutSelectorRef.value.style.left = '50%';
+        globalLayoutSelectorRef.value.style.transform = 'translate(-50%, -50%)';
+        // Clear any previous positioning
+        globalLayoutSelectorRef.value.style.right = '';
+        globalLayoutSelectorRef.value.style.bottom = '';
+      }
+    }
+    
+    // Add event listener for clicks outside
+    document.addEventListener('click', handleGlobalLayoutClickOutside);
+  });
+}
+
+// Hide global layout options
+const hideGlobalLayoutOptions = () => {
+  globalLayoutSelectorVisible.value = false;
+  document.removeEventListener('click', handleGlobalLayoutClickOutside);
+}
+
+// Handle click outside of global layout selector
+const handleGlobalLayoutClickOutside = (event: MouseEvent) => {
+  if (globalLayoutSelectorRef.value && !globalLayoutSelectorRef.value.contains(event.target as Node)) {
+    hideGlobalLayoutOptions();
+  }
+}
+
+// Show layout change toast notification
+const showLayoutChangeToast = (message: string) => {
+  layoutToastMessage.value = message;
+  showLayoutToast.value = true;
+  
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    showLayoutToast.value = false;
+  }, 3000);
+}
+
+// Apply global layout to all MCQ questions
+const applyGlobalLayout = (layout: string) => {
+  // Set the selected global layout
+  globalSelectedLayout.value = layout;
+  
+  // Apply this layout to all MCQ questions
+  let mcqCount = 0;
+  testPaperSections.value.forEach((section, sectionIndex) => {
+    section.questions.forEach((question, questionIndex) => {
+      // Only apply to questions that have options (MCQs)
+      if (question.options && question.options.length > 0) {
+        const key = `${sectionIndex}-${questionIndex}`;
+        optionsLayouts.value[key] = layout;
+        mcqCount++;
+      }
+    });
+  });
+  
+  // Show feedback
+  const layoutNames = {
+    'row': 'Single Row',
+    'grid': '2x2 Grid',
+    'column': 'Single Column'
+  };
+  
+  // Show feedback with toast notification
+  const message = `Applied ${layoutNames[layout as keyof typeof layoutNames]} layout to ${mcqCount} questions`;
+  showLayoutChangeToast(message);
+  
+  // Close the selector
+  hideGlobalLayoutOptions();
+}
+
+// Clean up event listeners
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('click', handleGlobalLayoutClickOutside);
+});
+
+// Toast notification for layout changes
+const showLayoutToast = ref(false)
+const layoutToastMessage = ref('')
+
+// Hide layout selectors when scrolling
+const handleLayoutSelectorsOnScroll = () => {
+  // Hide global layout selector if visible
+  if (globalLayoutSelectorVisible.value) {
+    globalLayoutSelectorVisible.value = false
+    document.removeEventListener('click', handleGlobalLayoutClickOutside)
+  }
+  
+  // Hide individual layout selector if visible
+  if (activeLayoutSelector.value.sectionIndex !== -1) {
+    hideLayoutOptions()
   }
 }
 </script>
@@ -1548,8 +2048,11 @@ const changeAllQuestions = async () => {
 
 .question-marks {
   width: 100px;
-  text-align: center;
+  text-align: right;
   padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .question-divider {
@@ -1564,7 +2067,6 @@ const changeAllQuestions = async () => {
 .question-text {
   font-weight: normal;
   line-height: 1.5;
-  margin-bottom: 8px;
 }
 
 .question-type-badge {
@@ -1581,9 +2083,7 @@ const changeAllQuestions = async () => {
 
 /* Options styling */
 .options-container {
-  margin-top: 10px;
   padding: 5px;
-  padding-left: 25px; /* Add left padding to align with question text */
   page-break-inside: avoid; /* Keep options together */
 }
 
@@ -1596,8 +2096,8 @@ const changeAllQuestions = async () => {
 
 /* Option layout selector */
 .layout-selector {
-  position: absolute;
-  top: 35px;
+  position: fixed;
+  top: calc(100% + 5px);
   right: 0;
   z-index: 1050;
   background-color: white;
@@ -1678,55 +2178,102 @@ const changeAllQuestions = async () => {
 /* Row layout (all options in one row) */
 .options-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: space-between;
   width: 100%;
+  margin-bottom: 10px;
 }
 
 .option-item-row {
-  flex: 1 1 22%;
-  min-width: 70px;
+  flex: 1;
   padding: 5px;
+  margin-right: 10px;
   background-color: transparent;
   border: none;
+  white-space: normal;
+}
+
+.option-item-row:last-child {
+  margin-right: 0;
 }
 
 /* Grid layout (2x2) */
 .options-grid {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 10px !important;
-  justify-content: space-between !important;
-  width: 100% !important;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 10px;
 }
 
 .option-item-grid {
-  flex: 0 0 48% !important;
-  min-width: 120px !important;
-  max-width: 48% !important;
-  width: 48% !important;
-  box-sizing: border-box !important;
-  padding: 5px !important;
-  margin-bottom: 5px !important;
-  background-color: transparent !important;
-  border: none !important;
+  padding: 5px;
+  background-color: transparent;
+  border: none;
 }
 
 /* Column layout (all options in one column) */
 .options-column {
   display: flex;
   flex-direction: column;
-  gap: 5px;
   width: 100%;
+  margin-bottom: 10px;
 }
 
 .option-item-column {
   width: 100%;
   padding: 5px;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   background-color: transparent;
   border: none;
+}
+
+.option-item-column:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile layout fixes */
+@media (max-width: 576px) {
+  /* Row layout - forced to be one row with scrolling if needed */
+  .options-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    padding-bottom: 5px !important;
+  }
+  
+  .option-item-row {
+    flex: 1 0 auto !important;
+    min-width: 70px !important;
+    margin-right: 10px !important;
+    white-space: normal !important;
+  }
+  
+  /* Grid layout - exact 2x2 grid */
+  .options-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto auto !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  /* Column layout - stacked vertically */
+  .options-column {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  
+  .option-item-column {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
 }
 
 .option-item {
@@ -1852,6 +2399,35 @@ const changeAllQuestions = async () => {
   #backToTop {
     display: none !important;
   }
+  
+  .question-wrapper {
+    display: flex !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .question-content {
+    flex: 1 !important;
+  }
+  
+  .question-marks {
+    width: 100px !important;
+    text-align: right !important;
+  }
+  
+  .option-item-row, .option-item-grid, .option-item-column {
+    page-break-inside: avoid !important;
+  }
+  
+  .shuffle-button {
+    display: none !important; /* Hide change button in print */
+  }
+  
+  /* Ensure section headers don't break across pages */
+  .section-header {
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
 }
 
 /* Mobile styles for fixed bottom buttons */
@@ -1862,10 +2438,8 @@ const changeAllQuestions = async () => {
   
   /* Mobile Change All Questions button */
   #changeAllButtonMobile {
-    margin-bottom: 10px;
     font-weight: 500;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-top: 5px;
   }
   
   /* Fixed bottom bar for action buttons */
@@ -1883,13 +2457,13 @@ const changeAllQuestions = async () => {
   }
   
   .mobile-action-buttons .btn {
-    font-weight: 500;
-    padding: 12px 0;
+    font-weight: normal;
+    padding: 6px 12px;
     border-radius: 4px;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    font-size: 0.95rem;
-    letter-spacing: 0.3px;
+    font-size: inherit;
+    letter-spacing: normal;
   }
   
   .mobile-action-buttons .btn:active {
@@ -1982,11 +2556,18 @@ const changeAllQuestions = async () => {
   /* Improve option layout selector on mobile */
   .layout-selector {
     width: 270px;
-    right: -10px;
   }
   
-  .layout-cards {
-    grid-gap: 8px;
+  @media (max-width: 576px) {
+    /* Layout selector mobile positioning adjustments */
+    .layout-selector {
+      width: 90%;
+      max-width: 270px;
+    }
+    
+    .layout-cards {
+      grid-gap: 8px;
+    }
   }
   
   /* Maintain option layouts on mobile but with adjusted sizes */
@@ -2064,12 +2645,11 @@ const changeAllQuestions = async () => {
   
   #changeAllButton {
     min-width: 180px;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease;
   }
   
   #changeAllButton:hover, .dynamic-style .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
   }
   
   /* Time editing form on desktop */
@@ -2204,21 +2784,42 @@ const changeAllQuestions = async () => {
 
 /* Button styling */
 #changeAllButton, #changeAllButtonMobile {
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
   font-weight: 500;
   letter-spacing: 0.3px;
-  border-radius: 4px;
-  padding: 8px 16px;
 }
 
 #changeAllButton:hover:not(:disabled), #changeAllButtonMobile:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
 #changeAllButton:disabled, #changeAllButtonMobile:disabled {
   opacity: 0.8;
   cursor: not-allowed;
+}
+
+/* New custom button style matching TeacherProfile.vue but with dark button colors */
+.btn-custom {
+  border: 1px solid gray !important;
+  background-color: #f8f9fa;
+  color: black;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.btn-custom:hover {
+  border: 1px solid #343a40 !important;
+  background-color: #343a40 !important;
+  color: white !important;
+}
+
+@media (max-width: 576px) {
+  .btn-custom {
+    border: 1px solid #212529 !important;
+    background-color: #212529 !important;
+    color: white !important;
+  }
 }
 
 /* When the test paper is refreshing with new questions */
@@ -2291,7 +2892,221 @@ const changeAllQuestions = async () => {
   background-color: #212529; /* Dark background for hover state */
   color: white; /* White text for better visibility */
   border-color: #212529; /* Match border with background */
-  transform: translateY(-1px); /* Keep the subtle lift effect */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add subtle shadow for depth */
+}
+
+/* Global Layout Selector Styles */
+.global-layout-selector {
+  position: fixed;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 300px;
+  padding: 15px;
+  z-index: 1050;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.layout-options {
+  margin-bottom: 15px;
+}
+
+.layout-option-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.layout-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 10px;
+}
+
+.layout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.layout-card {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f9f9f9;
+  margin-bottom: 5px;
+}
+
+.layout-card:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.layout-card.active {
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.3);
+}
+
+.layout-preview {
+  height: 50px;
+  display: flex;
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.layout-label {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #555;
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+.cancel-button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 0.75rem 1rem;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 4px;
+  color: #333;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* Toast notification styles */
+.layout-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  display: none;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.layout-toast.show-toast {
+  display: block;
+}
+
+.layout-toast-content {
+  display: flex;
+  align-items: center;
+}
+
+.layout-toast i {
+  margin-right: 10px;
+}
+
+/* Mobile action buttons at bottom */
+.mobile-action-buttons {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: 10px 15px;
+  background-color: white;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-action-buttons .btn {
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-action-buttons .btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Prevent text from wrapping */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* Mobile layout fixes */
+@media (max-width: 576px) {
+  /* Row layout */
+  .options-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+  
+  /* Grid layout */
+  .options-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  
+  .option-item-grid {
+    flex: 0 0 48% !important;
+    width: 48% !important;
+    max-width: 48% !important;
+  }
+  
+  /* Column layout */
+  .options-column {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  
+  .option-item-column {
+    width: 100% !important;
+  }
+}
+
+/* Layout previews for options */
+.global-layout-selector {
+  position: fixed;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 300px;
+  padding: 15px;
+  z-index: 1050;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@media (max-width: 576px) {
+  .global-layout-selector {
+    width: 90% !important;
+    max-width: 320px !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    position: fixed !important;
+    margin: 0 !important;
+  }
 }
 </style> 
