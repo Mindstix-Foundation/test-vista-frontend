@@ -1117,93 +1117,172 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
     const question = section.questions[questionIndex];
     const originalQuestion = question.originalQuestion;
     
-    // Get chapter ID for the selected question
+    // Get questionId from the original question
+    const questionId = originalQuestion.id;
+    
+    // Get questionTypeId from the original question
+    const questionTypeId = originalQuestion.question_type_id;
+    
+    // Get medium ID from the question data
+    let mediumId = 0;
+    
+    // Try to get the instruction_medium_id from the question text topics
+    if (originalQuestion.question_texts && 
+        originalQuestion.question_texts.length > 0 && 
+        originalQuestion.question_texts[0].question_text_topics && 
+        originalQuestion.question_texts[0].question_text_topics.length > 0) {
+        
+        mediumId = originalQuestion.question_texts[0].question_text_topics[0].instruction_medium_id;
+    }
+    
+    // Get chapter ID from the question or API data
     let chapterId;
-    if (originalQuestion.question_topics && 
-        originalQuestion.question_topics[0] && 
-        originalQuestion.question_topics[0].topic &&
-        originalQuestion.question_topics[0].topic.chapter) {
-      chapterId = originalQuestion.question_topics[0].topic.chapter.id;
-    } else if (originalQuestion.question_texts && 
-               originalQuestion.question_texts[0] && 
-               originalQuestion.question_texts[0].question_text_topics &&
-               originalQuestion.question_texts[0].question_text_topics[0] &&
-               originalQuestion.question_texts[0].question_text_topics[0].question_topic &&
-               originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic &&
-               originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter) {
-      chapterId = originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter.id;
+    
+    // First try to find the chapter ID and medium ID (if not already found) in the API data
+    const apiDataValue = apiData.value;
+    if (apiDataValue && apiDataValue.sectionAllocations) {
+        // Loop through sections
+        for (const section of apiDataValue.sectionAllocations) {
+            if (section.subsectionAllocations) {
+                // Loop through subsections
+                for (const subsection of section.subsectionAllocations) {
+                    if (subsection.question_type_id === questionTypeId && subsection.allocatedChapters) {
+                        // Loop through chapters
+                        for (const chapter of subsection.allocatedChapters) {
+                            if (chapter.question && chapter.question.id === questionId) {
+                                // Get chapter ID
+                                chapterId = chapter.chapterId;
+                                
+                                // If medium ID not already found, try to get it from question_text_topics
+                                if (!mediumId && 
+                                    chapter.question.question_texts && 
+                                    chapter.question.question_texts.length > 0 && 
+                                    chapter.question.question_texts[0].question_text_topics && 
+                                    chapter.question.question_texts[0].question_text_topics.length > 0) {
+                                    
+                                    mediumId = chapter.question.question_texts[0].question_text_topics[0].instruction_medium_id;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (chapterId) break;
+                }
+            }
+            if (chapterId) break;
+        }
     }
     
-    // Get medium ID from route query parameters (as selected in createTestPaperDashboard.vue)
-    let mediumId = route.query.mediumId as string;
-    
-    // Fallback values if not found
+    // If chapter ID not found in API data, try other methods
     if (!chapterId) {
-      console.warn('Chapter ID not found, using default value');
-      chapterId = 1;
+        // Check if the question has question_texts with question_text_topics
+        if (originalQuestion.question_texts && 
+            originalQuestion.question_texts.length > 0 && 
+            originalQuestion.question_texts[0].question_text_topics && 
+            originalQuestion.question_texts[0].question_text_topics.length > 0) {
+            
+            // We need to find the topic and its associated chapter
+            // This would need to be implemented based on your data structure
+            console.warn("Chapter ID not found in question_text_topics, using fallback method");
+        }
+        
+        // If still not found, use default from route query parameters
+        if (!chapterId) {
+            // Get chapterId from route query parameters or default to 1
+            const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
+            chapterId = chapters.length > 0 ? chapters[0].id : 1;
+            console.warn(`Chapter ID not found, using default from route: ${chapterId}`);
+        }
     }
     
+    // Fallback to route param if medium ID still not found
     if (!mediumId) {
-      console.warn('Medium ID not found in route parameters, falling back to default value');
-      mediumId = '1';
+        mediumId = parseInt(route.query.mediumId as string || '1');
+        console.warn(`Instruction medium ID not found in question data, using route param: ${mediumId}`);
     }
     
-    // Collect question IDs from the same chapter as the current question
-    const questionIdsFromSameChapter = []
+    // Collect existing question IDs with the same question type and chapter
+    const existingQuestionIds: number[] = [];
     
-    // Add the current question ID
-    questionIdsFromSameChapter.push(originalQuestion.id)
+    // Add the current question first
+    existingQuestionIds.push(questionId);
     
-    // Find all questions from the same chapter in all sections
-    testPaperSections.value.forEach(section => {
-      section.questions.forEach(q => {
-        if (q.originalQuestion.id !== originalQuestion.id) { // Skip the question we're changing
-          // Get the chapter ID for this question
-          let questionChapterId;
+    // Search through all sections to find questions with the same type and chapter
+    for (const section of testPaperSections.value) {
+      for (const q of section.questions) {
+        // Skip the current question as we already added it
+        if (q.originalQuestion.id === questionId) continue;
+        
+        // Add questions with the same question type
+        if (q.originalQuestion.question_type_id === questionTypeId) {
+          // First check if the question's chapter ID matches directly
+          let questionChapterId: number | undefined;
           
-          if (q.originalQuestion.question_topics && 
-              q.originalQuestion.question_topics[0] && 
-              q.originalQuestion.question_topics[0].topic &&
-              q.originalQuestion.question_topics[0].topic.chapter) {
-            questionChapterId = q.originalQuestion.question_topics[0].topic.chapter.id;
-          } else if (q.originalQuestion.question_texts && 
-                     q.originalQuestion.question_texts[0] && 
-                     q.originalQuestion.question_texts[0].question_text_topics &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0] &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter) {
-            questionChapterId = q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter.id;
+          // Try to find the chapter ID directly from API data if available
+          if (apiDataValue && apiDataValue.sectionAllocations) {
+            for (const s of apiDataValue.sectionAllocations) {
+              if (s.subsectionAllocations) {
+                for (const sub of s.subsectionAllocations) {
+                  if (sub.allocatedChapters) {
+                    for (const ch of sub.allocatedChapters) {
+                      if (ch.question && ch.question.id === q.originalQuestion.id) {
+                        questionChapterId = ch.chapterId;
+                        break;
+                      }
+                    }
+                  }
+                  if (questionChapterId) break;
+                }
+              }
+              if (questionChapterId) break;
+            }
           }
           
-          // If this question is from the same chapter, add its ID to the list
-          if (questionChapterId === chapterId) {
-            questionIdsFromSameChapter.push(q.originalQuestion.id);
+          // If we found a chapter ID and it matches our target chapter
+          if (questionChapterId && questionChapterId === chapterId) {
+            existingQuestionIds.push(q.originalQuestion.id);
+            continue; // Skip to next question
+          }
+          
+          // If not found in API data, try to infer from question text topics
+          // This is a fallback for replaced questions that might not be in the original API data
+          if (!questionChapterId && q.originalQuestion.question_texts) {
+            for (const qt of q.originalQuestion.question_texts) {
+              if (qt.question_text_topics && qt.question_text_topics.length > 0) {
+                // For fallback matching, also match by medium ID as questions in the same chapter
+                // should have the same medium ID
+                if (qt.question_text_topics[0].instruction_medium_id === mediumId) {
+                  // If medium matches and question type matches, it's likely from the same chapter
+                  // This is an approximation but better than missing questions
+                  existingQuestionIds.push(q.originalQuestion.id);
+                  break;
+                }
+              }
+            }
           }
         }
-      });
+      }
+    }
+    
+    console.log('Collected existingQuestionIds:', existingQuestionIds);
+    
+    console.log('Change question API params:', {
+      questionId,
+      questionTypeId,
+      chapterId,
+      mediumId,
+      existingQuestionIds
     });
-    
-    // Call the API to get a replacement question
-    const params = {
-      questionId: originalQuestion.id,
-      questionTypeId: originalQuestion.question_type_id,
-      chapterId: chapterId,
-      mediumId: parseInt(mediumId),
-      existingQuestionIds: questionIdsFromSameChapter
-    };
-    
-    console.log('Change question API params:', params);
     
     // Convert the existingQuestionIds array to query string format
     const queryParams = new URLSearchParams();
-    queryParams.append('questionId', params.questionId.toString());
-    queryParams.append('questionTypeId', params.questionTypeId.toString());
-    queryParams.append('chapterId', params.chapterId.toString());
-    queryParams.append('mediumId', params.mediumId.toString());
+    queryParams.append('questionId', questionId.toString());
+    queryParams.append('questionTypeId', questionTypeId.toString());
+    queryParams.append('chapterId', chapterId.toString());
+    queryParams.append('mediumId', mediumId.toString());
     
     // Add each existing question ID as a separate entry
-    params.existingQuestionIds.forEach(id => {
+    existingQuestionIds.forEach(id => {
       queryParams.append('existingQuestionIds', id.toString());
     });
     
