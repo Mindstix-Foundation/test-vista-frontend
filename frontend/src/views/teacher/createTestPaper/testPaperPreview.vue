@@ -779,6 +779,7 @@ interface DisplayQuestion {
   }[];
   originalQuestion: Question;
   topicId?: number; // Add topic ID for future reference
+  chapterId?: number; // Add chapter ID to maintain it across replacements
 }
 
 interface DisplaySection {
@@ -1173,21 +1174,34 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
         }
     }
     
-    // If chapter ID not found in API data, try other methods
+    // If chapter ID not found in API data, try to find it from other sources
     if (!chapterId) {
-        // Check if the question has question_texts with question_text_topics
-        if (originalQuestion.question_texts && 
-            originalQuestion.question_texts.length > 0 && 
-            originalQuestion.question_texts[0].question_text_topics && 
-            originalQuestion.question_texts[0].question_text_topics.length > 0) {
+        // Check if the question has a stored chapter ID (for replaced questions)
+        if (question.chapterId) {
+            // Use the stored chapter ID from previous change operations
+            chapterId = question.chapterId;
+            console.log('Using stored chapterId from previous change:', chapterId);
+        } 
+        // Try to extract from question_text_topics if available
+        else if (originalQuestion.question_texts && 
+                 originalQuestion.question_texts.length > 0 && 
+                 originalQuestion.question_texts[0].question_text_topics && 
+                 originalQuestion.question_texts[0].question_text_topics.length > 0) {
             
-            // We need to find the topic and its associated chapter
-            // This would need to be implemented based on your data structure
-            console.warn("Chapter ID not found in question_text_topics, using fallback method");
+            // We could try to get chapterId from question_text_topics if the data structure allows
+            console.warn("Trying to extract chapterId from question_text_topics");
+            
+            // Attempt to get the chapter ID from topic data if available
+            const questionTextTopic = originalQuestion.question_texts[0].question_text_topics[0];
+            if (questionTextTopic.topic && questionTextTopic.topic.chapter_id) {
+                chapterId = questionTextTopic.topic.chapter_id;
+                console.log('Extracted chapterId from question_text_topics:', chapterId);
+            }
         }
         
         // If still not found, use default from route query parameters
         if (!chapterId) {
+            // THIS IS THE FALLBACK - try to avoid reaching this point for replaced questions
             // Get chapterId from route query parameters or default to 1
             const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
             chapterId = chapters.length > 0 ? chapters[0].id : 1;
@@ -1240,6 +1254,12 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
           
           // If we found a chapter ID and it matches our target chapter
           if (questionChapterId && questionChapterId === chapterId) {
+            existingQuestionIds.push(q.originalQuestion.id);
+            continue; // Skip to next question
+          }
+          
+          // Check if the question has a stored chapterId property (for replaced questions)
+          if (q.chapterId && q.chapterId === chapterId) {
             existingQuestionIds.push(q.originalQuestion.id);
             continue; // Skip to next question
           }
@@ -1311,7 +1331,8 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
         marks: question.marks, // Keep the same marks
         questionType: newQuestion.question_type.type_name,
         originalQuestion: newQuestion,
-        topicId: newTopicId
+        topicId: newTopicId,
+        chapterId: chapterId // Store the chapter ID with the question for future changes
       };
       
       // Process MCQ options if they exist
@@ -1339,6 +1360,9 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       section.questions[questionIndex] = displayQuestion;
       
       console.log('Question successfully changed');
+      
+      // Add debugging log for the chapter ID
+      console.log('Stored chapterId with question:', displayQuestion.chapterId);
     } else {
       console.error('Unexpected API response format:', response.data);
       throw new Error('Failed to get replacement question');
