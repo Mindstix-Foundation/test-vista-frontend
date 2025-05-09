@@ -268,6 +268,11 @@ const routes: RouteRecordRaw[] = [
         name: 'testPaperPreview',
         component: () => import('@/views/teacher/createTestPaper/testPaperPreview.vue'),
       },
+      {
+        path: 'save-test-paper',
+        name: 'saveTestPaper',
+        component: () => import('@/views/teacher/createTestPaper/saveTestPaper.vue'),
+      },
     ],
   },
 ]
