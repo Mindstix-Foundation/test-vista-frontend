@@ -835,24 +835,40 @@ const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null)
 // Store raw API data for debugging
 const apiData = ref<ApiResponse | null>(null)
 
-// Function to get the latest data based on which endpoint was last used
-const getLatestData = () => {
-  if (lastUsedEndpoint.value === 'distribute' && distributeData.value) {
-    console.log('Using data from distribute endpoint');
-    return distributeData.value;
-  } else if (lastUsedEndpoint.value === 'allocation' && allocationData.value) {
-    console.log('Using data from allocation endpoint');
-    return allocationData.value;
-  } else {
-    // Use whatever data is available if lastUsedEndpoint is not set
-    return distributeData.value || allocationData.value || null;
+// Helper function to get the latest test paper data
+const getLatestData = (): ApiResponse | null => {
+  // First check if we have already loaded data in apiData
+  if (apiData.value) {
+    return apiData.value;
   }
-};
+  
+  // If not, try to get data from localStorage
+  try {
+    const storedData = loadStoredData();
+    return storedData;
+  } catch (error) {
+    console.error('Error getting latest test paper data:', error);
+    return null;
+  }
+}
 
 // Load data from localStorage based on lastUsedEndpoint
 const loadStoredData = () => {
   try {
-    // Check if lastUsedEndpoint is in the route query
+    // First check if we have finalQuestionsDistribution data from the final API call
+    const finalDistributionData = localStorage.getItem('finalQuestionsDistribution');
+    if (finalDistributionData && route.query.hasFinalDistribution === 'true') {
+      try {
+        const parsedData = JSON.parse(finalDistributionData);
+        console.log('Loaded final questions distribution data from localStorage');
+        apiData.value = parsedData;
+        return parsedData;
+      } catch (e) {
+        console.error('Error parsing final questions distribution data:', e);
+      }
+    }
+    
+    // If no final distribution data, check lastUsedEndpoint
     const endpointFromRoute = route.query.lastUsedEndpoint as string;
     if (endpointFromRoute) {
       lastUsedEndpoint.value = endpointFromRoute as 'allocation' | 'distribute';
@@ -897,6 +913,14 @@ const loadStoredData = () => {
 // Fetch test paper questions from API
 const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
   try {
+    // First check if we already have final questions distribution data
+    if (storedData && route.query.hasFinalDistribution === 'true') {
+      console.log('Using final questions distribution data');
+      apiData.value = storedData;
+      transformApiDataToDisplayFormat(storedData);
+      return;
+    }
+    
     // Use stored data if available, otherwise create request data
     let requestData;
     
@@ -1004,12 +1028,15 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
       }
     }
 
-    // Make the API call
+    // Make the API call to get final questions distribution
     const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData)
     
     if (response.data) {
       apiData.value = response.data
       console.log('API Response Data Structure:', response.data)
+      
+      // Save the data to localStorage for future use
+      localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
       
       // Check for question_text_topics in the first question if available
       if (response.data.sectionAllocations && 
@@ -1398,18 +1425,73 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
 }
 
 // Save page functionality (placeholder)
-const savePage = () => {
-  console.log('Navigating to save test paper page...')
-  
-  // Navigate to save test paper page with the necessary data
-  router.push({
-    name: 'saveTestPaper',
-    query: {
-      ...route.query, // Pass along current query params
-      paperTitle: paperTitle.value,
-      testDuration: `${hours.value}:${minutes.value}`
+const savePage = async () => {
+  try {
+    console.log('Saving test paper...');
+    
+    // Show loading indicator or disable button here
+    const saveButton = document.querySelector('.btn-dark') as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Saving...';
     }
-  })
+    
+    // Get the current test paper data
+    const latestData = getLatestData();
+    if (!latestData) {
+      throw new Error('No test paper data available');
+    }
+
+    // Get chapters and weightages from the data
+    const chapters: number[] = [];
+    const weightages: number[] = [];
+
+    if (latestData.chapterMarks && latestData.chapterMarks.length > 0) {
+      latestData.chapterMarks.forEach(chapterMark => {
+        chapters.push(chapterMark.chapterId);
+        
+        // Calculate weightage percentage (absoluteMarks / totalMarks * 100)
+        const weightage = Math.round((chapterMark.absoluteMarks / latestData.absoluteMarks) * 100);
+        weightages.push(weightage);
+      });
+    }
+    
+    // Get user ID and school ID from user profile
+    const userId = userProfile.value?.id;
+    const schoolId = userProfile.value?.schools && userProfile.value.schools.length > 0 
+      ? userProfile.value.schools[0].id 
+      : null;
+      
+    if (!userId || !schoolId) {
+      throw new Error('User ID or School ID not available');
+    }
+    
+    // Navigate to saveTestPaper page with all the necessary data
+    router.push({
+      name: 'saveTestPaper',
+      query: {
+        ...route.query, // Pass along current query params
+        paperTitle: paperTitle.value,
+        testDuration: `${hours.value}:${minutes.value}`,
+        saveRequested: 'true', // Flag to indicate save should be performed
+        userId: userId.toString(),
+        schoolId: schoolId.toString(),
+        chapters: JSON.stringify(chapters),
+        weightages: JSON.stringify(weightages)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error saving test paper:', error);
+    alert('Failed to save test paper. Please try again.');
+    
+    // Reset save button
+    const saveButton = document.querySelector('.btn-dark') as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.innerHTML = '<i class="bi bi-save me-1"></i> Save';
+    }
+  }
 }
 
 // Go back button handler

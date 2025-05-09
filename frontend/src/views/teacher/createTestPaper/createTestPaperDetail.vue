@@ -1101,7 +1101,7 @@ onMounted(async () => {
 });
 
 // Form submission handler
-const createTestPaper = () => {
+const createTestPaper = async () => {
   if (!isMarksDistributionValid.value) {
     if (totalAssignedMarks.value > absoluteMarks.value) {
       alert(`Total assigned marks (${totalAssignedMarks.value}) exceed the required ${absoluteMarks.value} marks. Please adjust the marks to create a test paper.`);
@@ -1118,42 +1118,57 @@ const createTestPaper = () => {
     }
   }
   
-  // Gather all the selected chapters data
-  const questionAssignments = Object.entries(selectedChapters.value).map(([key, chapterId]) => {
-    const [sectionId, questionIndex] = key.split('-').map(Number);
-    return {
-      sectionId,
-      questionIndex,
-      chapterId
-    };
-  });
-  
-  // Log data for debugging
-  console.log('Creating test paper with question source:', questionSource.value)
-  console.log('Chapters with marks distribution:', chapters.value)
-  console.log('Pattern details:', patternDetails.value)
-  console.log('Question assignments:', questionAssignments)
-  
-  // Prepare query parameters to pass to the test paper preview page
-  const queryParams = {
-    // Display names for UI
-    board: encodeURIComponent(boardName.value),
-    medium: encodeURIComponent(mediumName.value),
-    standard: encodeURIComponent(standardName.value),
-    subject: encodeURIComponent(subjectName.value),
-    patternName: encodeURIComponent(patternName.value),
-    
-    // Other details
-    totalMarks: route.query.totalMarks as string, // Use original totalMarks from route instead of absoluteMarks
-    // Add last used endpoint info
-    lastUsedEndpoint: lastUsedEndpoint.value
+  // First make sure we have allocation data from either method
+  if (!testPaperAllocation.value) {
+    alert('No allocation data available. Please generate marks distribution first.');
+    return;
   }
   
-  // Navigate to the test paper preview page
-  router.push({
-    name: 'testPaperPreview',
-    query: queryParams
-  })
+  try {
+    isLoading.value = true;
+    
+    // Log data for debugging
+    console.log('Creating test paper with allocation data:', testPaperAllocation.value);
+    
+    // Make the POST request to get the final questions distribution
+    const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', testPaperAllocation.value);
+    
+    console.log('Final questions distribution response:', response.data);
+    
+    if (!response.data) {
+      throw new Error('No data received from final questions distribution API');
+    }
+    
+    // Save the final questions distribution response to localStorage for use in preview
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
+    
+    // Prepare query parameters to pass to the test paper preview page
+    const queryParams = {
+      // Display names for UI
+      board: encodeURIComponent(boardName.value),
+      medium: encodeURIComponent(mediumName.value),
+      standard: encodeURIComponent(standardName.value),
+      subject: encodeURIComponent(subjectName.value),
+      patternName: encodeURIComponent(patternName.value),
+      
+      // Other details
+      totalMarks: route.query.totalMarks as string,
+      // Add a flag indicating the questions distribution is available in localStorage
+      hasFinalDistribution: 'true'
+    }
+    
+    // Navigate to the test paper preview page
+    router.push({
+      name: 'testPaperPreview',
+      query: queryParams
+    });
+    
+  } catch (error) {
+    console.error('Error creating test paper:', error);
+    showErrorToast(error instanceof Error ? error.message : 'Failed to create test paper. Please try again.');
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 // Fetch user profile to get school ID

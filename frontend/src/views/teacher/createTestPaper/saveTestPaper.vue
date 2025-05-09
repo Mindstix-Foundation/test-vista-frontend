@@ -12,8 +12,28 @@
 
       <!-- School and Test Information -->
       <div v-else>
+        <!-- Save Status Alert -->
+        <div v-if="saveRequested" class="alert mb-3 no-print" :class="{
+          'alert-info': saveInProgress,
+          'alert-success': saveComplete,
+          'alert-danger': saveError
+        }">
+          <div v-if="saveInProgress" class="d-flex align-items-center">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <strong>Saving test paper...</strong> Please wait while we process your test paper.
+          </div>
+          <div v-else-if="saveComplete">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Test paper saved successfully!</strong> You can now print or go back.
+          </div>
+          <div v-else-if="saveError">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Error saving test paper:</strong> {{ saveError }}
+          </div>
+        </div>
+        
         <!-- Header with title and action button -->
-        <div class="row mb-3">
+        <div class="row mb-3 no-print">
           <div class="row justify-content-center align-items-center g-2 mb-4">
             <div class="col-12 col-sm-4">
               <h5 class="text-start m-0 fw-bolder">TEST PAPER</h5>
@@ -24,12 +44,20 @@
                   <button 
                     class="btn btn-dark"
                     @click="printPage"
+                    :disabled="saveInProgress"
                   >
-                    <i class="bi bi-printer me-1"></i> Print
+                    <span v-if="saveInProgress">
+                      <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                      Saving...
+                    </span>
+                    <span v-else>
+                      <i class="bi bi-printer me-1"></i> Print
+                    </span>
                   </button>
                   <button 
                     class="btn btn-secondary" 
                     @click="goBack"
+                    :disabled="saveInProgress"
                   >
                     <i class="bi bi-arrow-left me-1"></i> Back
                   </button>
@@ -157,20 +185,26 @@
       </div>
       
       <!-- Back to top button -->
-      <div id="backToTop" class="d-flex" @click="scrollToTop" style="display: none !important;">
+      <div id="backToTop" class="d-flex no-print" @click="scrollToTop" style="display: none !important;">
         <i class="bi bi-arrow-up"></i>
       </div>
 
       <!-- Fixed back button for mobile only -->
-      <div class="d-block d-sm-none mobile-back-button" @click="goBack">
+      <div class="d-block d-sm-none mobile-back-button no-print" @click="goBack">
         <i class="bi bi-arrow-left"></i>
       </div>
       
       <!-- Fixed bottom bar with print button for mobile -->
-      <div class="d-sm-none mobile-action-buttons">
+      <div class="d-sm-none mobile-action-buttons no-print">
         <div class="d-flex justify-content-center align-items-center w-100">
-          <button class="btn btn-dark flex-grow-1" @click="printPage">
-            <i class="bi bi-printer me-1"></i> Print
+          <button class="btn btn-dark flex-grow-1" @click="printPage" :disabled="saveInProgress">
+            <span v-if="saveInProgress">
+              <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Saving...
+            </span>
+            <span v-else>
+              <i class="bi bi-printer me-1"></i> Print
+            </span>
           </button>
         </div>  
       </div>
@@ -179,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 
@@ -380,6 +414,151 @@ const testPaperSections = ref<DisplaySection[]>([])
 // Store raw API data for debugging
 const apiData = ref<ApiResponse | null>(null)
 
+// Check if this page should save the test paper to the API
+const saveRequested = ref(route.query.saveRequested === 'true')
+const saveInProgress = ref(false)
+const saveComplete = ref(false)
+const saveError = ref<string | null>(null)
+
+// Function to save the test paper as PDF and call the API
+const saveTestPaperToDB = async () => {
+  if (!saveRequested.value || saveInProgress.value || saveComplete.value) {
+    console.log('Save conditions not met:', { 
+      saveRequested: saveRequested.value, 
+      saveInProgress: saveInProgress.value, 
+      saveComplete: saveComplete.value 
+    });
+    return;
+  }
+  
+  console.log('Starting save process for test paper...');
+  saveInProgress.value = true;
+  saveError.value = null;
+  
+  try {
+    // Wait for the page to fully render
+    await nextTick();
+    await new Promise(resolve => setTimeout(resolve, 500)); // Extra delay to ensure DOM is ready
+    
+    // Make sure we have the necessary data
+    const userId = route.query.userId;
+    const schoolId = route.query.schoolId;
+    const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
+    const weightages = route.query.weightages ? JSON.parse(decodeURIComponent(route.query.weightages as string)) : [];
+    
+    console.log('Parsed data for API call:', { userId, schoolId, chapters, weightages });
+    
+    if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
+      throw new Error('Missing required data for saving test paper');
+    }
+    
+    // Get the content element
+    const element = document.getElementById('printSection');
+    if (!element) {
+      console.error('Print section element not found!');
+      console.log('Available elements with IDs:', 
+        Array.from(document.querySelectorAll('[id]')).map(el => ({ id: el.id, tagName: el.tagName }))
+      );
+      throw new Error('Print section not found');
+    }
+    console.log('Found printSection element:', element);
+    
+    // Import the library dynamically
+    console.log('Importing html2pdf library...');
+    let html2pdf;
+    try {
+      html2pdf = (await import('html2pdf.js')).default;
+      console.log('html2pdf library loaded successfully');
+    } catch (importError) {
+      console.error('Failed to import html2pdf library:', importError);
+      throw new Error('Failed to load PDF generation library');
+    }
+    
+    // Generate PDF from the element
+    console.log('Starting PDF generation...');
+    const pdfBlob = await new Promise<Blob>((resolve, reject) => {
+      const opt = {
+        margin: 10,
+        filename: 'test-paper.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, logging: true, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).outputPdf('blob')
+        .then(blob => {
+          console.log('PDF generated successfully, blob size:', blob.size);
+          resolve(blob);
+        })
+        .catch(error => {
+          console.error('Error generating PDF:', error);
+          reject(error);
+        });
+    });
+    
+    console.log('PDF blob created, size:', pdfBlob.size, 'bytes');
+    
+    // Prepare form data
+    const formData = new FormData();
+    
+    // Add required fields
+    formData.append('name', paperTitle.value);
+    formData.append('exam_time', testDuration.value);
+    formData.append('pattern_id', (route.query.patternId as string) || '1');
+    formData.append('test_paper_origin_type', 'both');
+    
+    // Add chapters and weightages
+    chapters.forEach((chapterId: number) => {
+      formData.append('chapters', chapterId.toString());
+    });
+    
+    weightages.forEach((weightage: number) => {
+      formData.append('weightages', weightage.toString());
+    });
+    
+    // Add instruction mediums (just English for now)
+    formData.append('instruction_mediums', '1');
+    
+    // Add the PDF file
+    const file = new File([pdfBlob], 'test-paper.pdf', { type: 'application/pdf' });
+    formData.append('files', file);
+    
+    console.log('FormData prepared, making API call...');
+    
+    // Make the API call
+    const response = await axiosInstance.post(
+      `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    
+    console.log('API response received:', response);
+    
+    if (response.status === 201) {
+      console.log('Test paper saved successfully:', response.data);
+      saveComplete.value = true;
+      
+      // Show success message
+      alert('Test paper saved successfully!');
+      
+      // Navigate to a confirmation or test papers list page
+      // router.push({ name: 'testPapersList' });
+    } else {
+      throw new Error(`Unexpected response status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error saving test paper:', error);
+    saveError.value = error instanceof Error ? error.message : 'Unknown error occurred';
+    alert(`Failed to save test paper: ${saveError.value}`);
+  } finally {
+    saveInProgress.value = false;
+  }
+};
+
 // Fetch user profile to get school name
 const fetchUserProfile = async () => {
   try {
@@ -543,7 +722,25 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
 
 // Print page functionality
 const printPage = () => {
+  // Add temporary class to the document body
+  document.body.classList.add('printing-test-paper');
+  
+  // Hide the app header or navigation before printing
+  const appHeader = document.querySelector('header');
+  const appNav = document.querySelector('nav');
+  
+  if (appHeader) appHeader.classList.add('no-print-important');
+  if (appNav) appNav.classList.add('no-print-important');
+  
+  // Trigger print
   window.print();
+  
+  // Remove temporary class after printing dialog closes
+  setTimeout(() => {
+    document.body.classList.remove('printing-test-paper');
+    if (appHeader) appHeader.classList.remove('no-print-important');
+    if (appNav) appNav.classList.remove('no-print-important');
+  }, 1000);
 }
 
 // Go back button handler
@@ -596,6 +793,13 @@ onMounted(() => {
   
   // Call handleScroll initially to set the correct visibility
   handleScroll();
+  
+  // If save was requested, trigger the save operation after a short delay
+  if (saveRequested.value) {
+    setTimeout(() => {
+      saveTestPaperToDB();
+    }, 1000); // Give the page time to fully render
+  }
 });
 
 onBeforeUnmount(() => {
@@ -859,27 +1063,101 @@ const handleScroll = () => {
   width: 100%;
 }
 
+/* Define no-print class to hide elements when printing */
+.no-print {
+  display: inherit;
+}
+
 /* Print styles - optimize for A4 printing */
 @media print {
+  /* Hide elements not needed in print */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Hide global header and navigation elements */
+  header, nav, .navbar, .app-header, .site-header, .main-header, 
+  .header-container, .header-wrapper, .global-header, .site-logo {
+    display: none !important;
+  }
+  
+  /* Target specific header logo (modify these selectors as needed based on your app structure) */
+  img[src*="logo"], .logo, .brand-logo, .app-logo, .header-logo {
+    display: none !important;
+  }
+  
+  /* Remove any top margin that might be causing space for the header */
+  body, html, #app, .app-container, main, .main-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Force the main content to start at the very top of the page */
+  #printSection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
   .save-container {
     box-shadow: none;
     padding: 0;
     width: 210mm;
   }
   
-  .container > .row:first-child, 
   #backToTop, 
   .mobile-back-button, 
   .mobile-action-buttons {
     display: none !important;
   }
   
+  /* New page break rules for sections and questions */
   .a4-paper-section {
-    break-inside: avoid;
+    /* Allow section content to flow across pages as needed */
+    page-break-inside: auto;
+    break-inside: auto;
   }
   
   .section-header {
+    /* Keep section header with at least some content */
+    page-break-after: avoid;
+    break-after: avoid;
+    /* Don't start section header at the bottom of a page */
+    page-break-before: auto;
+    break-before: auto;
     background-color: white !important;
+  }
+  
+  /* Individual question handling */
+  .question-item {
+    /* Each question should not be split across pages */
+    page-break-inside: avoid;
+    break-inside: avoid;
+    /* But questions should break between them if needed */
+    page-break-after: auto;
+    break-after: auto;
+    /* Don't force a single question to a new page unless it won't fit */
+    page-break-before: auto; 
+    break-before: auto;
+  }
+  
+  /* Ensure MCQ options stay together with their question */
+  .options-container {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Match pairs should also stay together */
+  .match-pairs-container {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   
   .question-list {
@@ -893,6 +1171,18 @@ const handleScroll = () => {
   
   .question-type-badge {
     display: none;
+  }
+  
+  /* Allow content to start from the top of the page */
+  .paper-content {
+    margin-top: 0 !important;
+  }
+  
+  /* Remove any unnecessary margins/paddings */
+  .container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
   }
   
   /* Maintain option layouts on mobile but with adjusted sizes */
@@ -1089,6 +1379,47 @@ const handleScroll = () => {
   
   .instruction-list li {
     page-break-inside: avoid;
+  }
+}
+</style>
+
+<style>
+/* Global styles that will affect elements outside of this component */
+@media print {
+  /* Hide header and navigation when printing */
+  header, nav, .navbar, .app-header, .site-header, .main-header, 
+  .header-container, .header-wrapper, .global-header {
+    display: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Important style to fully hide elements when printing */
+  .no-print-important {
+    display: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* When printing, ensure the body starts at the top of the page */
+  body.printing-test-paper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Hide any possible logo elements */
+  img[alt*="logo"], img[src*="logo"], .logo, .brand-logo, .app-logo {
+    display: none !important;
+  }
+  
+  /* Override any margins set by parent elements */
+  #app, .app-container, main, .main-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 }
 </style>

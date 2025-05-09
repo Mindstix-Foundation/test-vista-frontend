@@ -982,6 +982,14 @@ const toggleAllMediums = () => {
   updateSelectedMediums()
 }
 
+// Add the missing toggleAllChapters function
+const toggleAllChapters = () => {
+  chapters.value.forEach(chapter => {
+    chapter.selected = selectAllChapters.value
+  })
+  updateSelectedChapters()
+}
+
 const updateSelectedMediums = () => {
   // Update selectAll checkbox state based on individual selections
   selectAllMediums.value = instructionMediums.value.length > 0 && 
