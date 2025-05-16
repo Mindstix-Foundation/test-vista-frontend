@@ -14,49 +14,72 @@
       <div v-else>
         <!-- Header with title and action button - using BoardDashboard pattern -->
         <div class="row mb-3">
+                <div class="row justify-content-end">
+                <button type="button" class="btn btn-close ms-2 align-self-center d-none d-sm-inline-block" aria-label="Close" @click="goBack"></button>
+                </div>
+
           <div class="row justify-content-center align-items-center g-2 mb-4">
             <div class="col-12 col-sm-4">
-              <h5 class="text-start m-0 fw-bolder">TEST PAPER PREVIEW</h5>
-              <!-- Small screen only - buttons for mobile -->
-              <div class="d-sm-none mt-3">
-                <div class="row g-2">
-                  <div class="col-6">
+              <!-- Mobile view title with medium button after -->
+              <div class="d-flex align-items-center d-sm-none mb-2">
+                <h5 class="text-start m-0 fw-bolder me-2 mobile-title">TEST PAPER PREVIEW</h5>
                 <button 
-                      class="btn btn-custom w-100 d-flex justify-content-center align-items-center"
-                  id="changeAllButtonMobile" 
-                  @click="changeAllQuestions"
-                  :disabled="isChangingAllQuestions"
+                  class="btn btn-custom medium-button-mobile"
+                  @click="toggleMediumDropdown"
+                  ref="mediumButtonMobileRef"
                 >
-                  <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <i v-else class="bi bi-arrow-clockwise me-2"></i> 
-                      <span>{{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}</span>
+                  <i class="bi bi-translate"></i> {{ currentMediumName }}
                 </button>
-                  </div>
-                  <div class="col-6">
-                    <button 
-                      class="btn btn-custom w-100 d-flex justify-content-center align-items-center"
-                      id="changeAllLayoutButtonMobile" 
-                      @click="(event) => showGlobalLayoutOptions(event)"
-                    >
-                      <i class="bi bi-grid me-2"></i> <span>Option Style</span>
-                    </button>
-                  </div>
+              </div>
+              
+              <!-- Desktop view title only -->
+              <h5 class="text-start m-0 fw-bolder d-none d-sm-block">TEST PAPER PREVIEW</h5>
+              
+              <!-- Mobile view other action buttons -->
+              <div class="d-sm-none mt-2">
+                <div class="d-flex gap-2">
+                  <button 
+                    class="btn btn-custom mobile-action-btn flex-grow-1 d-flex justify-content-center align-items-center"
+                    id="changeAllButtonMobile" 
+                    @click="changeAllQuestions"
+                    :disabled="isChangingAllQuestions"
+                  >
+                    <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <i v-else class="bi bi-arrow-clockwise me-1"></i> 
+                    <span>{{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}</span>
+                  </button>
+                  <button 
+                    class="btn btn-custom mobile-action-btn flex-grow-1 d-flex justify-content-center align-items-center"
+                    id="changeAllLayoutButtonMobile" 
+                    @click="(event) => showGlobalLayoutOptions(event)"
+                  >
+                    <i class="bi bi-grid me-1"></i> <span>Option Style</span>
+                  </button>
                 </div>
               </div>
+              
+              <!-- Medium dropdown for mobile -->
+             
             </div>
             <div class="col-12 col-sm-8 dynamic-style text-end">
               <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
                 <!-- Buttons for desktop/tablet screens -->
                 <div class="d-none d-sm-flex gap-2">
                 <button 
+                    class="btn btn-custom dropdown-toggle"
+                    @click="toggleMediumDropdown"
+                  >
+                    <i class="bi bi-translate me-1"></i> {{ currentMediumName }}
+                  </button>
+                  <button 
                     class="btn btn-custom" 
-                  @click="changeAllQuestions"
-                  :disabled="isChangingAllQuestions"
-                >
-                  <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <i v-else class="bi bi-arrow-clockwise me-2"></i> 
+                    @click="changeAllQuestions"
+                    :disabled="isChangingAllQuestions"
+                  >
+                    <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <i v-else class="bi bi-arrow-clockwise me-2"></i> 
                     {{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}
-                </button>
+                  </button>
                   <button 
                     class="btn btn-custom" 
                     @click="(event) => showGlobalLayoutOptions(event)"
@@ -72,7 +95,6 @@
                     <i class="bi bi-save me-1"></i> Save
                   </button>
                 </div>
-                <button type="button" class="btn btn-close ms-2 align-self-center d-none d-sm-inline-block" aria-label="Close" @click="goBack"></button>
               </div>
             </div>
           </div>
@@ -199,7 +221,7 @@
       >
         <!-- Section Header -->
         <div class="section-header">
-          <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
+          <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span v-if="section.mandotory_questions && section.questions && section.mandotory_questions < section.questions.length" class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
          
           <div class="section-marks">
             <strong>
@@ -433,6 +455,31 @@
           </div>
         </div>  
       </div>
+      
+      <!-- Medium Dropdown (single instance for both mobile and desktop) -->
+      <div 
+        v-if="showMediumDropdown" 
+        class="medium-dropdown-mobile"
+        ref="mediumDropdownMobileRef"
+      >
+        <div class="medium-dropdown-header">Select Medium</div>
+        <div class="medium-dropdown-items">
+          <div 
+            v-for="medium in availableMediums" 
+            :key="medium.id"
+            class="medium-dropdown-item"
+            :class="{ 'active': medium.id === currentMediumId }"
+            @click="changeMedium(medium.id)"
+          >
+            {{ medium.name }}
+          </div>
+        </div>
+        <div class="text-center mt-2">
+          <button class="btn btn-sm btn-outline-secondary" @click="toggleMediumDropdown">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -472,8 +519,35 @@ const getOptionLayout = (sectionIndex: number, questionIndex: number) => {
 const setOptionLayout = (sectionIndex: number, questionIndex: number, layout: string) => {
   const key = `${sectionIndex}-${questionIndex}`
   optionsLayouts.value[key] = layout
+  
+  // Save the updated layouts to localStorage
+  saveOptionLayoutsToLocalStorage()
+  
   // Auto-close the layout selector after making a selection
   hideLayoutOptions()
+}
+
+// Save option layouts to localStorage
+const saveOptionLayoutsToLocalStorage = () => {
+  try {
+    localStorage.setItem('optionsLayouts', JSON.stringify(optionsLayouts.value))
+    console.log('Saved option layouts to localStorage')
+  } catch (error) {
+    console.error('Error saving option layouts to localStorage:', error)
+  }
+}
+
+// Load option layouts from localStorage
+const loadOptionLayoutsFromLocalStorage = () => {
+  try {
+    const savedLayouts = localStorage.getItem('optionsLayouts')
+    if (savedLayouts) {
+      optionsLayouts.value = JSON.parse(savedLayouts)
+      console.log('Loaded option layouts from localStorage')
+    }
+  } catch (error) {
+    console.error('Error loading option layouts from localStorage:', error)
+  }
 }
 
 // Show layout options for a specific question
@@ -781,6 +855,7 @@ interface ChapterMark {
   absoluteMarks: number;
 }
 
+// Add interface for ApiResponse
 interface ApiResponse {
   patternId: number;
   patternName?: string;
@@ -788,6 +863,8 @@ interface ApiResponse {
   absoluteMarks: number;
   sectionAllocations: SectionAllocation[];
   chapterMarks: ChapterMark[];
+  mediums?: ApiMedium[];
+  questionOrigin?: string;
 }
 
 // Display interfaces for transformed API data
@@ -1065,11 +1142,29 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
 // Transform API data to display format
 const transformApiDataToDisplayFormat = (data: ApiResponse) => {
   if (!data || !data.sectionAllocations) {
-    return
+    console.error('Invalid API data: missing sectionAllocations');
+    return;
   }
 
-  const displaySections: DisplaySection[] = []
-  let sectionNumberCounter = 1
+  // Extract available mediums from the API response if available
+  if (data.mediums && data.mediums.length > 0) {
+    console.log('Mediums from API:', data.mediums);
+    availableMediums.value = data.mediums.map((medium: ApiMedium) => ({
+      id: medium.id,
+      name: medium.instruction_medium
+    }));
+    
+    // If current medium is not in the available list, reset to the first one
+    if (!availableMediums.value.some(m => m.id === currentMediumId.value) && availableMediums.value.length > 0) {
+      console.log('Current medium not in available list, resetting to:', availableMediums.value[0].name);
+      currentMediumId.value = availableMediums.value[0].id;
+    }
+  } else {
+    console.warn('No mediums available in API response');
+  }
+
+  const displaySections: DisplaySection[] = [];
+  let sectionNumberCounter = 1;
 
   // Sort sections by sequentialNumber or sectionId for consistent ordering
   const sortedSections = [...data.sectionAllocations].sort((a, b) => {
@@ -1096,17 +1191,37 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
       subSection: section.subSection,
       sectionNumberDisplay: sectionNumberDisplay,
       mandotory_questions: section.mandotory_questions
-    }
+    };
 
-    let questionNumberCounter = 1
+    let questionNumberCounter = 1;
 
     // Process each subsection within a section
     section.subsectionAllocations.forEach(subsection => {
       // Process each chapter's questions within a subsection
       subsection.allocatedChapters.forEach(chapter => {
         if (chapter.question) {
-          const question = chapter.question
-          const questionText = question.question_texts[0] // Using the first question text
+          const question = chapter.question;
+          
+          // Find the correct question text based on the current medium
+          let questionText: QuestionText | undefined;
+          
+          if (question.question_texts && question.question_texts.length > 0) {
+            // First try to find an exact match for the current medium
+            questionText = question.question_texts.find(text => 
+              text.question_text_topics && 
+              text.question_text_topics.length > 0 && 
+              text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+            );
+            
+            // If no match, use the first question text as a fallback
+            if (!questionText) {
+              console.warn(`No question text found for medium ID ${currentMediumId.value}, using first available`);
+              questionText = question.question_texts[0];
+            }
+          } else {
+            console.warn('Question has no question_texts array, skipping');
+            return; // Skip this question if no question texts available
+          }
           
           // Extract topic ID from either topic or question_text_topics
           let topicId: number | undefined;
@@ -1123,8 +1238,9 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
             marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions), // Use marks_per_question if available
             questionType: question.question_type.type_name,
             originalQuestion: question,
-            topicId: topicId
-          }
+            topicId: topicId,
+            chapterId: chapter.chapterId // Store the chapter ID with the question
+          };
 
           // Process MCQ options if they exist
           if (questionText.mcq_options && questionText.mcq_options.length > 0) {
@@ -1133,29 +1249,29 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
                 label: String.fromCharCode(65 + index), // A, B, C, D...
                 text: option.option_text,
                 isCorrect: option.is_correct
-              }
-            })
+              };
+            });
           }
 
           // Process match pairs if they exist
           if (questionText.match_pairs && questionText.match_pairs.length > 0) {
             displayQuestion.matchPairs = questionText.match_pairs.map(pair => {
               return {
-                leftText: pair.left_text,
-                rightText: pair.right_text
-              }
-            })
+                leftText: pair.left_text || '', // Handle null left_text
+                rightText: pair.right_text || '' // Handle null right_text
+              };
+            });
           }
 
-          displaySection.questions.push(displayQuestion)
+          displaySection.questions.push(displayQuestion);
         }
-      })
-    })
+      });
+    });
 
-    displaySections.push(displaySection)
-  })
+    displaySections.push(displaySection);
+  });
 
-  testPaperSections.value = displaySections
+  testPaperSections.value = displaySections;
 }
 
 // Change a single question - calls the API to get a replacement
@@ -1182,13 +1298,12 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       throw new Error('Question text ID not found');
     }
     
-    // Get the instruction medium ID from question_text_topics
-    let mediumId = 1; // Default to 1 as fallback
-    if (originalQuestion.question_texts && 
-        originalQuestion.question_texts.length > 0 && 
-        originalQuestion.question_texts[0].question_text_topics && 
-        originalQuestion.question_texts[0].question_text_topics.length > 0) {
-      mediumId = originalQuestion.question_texts[0].question_text_topics[0].instruction_medium_id;
+    // Get all available medium IDs instead of just the current one
+    const mediumIds = availableMediums.value.map(medium => medium.id);
+    
+    // If no medium IDs available, use the current medium ID as fallback
+    if (mediumIds.length === 0) {
+      mediumIds.push(currentMediumId.value);
     }
     
     // Find the chapter ID for the current question
@@ -1328,7 +1443,7 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
     
     console.log('Change question parameters:', {
       questionTextIds,
-      mediumIds: [mediumId],
+      mediumIds,
       chapterId,
       questionOrigin: 'both'
     });
@@ -1341,8 +1456,10 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       queryParams.append('questionTextIds', id.toString());
     });
     
-    // Add medium IDs
-    queryParams.append('mediumIds', mediumId.toString());
+    // Add all medium IDs
+    mediumIds.forEach(id => {
+      queryParams.append('mediumIds', id.toString());
+    });
     
     // Add chapter ID
     queryParams.append('chapterId', chapterId.toString());
@@ -1350,15 +1467,31 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
     // Add question origin
     queryParams.append('questionOrigin', 'both');
     
-    // Make the API call
+    // Make the API call to get a replacement question
     const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
     
     if (response.data && response.data.question) {
       const newQuestion = response.data.question;
       console.log('New question received:', newQuestion);
       
-      // Transform the new question to display format
-      const questionText = newQuestion.question_texts[0]; // Using the first question text
+      // Find the correct question text based on the current medium
+      let questionText: QuestionText | undefined;
+      
+      if (newQuestion.question_texts && newQuestion.question_texts.length > 0) {
+        // First try to find an exact match for the current medium
+        questionText = newQuestion.question_texts.find(text => 
+          text.question_text_topics && 
+          text.question_text_topics.length > 0 && 
+          text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+        );
+        
+        // If no match, use the first question text as a fallback
+        if (!questionText) {
+          questionText = newQuestion.question_texts[0];
+        }
+      } else {
+        throw new Error('No question texts available in the new question');
+      }
       
       // Extract topic ID from question_topics or question_text_topics
       let topicId: number | undefined;
@@ -1403,6 +1536,10 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       // Replace the question in the section
       section.questions[questionIndex] = displayQuestion;
       
+      // Update the stored API data structure to include this new question
+      // This is the key step to ensure medium changes work with changed questions
+      updateStoredApiDataWithNewQuestion(sectionIndex, questionIndex, newQuestion, chapterId);
+      
       console.log('Question successfully changed');
     } else {
       console.error('Unexpected API response format:', response.data);
@@ -1424,6 +1561,93 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
   }
 }
 
+// New function to update the stored API data structure with a new question
+const updateStoredApiDataWithNewQuestion = (sectionIndex: number, questionIndex: number, newQuestion: Question, chapterId: number) => {
+  if (!apiData.value || !apiData.value.sectionAllocations) {
+    console.warn('Cannot update stored API data: no apiData available');
+    return;
+  }
+  
+  try {
+    // Find the section in the API data that corresponds to the display section
+    const section = testPaperSections.value[sectionIndex];
+    
+    // Find the corresponding section in the API data
+    const apiSection = apiData.value.sectionAllocations.find(s => 
+      s.sectionName === section.sectionName && 
+      (s.section_number === section.sectionNumber || s.sequentialNumber === section.sectionNumber)
+    );
+    
+    if (!apiSection) {
+      console.warn(`Cannot find section in API data for section index ${sectionIndex}`);
+      return;
+    }
+    
+    // Now we need to find the corresponding question in the API data structure
+    // Loop through all subsections and their allocated chapters
+    let found = false;
+    
+    for (const subsection of apiSection.subsectionAllocations) {
+      if (found) break;
+      
+      for (let i = 0; i < subsection.allocatedChapters.length; i++) {
+        const chapter = subsection.allocatedChapters[i];
+        
+        // If this chapter has a question and it's the one we're replacing
+        if (chapter.question) {
+          // Count how many questions we've seen so far
+          let questionCount = 0;
+          
+          // Count questions in all previous subsections
+          for (const prevSubsection of apiSection.subsectionAllocations) {
+            if (prevSubsection === subsection) {
+              // For the current subsection, count questions up to the current chapter
+              for (let j = 0; j < i; j++) {
+                if (prevSubsection.allocatedChapters[j].question) {
+                  questionCount++;
+                }
+              }
+              break;
+            } else {
+              // For previous subsections, count all questions
+              for (const prevChapter of prevSubsection.allocatedChapters) {
+                if (prevChapter.question) {
+                  questionCount++;
+                }
+              }
+            }
+          }
+          
+          // If this is the question we're looking for
+          if (questionCount === questionIndex) {
+            // Replace the question in the API data structure
+            chapter.question = newQuestion;
+            
+            // Update the chapter ID if needed
+            if (chapter.chapterId !== chapterId) {
+              chapter.chapterId = chapterId;
+            }
+            
+            console.log(`Updated question in API data at section ${sectionIndex}, question ${questionIndex}`);
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (!found) {
+      console.warn(`Could not find question in API data for section ${sectionIndex}, question ${questionIndex}`);
+    }
+    
+    // Update the stored data
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(apiData.value));
+    console.log('Updated finalQuestionsDistribution in localStorage with new question');
+  } catch (error) {
+    console.error('Error updating stored API data with new question:', error);
+  }
+}
+
 // Save page functionality (placeholder)
 const savePage = async () => {
   try {
@@ -1442,6 +1666,14 @@ const savePage = async () => {
       throw new Error('No test paper data available');
     }
 
+    // Save the current data to localStorage for the saveTestPaper page to use
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(latestData));
+    console.log('Saved test paper data to localStorage');
+
+    // Extract the pattern ID from latest data
+    const patternId = latestData.patternId ? latestData.patternId.toString() : route.query.patternId;
+    console.log(`Using pattern ID: ${patternId}`);
+
     // Get chapters and weightages from the data
     const chapters: number[] = [];
     const weightages: number[] = [];
@@ -1450,9 +1682,8 @@ const savePage = async () => {
       latestData.chapterMarks.forEach(chapterMark => {
         chapters.push(chapterMark.chapterId);
         
-        // Calculate weightage percentage (absoluteMarks / totalMarks * 100)
-        const weightage = Math.round((chapterMark.absoluteMarks / latestData.absoluteMarks) * 100);
-        weightages.push(weightage);
+        // Use absolute marks directly (actual marks, not percentage)
+        weightages.push(chapterMark.absoluteMarks);
       });
     }
     
@@ -1477,7 +1708,8 @@ const savePage = async () => {
         userId: userId.toString(),
         schoolId: schoolId.toString(),
         chapters: JSON.stringify(chapters),
-        weightages: JSON.stringify(weightages)
+        weightages: JSON.stringify(weightages),
+        patternId: patternId ? patternId.toString() : '1' // Ensure pattern ID is passed
       }
     });
     
@@ -1515,6 +1747,9 @@ const initializeComponent = async () => {
     hours.value = 1
     minutes.value = 0
     
+    // Load saved option layouts
+    loadOptionLayoutsFromLocalStorage()
+    
     // Load user profile and school name
     await fetchUserProfile()
     
@@ -1523,6 +1758,9 @@ const initializeComponent = async () => {
     
     // Fetch test paper questions
     await fetchTestPaperQuestions(storedData)
+    
+    // Extract available mediums from API data after questions are loaded
+    fetchAvailableMediums()
     
     console.log('Test paper initialized with data from API')
   } catch (error) {
@@ -1568,6 +1806,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleLayoutSelectorsOnScroll)
   document.removeEventListener('click', handleGlobalLayoutClickOutside)
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', handleMediumDropdownClickOutside)
 })
 
 // Show/hide back-to-top button based on scroll position
@@ -1600,11 +1839,26 @@ const changeAllQuestions = async () => {
       throw new Error('Failed to get request data for changing questions');
     }
     
+    // Use the original request data without modifying it
     const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData);
     
     if (response.data) {
       console.log('New questions received from API');
       apiData.value = response.data;
+      
+      // Extract available mediums from the response
+      if (response.data.mediums && response.data.mediums.length > 0) {
+        availableMediums.value = response.data.mediums.map((medium: ApiMedium) => ({
+          id: medium.id,
+          name: medium.instruction_medium
+        }));
+        
+        // If current medium is not in the available list, reset to the first one
+        if (!availableMediums.value.some(m => m.id === currentMediumId.value) && availableMediums.value.length > 0) {
+          currentMediumId.value = availableMediums.value[0].id;
+        }
+      }
+      
       transformApiDataToDisplayFormat(response.data);
     } else {
       throw new Error('Unexpected API response format when changing questions');
@@ -1715,6 +1969,9 @@ const applyGlobalLayout = (layout: string) => {
     });
   });
   
+  // Save the updated layouts to localStorage
+  saveOptionLayoutsToLocalStorage()
+  
   // Show feedback
   const layoutNames = {
     'row': 'Single Row',
@@ -1751,6 +2008,12 @@ const handleLayoutSelectorsOnScroll = () => {
   // Hide individual layout selector if visible
   if (activeLayoutSelector.value.sectionIndex !== -1) {
     hideLayoutOptions()
+  }
+  
+  // Hide medium dropdown if visible
+  if (showMediumDropdown.value) {
+    showMediumDropdown.value = false
+    document.removeEventListener('click', handleMediumDropdownClickOutside)
   }
 }
 
@@ -1789,6 +2052,292 @@ const saveInstructions = () => {
   // Save to localStorage for persistence
   localStorage.setItem('examInstructions', JSON.stringify(examInstructions.value))
 }
+
+// Medium selection state and refs
+interface Medium {
+  id: number;
+  name: string;
+}
+
+// Define interface for API Medium response
+interface ApiMedium {
+  id: number;
+  instruction_medium: string;
+}
+
+const availableMediums = ref<Medium[]>([]);
+const currentMediumId = ref<number>(1); // Default medium ID
+const currentMediumName = computed(() => {
+  const medium = availableMediums.value.find(m => m.id === currentMediumId.value);
+  return medium ? medium.name : 'Medium';
+});
+const showMediumDropdown = ref(false);
+const mediumButtonMobileRef = ref<HTMLElement | null>(null);
+const mediumDropdownMobileRef = ref<HTMLElement | null>(null);
+
+// Function to toggle medium dropdown
+const toggleMediumDropdown = (event: MouseEvent) => {
+  event.stopPropagation();
+  showMediumDropdown.value = !showMediumDropdown.value;
+  
+  if (showMediumDropdown.value) {
+    nextTick(() => {
+      // Get the clicked button (could be mobile or desktop)
+      const clickedElement = event.target as HTMLElement;
+      const buttonElement = clickedElement.closest('button') as HTMLElement;
+      
+      if (buttonElement && mediumDropdownMobileRef.value) {
+        const buttonRect = buttonElement.getBoundingClientRect();
+        mediumDropdownMobileRef.value.style.position = 'fixed';
+        mediumDropdownMobileRef.value.style.top = `${buttonRect.bottom + 5}px`;
+        
+        // Center horizontally relative to the button
+        const dropdownWidth = mediumDropdownMobileRef.value.offsetWidth;
+        const buttonCenterX = buttonRect.left + (buttonRect.width / 2);
+        const leftPosition = buttonCenterX - (dropdownWidth / 2);
+        
+        // Ensure it doesn't go off-screen on the left
+        const adjustedLeft = Math.max(10, leftPosition);
+        
+        // Ensure it doesn't go off-screen on the right
+        const rightEdge = adjustedLeft + dropdownWidth;
+        if (rightEdge > window.innerWidth - 10) {
+          mediumDropdownMobileRef.value.style.left = `${window.innerWidth - dropdownWidth - 10}px`;
+        } else {
+          mediumDropdownMobileRef.value.style.left = `${adjustedLeft}px`;
+        }
+        
+        // Remove centered transform
+        mediumDropdownMobileRef.value.style.transform = 'none';
+      }
+      
+      // Add click outside listener
+      document.addEventListener('click', handleMediumDropdownClickOutside);
+    });
+  } else {
+    document.removeEventListener('click', handleMediumDropdownClickOutside);
+  }
+};
+
+// Handle click outside medium dropdown
+const handleMediumDropdownClickOutside = (event: MouseEvent) => {
+  const dropdown = mediumDropdownMobileRef.value;
+  
+  // Check if click is outside dropdown
+  if (dropdown && !dropdown.contains(event.target as Node)) {
+    showMediumDropdown.value = false;
+    document.removeEventListener('click', handleMediumDropdownClickOutside);
+  }
+};
+
+// Fetch available mediums
+const fetchAvailableMediums = () => {
+  try {
+    // Extract mediums from the API response data
+    if (apiData.value && apiData.value.mediums && apiData.value.mediums.length > 0) {
+      availableMediums.value = apiData.value.mediums.map((medium: ApiMedium) => ({
+        id: medium.id,
+        name: medium.instruction_medium
+      }));
+      
+      // If no current medium ID is set, set to the first available medium
+      if (availableMediums.value.length > 0 && currentMediumId.value === 1) {
+        currentMediumId.value = availableMediums.value[0].id;
+      }
+    } else {
+      // If no mediums in API data, use default
+      availableMediums.value = [{ id: 1, name: 'English' }];
+    }
+  } catch (error) {
+    console.error('Error extracting available mediums:', error);
+    // Add default medium as fallback
+    availableMediums.value = [{ id: 1, name: 'English' }];
+  }
+};
+
+// Change the current medium
+const changeMedium = async (mediumId: number) => {
+  if (currentMediumId.value === mediumId) {
+    // If same medium, just close the dropdown
+    showMediumDropdown.value = false;
+    return;
+  }
+  
+  // Store the previous medium for reference
+  const previousMediumId = currentMediumId.value;
+  
+  // Update current medium ID
+  currentMediumId.value = mediumId;
+  showMediumDropdown.value = false;
+  
+  // Show toast notification for medium change
+  const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
+  showLayoutChangeToast(`Changed to ${mediumName} medium`);
+  
+  try {
+    // For questions that have been individually changed, we need to check if they have
+    // the correct language version and potentially fetch new ones
+    
+    // First transform the existing data for immediate display
+    if (apiData.value) {
+      transformApiDataToDisplayFormat(apiData.value);
+    }
+    
+    // Then check each question to see if it needs to be updated
+    const questionsToFetch = [];
+    
+    for (let sectionIndex = 0; sectionIndex < testPaperSections.value.length; sectionIndex++) {
+      const section = testPaperSections.value[sectionIndex];
+      
+      for (let questionIndex = 0; questionIndex < section.questions.length; questionIndex++) {
+        const question = section.questions[questionIndex];
+        const originalQuestion = question.originalQuestion;
+        
+        // Check if this question has a text for the current medium
+        const hasTextForCurrentMedium = originalQuestion.question_texts.some(text => 
+          text.question_text_topics && 
+          text.question_text_topics.length > 0 && 
+          text.question_text_topics[0].instruction_medium_id === mediumId
+        );
+        
+        // If no text for current medium, add to list of questions to fetch
+        if (!hasTextForCurrentMedium && question.chapterId) {
+          questionsToFetch.push({
+            sectionIndex,
+            questionIndex,
+            questionTextId: originalQuestion.question_texts[0].id,
+            chapterId: question.chapterId
+          });
+        }
+      }
+    }
+    
+    // If we found questions that need updating, fetch them one by one
+    if (questionsToFetch.length > 0) {
+      console.log(`Found ${questionsToFetch.length} questions that need updating for medium ${mediumId}`);
+      
+      // Show loading state
+      isChangingAllQuestions.value = true;
+      
+      // Process each question that needs updating
+      for (const questionInfo of questionsToFetch) {
+        await fetchQuestionWithNewMedium(
+          questionInfo.sectionIndex,
+          questionInfo.questionIndex,
+          questionInfo.questionTextId,
+          questionInfo.chapterId,
+          mediumId
+        );
+      }
+      
+      // Hide loading state
+      isChangingAllQuestions.value = false;
+    }
+  } catch (error) {
+    console.error('Error changing medium:', error);
+    // In case of error, revert to previous medium
+    currentMediumId.value = previousMediumId;
+    showLayoutChangeToast('Failed to change medium. Please try again.');
+  }
+};
+
+// Helper function to fetch a specific question with new medium
+const fetchQuestionWithNewMedium = async (
+  sectionIndex: number,
+  questionIndex: number,
+  questionTextId: number,
+  chapterId: number,
+  mediumId: number
+) => {
+  try {
+    // Get all available medium IDs
+    const mediumIds = availableMediums.value.map(medium => medium.id);
+    
+    // Make sure the target medium is included
+    if (!mediumIds.includes(mediumId)) {
+      mediumIds.push(mediumId);
+    }
+    
+    // Build query params
+    const queryParams = new URLSearchParams();
+    
+    // Add question text ID
+    queryParams.append('questionTextIds', questionTextId.toString());
+    
+    // Add all medium IDs
+    mediumIds.forEach(id => {
+      queryParams.append('mediumIds', id.toString());
+    });
+    
+    // Add chapter ID
+    queryParams.append('chapterId', chapterId.toString());
+    
+    // Add question origin
+    queryParams.append('questionOrigin', 'both');
+    
+    // Make the API call to get a replacement question
+    const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
+    
+    if (response.data && response.data.question) {
+      const newQuestion = response.data.question;
+      
+      // Check if the new question has the text for the current medium
+      const hasTextForCurrentMedium = newQuestion.question_texts.some(text => 
+        text.question_text_topics && 
+        text.question_text_topics.length > 0 && 
+        text.question_text_topics[0].instruction_medium_id === mediumId
+      );
+      
+      if (hasTextForCurrentMedium) {
+        // Update the question in our display data
+        const section = testPaperSections.value[sectionIndex];
+        const question = section.questions[questionIndex];
+        
+        // Store the new question data
+        question.originalQuestion = newQuestion;
+        
+        // Find the correct question text based on the current medium
+        const questionText = newQuestion.question_texts.find(text => 
+          text.question_text_topics && 
+          text.question_text_topics.length > 0 && 
+          text.question_text_topics[0].instruction_medium_id === mediumId
+        ) || newQuestion.question_texts[0];
+        
+        // Update the question display
+        question.questionText = questionText.question_text;
+        
+        // Process MCQ options if they exist
+        if (questionText.mcq_options && questionText.mcq_options.length > 0) {
+          question.options = questionText.mcq_options.map((option, index) => {
+            return {
+              label: String.fromCharCode(65 + index), // A, B, C, D...
+              text: option.option_text,
+              isCorrect: option.is_correct
+            };
+          });
+        }
+        
+        // Process match pairs if they exist
+        if (questionText.match_pairs && questionText.match_pairs.length > 0) {
+          question.matchPairs = questionText.match_pairs.map(pair => {
+            return {
+              leftText: pair.left_text || '', // Handle null left_text
+              rightText: pair.right_text || '' // Handle null right_text
+            };
+          });
+        }
+        
+        console.log(`Updated question ${sectionIndex}-${questionIndex} with medium ${mediumId}`);
+      } else {
+        console.warn(`New question does not have text for medium ${mediumId}`);
+      }
+    } else {
+      console.error('Unexpected API response format:', response.data);
+    }
+  } catch (error) {
+    console.error('Error fetching question with new medium:', error);
+  }
+};
 </script>
 
 <style scoped>
@@ -3040,5 +3589,155 @@ const saveInstructions = () => {
   .instructions-edit-form .instruction-textarea {
     min-height: 100px;
   }
+}
+
+/* Medium dropdown styles */
+.medium-dropdown, .medium-dropdown-mobile {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1050;
+  animation: fadeIn 0.2s ease-in-out;
+  min-width: 180px;
+}
+
+.medium-dropdown-mobile {
+  position: fixed;
+  width: 90%;
+  max-width: 250px;
+  padding: 10px;
+  border-radius: 8px;
+  animation: fadeInDropdown 0.2s ease-out;
+}
+
+.medium-dropdown-header {
+  font-weight: bold;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.medium-dropdown-items {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.medium-dropdown-item {
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.medium-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.medium-dropdown-item.active {
+  background-color: #e9f5ff;
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* Add mobile styles for the medium button */
+@media (max-width: 576px) {
+  .medium-dropdown-mobile {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+  
+  .medium-dropdown-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .medium-dropdown-item:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Styles for mobile medium button that appears after the title */
+.medium-button-mobile {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  min-width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-left: auto; /* Push to right side if there's space */
+}
+
+/* Extra responsive styles for very small mobile screens */
+@media (max-width: 375px) {
+  .medium-button-mobile,
+  .mobile-action-btn {
+    padding: 5px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .d-flex h5.fw-bolder,
+  .mobile-title {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile title style */
+.mobile-title {
+  font-size: 1.1rem;
+}
+
+/* Styles for mobile medium button that appears after the title */
+.medium-button-mobile {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  min-width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-left: auto; /* Push to right side if there's space */
+}
+
+/* Consistent styling for mobile action buttons */
+.mobile-action-btn {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+/* Animation for dropdown that appears from top */
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.medium-dropdown-mobile {
+  position: fixed;
+  width: 90%;
+  max-width: 250px;
+  padding: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1050;
+  animation: fadeInDropdown 0.2s ease-out;
 }
 </style> 

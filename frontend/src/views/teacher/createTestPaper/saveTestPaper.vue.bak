@@ -41,35 +41,6 @@
             <div class="col-12 col-sm-8 dynamic-style text-end">
               <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
                 <div class="d-flex gap-2">
-                  <!-- Medium Dropdown Button (Desktop) -->
-                  <button 
-                    class="btn btn-custom dropdown-toggle"
-                    @click="toggleMediumDropdown"
-                    ref="mediumButtonRef"
-                  >
-                    <i class="bi bi-translate me-1"></i> {{ currentMediumName }}
-                  </button>
-
-                  <!-- Medium Dropdown Menu (Desktop) -->
-                  <div 
-                    v-if="showMediumDropdown" 
-                    class="medium-dropdown" 
-                    ref="mediumDropdownRef"
-                  >
-                    <div class="medium-dropdown-header">Select Medium</div>
-                    <div class="medium-dropdown-items">
-                      <div 
-                        v-for="medium in availableMediums" 
-                        :key="medium.id"
-                        class="medium-dropdown-item"
-                        :class="{ 'active': medium.id === currentMediumId }"
-                        @click="changeMedium(medium.id)"
-                      >
-                        {{ medium.name }}
-                      </div>
-                    </div>
-                  </div>
-                  
                   <button 
                     class="btn btn-dark"
                     @click="printPage"
@@ -127,7 +98,7 @@
           >
             <!-- Section Header -->
             <div class="section-header">
-              <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span v-if="section.mandotory_questions && section.questions && section.mandotory_questions < section.questions.length" class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
+              <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
             
               <div class="section-marks">
                 <strong>
@@ -223,15 +194,6 @@
       <!-- Fixed bottom bar with print button for mobile -->
       <div class="d-sm-none mobile-action-buttons no-print">
         <div class="d-flex justify-content-center align-items-center w-100">
-          <!-- Mobile Medium Button -->
-          <button 
-            class="btn btn-custom flex-grow-1 me-2 dropdown-toggle"
-            @click="toggleMediumDropdown"
-            ref="mediumButtonMobileRef"
-          >
-            <i class="bi bi-translate me-1"></i> {{ currentMediumName }}
-          </button>
-          
           <button class="btn btn-dark flex-grow-1" @click="printPage" :disabled="saveInProgress">
             <span v-if="saveInProgress">
               <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
@@ -241,32 +203,7 @@
               <i class="bi bi-printer me-1"></i> Print
             </span>
           </button>
-        </div>
-        
-        <!-- Mobile Medium Dropdown -->
-        <div 
-          v-if="showMediumDropdown" 
-          class="medium-dropdown-mobile"
-          ref="mediumDropdownMobileRef"
-        >
-          <div class="medium-dropdown-header">Select Medium</div>
-          <div class="medium-dropdown-items">
-            <div 
-              v-for="medium in availableMediums" 
-              :key="medium.id"
-              class="medium-dropdown-item"
-              :class="{ 'active': medium.id === currentMediumId }"
-              @click="changeMedium(medium.id)"
-            >
-              {{ medium.name }}
-            </div>
-          </div>
-          <div class="text-center mt-2">
-            <button class="btn btn-sm btn-outline-secondary" @click="toggleMediumDropdown">
-              Cancel
-            </button>
-          </div>
-        </div>
+        </div>  
       </div>
     </div>
   </div>
@@ -297,21 +234,6 @@ const optionsLayouts = ref<{[key: string]: string}>({})
 const getOptionLayout = (sectionIndex: number, questionIndex: number) => {
   const key = `${sectionIndex}-${questionIndex}`
   return optionsLayouts.value[key] || DEFAULT_OPTION_LAYOUT // Default to grid layout
-}
-
-// Load option layouts from localStorage
-const loadOptionLayouts = () => {
-  try {
-    const savedLayouts = localStorage.getItem('optionsLayouts')
-    if (savedLayouts) {
-      optionsLayouts.value = JSON.parse(savedLayouts)
-      console.log('Loaded option layouts from localStorage:', optionsLayouts.value)
-    } else {
-      console.log('No saved option layouts found in localStorage')
-    }
-  } catch (error) {
-    console.error('Error loading option layouts from localStorage:', error)
-  }
 }
 
 // User profile for school name
@@ -471,10 +393,6 @@ interface ApiResponse {
     chapterName: string;
     absoluteMarks: number;
   }[];
-  mediums?: {
-    id: number;
-    instruction_medium: string;
-  }[];
 }
 
 interface DisplaySection {
@@ -499,188 +417,6 @@ const saveInProgress = ref(false)
 const saveComplete = ref(false)
 const saveError = ref<string | null>(null)
 
-// Define interface for medium data
-interface Medium {
-  id: number;
-  name: string;
-}
-
-// Available instruction mediums
-const availableMediums = ref<Medium[]>([])
-const currentMediumId = ref<number>(1) // Default medium ID
-const showMediumDropdown = ref(false)
-const mediumButtonRef = ref<HTMLElement | null>(null)
-const mediumDropdownRef = ref<HTMLElement | null>(null)
-const mediumButtonMobileRef = ref<HTMLElement | null>(null)
-const mediumDropdownMobileRef = ref<HTMLElement | null>(null)
-
-// Computed property for current medium name
-const currentMediumName = computed(() => {
-  const medium = availableMediums.value.find(m => m.id === currentMediumId.value);
-  return medium ? medium.name : 'Medium';
-});
-
-// Function to toggle medium dropdown
-const toggleMediumDropdown = (event: MouseEvent) => {
-  event.stopPropagation();
-  showMediumDropdown.value = !showMediumDropdown.value;
-  
-  if (showMediumDropdown.value) {
-    nextTick(() => {
-      // Desktop positioning
-      if (window.innerWidth >= 576 && mediumButtonRef.value && mediumDropdownRef.value) {
-        const buttonRect = mediumButtonRef.value.getBoundingClientRect();
-        mediumDropdownRef.value.style.position = 'fixed';
-        mediumDropdownRef.value.style.top = `${buttonRect.bottom + 5}px`;
-        mediumDropdownRef.value.style.left = `${buttonRect.left}px`;
-        
-        // Make sure it doesn't go off-screen
-        const rect = mediumDropdownRef.value.getBoundingClientRect();
-        if (rect.right > window.innerWidth - 10) {
-          mediumDropdownRef.value.style.left = `${window.innerWidth - mediumDropdownRef.value.offsetWidth - 10}px`;
-        }
-      }
-      
-      // Mobile positioning
-      if (window.innerWidth < 576 && mediumDropdownMobileRef.value) {
-        mediumDropdownMobileRef.value.style.position = 'fixed';
-        mediumDropdownMobileRef.value.style.top = '50%';
-        mediumDropdownMobileRef.value.style.left = '50%';
-        mediumDropdownMobileRef.value.style.transform = 'translate(-50%, -50%)';
-      }
-      
-      // Add click outside listener
-      document.addEventListener('click', handleMediumDropdownClickOutside);
-    });
-  } else {
-    document.removeEventListener('click', handleMediumDropdownClickOutside);
-  }
-};
-
-// Handle click outside medium dropdown
-const handleMediumDropdownClickOutside = (event: MouseEvent) => {
-  const desktopDropdown = mediumDropdownRef.value;
-  const mobileDropdown = mediumDropdownMobileRef.value;
-  
-  // Check if click is outside both desktop and mobile dropdowns
-  if ((desktopDropdown && !desktopDropdown.contains(event.target as Node)) && 
-      (mobileDropdown && !mobileDropdown.contains(event.target as Node))) {
-    showMediumDropdown.value = false;
-    document.removeEventListener('click', handleMediumDropdownClickOutside);
-  }
-};
-
-// Change the current medium
-const changeMedium = async (mediumId: number) => {
-  if (currentMediumId.value === mediumId) {
-    // If same medium, just close the dropdown
-    showMediumDropdown.value = false;
-    return;
-  }
-  
-  try {
-    // Switch to the selected medium
-    await switchToMedium(mediumId);
-    showMediumDropdown.value = false;
-    
-    // Show feedback message (could add toast notification here)
-    console.log(`Changed to medium: ${availableMediums.value.find(m => m.id === mediumId)?.name}`);
-  } catch (error) {
-    console.error('Error changing medium:', error);
-  }
-};
-
-// Function to switch to a specific medium and update the displayed content
-const switchToMedium = async (mediumId: number): Promise<void> => {
-  console.log(`Switching to medium ID: ${mediumId}`);
-  
-  if (currentMediumId.value === mediumId) {
-    console.log('Already on this medium, no need to switch');
-    return;
-  }
-  
-  try {
-    // Update current medium ID
-    const previousMediumId = currentMediumId.value;
-    currentMediumId.value = mediumId;
-    
-    // If we have API data, transform it again with the new medium
-    if (apiData.value) {
-      console.log(`Transforming data for medium ID: ${mediumId}`);
-      transformApiDataToDisplayFormat(apiData.value);
-      await nextTick(); // Wait for UI to update
-    } else {
-      console.warn('No API data available for medium switch');
-      // Revert to previous medium
-      currentMediumId.value = previousMediumId;
-      throw new Error('No data available to switch medium');
-    }
-  } catch (error) {
-    console.error(`Error switching to medium ${mediumId}:`, error);
-    throw error;
-  }
-};
-
-// Function to generate PDF for a specific medium
-const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html2pdf: {
-  (): {
-    set: (options: {
-      margin: number;
-      filename: string;
-      image: { type: string; quality: number };
-      html2canvas: { scale: number; logging: boolean; useCORS: boolean };
-      jsPDF: { unit: string; format: string; orientation: string };
-    }) => {
-      from: (element: HTMLElement) => {
-        outputPdf: (type: string) => Promise<Blob>;
-      };
-    };
-  };
-}): Promise<File> => {
-  console.log(`Generating PDF for medium ID: ${mediumId} (${availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown'})`);
-  
-  try {
-    // Switch to this medium to update the UI with correct language content
-    await switchToMedium(mediumId);
-    
-    // Wait for the UI to fully update
-    await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 300)); // Extra delay
-    
-    // Generate PDF with the updated content
-    const pdfBlob = await new Promise<Blob>((resolve, reject) => {
-      const opt = {
-        margin: 10,
-        filename: `test-paper-medium-${mediumId}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: true, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().set(opt).from(element).outputPdf('blob')
-        .then((blob: Blob) => {
-          console.log(`PDF for medium ${mediumId} generated successfully, blob size:`, blob.size);
-          resolve(blob);
-        })
-        .catch((error: Error) => {
-          console.error(`Error generating PDF for medium ${mediumId}:`, error);
-          reject(error);
-        });
-    });
-    
-    // Create a file from the blob with medium name in the filename
-    const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
-    return new File(
-      [pdfBlob], 
-      `test-paper-${mediumName.toLowerCase()}-${mediumId}.pdf`, 
-      { type: 'application/pdf' }
-    );
-  } catch (error) {
-    console.error(`Failed to generate PDF for medium ${mediumId}:`, error);
-    throw error;
-  }
-};
-
 // Function to save the test paper as PDF and call the API
 const saveTestPaperToDB = async () => {
   if (!saveRequested.value || saveInProgress.value || saveComplete.value) {
@@ -695,9 +431,6 @@ const saveTestPaperToDB = async () => {
   console.log('Starting save process for test paper...');
   saveInProgress.value = true;
   saveError.value = null;
-  
-  // Store original medium ID to restore later
-  const originalMediumId = currentMediumId.value;
   
   try {
     // Wait for the page to fully render
@@ -714,20 +447,6 @@ const saveTestPaperToDB = async () => {
     
     if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
       throw new Error('Missing required data for saving test paper');
-    }
-    
-    // Get the pattern ID from API data or route query
-    let patternId = '1'; // Default fallback
-    if (apiData.value && apiData.value.patternId) {
-      // Get pattern ID from the loaded API data
-      patternId = apiData.value.patternId.toString();
-      console.log(`Using pattern ID ${patternId} from API data`);
-    } else if (route.query.patternId) {
-      // Get pattern ID from route query
-      patternId = route.query.patternId as string;
-      console.log(`Using pattern ID ${patternId} from route query`);
-    } else {
-      console.warn('No pattern ID found in data or route, using default: 1');
     }
     
     // Get the content element
@@ -752,33 +471,29 @@ const saveTestPaperToDB = async () => {
       throw new Error('Failed to load PDF generation library');
     }
     
-    // Get available instruction mediums
-    // If no instruction mediums are available, default to English (ID 1)
-    const instructionMediums = availableMediums.value.length > 0 
-      ? availableMediums.value.map(medium => medium.id) 
-      : [1];
+    // Generate PDF from the element
+    console.log('Starting PDF generation...');
+    const pdfBlob = await new Promise<Blob>((resolve, reject) => {
+      const opt = {
+        margin: 10,
+        filename: 'test-paper.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, logging: true, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).outputPdf('blob')
+        .then(blob => {
+          console.log('PDF generated successfully, blob size:', blob.size);
+          resolve(blob);
+        })
+        .catch(error => {
+          console.error('Error generating PDF:', error);
+          reject(error);
+        });
+    });
     
-    console.log('Instruction mediums for PDF generation:', instructionMediums);
-    
-    // Generate PDF for each medium
-    const pdfFiles: File[] = [];
-    
-    // Generate PDFs for all mediums
-    for (const mediumId of instructionMediums) {
-      try {
-        const file = await generatePDFForMedium(element, mediumId, html2pdf);
-        pdfFiles.push(file);
-        console.log(`Added PDF for medium ${mediumId} to files array`);
-      } catch (error) {
-        console.error(`Error generating PDF for medium ${mediumId}:`, error);
-        throw new Error(`Failed to generate PDF for medium ${mediumId}`);
-      }
-    }
-    
-    // Restore original medium
-    await switchToMedium(originalMediumId);
-    
-    console.log(`Generated ${pdfFiles.length} PDF files for different mediums`);
+    console.log('PDF blob created, size:', pdfBlob.size, 'bytes');
     
     // Prepare form data
     const formData = new FormData();
@@ -786,10 +501,10 @@ const saveTestPaperToDB = async () => {
     // Add required fields
     formData.append('name', paperTitle.value);
     formData.append('exam_time', testDuration.value);
-    formData.append('pattern_id', patternId);
+    formData.append('pattern_id', (route.query.patternId as string) || '1');
     formData.append('test_paper_origin_type', 'both');
     
-    // Add chapters and weightages (actual marks, not percentages)
+    // Add chapters and weightages
     chapters.forEach((chapterId: number) => {
       formData.append('chapters', chapterId.toString());
     });
@@ -798,25 +513,14 @@ const saveTestPaperToDB = async () => {
       formData.append('weightages', weightage.toString());
     });
     
-    // Add instruction mediums
-    instructionMediums.forEach((mediumId: number) => {
-      formData.append('instruction_mediums', mediumId.toString());
-    });
+    // Add instruction mediums (just English for now)
+    formData.append('instruction_mediums', '1');
     
-    // Add all PDF files
-    pdfFiles.forEach((file: File) => {
-      formData.append('files', file);
-    });
+    // Add the PDF file
+    const file = new File([pdfBlob], 'test-paper.pdf', { type: 'application/pdf' });
+    formData.append('files', file);
     
-    console.log('FormData prepared, making API call with:', {
-      name: paperTitle.value,
-      exam_time: testDuration.value,
-      pattern_id: patternId,
-      chapters: chapters,
-      weightages: weightages,
-      instruction_mediums: instructionMediums,
-      files: pdfFiles.map(f => f.name)
-    });
+    console.log('FormData prepared, making API call...');
     
     // Make the API call
     const response = await axiosInstance.post(
@@ -835,6 +539,9 @@ const saveTestPaperToDB = async () => {
       console.log('Test paper saved successfully:', response.data);
       saveComplete.value = true;
       
+      // Show success message
+      alert('Test paper saved successfully!');
+      
       // Navigate to a confirmation or test papers list page
       // router.push({ name: 'testPapersList' });
     } else {
@@ -843,17 +550,9 @@ const saveTestPaperToDB = async () => {
   } catch (error) {
     console.error('Error saving test paper:', error);
     saveError.value = error instanceof Error ? error.message : 'Unknown error occurred';
+    alert(`Failed to save test paper: ${saveError.value}`);
   } finally {
     saveInProgress.value = false;
-    
-    // Ensure we're back on the original medium
-    if (currentMediumId.value !== originalMediumId) {
-      try {
-        await switchToMedium(originalMediumId);
-      } catch (error) {
-        console.error('Error restoring original medium:', error);
-      }
-    }
   }
 };
 
@@ -900,72 +599,28 @@ const loadStoredData = () => {
 // Fetch test paper questions from API
 const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
   try {
-    console.log('Fetching test paper questions from localStorage or route params');
+    // Use stored data if available, otherwise create request data
+    const requestData = storedData;
     
-    // If storedData was provided as parameter, use that
-    if (storedData) {
-      console.log('Using stored data passed as parameter');
-      apiData.value = storedData;
-      
-      // Extract available mediums before transforming data
-      extractAvailableMediums(storedData);
-      
-      // Transform data for display
-      transformApiDataToDisplayFormat(storedData);
+    if (!requestData) {
+      console.error('No data available to display test paper');
       return;
     }
+
+    // Make the API call
+    const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData)
     
-    // First check if finalQuestionsDistribution exists in localStorage
-    const finalDistributionData = localStorage.getItem('finalQuestionsDistribution');
-    if (finalDistributionData) {
-      try {
-        const parsedData = JSON.parse(finalDistributionData);
-        console.log('Using finalQuestionsDistribution from localStorage');
-        apiData.value = parsedData;
-        
-        // Extract available mediums before transforming data
-        extractAvailableMediums(parsedData);
-        
-        // Transform data for display
-        transformApiDataToDisplayFormat(parsedData);
-        return;
-      } catch (e) {
-        console.error('Error parsing final questions distribution data:', e);
-      }
+    if (response.data) {
+      apiData.value = response.data;
+      transformApiDataToDisplayFormat(response.data);
+      console.log('Successfully fetched test paper questions');
+    } else {
+      console.error('Unexpected API response format:', response);
     }
-    
-    console.error('No test paper data available');
-    
   } catch (error) {
     console.error('Error fetching test paper questions:', error);
   }
 }
-
-// Extract available mediums from API data
-const extractAvailableMediums = (data: ApiResponse) => {
-  try {
-    if (data && data.mediums && data.mediums.length > 0) {
-      availableMediums.value = data.mediums.map((medium: { id: number; instruction_medium: string }) => ({
-        id: medium.id,
-        name: medium.instruction_medium
-      }));
-      console.log('Extracted available mediums:', availableMediums.value);
-      
-      // Set current medium ID to the first available medium if not already set
-      if (availableMediums.value.length > 0 && currentMediumId.value === 1) {
-        currentMediumId.value = availableMediums.value[0].id;
-      }
-    } else {
-      // If no mediums in API data, use default
-      availableMediums.value = [{ id: 1, name: 'English' }];
-      console.log('No mediums found in API data, using default English medium');
-    }
-  } catch (error) {
-    console.error('Error extracting available mediums:', error);
-    // Add default medium as fallback
-    availableMediums.value = [{ id: 1, name: 'English' }];
-  }
-};
 
 // Transform API data to display format (same as in testPaperPreview.vue)
 const transformApiDataToDisplayFormat = (data: ApiResponse) => {
@@ -1011,26 +666,7 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
       subsection.allocatedChapters.forEach(chapter => {
         if (chapter.question) {
           const question = chapter.question;
-          
-          // Find the appropriate question text based on the current medium
-          let questionText: QuestionText | undefined;
-          
-          if (question.question_texts && question.question_texts.length > 0) {
-            // First try to find question text matching current medium ID
-            questionText = question.question_texts.find(text => 
-              text.question_text_topics && 
-              text.question_text_topics.length > 0 && 
-              text.question_text_topics[0].instruction_medium_id === currentMediumId.value
-            );
-            
-            // If not found, fall back to the first question text
-            if (!questionText) {
-              questionText = question.question_texts[0];
-            }
-          } else {
-            console.warn('Question has no question_texts array');
-            return; // Skip this question
-          }
+          const questionText = question.question_texts[0]; // Using the first question text
           
           // Extract topic ID from either topic or question_text_topics
           let topicId: number | undefined;
@@ -1046,8 +682,7 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
             questionText: questionText.question_text,
             marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions),
             questionType: question.question_type.type_name,
-            topicId: topicId,
-            chapterId: chapter.chapterId // Store chapter ID for reference
+            topicId: topicId
           };
 
           // Process MCQ options if they exist
@@ -1122,9 +757,6 @@ const initializeComponent = async () => {
     // Load user profile and school name
     await fetchUserProfile();
     
-    // Load option layouts from localStorage
-    loadOptionLayouts();
-    
     // Load exam instructions from localStorage if they exist
     const savedInstructions = localStorage.getItem('examInstructions');
     if (savedInstructions) {
@@ -1135,28 +767,13 @@ const initializeComponent = async () => {
       }
     }
     
-    // Try to load data from localStorage
-    const finalDistributionData = localStorage.getItem('finalQuestionsDistribution');
-    if (finalDistributionData) {
-      try {
-        const parsedData = JSON.parse(finalDistributionData);
-        console.log('Fetching test paper using data from localStorage');
-        await fetchTestPaperQuestions(parsedData);
-      } catch (e) {
-        console.error('Error parsing final questions distribution data:', e);
-      }
-    } else {
-      // Fallback to loadStoredData
-      const storedData = loadStoredData();
-      if (storedData) {
-        console.log('Fetching test paper using fallback data from localStorage');
-        await fetchTestPaperQuestions(storedData);
-      } else {
-        console.error('No data available to display test paper');
-      }
-    }
+    // Load data from localStorage
+    const storedData = loadStoredData();
     
-    console.log('Test paper initialized with data from localStorage');
+    // Fetch test paper questions
+    await fetchTestPaperQuestions(storedData);
+    
+    console.log('Test paper initialized with data from API');
   } catch (error) {
     console.error('Error initializing save test paper:', error);
   } finally {
@@ -1174,9 +791,6 @@ onMounted(() => {
   // Call handleScroll initially to set the correct visibility
   handleScroll();
   
-  // Add event listener to close dropdowns when clicking outside
-  document.addEventListener('click', handleMediumDropdownClickOutside);
-  
   // If save was requested, trigger the save operation after a short delay
   if (saveRequested.value) {
     setTimeout(() => {
@@ -1188,7 +802,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   // Remove event listeners
   window.removeEventListener('scroll', handleScroll);
-  document.removeEventListener('click', handleMediumDropdownClickOutside);
 });
 
 // Show/hide back-to-top button based on scroll position
@@ -1320,18 +933,6 @@ const handleScroll = () => {
 .question-text {
   font-weight: normal;
   line-height: 1.5;
-}
-
-.question-type-badge {
-  font-size: 0.7rem;
-  background-color: #f0f0f0;
-  color: #666;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  margin-left: 8px;
-  vertical-align: middle;
-  font-weight: normal;
-  white-space: nowrap;
 }
 
 /* Options styling */
@@ -1563,10 +1164,6 @@ const handleScroll = () => {
   }
   
   /* Remove any unnecessary margins/paddings */
-  .container {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: none !important;
   }
   
   /* Maintain option layouts on mobile but with adjusted sizes */
@@ -1763,103 +1360,6 @@ const handleScroll = () => {
   
   .instruction-list li {
     page-break-inside: avoid;
-  }
-}
-
-/* Medium dropdown styles */
-.medium-dropdown, .medium-dropdown-mobile {
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 1050;
-  animation: fadeIn 0.2s ease-in-out;
-  min-width: 180px;
-}
-
-.medium-dropdown-mobile {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 300px;
-  padding: 15px;
-}
-
-.medium-dropdown-header {
-  font-weight: bold;
-  padding: 10px 15px;
-  border-bottom: 1px solid #eee;
-  color: #333;
-}
-
-.medium-dropdown-items {
-  max-height: 250px;
-  overflow-y: auto;
-}
-
-.medium-dropdown-item {
-  padding: 8px 15px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.medium-dropdown-item:hover {
-  background-color: #f5f5f5;
-}
-
-.medium-dropdown-item.active {
-  background-color: #e9f5ff;
-  color: #007bff;
-  font-weight: 500;
-}
-
-/* Add mobile styles for the medium button */
-@media (max-width: 576px) {
-  .medium-dropdown-mobile {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-  }
-  
-  .medium-dropdown-item {
-    padding: 12px 15px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  
-  .medium-dropdown-item:last-child {
-    border-bottom: none;
-  }
-}
-
-/* Animation for dropdown */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Button styling */
-.btn-custom {
-  border: 1px solid gray !important;
-  background-color: #f8f9fa;
-  color: black;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
-}
-
-.btn-custom:hover {
-  border: 1px solid #343a40 !important;
-  background-color: #343a40 !important;
-  color: white !important;
-}
-
-@media (max-width: 576px) {
-  .btn-custom {
-    border: 1px solid #212529 !important;
-    background-color: #212529 !important;
-    color: white !important;
   }
 }
 </style>
