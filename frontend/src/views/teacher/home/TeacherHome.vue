@@ -40,15 +40,15 @@
             </div>
           </div>
 
-          <!-- Coming Soon Card -->
+          <!-- Test Papers Card -->
           <div class="col">
-            <div class="card h-100 card-hover disabled-card">
+            <div class="card h-100 card-hover">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-file-earmark-text"></i> Test Papers</h5>
-                <p class="card-text">Create and manage test papers for your classes. (Coming Soon)</p>
+                <p class="card-text">View and manage previous test papers for your classes.</p>
               </div>
               <div class="card-footer bg-transparent border-0 text-end">
-                <button class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>
+                <router-link to="/teacher/previous-test-paper" class="btn btn-outline-primary btn-sm">View Test Papers</router-link>
               </div>
             </div>
           </div>

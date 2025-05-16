@@ -66,12 +66,6 @@
                 </div>
                 <div class="d-none d-sm-flex gap-2">
                   <button 
-                    class="btn btn-dark"
-                    @click="printPage"
-                  >
-                    <i class="bi bi-printer me-1"></i> Print
-                  </button>
-                  <button 
                     class="btn btn-dark" 
                     @click="savePage"
                   >
@@ -156,6 +150,43 @@
             </span>
             | <strong>Total Marks:</strong> {{ totalMarks }}
           </p>
+          
+          <!-- Exam Instructions Section -->
+          <div class="exam-instructions-container mt-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <h5 class="m-0 me-2">Exam Instructions</h5>
+              <button class="edit-icon" @click="startEditingInstructions" title="Edit instructions">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+            
+            <!-- Instructions Display View -->
+            <div v-if="!isEditingInstructions" class="instructions-display">
+              <ul class="text-start instruction-list" v-if="examInstructions.length > 0">
+                <li v-for="(instruction, index) in examInstructions" :key="index">
+                  {{ instruction }}
+                </li>
+              </ul>
+              <p v-else class="text-muted fst-italic">Click the pencil icon to add exam instructions</p>
+            </div>
+            
+            <!-- Instructions Edit View -->
+            <div v-else class="instructions-edit-form">
+              <div class="form-group">
+                <textarea 
+                  class="form-control instruction-textarea" 
+                  v-model="instructionsText"
+                  placeholder="Enter instructions (press Enter for new line)"
+                  ref="instructionsTextarea"
+                ></textarea>
+                <div class="text-muted small mt-1">Press Enter for a new line. Each line will appear as a bullet point.</div>
+              </div>
+              <div class="d-flex justify-content-center mt-2">
+                <button class="btn btn-sm btn-outline-secondary me-2" @click="cancelEditingInstructions">Cancel</button>
+                <button class="btn btn-sm btn-primary" @click="saveInstructions">Save</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <hr>
@@ -338,9 +369,6 @@
       <!-- Fixed bottom bar with action buttons for mobile -->
       <div class="d-sm-none mobile-action-buttons">
         <div class="d-flex justify-content-between align-items-center w-100">
-          <button class="btn btn-dark flex-grow-1 me-2" @click="printPage">
-            <i class="bi bi-printer me-1"></i> Print
-          </button>
           <button class="btn btn-dark flex-grow-1" @click="savePage">
             <i class="bi bi-save me-1"></i> Save
           </button>
@@ -779,6 +807,7 @@ interface DisplayQuestion {
   }[];
   originalQuestion: Question;
   topicId?: number; // Add topic ID for future reference
+  chapterId?: number; // Add chapter ID to maintain it across replacements
 }
 
 interface DisplaySection {
@@ -806,24 +835,40 @@ const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null)
 // Store raw API data for debugging
 const apiData = ref<ApiResponse | null>(null)
 
-// Function to get the latest data based on which endpoint was last used
-const getLatestData = () => {
-  if (lastUsedEndpoint.value === 'distribute' && distributeData.value) {
-    console.log('Using data from distribute endpoint');
-    return distributeData.value;
-  } else if (lastUsedEndpoint.value === 'allocation' && allocationData.value) {
-    console.log('Using data from allocation endpoint');
-    return allocationData.value;
-  } else {
-    // Use whatever data is available if lastUsedEndpoint is not set
-    return distributeData.value || allocationData.value || null;
+// Helper function to get the latest test paper data
+const getLatestData = (): ApiResponse | null => {
+  // First check if we have already loaded data in apiData
+  if (apiData.value) {
+    return apiData.value;
   }
-};
+  
+  // If not, try to get data from localStorage
+  try {
+    const storedData = loadStoredData();
+    return storedData;
+  } catch (error) {
+    console.error('Error getting latest test paper data:', error);
+    return null;
+  }
+}
 
 // Load data from localStorage based on lastUsedEndpoint
 const loadStoredData = () => {
   try {
-    // Check if lastUsedEndpoint is in the route query
+    // First check if we have finalQuestionsDistribution data from the final API call
+    const finalDistributionData = localStorage.getItem('finalQuestionsDistribution');
+    if (finalDistributionData && route.query.hasFinalDistribution === 'true') {
+      try {
+        const parsedData = JSON.parse(finalDistributionData);
+        console.log('Loaded final questions distribution data from localStorage');
+        apiData.value = parsedData;
+        return parsedData;
+      } catch (e) {
+        console.error('Error parsing final questions distribution data:', e);
+      }
+    }
+    
+    // If no final distribution data, check lastUsedEndpoint
     const endpointFromRoute = route.query.lastUsedEndpoint as string;
     if (endpointFromRoute) {
       lastUsedEndpoint.value = endpointFromRoute as 'allocation' | 'distribute';
@@ -868,6 +913,14 @@ const loadStoredData = () => {
 // Fetch test paper questions from API
 const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
   try {
+    // First check if we already have final questions distribution data
+    if (storedData && route.query.hasFinalDistribution === 'true') {
+      console.log('Using final questions distribution data');
+      apiData.value = storedData;
+      transformApiDataToDisplayFormat(storedData);
+      return;
+    }
+    
     // Use stored data if available, otherwise create request data
     let requestData;
     
@@ -975,12 +1028,15 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
       }
     }
 
-    // Make the API call
+    // Make the API call to get final questions distribution
     const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData)
     
     if (response.data) {
       apiData.value = response.data
       console.log('API Response Data Structure:', response.data)
+      
+      // Save the data to localStorage for future use
+      localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
       
       // Check for question_text_topics in the first question if available
       if (response.data.sectionAllocations && 
@@ -1117,95 +1173,182 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
     const question = section.questions[questionIndex];
     const originalQuestion = question.originalQuestion;
     
-    // Get chapter ID for the selected question
-    let chapterId;
-    if (originalQuestion.question_topics && 
-        originalQuestion.question_topics[0] && 
-        originalQuestion.question_topics[0].topic &&
-        originalQuestion.question_topics[0].topic.chapter) {
-      chapterId = originalQuestion.question_topics[0].topic.chapter.id;
-    } else if (originalQuestion.question_texts && 
-               originalQuestion.question_texts[0] && 
-               originalQuestion.question_texts[0].question_text_topics &&
-               originalQuestion.question_texts[0].question_text_topics[0] &&
-               originalQuestion.question_texts[0].question_text_topics[0].question_topic &&
-               originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic &&
-               originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter) {
-      chapterId = originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter.id;
+    // Get the question text id
+    const questionTextId = originalQuestion.question_texts && originalQuestion.question_texts.length > 0 
+      ? originalQuestion.question_texts[0].id 
+      : null;
+      
+    if (!questionTextId) {
+      throw new Error('Question text ID not found');
     }
     
-    // Get medium ID from route query parameters (as selected in createTestPaperDashboard.vue)
-    let mediumId = route.query.mediumId as string;
+    // Get the instruction medium ID from question_text_topics
+    let mediumId = 1; // Default to 1 as fallback
+    if (originalQuestion.question_texts && 
+        originalQuestion.question_texts.length > 0 && 
+        originalQuestion.question_texts[0].question_text_topics && 
+        originalQuestion.question_texts[0].question_text_topics.length > 0) {
+      mediumId = originalQuestion.question_texts[0].question_text_topics[0].instruction_medium_id;
+    }
     
-    // Fallback values if not found
+    // Find the chapter ID for the current question
+    let chapterId: number | undefined;
+    
+    // First try to get chapter ID from question_topics
+    if (originalQuestion.question_topics && originalQuestion.question_topics.length > 0) {
+      chapterId = originalQuestion.question_topics[0].topic?.chapter?.id;
+    }
+    
+    // If not found in question_topics, try question_text_topics
+    if (!chapterId && originalQuestion.question_texts && originalQuestion.question_texts.length > 0) {
+      const questionText = originalQuestion.question_texts[0];
+      if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+        const questionTopic = questionText.question_text_topics[0].question_topic;
+        if (questionTopic && questionTopic.topic && questionTopic.topic.chapter) {
+          chapterId = questionTopic.topic.chapter.id;
+        }
+      }
+    }
+    
+    // If still not found, check if it was stored in the display question from previous changes
+    if (!chapterId && question.chapterId) {
+      chapterId = question.chapterId;
+    }
+    
+    // If no chapter ID found, use from API data
     if (!chapterId) {
-      console.warn('Chapter ID not found, using default value');
-      chapterId = 1;
-    }
-    
-    if (!mediumId) {
-      console.warn('Medium ID not found in route parameters, falling back to default value');
-      mediumId = '1';
-    }
-    
-    // Collect question IDs from the same chapter as the current question
-    const questionIdsFromSameChapter = []
-    
-    // Add the current question ID
-    questionIdsFromSameChapter.push(originalQuestion.id)
-    
-    // Find all questions from the same chapter in all sections
-    testPaperSections.value.forEach(section => {
-      section.questions.forEach(q => {
-        if (q.originalQuestion.id !== originalQuestion.id) { // Skip the question we're changing
-          // Get the chapter ID for this question
-          let questionChapterId;
-          
-          if (q.originalQuestion.question_topics && 
-              q.originalQuestion.question_topics[0] && 
-              q.originalQuestion.question_topics[0].topic &&
-              q.originalQuestion.question_topics[0].topic.chapter) {
-            questionChapterId = q.originalQuestion.question_topics[0].topic.chapter.id;
-          } else if (q.originalQuestion.question_texts && 
-                     q.originalQuestion.question_texts[0] && 
-                     q.originalQuestion.question_texts[0].question_text_topics &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0] &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic &&
-                     q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter) {
-            questionChapterId = q.originalQuestion.question_texts[0].question_text_topics[0].question_topic.topic.chapter.id;
-          }
-          
-          // If this question is from the same chapter, add its ID to the list
-          if (questionChapterId === chapterId) {
-            questionIdsFromSameChapter.push(q.originalQuestion.id);
+      const apiDataValue = apiData.value;
+      if (apiDataValue && apiDataValue.sectionAllocations) {
+        // Find the question in the API data to get its chapter ID
+        outerLoop: for (const section of apiDataValue.sectionAllocations) {
+          if (section.subsectionAllocations) {
+            for (const subsection of section.subsectionAllocations) {
+              if (subsection.allocatedChapters) {
+                for (const chapter of subsection.allocatedChapters) {
+                  if (chapter.question && chapter.question.id === originalQuestion.id) {
+                    chapterId = chapter.chapterId;
+                    break outerLoop;
+                  }
+                }
+              }
+            }
           }
         }
-      });
-    });
+      }
+    }
     
-    // Call the API to get a replacement question
-    const params = {
-      questionId: originalQuestion.id,
-      questionTypeId: originalQuestion.question_type_id,
-      chapterId: chapterId,
-      mediumId: parseInt(mediumId),
-      existingQuestionIds: questionIdsFromSameChapter
+    // If still no chapter ID, fallback to route params
+    if (!chapterId) {
+      const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
+      chapterId = chapters.length > 0 ? chapters[0].id : 1;
+      console.warn(`Chapter ID not found, using default from route: ${chapterId}`);
+    }
+    
+    // Get the question type ID
+    const questionTypeId = originalQuestion.question_type_id;
+    
+    // Get all question text IDs from the same chapter and question type across the entire test paper
+    const questionTextIds: number[] = [];
+    
+    // First add the current question text ID
+    questionTextIds.push(questionTextId);
+    
+    // Helper function to get chapter ID for a question
+    const getQuestionChapterId = (q: Question): number | undefined => {
+      // Try from question_topics first
+      if (q.question_topics && q.question_topics.length > 0) {
+        const topic = q.question_topics[0].topic;
+        if (topic && topic.chapter) {
+          return topic.chapter.id;
+        }
+      }
+      
+      // Try from question_text_topics next
+      if (q.question_texts && q.question_texts.length > 0) {
+        const questionText = q.question_texts[0];
+        if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+          const questionTopic = questionText.question_text_topics[0].question_topic;
+          if (questionTopic && questionTopic.topic && questionTopic.topic.chapter) {
+            return questionTopic.topic.chapter.id;
+          }
+        }
+      }
+      
+      // Look in API data as fallback
+      const apiDataValue = apiData.value;
+      if (apiDataValue && apiDataValue.sectionAllocations) {
+        for (const section of apiDataValue.sectionAllocations) {
+          if (section.subsectionAllocations) {
+            for (const subsection of section.subsectionAllocations) {
+              if (subsection.allocatedChapters) {
+                for (const chapter of subsection.allocatedChapters) {
+                  if (chapter.question && chapter.question.id === q.id) {
+                    return chapter.chapterId;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      return undefined;
     };
     
-    console.log('Change question API params:', params);
+    // Loop through all sections in the test paper
+    for (const section of testPaperSections.value) {
+      for (const q of section.questions) {
+        // Skip the current question as we already added it
+        if (q.originalQuestion.id === originalQuestion.id) continue;
+        
+        // Only consider questions with the same question type
+        if (q.originalQuestion.question_type_id === questionTypeId) {
+          // Get the chapter ID for this question
+          let questionChapterId: number | undefined;
+          
+          // First check if the question has a stored chapterId property
+          if (q.chapterId) {
+            questionChapterId = q.chapterId;
+          } else {
+            // Otherwise, try to find it from the question data
+            questionChapterId = getQuestionChapterId(q.originalQuestion);
+          }
+          
+          // Only include question text IDs from the same chapter
+          if (questionChapterId === chapterId) {
+            // Get the question text ID
+            if (q.originalQuestion.question_texts && q.originalQuestion.question_texts.length > 0) {
+              const qTextId = q.originalQuestion.question_texts[0].id;
+              questionTextIds.push(qTextId);
+            }
+          }
+        }
+      }
+    }
     
-    // Convert the existingQuestionIds array to query string format
-    const queryParams = new URLSearchParams();
-    queryParams.append('questionId', params.questionId.toString());
-    queryParams.append('questionTypeId', params.questionTypeId.toString());
-    queryParams.append('chapterId', params.chapterId.toString());
-    queryParams.append('mediumId', params.mediumId.toString());
-    
-    // Add each existing question ID as a separate entry
-    params.existingQuestionIds.forEach(id => {
-      queryParams.append('existingQuestionIds', id.toString());
+    console.log('Change question parameters:', {
+      questionTextIds,
+      mediumIds: [mediumId],
+      chapterId,
+      questionOrigin: 'both'
     });
+    
+    // Build query params
+    const queryParams = new URLSearchParams();
+    
+    // Add question text IDs
+    questionTextIds.forEach(id => {
+      queryParams.append('questionTextIds', id.toString());
+    });
+    
+    // Add medium IDs
+    queryParams.append('mediumIds', mediumId.toString());
+    
+    // Add chapter ID
+    queryParams.append('chapterId', chapterId.toString());
+    
+    // Add question origin
+    queryParams.append('questionOrigin', 'both');
     
     // Make the API call
     const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
@@ -1217,12 +1360,12 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       // Transform the new question to display format
       const questionText = newQuestion.question_texts[0]; // Using the first question text
       
-      // Extract topic ID from either topic or question_text_topics
-      let newTopicId: number | undefined;
-      if (questionText.topic) {
-        newTopicId = questionText.topic.id;
+      // Extract topic ID from question_topics or question_text_topics
+      let topicId: number | undefined;
+      if (newQuestion.question_topics && newQuestion.question_topics.length > 0) {
+        topicId = newQuestion.question_topics[0].topic_id;
       } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-        newTopicId = questionText.question_text_topics[0].question_topic_id;
+        topicId = questionText.question_text_topics[0].question_topic_id;
       }
       
       // Create display question based on question type
@@ -1232,7 +1375,8 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
         marks: question.marks, // Keep the same marks
         questionType: newQuestion.question_type.type_name,
         originalQuestion: newQuestion,
-        topicId: newTopicId
+        topicId: topicId,
+        chapterId: chapterId // Store the chapter ID with the question for future changes
       };
       
       // Process MCQ options if they exist
@@ -1280,424 +1424,74 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
   }
 }
 
-// Print page functionality
-const printPage = () => {
-  // Create a new window for printing just the paper content
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups to print the question paper');
-    return;
-  }
-  
-  // Get the content to print
-  const documentHeaderElement = document.querySelector('.document-header');
-  if (!documentHeaderElement) {
-    alert('Error preparing document for print');
-    return;
-  }
-  
-  const documentHeader = documentHeaderElement.cloneNode(true) as HTMLElement;
-  
-  // Create HTML for the print window
-  let printContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${paperTitle.value || 'Test Paper'}</title>
-      <style>
-        body {
-          font-family: 'Times New Roman', Times, serif;
-          margin: 0;
-          padding: 20px;
-          background-color: white;
-        }
-        .print-container {
-          max-width: 210mm;
-          margin: 0 auto;
-        }
-        .document-header {
-          text-align: center;
-          margin-bottom: 20px;
-        }
-        .school-name {
-          margin: 0;
-          font-weight: normal;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          font-size: 1.1rem;
-        }
-        .paper-title {
-          margin: 10px 0;
-          font-size: 1.5rem;
-          font-weight: normal;
-        }
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px 0;
-          margin-bottom: 10px;
-          border-bottom: 1px solid #d6d6d6;
-          page-break-after: avoid;
-        }
-        .section-title {
-          font-weight: normal;
-          font-size: 1rem;
-        }
-        .section-marks {
-          font-weight: normal;
-          font-size: 0.9rem;
-        }
-        .question-list {
-          padding-left: 25px; /* Align questions with section name */
-        }
-        .question-item {
-          margin-bottom: 15px;
-          page-break-inside: avoid; /* Prevent questions from breaking across pages */
-        }
-        .question-wrapper {
-          display: flex;
-          width: 100%;
-          margin-bottom: 15px;
-        }
-        .question-content {
-          flex: 1;
-        }
-        .question-marks {
-          width: 50px;
-          text-align: center;
-          font-weight: bold;
-        }
-        .question-text {
-          font-weight: normal;
-          line-height: 1.5;
-          
-        }
-        .options-container {
-          padding: 5px;
-          page-break-inside: avoid; /* Keep options together */
-        }
-        .options-title {
-          font-weight: normal;
-          color: #555;
-          font-size: 0.9rem;
-          margin-bottom: 10px;
-        }
-        .match-pairs-container {
-          margin-top: 10px;
-          width: 100%;
-          padding-left: 25px; /* Add left padding to align with question text */
-          page-break-inside: avoid; /* Keep match pairs together */
-        }
-        .match-pair-row {
-          display: flex;
-          width: 100%;
-          margin-bottom: 8px;
-        }
-        .match-pair-left {
-          width: 45%;
-          padding: 5px;
-        }
-        .match-pair-spacer {
-          width: 10%;
-        }
-        .match-pair-right {
-          width: 45%;
-          padding: 5px;
-        }
-        .option-label {
-          font-weight: normal;
-          margin-right: 5px;
-        }
-        .option-text {
-          font-weight: normal;
-        }
-        
-        /* Row layout for options */
-        .options-row {
-          display: flex;
-          flex-direction: row;
-          flex-wrap: nowrap;
-          justify-content: space-between;
-          width: 100%;
-          margin-bottom: 10px;
-        }
-        .option-item-row {
-          flex: 1;
-          padding: 5px;
-          margin-right: 10px;
-          background-color: transparent;
-          border: none;
-          white-space: normal;
-        }
-        .option-item-row:last-child {
-          margin-right: 0;
-        }
-        
-        /* Grid layout (2x2) */
-        .options-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: auto auto;
-          gap: 10px;
-          width: 100%;
-          margin-bottom: 10px;
-        }
-        .option-item-grid {
-          padding: 5px;
-          background-color: transparent;
-          border: none;
-        }
-        
-        /* Column layout (all options in one column) */
-        .options-column {
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-          margin-bottom: 10px;
-        }
-        .option-item-column {
-          width: 100%;
-          padding: 5px;
-          margin-bottom: 8px;
-          background-color: transparent;
-          border: none;
-        }
-        .option-item-column:last-child {
-          margin-bottom: 0;
-        }
-        
-        .option-item {
-          padding: 5px;
-          margin-bottom: 5px;
-          background-color: transparent;
-          border: none;
-        }
-        
-        .option-label {
-          font-weight: normal;
-          margin-right: 10px;
-        }
-        
-        .option-text {
-          word-break: break-word;
-        }
-        
-        hr {
-          border-top: 1px solid #eee;
-          margin: 20px 0;
-        }
-        @page {
-          size: A4;
-          margin: 1cm;
-        }
-        /* Add a page break before if needed */
-        .page-break {
-          page-break-before: always;
-        }
-        /* Helper class to avoid orphans in paragraphs */
-        .no-orphans {
-          orphans: 3;
-          widows: 3;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="print-container">
-  `;
-  
-  // Remove any edit buttons from header
-  const editIcons = documentHeader.querySelectorAll('.edit-icon');
-  editIcons.forEach(icon => icon.remove());
-  
-  // Add header content
-  printContent += documentHeader.outerHTML;
-  printContent += '<hr>';
-  
-  // Add each section, manually building the content to ensure layout consistency
-  testPaperSections.value.forEach((section, sectionIndex) => {
-    // Start section
-    printContent += `
-      <div class="a4-paper-section">
-        <div class="section-header">
-          <div class="section-title"><strong>${section.sectionNumberDisplay || section.sectionNumber} ) ${section.sectionName}</strong>   [ Any ${section.mandotory_questions} ]</div>
-          <div class="section-marks">
-            <strong>
-              <span class="nowrap">
-                ${section.totalMarks} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
-              </span>
-            </strong>
-          </div>
-        </div>
-        <div class="section-content">
-          <div class="question-list" style="padding-left: 25px;">
-    `;
+// Save page functionality (placeholder)
+const savePage = async () => {
+  try {
+    console.log('Saving test paper...');
     
-    // Add each question
-    section.questions.forEach((question, questionIndex) => {
-      printContent += `
-        <div class="question-item">
-          <div class="question-wrapper">
-            <div class="question-content">
-              <div class="question-text no-orphans">
-                ${question.questionNumber}. ${question.questionText}
-              </div>
-      `;
+    // Show loading indicator or disable button here
+    const saveButton = document.querySelector('.btn-dark') as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Saving...';
+    }
+    
+    // Get the current test paper data
+    const latestData = getLatestData();
+    if (!latestData) {
+      throw new Error('No test paper data available');
+    }
+
+    // Get chapters and weightages from the data
+    const chapters: number[] = [];
+    const weightages: number[] = [];
+
+    if (latestData.chapterMarks && latestData.chapterMarks.length > 0) {
+      latestData.chapterMarks.forEach(chapterMark => {
+        chapters.push(chapterMark.chapterId);
+        
+        // Calculate weightage percentage (absoluteMarks / totalMarks * 100)
+        const weightage = Math.round((chapterMark.absoluteMarks / latestData.absoluteMarks) * 100);
+        weightages.push(weightage);
+      });
+    }
+    
+    // Get user ID and school ID from user profile
+    const userId = userProfile.value?.id;
+    const schoolId = userProfile.value?.schools && userProfile.value.schools.length > 0 
+      ? userProfile.value.schools[0].id 
+      : null;
       
-      // Add options if present
-      if (question.options && question.options.length > 0) {
-        printContent += `<div class="options-container">`;
-        
-        // Get the layout for this question with explicit string comparison
-        const key = `${sectionIndex}-${questionIndex}`;
-        let layout = optionsLayouts.value[key] || DEFAULT_OPTION_LAYOUT;
-        
-        // Ensure we default to grid if anything unexpected
-        if (layout !== 'row' && layout !== 'grid' && layout !== 'column') {
-          console.log(`Invalid layout '${layout}' for question ${questionIndex} in section ${sectionIndex}. Using grid.`);
-          layout = 'grid';
-        }
-        
-        // Add a debugging comment to printContent (will be visible in page source)
-        printContent += `<!-- Using layout: ${layout} for question ${questionIndex} in section ${sectionIndex} -->`;
-        
-        // For grid layout
-        if (layout === 'grid') {
-          // Use a simple HTML table for grid layout - most reliable for printing
-          const optionsArray = question.options || [];
-          printContent += `<table style="width:100%; border-collapse: collapse; border:none; margin-left: 25px;">`;
-          
-          // Create rows with 2 options per row
-          for (let i = 0; i < optionsArray.length; i += 2) {
-            printContent += `<tr>`;
-            
-            // First column
-            printContent += `
-              <td style="width:48%; padding:5px; border:none;">
-                <span class="option-label">${optionsArray[i].label})</span>
-                <span class="option-text">${optionsArray[i].text}</span>
-              </td>
-            `;
-            
-            // Second column (if available)
-            if (i + 1 < optionsArray.length) {
-              printContent += `
-                <td style="width:48%; padding:5px; border:none;">
-                  <span class="option-label">${optionsArray[i+1].label})</span>
-                  <span class="option-text">${optionsArray[i+1].text}</span>
-                </td>
-              `;
-            } else {
-              printContent += `<td style="width:48%; border:none;"></td>`;
-            }
-            
-            printContent += `</tr>`;
-          }
-          printContent += `</table>`;
-        }
-        // For row layout
-        else if (layout === 'row') {
-          // Use a table with a single row for the row layout to prevent wrapping
-          printContent += `<table style="width:100%; table-layout:fixed; border-collapse:collapse; border:none; margin-left: 25px;">`;
-          printContent += `<tr>`;
-          
-          // Create one cell for each option
-          const optionWidth = `${Math.floor(100 / question.options.length)}%`;
-          
-          question.options.forEach(option => {
-            printContent += `
-              <td style="width:${optionWidth}; padding:5px; border:none; vertical-align:top;">
-                <span class="option-label">${option.label})</span>
-                <span class="option-text">${option.text}</span>
-              </td>
-            `;
-          });
-          
-          printContent += `</tr></table>`;
-        }
-        // For column layout or fallback
-        else {
-          printContent += `<div class="options-column" style="margin-left: 25px;">`;
-          question.options.forEach(option => {
-            printContent += `
-              <div class="option-item-column">
-                <span class="option-label">${option.label})</span>
-                <span class="option-text">${option.text}</span>
-              </div>
-            `;
-          });
-          printContent += `</div>`;
-        }
-        
-        // Close the options container
-        printContent += `</div>`;
+    if (!userId || !schoolId) {
+      throw new Error('User ID or School ID not available');
+    }
+    
+    // Navigate to saveTestPaper page with all the necessary data
+    router.push({
+      name: 'saveTestPaper',
+      query: {
+        ...route.query, // Pass along current query params
+        paperTitle: paperTitle.value,
+        testDuration: `${hours.value}:${minutes.value}`,
+        saveRequested: 'true', // Flag to indicate save should be performed
+        userId: userId.toString(),
+        schoolId: schoolId.toString(),
+        chapters: JSON.stringify(chapters),
+        weightages: JSON.stringify(weightages)
       }
-      
-      // Add match pairs if present
-      if (question.matchPairs && question.matchPairs.length > 0) {
-        printContent += `<div class="match-pairs-container" style="margin-left: 25px;">`;
-        
-        question.matchPairs.forEach((pair, pairIndex) => {
-          printContent += `
-            <div class="match-pair-row">
-              <div class="match-pair-left">
-                ${pairIndex + 1}. ${pair.leftText}
-              </div>
-              <div class="match-pair-spacer"></div>
-              <div class="match-pair-right">
-                ${pair.rightText}
-              </div>
-            </div>
-          `;
-        });
-        
-        printContent += `</div>`;
-      }
-      
-      // End question content and add marks
-      printContent += `
-            </div>
-            <div class="question-marks">
-              ${question.marks}
-            </div>
-          </div>
-        </div>
-      `;
     });
     
-    // End section
-    printContent += `
-          </div>
-        </div>
-      </div>
-    `;
-  });
-  
-  // Close HTML tags
-  printContent += `
-      </div>
-    </body>
-    </html>
-  `;
-  
-  // Write content to the new window
-  printWindow.document.open();
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  
-  // Wait for content to load then print
-  printWindow.onload = function() {
-    // Add a small delay to ensure all styles are applied
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-  };
-}
-
-// Save page functionality (placeholder)
-const savePage = () => {
-  console.log('Saving test paper...')
-  // In a real implementation, this would call an API to save the test paper
+  } catch (error) {
+    console.error('Error saving test paper:', error);
+    alert('Failed to save test paper. Please try again.');
+    
+    // Reset save button
+    const saveButton = document.querySelector('.btn-dark') as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.innerHTML = '<i class="bi bi-save me-1"></i> Save';
+    }
+  }
 }
 
 // Go back button handler
@@ -1756,6 +1550,16 @@ onMounted(() => {
   
   // Call handleScroll initially to set the correct visibility
   handleScroll()
+  
+  // Load instructions from localStorage if they exist
+  const savedInstructions = localStorage.getItem('examInstructions')
+  if (savedInstructions) {
+    try {
+      examInstructions.value = JSON.parse(savedInstructions)
+    } catch (e) {
+      console.error('Error parsing saved instructions:', e)
+    }
+  }
 })
 
 onBeforeUnmount(() => {
@@ -1948,6 +1752,42 @@ const handleLayoutSelectorsOnScroll = () => {
   if (activeLayoutSelector.value.sectionIndex !== -1) {
     hideLayoutOptions()
   }
+}
+
+// Exam Instructions functionality
+const examInstructions = ref<string[]>([])
+const isEditingInstructions = ref(false)
+const instructionsText = ref('')
+const instructionsTextarea = ref<HTMLTextAreaElement | null>(null)
+
+// Function to start editing instructions
+const startEditingInstructions = () => {
+  isEditingInstructions.value = true
+  instructionsText.value = examInstructions.value.join('\n')
+  nextTick(() => {
+    if (instructionsTextarea.value) {
+      instructionsTextarea.value.focus()
+    }
+  })
+}
+
+// Function to cancel editing instructions
+const cancelEditingInstructions = () => {
+  isEditingInstructions.value = false
+  instructionsText.value = ''
+}
+
+// Function to save instructions
+const saveInstructions = () => {
+  isEditingInstructions.value = false
+  // Filter out empty lines
+  examInstructions.value = instructionsText.value
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+  
+  // Save to localStorage for persistence
+  localStorage.setItem('examInstructions', JSON.stringify(examInstructions.value))
 }
 </script>
 
@@ -3107,6 +2947,98 @@ const handleLayoutSelectorsOnScroll = () => {
     transform: translate(-50%, -50%) !important;
     position: fixed !important;
     margin: 0 !important;
+  }
+}
+
+/* Exam Instructions styles */
+.exam-instructions-container {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  max-width: 100%; /* Changed from 800px to 100% to fit A4 width */
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box; /* Ensure padding is included in width calculations */
+}
+
+.exam-instructions-container h5 {
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #333;
+}
+
+.instructions-display, .instructions-edit-form {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.instruction-list {
+  list-style-type: disc !important;
+  padding-left: 20px !important;
+  margin-bottom: 0;
+  text-align: left;
+  max-width: 100%;
+}
+
+.instruction-list li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+  position: relative;
+  text-align: left;
+  word-wrap: break-word; /* Ensure long words wrap */
+  overflow-wrap: break-word; /* Modern alternative to word-wrap */
+  width: 100%;
+  padding-right: 10px; /* Add some padding to avoid text touching the edge */
+}
+
+.instructions-edit-form .instruction-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  resize: vertical; /* Allow vertical resizing only */
+  white-space: pre-wrap; /* Preserve white space and wrap text */
+  word-wrap: break-word; /* Break long words */
+  overflow-wrap: break-word;
+}
+
+.instructions-edit-form button {
+  margin-right: 10px;
+}
+
+/* Print-specific styles for instructions */
+@media print {
+  .exam-instructions-container {
+    border: 1px solid #ddd;
+    background-color: #fff !important;
+    break-inside: avoid; /* Keep instructions together when printing */
+    width: 100%;
+    margin: 15px 0;
+    page-break-inside: avoid;
+  }
+  
+  .instruction-list li {
+    page-break-inside: avoid;
+  }
+}
+
+/* Mobile specific styles */
+@media (max-width: 576px) {
+  .exam-instructions-container {
+    padding: 10px;
+  }
+  
+  .instruction-list {
+    padding-left: 15px !important;
+  }
+  
+  .instructions-edit-form .instruction-textarea {
+    min-height: 100px;
   }
 }
 </style> 

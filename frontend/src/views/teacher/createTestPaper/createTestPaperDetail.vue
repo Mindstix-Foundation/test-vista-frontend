@@ -468,17 +468,6 @@ interface UserProfile {
   }[];
 }
 
-interface School {
-  id: number;
-  name: string;
-  board: {
-    id: number;
-    name: string;
-    abbreviation: string;
-  };
-  // Other fields not needed for this implementation
-}
-
 // Pattern data interface
 interface PatternSection {
   id: number;
@@ -530,31 +519,49 @@ interface Pattern {
   sections?: PatternSection[];
 }
 
-// State variables for profile and school data
+// State variables for profile data
 const userProfile = ref<UserProfile | null>(null)
-const schoolData = ref<School | null>(null)
 const patternDetails = ref<Pattern | null>(null)
 const isLoading = ref(false)
-const schoolId = computed(() => userProfile.value?.schools?.[0]?.id || 0)
 
-// Get question source from query params (but we don't show UI for it anymore)
+// Get question source from query params
 const questionSource = computed(() => route.query.questionSource as string || 'both')
 
-// Interface for Chapter with marks
-interface ChapterWithMarks {
-  id: number;
-  name: string;
-  sequential_chapter_number: number;
-  marks: number;
-  percentage?: number;
-}
+// Replace placeholder chapters with state from API
+const availableChapters = ref<AvailableChapter[]>([])
+const isLoadingChapters = ref(false)
+const currentQuestionTypeId = ref<number | null>(null)
+const questionTypesData = ref<QuestionTypeData[]>([])
+const chapterMarksRanges = ref<ChapterMarksRange[]>([])
 
-// Interface for basic chapter data from URL query
-interface ChapterQueryData {
-  id: number;
-  name: string;
-  sequential_chapter_number: number;
-}
+// Store selected chapters for each question
+const selectedChapters = ref<Record<string, number>>({})
+
+// State for advanced selection
+const isLoadingQuestionTypes = ref(false);
+const questionTypeError = ref<string | null>(null);
+const questionTypesAvailability = ref<QuestionTypeAvailability[]>([]);
+const activeEditQuestion = ref<{sectionId: number, questionIndex: number} | null>(null);
+const activeQuestionTypeIndex = ref(0);
+
+// Store mappings of question type IDs to their special count limits
+const specialQuestionTypeCounts = ref<Record<number, number>>({});
+
+// Default special count for all question types
+const defaultSpecialCount = ref(3);
+
+// Add a debounce/batch update mechanism to avoid excessive API calls
+const pendingAllocationUpdate = ref(false);
+let allocationUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Add a flag to track manual marks changes
+const marksManuallyChanged = ref(false);
+
+// Add a new state variable to track if the user has generated distribution after changes
+const hasGeneratedDistribution = ref(false);
+
+// Used questions tracking
+const usedQuestions = ref<Record<string, number>>({});
 
 // State for chapters and total marks
 const chapters = ref<ChapterWithMarks[]>([])
@@ -582,14 +589,6 @@ interface QuestionTypeData {
   chapters: QuestionTypeChapter[];
 }
 
-interface ChapterApiResponse {
-  success: boolean;
-  data: {
-    questionTypes: QuestionTypeData[];
-    total: number;
-  };
-}
-
 // New interface for chapter marks range API response
 interface ChapterMarksRange {
   chapterId: number;
@@ -599,59 +598,60 @@ interface ChapterMarksRange {
   maxMarks: number;
 }
 
-// Replace placeholder chapters with state from API
-const availableChapters = ref<AvailableChapter[]>([])
-const isLoadingChapters = ref(false)
-const chapterLoadError = ref<string | null>(null)
-const currentQuestionTypeId = ref<number | null>(null)
-const questionTypesData = ref<QuestionTypeData[]>([])
-const chapterMarksRanges = ref<ChapterMarksRange[]>([]) // New ref for storing marks ranges
-
-// Store selected chapters for each question
-const selectedChapters = ref<Record<string, number>>({})
-
-// New interface for question types availability
-interface QuestionTypeAvailability {
-  type: number;
-  name: string;
-  chapters: {
-    id: number;
-    name: string;
-    count: number;
-  }[];
+// Define interfaces for API responses
+interface AllocationChapter {
+  chapterId: number;
+  chapterName: string;
+  absoluteMarks: number;
+  requestedMarks?: number;
 }
 
-// State for advanced selection
-const isLoadingQuestionTypes = ref(false);
-const questionTypeError = ref<string | null>(null);
-const questionTypesAvailability = ref<QuestionTypeAvailability[]>([]);
-const currentSection = ref<PatternSection | null>(null);
-const currentQuestion = ref<any>(null);
-const usedQuestions = ref<Record<string, number>>({});
-// New state for tracking which question is currently being edited
-const activeEditQuestion = ref<{sectionId: number, questionIndex: number} | null>(null);
-// New state for tracking active question type tab index
-const activeQuestionTypeIndex = ref(0);
+interface SubsectionAllocation {
+  subsectionQuestionTypeId: number;
+  section_id: number;
+  questionTypeName: string;
+  sequentialNumber: number;
+  question_type_id: number;
+  question_type: {
+    id: number;
+    type_name: string;
+  };
+  allocatedChapters: Array<{
+    chapterId: number;
+    chapterName: string;
+  }>;
+}
 
-// Store mappings of question type IDs to their special count limits
-const specialQuestionTypeCounts = ref<Record<number, number>>({
-  // You can override for specific question types if needed
-  // 1: 3, // Example: MCQ has special count of 3
-  // 2: 1, // Example: True/False has special count of 1
-});
+interface SectionAllocation {
+  sectionId: number;
+  pattern_id: number;
+  sectionName: string;
+  sequentialNumber: number;
+  section_number: number;
+  subSection: string;
+  totalQuestions: number;
+  mandotory_questions: number;
+  marks_per_question: number;
+  absoluteMarks: number;
+  totalMarks: number;
+  subsectionAllocations: SubsectionAllocation[];
+}
 
-// Default special count for all question types
-const defaultSpecialCount = ref(3);
-
-// Add a debounce/batch update mechanism to avoid excessive API calls
-const pendingAllocationUpdate = ref(false);
-let allocationUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
-
-// Add a flag to track manual marks changes
-const marksManuallyChanged = ref(false);
-
-// Add a new state variable to track if the user has generated distribution after changes
-const hasGeneratedDistribution = ref(false);
+interface TestPaperAllocation {
+  patternId: number;
+  patternName: string;
+  totalMarks: number;
+  absoluteMarks: number;
+  questionOrigin: string;
+  mediums: Array<{
+    id: number;
+    instruction_medium: string;
+  }>;
+  sectionAllocations: SectionAllocation[];
+  chapterMarks: AllocationChapter[];
+  insufficientQuestions?: boolean;
+  allocationMessage?: string;
+}
 
 // Method to update selected chapter for a question
 const updateSelectedChapter = (sectionId: number, questionIndex: number, chapterId: number) => {
@@ -948,7 +948,7 @@ const initializeChapterSelections = () => {
 }
 
 // Raw API responses data storage
-const testPaperAllocation = ref<any>(null);
+const testPaperAllocation = ref<TestPaperAllocation | null>(null);
 const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null);
 
 // Add a method to fetch test paper allocation
@@ -972,17 +972,9 @@ const fetchTestPaperAllocation = async () => {
     const response = await axiosInstance.get('/test-paper/allocation', {
       params: {
         patternId: patternId,
-        chapterIds: chapterIds,
-        mediumIds: [mediumId],
-        // Include selected chapter assignments to get more accurate allocation
-        chapterAssignments: Object.entries(selectedChapters.value).map(([key, chapterId]) => {
-          const [sectionId, questionIndex] = key.split('-').map(Number);
-          return {
-            sectionId,
-            questionIndex,
-            chapterId
-          };
-        })
+        chapterIds: chapterIds.split(',').map(Number),
+        mediumIds: [Number(mediumId)],
+        questionOrigin: questionSource.value || 'both'
       }
     });
     
@@ -1026,11 +1018,10 @@ const updateChapterMarksFromAllocation = () => {
   // For each chapter in our state, find the corresponding chapter in the allocation
   chapters.value.forEach(chapter => {
     const allocationChapter = testPaperAllocation.value.chapterMarks.find(
-      (ch: any) => ch.chapterId === chapter.id
+      (ch: AllocationChapter) => ch.chapterId === chapter.id
     );
     
     if (allocationChapter) {
-      // Get the absolute marks from the allocation
       const suggestedMarks = allocationChapter.absoluteMarks;
       const previousMarks = chapter.marks;
       
@@ -1038,12 +1029,9 @@ const updateChapterMarksFromAllocation = () => {
       const range = chapterMarksRanges.value.find(r => r.chapterId === chapter.id);
       
       if (range) {
-        // Find the closest valid mark to the suggested value
         if (range.possibleMarks.includes(suggestedMarks)) {
-          // If the suggested mark is valid, use it
           chapter.marks = suggestedMarks;
         } else {
-          // Find the closest valid mark
           const closestMark = range.possibleMarks.reduce((prev, curr) => {
             return Math.abs(curr - suggestedMarks) < Math.abs(prev - suggestedMarks) ? curr : prev;
           }, range.possibleMarks[0]);
@@ -1051,11 +1039,9 @@ const updateChapterMarksFromAllocation = () => {
           chapter.marks = closestMark;
         }
       } else {
-        // If no range is found, use the suggested mark directly
         chapter.marks = suggestedMarks;
       }
       
-      // Log changes for debugging
       if (previousMarks !== chapter.marks) {
         console.log(`Updated marks for chapter ${chapter.id} (${chapter.name}): ${previousMarks} → ${chapter.marks}`);
       }
@@ -1115,7 +1101,7 @@ onMounted(async () => {
 });
 
 // Form submission handler
-const createTestPaper = () => {
+const createTestPaper = async () => {
   if (!isMarksDistributionValid.value) {
     if (totalAssignedMarks.value > absoluteMarks.value) {
       alert(`Total assigned marks (${totalAssignedMarks.value}) exceed the required ${absoluteMarks.value} marks. Please adjust the marks to create a test paper.`);
@@ -1132,42 +1118,57 @@ const createTestPaper = () => {
     }
   }
   
-  // Gather all the selected chapters data
-  const questionAssignments = Object.entries(selectedChapters.value).map(([key, chapterId]) => {
-    const [sectionId, questionIndex] = key.split('-').map(Number);
-    return {
-      sectionId,
-      questionIndex,
-      chapterId
-    };
-  });
-  
-  // Log data for debugging
-  console.log('Creating test paper with question source:', questionSource.value)
-  console.log('Chapters with marks distribution:', chapters.value)
-  console.log('Pattern details:', patternDetails.value)
-  console.log('Question assignments:', questionAssignments)
-  
-  // Prepare query parameters to pass to the test paper preview page
-  const queryParams = {
-    // Display names for UI
-    board: encodeURIComponent(boardName.value),
-    medium: encodeURIComponent(mediumName.value),
-    standard: encodeURIComponent(standardName.value),
-    subject: encodeURIComponent(subjectName.value),
-    patternName: encodeURIComponent(patternName.value),
-    
-    // Other details
-    totalMarks: route.query.totalMarks as string, // Use original totalMarks from route instead of absoluteMarks
-    // Add last used endpoint info
-    lastUsedEndpoint: lastUsedEndpoint.value
+  // First make sure we have allocation data from either method
+  if (!testPaperAllocation.value) {
+    alert('No allocation data available. Please generate marks distribution first.');
+    return;
   }
   
-  // Navigate to the test paper preview page
-  router.push({
-    name: 'testPaperPreview',
-    query: queryParams
-  })
+  try {
+    isLoading.value = true;
+    
+    // Log data for debugging
+    console.log('Creating test paper with allocation data:', testPaperAllocation.value);
+    
+    // Make the POST request to get the final questions distribution
+    const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', testPaperAllocation.value);
+    
+    console.log('Final questions distribution response:', response.data);
+    
+    if (!response.data) {
+      throw new Error('No data received from final questions distribution API');
+    }
+    
+    // Save the final questions distribution response to localStorage for use in preview
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
+    
+    // Prepare query parameters to pass to the test paper preview page
+    const queryParams = {
+      // Display names for UI
+      board: encodeURIComponent(boardName.value),
+      medium: encodeURIComponent(mediumName.value),
+      standard: encodeURIComponent(standardName.value),
+      subject: encodeURIComponent(subjectName.value),
+      patternName: encodeURIComponent(patternName.value),
+      
+      // Other details
+      totalMarks: route.query.totalMarks as string,
+      // Add a flag indicating the questions distribution is available in localStorage
+      hasFinalDistribution: 'true'
+    }
+    
+    // Navigate to the test paper preview page
+    router.push({
+      name: 'testPaperPreview',
+      query: queryParams
+    });
+    
+  } catch (error) {
+    console.error('Error creating test paper:', error);
+    showErrorToast(error instanceof Error ? error.message : 'Failed to create test paper. Please try again.');
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 // Fetch user profile to get school ID
@@ -1432,18 +1433,6 @@ const validateCurrentMarksAgainstRanges = () => {
   });
 };
 
-// Method to check if a mark is in the valid range for a chapter
-const isValidMark = (chapter: ChapterWithMarks, mark: number): boolean => {
-  // Find the range for this chapter
-  const range = chapterMarksRanges.value.find(r => r.chapterId === chapter.id);
-  
-  // If no range found, allow any positive number
-  if (!range) return mark >= 0;
-  
-  // Check if the mark is in the possibleMarks array
-  return range.possibleMarks.includes(mark);
-};
-
 // Method to get the next valid mark for a chapter (for increment)
 const getNextValidMark = (chapter: ChapterWithMarks): number => {
   // Find the range for this chapter
@@ -1563,7 +1552,7 @@ const handleChapterSelection = async (section?: PatternSection, questionIndex?: 
     // If no section or question index, clear the active edit question
     activeEditQuestion.value = null;
   }
-};
+}
 
 // Track used questions for each section-question
 const updateUsedQuestionsCount = () => {
@@ -1571,9 +1560,7 @@ const updateUsedQuestionsCount = () => {
   usedQuestions.value = {};
   
   // Count used questions based on selected chapters
-  Object.entries(selectedChapters.value).forEach(([key, chapterId]) => {
-    // We don't know the question type from selectedChapters, so we can't track precisely
-    // As a simplification, we'll just count all used chapters
+  Object.entries(selectedChapters.value).forEach(([, chapterId]) => {
     if (!usedQuestions.value[`${chapterId}-any`]) {
       usedQuestions.value[`${chapterId}-any`] = 0;
     }
@@ -1672,12 +1659,7 @@ const selectChapterForQuestion = (questionType: number, chapterId: number, secti
   handleChapterSelection();
 }
 
-// Method to get remaining question count
-const getRemainingCount = (chapterId: number, questionType: number, totalCount: number): number => {
-  const key = `${chapterId}-${questionType}`;
-  const usedCount = usedQuestions.value[key] || 0;
-  return Math.max(0, totalCount - usedCount);
-};
+
 
 // Calculate special count for each chapter
 const getSpecialCount = (count: number, questionType: number, chapterId: number): number => {
@@ -1692,54 +1674,13 @@ const getSpecialCount = (count: number, questionType: number, chapterId: number)
   return Math.max(0, typeSpecialCount - usedCount);
 }
 
-// Get formatted chapter name with special count
+// Method to get formatted chapter name with special count
 const getFormattedChapterName = (chapter: QuestionTypeChapter, questionType: number): string => {
   const specialCount = getSpecialCount(chapter.count, questionType, chapter.id);
   return `${chapter.name} (${specialCount})`;
 }
 
-// Method to update selected chapter from dropdown
-const updateSelectedChapterFromDropdown = (event: Event, sectionId: number, questionIndex: number, questionTypeId?: number) => {
-  const value = (event.target as HTMLSelectElement).value;
-  // Skip if header option is selected
-  if (value.startsWith('header-')) return;
-  
-  // Value format is "questionType-chapterId"
-  const [questionTypeStr, chapterIdStr] = value.split('-');
-  if (!questionTypeStr || !chapterIdStr) return;
-  
-  const questionType = parseInt(questionTypeStr);
-  const chapterId = parseInt(chapterIdStr);
-  
-  if (isNaN(questionType) || isNaN(chapterId)) return;
-  
-  // Check if a different chapter was previously selected for this question
-  const previousChapterId = getSelectedChapter(sectionId, questionIndex);
-  if (previousChapterId !== null && previousChapterId !== chapterId) {
-    // Find the previously selected chapter's question type (assume it's the same as current)
-    // Decrement the count for the previous chapter-question type combination
-    const prevKey = `${previousChapterId}-${questionType}`;
-    if (usedQuestions.value[prevKey] && usedQuestions.value[prevKey] > 0) {
-      usedQuestions.value[prevKey] -= 1;
-    }
-  }
-  
-  // Update the used questions count
-  const key = `${chapterId}-${questionType}`;
-  if (!usedQuestions.value[key]) {
-    usedQuestions.value[key] = 0;
-  }
-  usedQuestions.value[key] += 1;
-  
-  // Update selected chapter for the question
-  updateSelectedChapter(sectionId, questionIndex, chapterId);
-}
 
-// Method to check if a chapter is selected
-const isChapterSelected = (sectionId: number, questionIndex: number, chapterId: number): boolean => {
-  const key = `${sectionId}-${questionIndex}`;
-  return selectedChapters.value[key] === chapterId;
-}
 
 // Method to get chapters for a specific question type
 const getChaptersForQuestionType = (questionTypeId: number | undefined): QuestionTypeChapter[] => {
@@ -1846,12 +1787,6 @@ const debugChapterUsage = () => {
   console.log('Chapter usage by question type:', usage);
 }
 
-// Call this after initializing counts
-const afterInitializeUsedQuestionCounts = () => {
-  // Run debug to log chapter usage
-  debugChapterUsage();
-}
-
 // Watch for changes to chapters array - modify the watch function
 watch(() => chapters.value, (newChapters) => {
   // Only trigger API calls if we're not already in the middle of an update
@@ -1927,22 +1862,22 @@ const generate = async () => {
   
   try {
     // Get chapter IDs with marks
-    const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
+    const chapterIds = chapters.value.map(chapter => chapter.id);
     
     // Get medium ID from route or profile
     const mediumId = route.query.mediumId || 
                     userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
                     '1';
     
-    // Extract just the mark values as an array of numbers (not objects)
-    // This is what the API expects for requestedMarks
+    // Extract just the mark values as an array of numbers
     const requestedMarks = chapters.value.map(chapter => chapter.marks);
     
     console.log('Generating marks distribution with:', {
       patternId,
       chapterIds,
-      mediumIds: [mediumId],
-      requestedMarks
+      mediumIds: [Number(mediumId)],
+      requestedMarks,
+      questionOrigin: questionSource.value || 'both'
     });
     
     // Call the API endpoint with the required parameters
@@ -1950,8 +1885,9 @@ const generate = async () => {
       params: {
         patternId,
         chapterIds,
-        mediumIds: [mediumId],
-        requestedMarks
+        mediumIds: [Number(mediumId)],
+        requestedMarks,
+        questionOrigin: questionSource.value || 'both'
       }
     });
     
@@ -1970,36 +1906,57 @@ const generate = async () => {
       lastUsedEndpoint.value = 'distribute';
       localStorage.setItem('lastUsedEndpoint', 'distribute');
       
+      // Update chapter marks from the response
+      if (response.data.chapterMarks) {
+        chapters.value.forEach(chapter => {
+          const chapterMark = response.data.chapterMarks.find(
+            (cm: { chapterId: number; absoluteMarks: number; requestedMarks: number }) => 
+              cm.chapterId === chapter.id
+          );
+          if (chapterMark) {
+            chapter.marks = chapterMark.absoluteMarks;
+          }
+        });
+      }
+      
       // Update question selections based on the new allocation
-      if (testPaperAllocation.value.sectionAllocations) {
+      if (response.data.sectionAllocations) {
         updateSelectedChaptersFromAllocation();
+      }
+      
+      // Show warning if there are insufficient questions
+      if (response.data.insufficientQuestions) {
+        showWarningToast(response.data.allocationMessage || 'Some marks could not be allocated due to insufficient questions');
       }
     } else {
       throw new Error('No data received from chapter marks distribution API');
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in generate function:', error);
-    
-    // Show error notification
-    const errorToast = document.createElement('div');
-    errorToast.className = 'alert alert-danger alert-dismissible fade show fixed-top mx-auto mt-3';
-    errorToast.style.width = '350px';
-    errorToast.style.zIndex = '9999';
-    errorToast.innerHTML = `
-      <strong>Error!</strong> Failed to generate marks distribution. ${error.message || 'Please try again.'}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.body.appendChild(errorToast);
-    
-    // Remove the toast after 5 seconds
-    setTimeout(() => {
-      if (errorToast.parentNode) {
-        document.body.removeChild(errorToast);
-      }
-    }, 5000);
+    showErrorToast(error instanceof Error ? error.message : 'Failed to generate marks distribution. Please try again.');
   } finally {
     isLoading.value = false;
   }
+};
+
+// Add warning toast function
+const showWarningToast = (message: string) => {
+  const warningToast = document.createElement('div');
+  warningToast.className = 'alert alert-warning alert-dismissible fade show fixed-top mx-auto mt-3';
+  warningToast.style.width = '350px';
+  warningToast.style.zIndex = '9999';
+  warningToast.innerHTML = `
+    <strong>Warning!</strong> ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  document.body.appendChild(warningToast);
+  
+  // Remove the toast after 5 seconds
+  setTimeout(() => {
+    if (warningToast.parentNode) {
+      document.body.removeChild(warningToast);
+    }
+  }, 5000);
 };
 
 // Add a function to updateSelectedChaptersFromAllocation 
@@ -2015,13 +1972,13 @@ const updateSelectedChaptersFromAllocation = () => {
   pendingAllocationUpdate.value = true;
   
   // Process each section from the allocation
-  testPaperAllocation.value.sectionAllocations.forEach((section: any) => {
+  testPaperAllocation.value.sectionAllocations.forEach((section: SectionAllocation) => {
     if (section.subsectionAllocations) {
       // Process each subsection
-      section.subsectionAllocations.forEach((subsection: any) => {
+      section.subsectionAllocations.forEach((subsection: SubsectionAllocation) => {
         if (subsection.allocatedChapters) {
           // For each allocated chapter, update the selected chapters map
-          subsection.allocatedChapters.forEach((allocation: any, index: number) => {
+          subsection.allocatedChapters.forEach((allocation, index) => {
             // Get question index based on subsection sequential number if available
             const questionIndex = subsection.sequentialNumber || (index + 1);
             const key = `${section.sectionId}-${questionIndex}`;

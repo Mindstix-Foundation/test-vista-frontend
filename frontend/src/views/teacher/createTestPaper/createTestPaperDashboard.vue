@@ -17,19 +17,47 @@
           <div class="col-12 col-sm-10 col-md-8">
             <!-- Instruction Medium Selection -->
             <div class="mb-3">
-              <SearchableDropdown
-                id="filterMedium"
-                label="Instruction Medium"
-                placeholder="Search for Instruction Medium"
-                :items="instructionMediums"
-                v-model="selectedMediumObj"
-                :search-keys="['name']"
-                required
-                @change="handleMediumChange"
-                next-field-id="filterClass"
-              >
-                <template #label>Instruction Medium <span class="text-danger">*</span></template>
-              </SearchableDropdown>
+              <div class="card">
+                <div class="card-header bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Instruction Medium <span class="text-danger">*</span></h6>
+                    <div class="form-check">
+                      <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        id="selectAllMediums" 
+                        v-model="selectAllMediums" 
+                        @change="toggleAllMediums"
+                      >
+                      <label class="form-check-label" for="selectAllMediums">
+                        {{ selectAllMediums ? 'Deselect All' : 'Select All' }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="row g-2">
+                    <div 
+                      v-for="medium in instructionMediums" 
+                      :key="medium.id" 
+                      class="col-12"
+                    >
+                      <div class="form-check">
+                        <input 
+                          class="form-check-input" 
+                          type="checkbox" 
+                          :id="`medium-${medium.id}`" 
+                          v-model="medium.selected" 
+                          @change="updateSelectedMediums"
+                        >
+                        <label class="form-check-label" :for="`medium-${medium.id}`">
+                          {{ medium.name }}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -43,7 +71,7 @@
                 :items="standards"
                 v-model="selectedStandardObj"
                 :search-keys="['name', 'sequence_number']"
-                :disabled="!selectedMediumObj"
+                :disabled="!selectedMediums.length"
                 required
                 @change="handleStandardChange"
                 next-field-id="filterSubject"
@@ -263,6 +291,7 @@ interface InstructionMediumItem {
   id: number;
   name: string;
   original: SchoolInstructionMedium;
+  selected: boolean;
 }
 
 interface StandardItem {
@@ -352,20 +381,25 @@ interface ChapterItem {
 const userProfile = ref<UserProfile | null>(null)
 const schoolId = computed(() => userProfile.value?.schools?.[0]?.id || 0)
 
-// Selected objects (not just IDs)
-const selectedMediumObj = ref<InstructionMediumItem | null>(null)
-const selectedStandardObj = ref<StandardItem | null>(null)
-const selectedSubjectObj = ref<SubjectItem | null>(null)
-
-// Computed values for form values
-const selectedInstructionMedium = computed(() => selectedMediumObj.value?.original.instruction_medium.id.toString() || '')
-const selectedStandard = computed(() => selectedStandardObj.value?.id?.toString() || '')
-const selectedSubject = computed(() => selectedSubjectObj.value?.subject_id?.toString() || '')
-
 // Options for dropdowns
 const instructionMediums = ref<InstructionMediumItem[]>([])
 const standards = ref<StandardItem[]>([])
 const subjects = ref<SubjectItem[]>([])
+
+// Replace selectedMediumObj with selectedMediums array
+const selectedMediums = ref<InstructionMediumItem[]>([])
+
+// Add selectAllMediums ref
+const selectAllMediums = ref(false)
+
+// Update the computed property for selected instruction medium
+const selectedInstructionMedium = computed(() => {
+  return selectedMediums.value.map(medium => medium.id.toString()).join(',')
+})
+
+// Selected objects (not just IDs)
+const selectedStandardObj = ref<StandardItem | null>(null)
+const selectedSubjectObj = ref<SubjectItem | null>(null)
 
 // Chapter-related state
 const chapters = ref<ChapterItem[]>([])
@@ -384,7 +418,7 @@ const selectedChapters = computed(() => {
 // Form validation
 const isFormValid = computed(() => {
   return (
-    selectedMediumObj.value !== null &&
+    selectedMediums.value.length > 0 &&
     selectedStandardObj.value !== null &&
     selectedSubjectObj.value !== null
   )
@@ -403,9 +437,14 @@ const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
 const fetchUserProfile = async () => {
   try {
     isLoading.value = true
+    console.log('Fetching user profile...')
     const response = await axiosInstance.get('/auth/profile')
+    console.log('User profile response:', response.data)
+    
     if (response.data && response.data.data) {
       userProfile.value = response.data.data
+      console.log('User profile set:', userProfile.value)
+      console.log('School ID:', schoolId.value)
       // After getting user profile, fetch instruction mediums for the school
       await fetchInstructionMediums()
     } else {
@@ -420,24 +459,33 @@ const fetchUserProfile = async () => {
   }
 }
 
-// Fetch instruction mediums based on school ID
+// Update the fetchInstructionMediums function
 const fetchInstructionMediums = async () => {
   if (!schoolId.value) {
+    console.log('No school ID available:', schoolId.value)
     showErrorToast('No school assigned to your profile')
     return
   }
   
   try {
     isLoading.value = true
-    // Use the school-specific API to fetch instruction mediums
+    console.log('Fetching instruction mediums for school:', schoolId.value)
     const response = await axiosInstance.get(`/school-instruction-mediums/school/${schoolId.value}`)
+    console.log('API Response:', response.data)
     
-    // Transform the data into a format that works with SearchableDropdown
-    instructionMediums.value = response.data.map((item: SchoolInstructionMedium) => ({
-      id: item.instruction_medium.id,
-      name: item.instruction_medium.instruction_medium,
-      original: item
-    }))
+    if (Array.isArray(response.data)) {
+      // Transform the data and add selected property
+      instructionMediums.value = response.data.map((item: SchoolInstructionMedium) => ({
+        id: item.instruction_medium.id,
+        name: item.instruction_medium.instruction_medium,
+        original: item,
+        selected: false
+      }))
+      console.log('Transformed instruction mediums:', instructionMediums.value)
+    } else {
+      console.error('Unexpected API response format:', response.data)
+      showErrorToast('Invalid data format received from server')
+    }
   } catch (error) {
     console.error('Error loading instruction mediums:', error)
     showErrorToast('Failed to load instruction mediums. Please refresh the page and try again.')
@@ -446,9 +494,50 @@ const fetchInstructionMediums = async () => {
   }
 }
 
-// Handlers for dropdown changes
+// Update the handleStandardChange function
+const handleStandardChange = async () => {
+  if (!selectedStandardObj.value) {
+    resetDependentFields('standard')
+    return
+  }
+  
+  try {
+    isLoading.value = true
+    
+    // Get subjects from user profile for the selected standard
+    if (userProfile.value && userProfile.value.teaching_subjects) {
+      // Filter subjects based on the selected standard
+      const teachingSubjects = userProfile.value.teaching_subjects.filter(
+        subject => subject.standard.id === selectedStandardObj.value?.id
+      )
+      
+      // Map to the format expected by the component
+      subjects.value = teachingSubjects.map(item => ({
+        subject_id: item.subject.id,
+        subject_name: item.subject.name
+      }))
+      
+      console.log('Subjects from profile:', subjects.value)
+    } else {
+      // Fallback to API if user profile doesn't have teaching subjects
+      const response = await axiosInstance.get(
+        `/medium-standard-subjects/medium/${selectedInstructionMedium.value}/standard/${selectedStandardObj.value.id}`
+      )
+      subjects.value = response.data
+    }
+    
+    resetDependentFields('standard')
+  } catch (error) {
+    showErrorToast('Failed to load subjects')
+    console.error('Error loading subjects:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Update the handleMediumChange function to also handle subjects
 const handleMediumChange = async () => {
-  if (!selectedMediumObj.value) {
+  if (selectedMediums.value.length === 0) {
     resetDependentFields('medium')
     return
   }
@@ -456,7 +545,7 @@ const handleMediumChange = async () => {
   try {
     isLoading.value = true
     
-    // Use the teaching subjects from the user profile to filter standards
+    // Get all standards from user profile
     if (userProfile.value && userProfile.value.teaching_subjects) {
       // Create a unique list of standards
       const uniqueStandards = new Map()
@@ -472,7 +561,28 @@ const handleMediumChange = async () => {
         }
       })
       
-      standards.value = Array.from(uniqueStandards.values())
+      // Sort standards by sequence number
+      standards.value = Array.from(uniqueStandards.values()).sort((a, b) => 
+        a.sequence_number - b.sequence_number
+      )
+      
+      console.log('Standards from profile:', standards.value)
+      
+      // If a standard is already selected, update subjects
+      if (selectedStandardObj.value) {
+        // Filter subjects based on the selected standard
+        const teachingSubjects = userProfile.value.teaching_subjects.filter(
+          subject => subject.standard.id === selectedStandardObj.value?.id
+        )
+        
+        // Map to the format expected by the component
+        subjects.value = teachingSubjects.map(item => ({
+          subject_id: item.subject.id,
+          subject_name: item.subject.name
+        }))
+        
+        console.log('Subjects from profile:', subjects.value)
+      }
     } else {
       // Fallback to API if user profile doesn't have teaching subjects
       const response = await axiosInstance.get(`/standards`)
@@ -488,45 +598,7 @@ const handleMediumChange = async () => {
   }
 }
 
-const handleStandardChange = async () => {
-  if (!selectedStandardObj.value) {
-    resetDependentFields('standard')
-    return
-  }
-  
-  try {
-    isLoading.value = true
-    
-    // Use the teaching subjects from the user profile to filter subjects
-    if (userProfile.value && userProfile.value.teaching_subjects) {
-      // Filter subjects based on the selected standard
-      const teachingSubjects = userProfile.value.teaching_subjects.filter(
-        subject => subject.standard.id === parseInt(selectedStandard.value)
-      )
-      
-      // Map to the format expected by the component
-      subjects.value = teachingSubjects.map(item => ({
-        subject_id: item.subject.id,
-        subject_name: item.subject.name
-      }))
-    } else {
-      // Fallback to API if user profile doesn't have teaching subjects
-      const response = await axiosInstance.get(
-        `/medium-standard-subjects/medium/${selectedInstructionMedium.value}/standard/${selectedStandard.value}`
-      )
-      subjects.value = response.data
-    }
-    
-    resetDependentFields('standard')
-  } catch (error) {
-    showErrorToast('Failed to load subjects')
-    console.error('Error loading subjects:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Handle subject change to fetch chapters
+// Update the handleSubjectChange function
 const handleSubjectChange = async () => {
   if (!selectedSubjectObj.value) {
     chapters.value = []
@@ -539,8 +611,8 @@ const handleSubjectChange = async () => {
     // Fetch chapters for the selected subject, standard, and medium
     const response = await axiosInstance.get('/chapters', {
       params: {
-        subjectId: selectedSubject.value,
-        standardId: selectedStandard.value,
+        subjectId: selectedSubjectObj.value.subject_id,
+        standardId: selectedStandardObj.value?.id,
         mediumId: selectedInstructionMedium.value
       }
     })
@@ -568,31 +640,7 @@ const handleSubjectChange = async () => {
   }
 }
 
-// Toggle all chapters selection
-const toggleAllChapters = () => {
-  chapters.value.forEach(chapter => {
-    chapter.selected = selectAllChapters.value
-  })
-  
-  // Fetch available marks after toggling chapters
-  fetchAvailableMarks()
-}
-
-// Update selected chapters when individual checkboxes change
-const updateSelectedChapters = () => {
-  // Update selectAll checkbox state based on individual selections
-  selectAllChapters.value = chapters.value.length > 0 && chapters.value.every(c => c.selected)
-  
-  // If no chapters are selected, return
-  if (selectedChapters.value.length === 0) {
-    return
-  }
-  
-  // Fetch available marks when chapter selection changes
-  fetchAvailableMarks()
-}
-
-// View syllabus function
+// Update the selectPattern function
 const selectPattern = async () => {
   if (!isFormValid.value) {
     showErrorToast('Please fill all required fields')
@@ -622,14 +670,14 @@ const selectPattern = async () => {
     // Set test paper details with both display names and IDs
     const queryParams = {
       // Display names for UI
-      medium: encodeURIComponent(selectedMediumObj.value?.name || ''),
+      medium: encodeURIComponent(selectedMediums.value.map(m => m.name).join(',')),
       standard: encodeURIComponent(selectedStandardObj.value?.name || ''),
       subject: encodeURIComponent(selectedSubjectObj.value?.subject_name || ''),
       
       // IDs for API calls
       mediumId: selectedInstructionMedium.value,
-      standardId: selectedStandard.value,
-      subjectId: selectedSubject.value,
+      standardId: selectedStandardObj.value?.id?.toString() || '',
+      subjectId: selectedSubjectObj.value?.subject_id?.toString() || '',
       schoolId: schoolId.value.toString(),
       totalMarks: totalMarks.value.toString(),
       questionSource: questionSource.value,
@@ -656,16 +704,16 @@ const selectPattern = async () => {
   }
 }
 
-// Enhanced function to save form state to localStorage
+// Update the saveFormState function
 const saveFormState = () => {
   try {
     // Only save if we have selected at least the basic criteria
-    if (!selectedMediumObj.value || !selectedStandardObj.value || !selectedSubjectObj.value) {
+    if (selectedMediums.value.length === 0 || !selectedStandardObj.value || !selectedSubjectObj.value) {
       return
     }
     
     const formState = {
-      selectedMediumObj: selectedMediumObj.value,
+      selectedMediums: selectedMediums.value,
       selectedStandardObj: selectedStandardObj.value,
       selectedSubjectObj: selectedSubjectObj.value,
       totalMarks: totalMarks.value,
@@ -675,7 +723,7 @@ const saveFormState = () => {
         selected: c.selected
       })),
       selectedMarksObj: selectedMarksObj.value,
-      timestamp: new Date().getTime() // Add timestamp for potential expiration check
+      timestamp: new Date().getTime()
     }
     localStorage.setItem('testPaperDashboardState', JSON.stringify(formState))
   } catch (error) {
@@ -717,7 +765,7 @@ const closeToast = (): void => {
   showToast.value = false
 }
 
-// New function to restore form state from localStorage
+// Update the restoreFormState function
 const restoreFormState = async () => {
   try {
     const savedState = localStorage.getItem('testPaperDashboardState')
@@ -726,9 +774,15 @@ const restoreFormState = async () => {
     const formState = JSON.parse(savedState)
     
     // Restore selected values first
-    if (formState.selectedMediumObj) {
-      selectedMediumObj.value = formState.selectedMediumObj
-      await handleMediumChange()
+    if (formState.selectedMediums) {
+      selectedMediums.value = formState.selectedMediums
+      // Update the selected state in instructionMediums
+      instructionMediums.value.forEach(medium => {
+        medium.selected = selectedMediums.value.some(m => m.id === medium.id)
+      })
+      // Update selectAll state
+      selectAllMediums.value = instructionMediums.value.length > 0 && 
+        instructionMediums.value.every(m => m.selected)
     }
     
     if (formState.selectedStandardObj) {
@@ -802,7 +856,7 @@ watch(questionSource, () => {
   }
 })
 
-// New function to fetch available marks
+// Update the fetchAvailableMarks function
 const fetchAvailableMarks = async () => {
   if (selectedChapters.value.length === 0) {
     availableMarks.value = []
@@ -812,16 +866,23 @@ const fetchAvailableMarks = async () => {
   try {
     isLoading.value = true
     
-    // Get the chapter IDs from selected chapters
-    const chapterIds = selectedChapters.value.map(chapter => chapter.id)
+    // Get the chapter IDs from selected chapters and ensure they are numbers
+    const chapterIds = selectedChapters.value.map(chapter => Number(chapter.id))
+    
+    // Get the medium IDs from selected mediums and ensure they are numbers
+    const mediumIds = selectedMediums.value.map(medium => Number(medium.id))
+    
+    console.log('Fetching marks with params:', {
+      mediumIds,
+      chapterIds,
+      questionOrigin: questionSource.value
+    })
     
     // Fetch available marks for the selected criteria
     const response = await axiosInstance.get('/pattern-filter/unique-marks', {
       params: {
-        mediumId: selectedInstructionMedium.value,
-        standardId: selectedStandard.value,
-        subjectId: selectedSubject.value,
-        chapterIds: chapterIds,
+        mediumIds,
+        chapterIds,
         questionOrigin: questionSource.value
       }
     })
@@ -832,6 +893,8 @@ const fetchAvailableMarks = async () => {
         id: mark,
         name: mark.toString()
       }))
+      
+      console.log('Available marks:', availableMarks.value)
       
       // Reset selected marks
       selectedMarksObj.value = null
@@ -849,6 +912,27 @@ const fetchAvailableMarks = async () => {
   }
 }
 
+// Update the updateSelectedChapters function to fetch marks
+const updateSelectedChapters = () => {
+  // Update selectAll checkbox state based on individual selections
+  selectAllChapters.value = chapters.value.length > 0 && chapters.value.every(c => c.selected)
+  
+  // If no chapters are selected, return
+  if (selectedChapters.value.length === 0) {
+    return
+  }
+  
+  // Fetch available marks when chapter selection changes
+  fetchAvailableMarks()
+}
+
+// Update the watch for selectedMediums to fetch marks
+watch(() => selectedMediums.value, () => {
+  if (selectedChapters.value.length > 0) {
+    fetchAvailableMarks()
+  }
+}, { deep: true })
+
 // New handler for marks dropdown change
 const handleMarksChange = () => {
   if (selectedMarksObj.value) {
@@ -861,7 +945,7 @@ const handleMarksChange = () => {
 // Watch for changes in the form to automatically save state
 watch(
   [
-    selectedMediumObj, 
+    () => selectedMediums.value,
     selectedStandardObj, 
     selectedSubjectObj,
     questionSource,
@@ -869,7 +953,6 @@ watch(
     () => chapters.value.map(c => c.selected)
   ],
   () => {
-    // Save form state whenever any of these values changes
     saveFormState()
   },
   { deep: true }
@@ -890,6 +973,44 @@ onBeforeUnmount(() => {
     localStorage.removeItem('testPaperDashboardState')
   }
 })
+
+// Add new functions for handling medium selection
+const toggleAllMediums = () => {
+  instructionMediums.value.forEach(medium => {
+    medium.selected = selectAllMediums.value
+  })
+  updateSelectedMediums()
+}
+
+// Add the missing toggleAllChapters function
+const toggleAllChapters = () => {
+  chapters.value.forEach(chapter => {
+    chapter.selected = selectAllChapters.value
+  })
+  updateSelectedChapters()
+}
+
+const updateSelectedMediums = () => {
+  // Update selectAll checkbox state based on individual selections
+  selectAllMediums.value = instructionMediums.value.length > 0 && 
+    instructionMediums.value.every(m => m.selected)
+  
+  // Update selected mediums array
+  selectedMediums.value = instructionMediums.value.filter(m => m.selected)
+  
+  // Call handleMediumChange to update standards and subjects
+  handleMediumChange()
+  
+  // Reset dependent fields if no mediums are selected
+  if (selectedMediums.value.length === 0) {
+    resetDependentFields('medium')
+  }
+}
+
+// Add a watch to monitor instructionMediums changes
+watch(instructionMediums, (newValue) => {
+  console.log('Instruction mediums updated:', newValue)
+}, { deep: true })
 </script>
 
 <style scoped>

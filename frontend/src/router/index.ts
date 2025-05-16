@@ -253,6 +253,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/createTestPaper/selectPattern.vue'),
       },
       {
+        path: 'previous-test-paper',
+        name: 'previousTestPaper',
+        component: () => import('@/views/teacher/previousTestPaper/PreviousTestPaperDashboard.vue'),
+      },
+      {
         path: 'create-test-paper-detail',
         name: 'createTestPaperDetail',
         // This component would need to be created in a future task
@@ -262,6 +267,11 @@ const routes: RouteRecordRaw[] = [
         path: 'test-paper-preview',
         name: 'testPaperPreview',
         component: () => import('@/views/teacher/createTestPaper/testPaperPreview.vue'),
+      },
+      {
+        path: 'save-test-paper',
+        name: 'saveTestPaper',
+        component: () => import('@/views/teacher/createTestPaper/saveTestPaper.vue'),
       },
     ],
   },

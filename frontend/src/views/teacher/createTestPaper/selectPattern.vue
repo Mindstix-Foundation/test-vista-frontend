@@ -453,10 +453,9 @@ const toastType = ref<'success' | 'error' | 'info' | 'warning'>('info')
 // Get IDs from query parameters
 const boardId = route.query.boardId as string
 const mediumId = route.query.mediumId as string
-const standardId = route.query.standardId as string
-const subjectId = route.query.subjectId as string
+const questionSource = route.query.questionSource as string || 'both'
 
-// Interface for chapter data from query parameter
+// Interface for chapter data from URL query
 interface ChapterData {
   id: number;
   name: string;
@@ -466,7 +465,6 @@ interface ChapterData {
 const chaptersData = route.query.chapters 
   ? JSON.parse(decodeURIComponent(route.query.chapters as string)) as ChapterData[]
   : []
-const questionSource = route.query.questionSource as string
 
 // Display names from query parameters - board name now comes from the user profile
 const boardName = computed(() => {
@@ -582,33 +580,24 @@ onMounted(async () => {
 
 // Function to fetch patterns
 const fetchPatterns = async () => {
-  // Use board ID from user profile if available, otherwise use from query params
-  const boardIdToUse = userProfile.value?.schools?.[0]?.board?.id?.toString() || boardId
-  
-  if (!boardIdToUse) {
-    showErrorToast('Board ID is required')
-    return
-  }
-
   try {
     isLoading.value = true
     
     // Extract chapter IDs from chapters data
     const chapterIds = chaptersData.map((chapter: ChapterData) => chapter.id)
     
+    // Get medium IDs from the query parameter
+    const mediumIds = mediumId.split(',').map(id => Number(id))
+    
     // Build query parameters
-    const params: Record<string, string | number | (string | number)[]> = {
-      mediumId: mediumId,
-      standardId: standardId,
-      subjectId: subjectId,
-      chapterIds: chapterIds,
-      questionOrigin: questionSource || 'both'
+    const params = {
+      mediumIds,
+      chapterIds,
+      questionOrigin: questionSource,
+      marks: parseInt(totalMarksFromPrevious)
     }
     
-    // Add marks from the previous page
-    if (totalMarksFromPrevious) {
-      params.marks = parseInt(totalMarksFromPrevious)
-    }
+    console.log('Fetching patterns with params:', params)
     
     // Use the pattern-filter endpoint
     const response = await axiosInstance.get('/pattern-filter', { params })
@@ -620,11 +609,16 @@ const fetchPatterns = async () => {
         patterns.value = response.data.patterns.map((pattern: Pattern) => ({
           ...pattern,
           isExpanded: false
-        }));
+        }))
         
         // Set total items and pages
         totalItems.value = response.data.count || patterns.value.length
         totalPages.value = Math.ceil(totalItems.value / pageSize.value)
+        
+        // Log invalid patterns if any
+        if (response.data.invalidPatternsCount > 0) {
+          console.log('Invalid patterns:', response.data.invalidPatterns)
+        }
       } else {
         patterns.value = []
       }
