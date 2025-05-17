@@ -97,112 +97,150 @@
           <hr class="mt-2" />
         </div>
 
-        <div class="paper-content" id="printSection">
-          <div class="text-center document-header">
-            <h5 class="school-name">{{ schoolName }}</h5>
-            <h3 class="paper-title">{{ paperTitle }}</h3>
-            <p style="margin-bottom: 5px;"><strong>Subject:</strong> {{ subjectName }} | <strong>Standard:</strong> {{ standardName }}</p>
-            <p style="margin-top: 5px;">
-              <strong>Time:</strong> {{ testDuration }} | <strong>Total Marks:</strong> {{ totalMarks }}
-            </p>
-            
-            <!-- Exam Instructions Section - Only shown if instructions exist -->
-            <div class="exam-instructions-container mt-4" v-if="examInstructions.length > 0">
-              <h5 class="m-0 mb-2">Exam Instructions</h5>
-              <div class="instructions-display">
-                <ul class="text-start instruction-list">
-                  <li v-for="(instruction, index) in examInstructions" :key="index">
-                    {{ instruction }}
-                  </li>
-                </ul>
+        <!-- New View Mode Toggle for Mobile -->
+        <div class="row mb-3 d-md-none no-print">
+          <div class="col-12 d-flex justify-content-center">
+            <div class="view-mode-toggle-container">
+              <div class="form-check form-switch form-check-inline">
+                <input class="form-check-input" type="checkbox" id="viewModeToggle" v-model="mobileViewMode">
+                <label class="form-check-label" for="viewModeToggle">
+                  <span v-if="mobileViewMode"><i class="bi bi-phone me-1"></i> Mobile View</span>
+                  <span v-else><i class="bi bi-file-earmark-text me-1"></i> A4 Preview</span>
+                </label>
+              </div>
+              <!-- New zoom slider for A4 view on mobile -->
+              <div v-if="!mobileViewMode" class="zoom-control-container mt-2">
+                <div class="zoom-label d-flex align-items-center justify-content-center">
+                  <i class="bi bi-zoom-out me-2"></i>
+                  <input 
+                    type="range" 
+                    class="form-range zoom-slider" 
+                    min="50" 
+                    max="100" 
+                    step="5" 
+                    v-model="zoomLevel"
+                    @input="updateZoom"
+                  >
+                  <i class="bi bi-zoom-in ms-2"></i>
+                </div>
+                <div class="zoom-value">{{ zoomLevel }}%</div>
+              </div>
+              <div v-if="!mobileViewMode" class="scroll-hint d-md-none">
+                <small><i class="bi bi-arrows-expand-horizontal"></i> Scroll horizontally to view full page</small>
               </div>
             </div>
           </div>
-          <hr>
+        </div>
 
-          <!-- Questions Section - MS Office A4 style layout -->
-          <div class="a4-paper-section mb-4" 
-            v-for="(section, sectionIndex) in testPaperSections" 
-            :key="sectionIndex"
-          >
-            <!-- Section Header -->
-            <div class="section-header">
-              <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span v-if="section.mandotory_questions && section.questions && section.mandotory_questions < section.questions.length" class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
-            
-              <div class="section-marks">
-                <strong>
-                  <span class="nowrap">
-                    {{ section.totalMarks }} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
-                  </span>
-                </strong>
+        <!-- A4 Paper Wrapper -->
+        <div class="a4-paper-container" :class="{'mobile-view': mobileViewMode}">
+          <div class="a4-paper-card" :style="a4PaperStyle" id="printSection">
+            <div class="text-center document-header">
+              <h5 class="school-name">{{ schoolName }}</h5>
+              <h3 class="paper-title">{{ paperTitle }}</h3>
+              <p style="margin-bottom: 5px;"><strong>Subject:</strong> {{ subjectName }} | <strong>Standard:</strong> {{ standardName }}</p>
+              <p style="margin-top: 5px;">
+                <strong>Time:</strong> {{ testDuration }} | <strong>Total Marks:</strong> {{ totalMarks }}
+              </p>
+              
+              <!-- Exam Instructions Section - Only shown if instructions exist -->
+              <div class="exam-instructions-container mt-4" v-if="examInstructions.length > 0">
+                <h5 class="m-0 mb-2">Exam Instructions</h5>
+                <div class="instructions-display">
+                  <ul class="text-start instruction-list">
+                    <li v-for="(instruction, index) in examInstructions" :key="index">
+                      {{ instruction }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
-            
-            <!-- Questions List - Plain A4 style -->
-            <div class="section-content">
-              <div class="question-list">
-                <div v-for="(question, questionIndex) in section.questions" :key="questionIndex" class="question-item">
-                  <div class="question-wrapper" :id="`question-${sectionIndex}-${questionIndex}`">
-                    <div class="d-flex w-100">
-                    <!-- Question Content -->
-                    <div class="question-content">
-                      <div class="question-text">
-                        {{ question.questionNumber }}. {{ question.questionText }}
-                      </div>
-                        
-                      <!-- MCQ Options -->
-                      <div v-if="question.options && question.options.length > 0" class="options-container">
-                        <!-- Row layout (all options in one row) -->
-                        <div v-if="getOptionLayout(sectionIndex, questionIndex) === 'row'" class="options-row">
-                          <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-row">
-                            <span class="option-label">{{ option.label }})</span>
-                            <span class="option-text">{{ option.text }}</span>
+            <hr>
+
+            <!-- Questions Section - MS Office A4 style layout -->
+            <div class="a4-paper-section mb-4" 
+              v-for="(section, sectionIndex) in testPaperSections" 
+              :key="sectionIndex"
+            >
+              <!-- Section Header -->
+              <div class="section-header">
+                <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span v-if="section.mandotory_questions && section.questions && section.mandotory_questions < section.questions.length" class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
+              
+                <div class="section-marks">
+                  <strong>
+                    <span class="nowrap">
+                      {{ section.totalMarks }} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
+                    </span>
+                  </strong>
+                </div>
+              </div>
+              
+              <!-- Questions List - Plain A4 style -->
+              <div class="section-content">
+                <div class="question-list">
+                  <div v-for="(question, questionIndex) in section.questions" :key="questionIndex" class="question-item">
+                    <div class="question-wrapper" :id="`question-${sectionIndex}-${questionIndex}`">
+                      <div class="d-flex w-100">
+                        <!-- Question Content -->
+                        <div class="question-content">
+                          <div class="question-text">
+                            {{ question.questionNumber }}. {{ question.questionText }}
                           </div>
-                        </div>
-                        
-                        <!-- Grid layout (2x2) -->
-                        <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'grid'" class="options-grid">
-                          <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-grid">
-                            <span class="option-label">{{ option.label }})</span>
-                            <span class="option-text">{{ option.text }}</span>
-                          </div>
-                        </div>
-                        
-                        <!-- Column layout (all options in one column) -->
-                        <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'column'" class="options-column">
-                          <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-column">
-                            <span class="option-label">{{ option.label }})</span>
-                            <span class="option-text">{{ option.text }}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- Match Pairs -->
-                      <div v-if="question.matchPairs && question.matchPairs.length > 0" class="match-pairs-container">
-                        <div class="row">
-                          <div class="col-6">
-                            <div v-for="(pair, pairIndex) in question.matchPairs" :key="`left-${pairIndex}`" class="match-pair-item">
-                              {{ pairIndex + 1 }}. {{ pair.leftText }}
+                          
+                          <!-- MCQ Options -->
+                          <div v-if="question.options && question.options.length > 0" class="options-container">
+                            <!-- Row layout (all options in one row) -->
+                            <div v-if="getOptionLayout(sectionIndex, questionIndex) === 'row'" class="options-row">
+                              <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-row">
+                                <span class="option-label">{{ option.label }})</span>
+                                <span class="option-text">{{ option.text }}</span>
+                              </div>
+                            </div>
+                            
+                            <!-- Grid layout (2x2) -->
+                            <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'grid'" class="options-grid">
+                              <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-grid">
+                                <span class="option-label">{{ option.label }})</span>
+                                <span class="option-text">{{ option.text }}</span>
+                              </div>
+                            </div>
+                            
+                            <!-- Column layout (all options in one column) -->
+                            <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'column'" class="options-column">
+                              <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-column">
+                                <span class="option-label">{{ option.label }})</span>
+                                <span class="option-text">{{ option.text }}</span>
+                              </div>
                             </div>
                           </div>
-                          <div class="col-6">
-                            <div v-for="(pair, pairIndex) in question.matchPairs" :key="`right-${pairIndex}`" class="match-pair-item">
-                              {{ pair.rightText }}
+                          
+                          <!-- Match Pairs -->
+                          <div v-if="question.matchPairs && question.matchPairs.length > 0" class="match-pairs-container">
+                            <div class="row">
+                              <div class="col-6">
+                                <div v-for="(pair, pairIndex) in question.matchPairs" :key="`left-${pairIndex}`" class="match-pair-item">
+                                  {{ pairIndex + 1 }}. {{ pair.leftText }}
+                                </div>
+                              </div>
+                              <div class="col-6">
+                                <div v-for="(pair, pairIndex) in question.matchPairs" :key="`right-${pairIndex}`" class="match-pair-item">
+                                  {{ pair.rightText }}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
+                        
+                        <!-- Marks -->
+                        <div class="question-marks">
+                          <div class="marks-row">
+                            <span class="marks fw-bold">{{ question.marks }}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <!-- Marks -->
-                    <div class="question-marks">
-                      <div class="marks-row">
-                        <span class="marks fw-bold">{{ question.marks }}</span>
-                      </div>
-                    </div>
+                      <hr class="question-divider" />
                     </div>
                   </div>
-                  <hr class="question-divider" />
                 </div>
               </div>
             </div>
@@ -1202,6 +1240,39 @@ const handleScroll = () => {
     }
   }
 }
+
+// Add mobile view mode and zoom script variables
+// After the handleMediumDropdownClickOutside function
+
+// Add mobileViewMode state and zoom level
+const mobileViewMode = ref(false);
+const zoomLevel = ref(100);
+
+// Computed style for A4 paper based on zoom level
+const a4PaperStyle = computed(() => {
+  if (!mobileViewMode.value && zoomLevel.value < 100) {
+    const scale = zoomLevel.value / 100;
+    return {
+      transform: `scale(${scale})`,
+      transformOrigin: 'top center',
+      marginBottom: `${30 - (30 * scale)}px`
+    };
+  }
+  return {};
+});
+
+// Update zoom function
+const updateZoom = () => {
+  // Update localStorage to remember user's preference
+  localStorage.setItem('a4ZoomLevel', zoomLevel.value.toString());
+};
+
+// In the initializeComponent function, add after loading option layouts:
+// Load saved zoom level from localStorage
+const savedZoomLevel = localStorage.getItem('a4ZoomLevel');
+if (savedZoomLevel) {
+  zoomLevel.value = parseInt(savedZoomLevel);
+}
 </script>
 
 <style scoped>
@@ -1214,6 +1285,154 @@ const handleScroll = () => {
   background-color: white;
   box-shadow: none;
   font-family: 'Times New Roman', Times, serif; /* Typical document font */
+}
+
+/* Additional A4 Paper Styles */
+.a4-paper-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 30px;
+  overflow-x: auto; /* Add horizontal scrolling for small screens */
+  -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+}
+
+.a4-paper-card {
+  width: 210mm; /* A4 width */
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 10mm; /* Standard A4 margins */
+  border: 1px solid #ddd;
+  margin: 0 auto;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0; /* Prevent paper from shrinking */
+  /* Add transition for smooth zoom effect */
+  transition: transform 0.2s ease;
+}
+
+/* Mobile view mode styles */
+.mobile-view {
+  width: 100%;
+  padding: 0;
+  overflow-x: visible; /* Reset overflow behavior for mobile view */
+}
+
+.mobile-view .a4-paper-card {
+  width: 100%; /* Allow full width for mobile view mode */
+  min-width: auto; /* Allow to shrink in mobile view */
+  max-width: 100%; /* Ensure it doesn't exceed screen width */
+  min-height: auto;
+  padding: 15px;
+  box-shadow: none;
+  border: none;
+  margin: 0;
+  overflow: visible;
+  flex-shrink: 1; /* Allow shrinking in mobile view */
+  transform: none !important; /* Reset any transform in mobile view */
+}
+
+/* For screens smaller than tablets, ensure A4 remains visible */
+@media (max-width: 768px) {
+  .a4-paper-container:not(.mobile-view) {
+    justify-content: flex-start; /* Align to start for better scrolling UX */
+    padding-bottom: 10px; /* Add space for scrollbar */
+  }
+  
+  .a4-paper-container:not(.mobile-view)::after {
+    content: '';
+    display: block;
+    width: 20px; /* Space after the A4 paper */
+    flex-shrink: 0;
+  }
+}
+
+/* For desktop screens, improve A4 display */
+@media (min-width: 769px) {
+  .a4-paper-container {
+    max-width: 210mm; /* Limit to A4 width */
+    margin-left: auto;
+    margin-right: auto;
+    overflow-x: visible; /* No horizontal scroll needed on desktop */
+  }
+  
+  .a4-paper-card {
+    max-width: 100%; /* Ensure it fits within container */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); /* Enhanced shadow for desktop */
+  }
+}
+
+/* View Mode Toggle Styles */
+.view-mode-toggle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+  background-color: rgba(255,255,255,0.9);
+  padding: 5px 15px;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.form-check-input {
+  margin-right: 10px;
+}
+
+/* Zoom control styles */
+.zoom-control-container {
+  width: 100%;
+  max-width: 250px;
+}
+
+.zoom-label {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: #6c757d;
+}
+
+.zoom-slider {
+  flex: 1;
+}
+
+.zoom-value {
+  font-size: 0.8rem;
+  color: #6c757d;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.scroll-hint {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* Print styles for A4 paper */
+@media print {
+  .a4-paper-card {
+    width: 210mm;
+    height: auto;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    transform: none !important; /* Reset any transform when printing */
+  }
+  
+  /* Hide view mode toggle and zoom controls when printing */
+  .view-mode-toggle-container,
+  .zoom-control-container {
+    display: none !important;
+  }
+  
+  /* Always use A4 preview mode when printing */
+  .mobile-view .a4-paper-card {
+    width: 210mm;
+    min-height: auto;
+    padding: 20mm;
+  }
 }
 
 /* Document header styles */
