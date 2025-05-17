@@ -504,32 +504,30 @@ const handleStandardChange = async () => {
   try {
     isLoading.value = true
     
-    // Get subjects from user profile for the selected standard
-    if (userProfile.value && userProfile.value.teaching_subjects) {
-      // Filter subjects based on the selected standard
-      const teachingSubjects = userProfile.value.teaching_subjects.filter(
-        subject => subject.standard.id === selectedStandardObj.value?.id
-      )
-      
-      // Map to the format expected by the component
-      subjects.value = teachingSubjects.map(item => ({
-        subject_id: item.subject.id,
-        subject_name: item.subject.name
-      }))
-      
-      console.log('Subjects from profile:', subjects.value)
-    } else {
-      // Fallback to API if user profile doesn't have teaching subjects
-      const response = await axiosInstance.get(
-        `/medium-standard-subjects/medium/${selectedInstructionMedium.value}/standard/${selectedStandardObj.value.id}`
-      )
-      subjects.value = response.data
-    }
+    // Get the selected medium IDs
+    const mediumIds = selectedMediums.value.map(medium => medium.id)
+    
+    // Use the new endpoint to fetch common subjects across selected mediums for this standard
+    const response = await axiosInstance.get('/subjects/common-subjects', {
+      params: {
+        standard_id: selectedStandardObj.value.id,
+        medium_ids: mediumIds
+      }
+    })
+    
+    // Transform the data to the format expected by the UI component
+    subjects.value = response.data.map(item => ({
+      subject_id: item.id,
+      subject_name: item.name
+    }))
+    
+    console.log('Common subjects:', subjects.value)
     
     resetDependentFields('standard')
   } catch (error) {
     showErrorToast('Failed to load subjects')
     console.error('Error loading subjects:', error)
+    subjects.value = []
   } finally {
     isLoading.value = false
   }
@@ -545,54 +543,30 @@ const handleMediumChange = async () => {
   try {
     isLoading.value = true
     
-    // Get all standards from user profile
-    if (userProfile.value && userProfile.value.teaching_subjects) {
-      // Create a unique list of standards
-      const uniqueStandards = new Map()
-      userProfile.value.teaching_subjects.forEach(subject => {
-        const standard = subject.standard
-        if (!uniqueStandards.has(standard.id)) {
-          uniqueStandards.set(standard.id, {
-            id: standard.id,
-            name: standard.name,
-            sequence_number: standard.sequence_number,
-            board_id: 0 // We don't have this info but it's required by the interface
-          })
-        }
-      })
-      
-      // Sort standards by sequence number
-      standards.value = Array.from(uniqueStandards.values()).sort((a, b) => 
-        a.sequence_number - b.sequence_number
-      )
-      
-      console.log('Standards from profile:', standards.value)
-      
-      // If a standard is already selected, update subjects
-      if (selectedStandardObj.value) {
-        // Filter subjects based on the selected standard
-        const teachingSubjects = userProfile.value.teaching_subjects.filter(
-          subject => subject.standard.id === selectedStandardObj.value?.id
-        )
-        
-        // Map to the format expected by the component
-        subjects.value = teachingSubjects.map(item => ({
-          subject_id: item.subject.id,
-          subject_name: item.subject.name
-        }))
-        
-        console.log('Subjects from profile:', subjects.value)
+    // Get the selected medium IDs
+    const mediumIds = selectedMediums.value.map(medium => medium.id)
+    
+    // Use the new endpoint to fetch common standards across selected mediums
+    const response = await axiosInstance.get('/standards/common-standards', {
+      params: {
+        instruction_medium_ids: mediumIds
       }
-    } else {
-      // Fallback to API if user profile doesn't have teaching subjects
-      const response = await axiosInstance.get(`/standards`)
-      standards.value = response.data
+    })
+    
+    // Set the standards from the API response
+    standards.value = response.data
+    console.log('Common standards:', standards.value)
+    
+    // If a standard is already selected, update subjects
+    if (selectedStandardObj.value) {
+      await handleStandardChange()
     }
     
     resetDependentFields('medium')
   } catch (error) {
     showErrorToast('Failed to load standards')
     console.error('Error loading standards:', error)
+    standards.value = []
   } finally {
     isLoading.value = false
   }
