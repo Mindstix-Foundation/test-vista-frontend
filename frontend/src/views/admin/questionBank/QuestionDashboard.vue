@@ -162,9 +162,11 @@
 
       <!-- Loading State -->
       <div v-if="isLoading && !isSearching" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
+        <output
+          class="spinner-border text-primary"
+        >
           <span class="visually-hidden">Loading...</span>
-        </div>
+        </output>
       </div>
 
       <!-- Content when data is loaded -->
@@ -173,9 +175,9 @@
         <div class="row g-2 justify-content-center position-relative" id="verifiedContainer" v-show="!showUnverified">
           <!-- Loading overlay for search -->
           <div v-if="isSearching" class="search-loading-overlay">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <output class="spinner-border spinner-border-sm text-primary">
               <span class="visually-hidden">Searching...</span>
-            </div>
+            </output>
           </div>
 
           <div v-for="(question, index) in filteredVerifiedQuestions" :key="'verified-' + index" class="col-12 col-md-10">
@@ -233,9 +235,9 @@
         <div class="row g-2 justify-content-center position-relative" id="unverifiedContainer" v-show="showUnverified">
           <!-- Loading overlay for search -->
           <div v-if="isSearching" class="search-loading-overlay">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <output class="spinner-border spinner-border-sm text-primary">
               <span class="visually-hidden">Searching...</span>
-            </div>
+            </output>
           </div>
 
           <div v-for="(question, index) in filteredUnverifiedQuestions" :key="'unverified-' + index" class="col-12 col-md-10">
@@ -450,10 +452,22 @@ interface Question {
   imageUrl?: string | null;
   correctCorrelation?: number[];
   question_text_id?: number;
-  optionImages?: string[];
+  optionImages?: (string | null)[];
   translationStatus?: string;
-  lhsImages?: string[];
-  rhsImages?: string[];
+  lhsImages?: (string | null)[];
+  rhsImages?: (string | null)[];
+}
+
+// Define a new interface for the result object in processing functions
+interface ProcessedQuestionTypeData {
+  options?: string[];
+  optionImages?: (string | null)[] | undefined;
+  correctOptionIndex?: number | undefined;
+  lhs?: (string | null)[] | undefined;
+  rhs?: (string | null)[] | undefined;
+  lhsImages?: (string | null)[] | undefined;
+  rhsImages?: (string | null)[] | undefined;
+  correctAnswer?: string | undefined;
 }
 
 // Component name (for linter)
@@ -945,7 +959,7 @@ function deleteUnverifiedQuestion(index: number) {
 
         // Show success toast
         toastTitle.value = 'Success';
-        toastMessage.value = 'Question text deleted successfully';
+        toastMessage.value = 'Question deleted successfully';
         toastType.value = 'success';
         showToast.value = true;
 
@@ -953,13 +967,17 @@ function deleteUnverifiedQuestion(index: number) {
         setTimeout(() => {
           showToast.value = false;
         }, 3000);
+
+        // Refresh the pagination and unverified count
+        fetchQuestions();
+        fetchUnverifiedCount();
       })
       .catch(error => {
         console.error('Error deleting question text:', error);
 
         // Show error toast
         toastTitle.value = 'Error';
-        toastMessage.value = error.response?.data?.message || 'Failed to delete question text';
+        toastMessage.value = error.response?.data?.message || 'Failed to delete question';
         toastType.value = 'error';
         showToast.value = true;
 
@@ -1030,6 +1048,9 @@ function verifyQuestion(index: number) {
         fetchQuestions();
       }
 
+      // Refresh the unverified count
+      fetchUnverifiedCount();
+
       // Show success toast with message based on translation status
       toastTitle.value = 'Success';
       toastMessage.value = response.data?.message ||
@@ -1080,7 +1101,7 @@ function deleteVerifiedQuestion(question: Question, index: number) {
 
       // Show success toast
       toastTitle.value = 'Success';
-      toastMessage.value = 'Question text deleted successfully';
+      toastMessage.value = 'Question deleted successfully';
       toastType.value = 'success';
       showToast.value = true;
 
@@ -1088,13 +1109,17 @@ function deleteVerifiedQuestion(question: Question, index: number) {
       setTimeout(() => {
         showToast.value = false;
       }, 3000);
+
+      // Refresh the pagination and unverified count
+      fetchQuestions();
+      fetchUnverifiedCount();
     })
     .catch(error => {
       console.error('Error deleting question text:', error);
 
       // Show error toast
       toastTitle.value = 'Error';
-      toastMessage.value = error.response?.data?.message || 'Failed to delete question text';
+      toastMessage.value = error.response?.data?.message || 'Failed to delete question';
       toastType.value = 'error';
       showToast.value = true;
 
@@ -1103,15 +1128,6 @@ function deleteVerifiedQuestion(question: Question, index: number) {
         showToast.value = false;
       }, 5000);
     });
-}
-
-// Add this interface with the component interfaces
-interface AxiosError {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
 }
 
 async function removeQuestionFromChapter(question: Question, index: number, type: 'verified' | 'unverified') {
@@ -1131,7 +1147,7 @@ async function removeQuestionFromChapter(question: Question, index: number, type
     };
 
     // Call the new API endpoint
-    const response = await axiosInstance.delete(
+    await axiosInstance.delete(
       `/questions/${question.id}/remove-from-chapter`,
       { data: requestBody }
     );
@@ -1143,23 +1159,23 @@ async function removeQuestionFromChapter(question: Question, index: number, type
       unverifiedQuestions.value.splice(index, 1);
     }
 
-    // Show success toast with the API response message
+    // Show success toast with simplified message instead of API response message
     toastStore.showToast({
       title: 'Success',
-      message: response.data?.message || 'Question removed from chapter successfully',
+      message: 'Question deleted successfully',
       type: 'success'
     });
 
-    // Refresh questions to update the UI
+    // Refresh questions to update the UI and unverified count
     fetchQuestions();
+    fetchUnverifiedCount();
   } catch (error) {
     console.error('Error removing question from chapter:', error);
     
-    const axiosError = error as AxiosError;
-    // Show error toast with type-safe error handling
+    // Show simplified error toast message
     toastStore.showToast({
       title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to remove question from chapter',
+      message: 'Failed to delete question',
       type: 'error'
     });
   }
@@ -1242,184 +1258,8 @@ async function fetchQuestions() {
 
       // Transform API response to match our component's expected structure
       const questions = response.data.data.map((apiQuestion: ApiQuestion) => {
-        // Get the first question text (assuming there's at least one)
-        const questionTextData = apiQuestion.question_texts.length > 0
-          ? apiQuestion.question_texts[0]
-          : null;
-
-        const questionText = questionTextData
-          ? questionTextData.question_text
-          : '';
-
-        // Store the question_text_id
-        const questionTextId = questionTextData
-          ? questionTextData.id
-          : null;
-
-        // Get image ID and presigned URL if available
-        let imageId = null;
-        let imageUrl = null;
-
-        if (questionTextData) {
-          // Simplified logging for debugging
-          if (questionTextData.image_id && questionTextData.image) {
-            imageId = questionTextData.image_id;
-            imageUrl = questionTextData.image.presigned_url;
-
-            // Basic validation
-            if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined') {
-              imageUrl = null;
-            }
-          }
-        }
-
-        // Extract translation status
-        const translationStatus = questionTextData && questionTextData.translation_status
-          ? questionTextData.translation_status
-          : null;
-
-        // Extract topic from question_text instead of question_topics
-        const questionTopics: Topic[] = [];
-        if (questionTextData && questionTextData.topic) {
-          const topicData = questionTextData.topic;
-          questionTopics.push({
-            id: topicData.id,
-            name: topicData.name,
-            topic: topicData.name // Add topic property to match the Topic interface
-          });
-
-          // Add to our topics collection if not already present
-          if (!topics.value.some(t => t.id === topicData.id)) {
-            topics.value.push({
-              id: topicData.id,
-              name: topicData.name,
-              topic: topicData.name
-            });
-          }
-        }
-
-        // Handle MCQ options if present
-        let options = undefined;
-        let optionImages = undefined;
-        let correctOptionIndex = undefined;
-        let correctAnswer = undefined;
-
-        // Extract answer_text if available
-        if (questionTextData && questionTextData.answer_text) {
-          correctAnswer = questionTextData.answer_text;
-        }
-
-        // Handle Odd One Out
-        if (apiQuestion.question_type.type_name === 'Odd One Out' &&
-            questionTextData &&
-            questionTextData.mcq_options &&
-            questionTextData.mcq_options.length > 0) {
-
-          // For display purposes only, extract the options and correct index
-          options = questionTextData.mcq_options.map(opt => opt.option_text);
-          correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
-          if (correctOptionIndex !== -1) {
-            // Set the correct answer to the text of the odd one out
-            if (!correctAnswer) {
-              correctAnswer = options[correctOptionIndex];
-            }
-          }
-        }
-        // Handle True/False
-        else if (apiQuestion.question_type.type_name === 'True or False' &&
-            questionTextData) {
-          // If we don't have a correctAnswer already, try to determine it from mcq_options
-          if (!correctAnswer && questionTextData.mcq_options && questionTextData.mcq_options.length > 0) {
-            const trueOption = questionTextData.mcq_options.find(opt => opt.option_text.toLowerCase() === 'true');
-            if (trueOption) {
-              correctAnswer = trueOption.is_correct ? 'True' : 'False';
-            } else {
-              const correctOption = questionTextData.mcq_options.find(opt => opt.is_correct);
-              if (correctOption) {
-                correctAnswer = correctOption.option_text;
-              }
-            }
-          }
-        }
-        // Handle Complete the Correlation
-        else if (apiQuestion.question_type.type_name === 'Complete the Correlation' &&
-            questionTextData &&
-            questionTextData.match_pairs &&
-            questionTextData.match_pairs.length > 0) {
-
-          // If no correctAnswer is set, provide a default
-          if (!correctAnswer) {
-            correctAnswer = "See question for correlation details";
-          }
-        }
-        // Handle MCQ options
-        else if (apiQuestion.question_type.type_name === 'Multiple Choice Question (MCQ)' &&
-            questionTextData &&
-            questionTextData.mcq_options.length > 0) {
-          options = questionTextData.mcq_options.map(opt => opt.option_text);
-          correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
-          if (correctOptionIndex === -1) correctOptionIndex = undefined;
-
-          // Extract option images if available
-          optionImages = questionTextData.mcq_options.map(opt =>
-            opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
-          );
-
-          // Only include optionImages if at least one image exists
-          if (optionImages.every(img => img === null)) {
-            optionImages = undefined;
-          }
-        }
-
-        // Handle match pairs if present
-        let lhs = undefined;
-        let rhs = undefined;
-        let lhsImages = undefined;
-        let rhsImages = undefined;
-
-        if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
-            questionTextData &&
-            questionTextData.match_pairs &&
-            questionTextData.match_pairs.length > 0) {
-
-          // Extract text content - keep null values to maintain structure
-          lhs = questionTextData.match_pairs.map(pair => pair.left_text || null);
-          rhs = questionTextData.match_pairs.map(pair => pair.right_text || null);
-
-          // Extract image URLs for left and right sides - keep null values to maintain structure
-          lhsImages = questionTextData.match_pairs.map(pair =>
-            pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
-          );
-
-          rhsImages = questionTextData.match_pairs.map(pair =>
-            pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
-          );
-
-          // Always include the arrays, even if they only contain nulls
-          // This ensures the structure is maintained for display
-        }
-
-        return {
-          id: apiQuestion.id,
-          question: questionText,
-          type: apiQuestion.question_type.type_name,
-          typeId: apiQuestion.question_type.id,
-          topics: questionTopics,
-          options: options,
-          optionImages: optionImages,
-          correctOptionIndex: correctOptionIndex,
-          lhs: lhs,
-          rhs: rhs,
-          lhsImages: lhsImages,
-          rhsImages: rhsImages,
-          isPreviousExam: apiQuestion.board_question,
-          isVerified: apiQuestion.is_verified ?? !showUnverified.value,
-          imageId: imageId,
-          imageUrl: imageUrl,
-          question_text_id: questionTextId,
-          translationStatus: translationStatus,
-          correctAnswer: correctAnswer
-        };
+        // Get the transformed question data using smaller, focused helper functions
+        return transformApiQuestion(apiQuestion);
       });
 
       // Update the appropriate questions array based on verification status
@@ -1435,6 +1275,215 @@ async function fetchQuestions() {
     // Always clear the loading states when done, regardless of success or failure
     isSearching.value = false;
     isLoading.value = false;
+  }
+}
+
+// Helper function to transform API question to component format
+function transformApiQuestion(apiQuestion: ApiQuestion) {
+  // Extract basic question data
+  const questionTextData = getQuestionTextData(apiQuestion);
+  const questionText = questionTextData ? questionTextData.question_text : '';
+  const questionTextId = questionTextData ? questionTextData.id : null;
+  
+  // Extract image data
+  const { imageId, imageUrl } = extractImageData(questionTextData);
+  
+  // Extract translation status
+  const translationStatus = questionTextData && questionTextData.translation_status
+    ? questionTextData.translation_status
+    : null;
+  
+  // Process topic information
+  const questionTopics = extractTopics(questionTextData);
+  
+  // Initialize answer variables
+  const correctAnswer = questionTextData?.answer_text || undefined;
+  
+  // Process question type specific data
+  const questionTypeData = processQuestionTypeData(apiQuestion, questionTextData, correctAnswer);
+  
+  // Return the transformed question object
+  return {
+    id: apiQuestion.id,
+    question: questionText,
+    type: apiQuestion.question_type.type_name,
+    typeId: apiQuestion.question_type.id,
+    topics: questionTopics,
+    ...questionTypeData,
+    isPreviousExam: apiQuestion.board_question,
+    isVerified: apiQuestion.is_verified ?? !showUnverified.value,
+    imageId: imageId,
+    imageUrl: imageUrl,
+    question_text_id: questionTextId,
+    translationStatus: translationStatus,
+    correctAnswer: questionTypeData.correctAnswer || correctAnswer
+  };
+}
+
+// Helper function to get the first question text
+function getQuestionTextData(apiQuestion: ApiQuestion): ApiQuestionText | null {
+  return apiQuestion.question_texts.length > 0
+    ? apiQuestion.question_texts[0]
+    : null;
+}
+
+// Helper function to extract image data
+function extractImageData(questionTextData: ApiQuestionText | null) {
+  let imageId = null;
+  let imageUrl = null;
+  
+  if (questionTextData && questionTextData.image_id && questionTextData.image) {
+    imageId = questionTextData.image_id;
+    imageUrl = questionTextData.image.presigned_url;
+    
+    // Basic validation
+    if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined') {
+      imageUrl = null;
+    }
+  }
+  
+  return { imageId, imageUrl };
+}
+
+// Helper function to extract topics
+function extractTopics(questionTextData: ApiQuestionText | null) {
+  const questionTopics: Topic[] = [];
+  
+  if (questionTextData && questionTextData.topic) {
+    const topicData = questionTextData.topic;
+    questionTopics.push({
+      id: topicData.id,
+      name: topicData.name,
+      topic: topicData.name
+    });
+    
+    // Add to our topics collection if not already present
+    if (!topics.value.some(t => t.id === topicData.id)) {
+      topics.value.push({
+        id: topicData.id,
+        name: topicData.name,
+        topic: topicData.name
+      });
+    }
+  }
+  
+  return questionTopics;
+}
+
+// Helper function to process question type specific data
+function processQuestionTypeData(apiQuestion: ApiQuestion, questionTextData: ApiQuestionText | null, initialCorrectAnswer: string | undefined): ProcessedQuestionTypeData {
+  // Default values
+  const result: ProcessedQuestionTypeData = {
+    options: undefined,
+    optionImages: undefined,
+    correctOptionIndex: undefined,
+    lhs: undefined,
+    rhs: undefined,
+    lhsImages: undefined,
+    rhsImages: undefined,
+    correctAnswer: initialCorrectAnswer
+  };
+  
+  // Early return if no question text data
+  if (!questionTextData) {
+    return result;
+  }
+  
+  const typeName = apiQuestion.question_type.type_name;
+  
+  // Process based on question type
+  if (typeName === 'Odd One Out') {
+    processOddOneOut(questionTextData, result);
+  } else if (typeName === 'True or False') {
+    processTrueFalse(questionTextData, result);
+  } else if (typeName === 'Complete the Correlation') {
+    processCorrelation(questionTextData, result);
+  } else if (typeName === 'Multiple Choice Question (MCQ)') {
+    processMCQ(questionTextData, result);
+  } else if (typeName === 'Match the Pairs') {
+    processMatchPairs(questionTextData, result);
+  }
+  
+  return result;
+}
+
+// Helper function to process Odd One Out questions
+function processOddOneOut(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
+  if (questionTextData && questionTextData.mcq_options?.length > 0) {
+    // Extract options and correct index
+    result.options = questionTextData.mcq_options.map(opt => opt.option_text);
+    result.correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
+    
+    // Set correct answer if needed
+    if (result.correctOptionIndex !== -1 && !result.correctAnswer) {
+      result.correctAnswer = result.options[result.correctOptionIndex];
+    }
+  }
+}
+
+// Helper function to process True/False questions
+function processTrueFalse(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
+  if (!result.correctAnswer && questionTextData && questionTextData.mcq_options?.length > 0) {
+    const trueOption = questionTextData.mcq_options.find(opt => 
+      opt.option_text.toLowerCase() === 'true'
+    );
+    
+    if (trueOption) {
+      result.correctAnswer = trueOption.is_correct ? 'True' : 'False';
+    } else {
+      const correctOption = questionTextData.mcq_options.find(opt => opt.is_correct);
+      if (correctOption) {
+        result.correctAnswer = correctOption.option_text;
+      }
+    }
+  }
+}
+
+// Helper function to process Correlation questions
+function processCorrelation(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
+  if (questionTextData && questionTextData.match_pairs?.length > 0 && !result.correctAnswer) {
+    result.correctAnswer = "See question for correlation details";
+  }
+}
+
+// Helper function to process MCQ questions
+function processMCQ(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
+  if (questionTextData && questionTextData.mcq_options?.length > 0) {
+    // Extract options and correct index
+    result.options = questionTextData.mcq_options.map(opt => opt.option_text);
+    result.correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
+    
+    if (result.correctOptionIndex === -1) {
+      result.correctOptionIndex = undefined;
+    }
+    
+    // Process option images
+    result.optionImages = questionTextData.mcq_options.map(opt =>
+      opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
+    );
+    
+    // Only include optionImages if at least one image exists
+    if (result.optionImages.every(img => img === null)) {
+      result.optionImages = undefined;
+    }
+  }
+}
+
+// Helper function to process Match Pairs questions
+function processMatchPairs(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
+  if (questionTextData && questionTextData.match_pairs?.length > 0) {
+    // Extract text content
+    result.lhs = questionTextData.match_pairs.map(pair => pair.left_text || null);
+    result.rhs = questionTextData.match_pairs.map(pair => pair.right_text || null);
+    
+    // Extract image URLs
+    result.lhsImages = questionTextData.match_pairs.map(pair =>
+      pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
+    );
+    
+    result.rhsImages = questionTextData.match_pairs.map(pair =>
+      pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
+    );
   }
 }
 

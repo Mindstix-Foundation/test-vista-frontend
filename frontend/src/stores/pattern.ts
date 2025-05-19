@@ -148,10 +148,10 @@ export const usePatternStore = defineStore('pattern', {
       const updatedSection = {
         ...existingSection,
         ...sectionData,
-        id: sectionData.id || existingSection.id,
-        seqencial_section_number: sectionData.seqencial_section_number || existingSection.seqencial_section_number,
+        id: sectionData.id ?? existingSection.id,
+        seqencial_section_number: sectionData.seqencial_section_number ?? existingSection.seqencial_section_number,
         isModified: true, // Mark as modified
-        isNew: sectionData.isNew !== undefined ? sectionData.isNew : existingSection.isNew || false
+        isNew: sectionData.isNew ?? existingSection.isNew ?? false
       };
 
       // Update the section at the specified index

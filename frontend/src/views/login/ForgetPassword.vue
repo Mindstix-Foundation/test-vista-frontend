@@ -23,7 +23,10 @@
       </div>
 
       <button class="btn btn-primary w-100 mb-3" @click="handleSendResetLink" :disabled="isLoading">
-        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+        <output
+          v-if="isLoading"
+          class="spinner-border spinner-border-sm me-2"
+        ></output>
         Send Reset Link
       </button>
       <button class="btn btn-link text-decoration-none w-100" @click="backToLogin">
@@ -58,7 +61,7 @@ const validateEmail = (email: string) => {
   return String(email)
     .toLowerCase()
     .match(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     )
 }
 

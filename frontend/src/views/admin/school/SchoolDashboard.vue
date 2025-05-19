@@ -77,9 +77,11 @@
 
     <!-- Loading State -->
     <div v-if="isLoading && !isSearchingSchool && !isSearchingBoard" class="text-center my-5">
-      <div class="spinner-border text-primary" role="status">
+      <output
+        class="spinner-border text-primary"
+      >
         <span class="visually-hidden">Loading...</span>
-      </div>
+      </output>
     </div>
 
     <!-- Error State -->
@@ -95,9 +97,11 @@
           <div class="table-responsive position-relative">
             <!-- Loading overlay for search -->
             <div v-if="isSearchingSchool || isSearchingBoard" class="search-loading-overlay">
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <output
+                class="spinner-border spinner-border-sm text-primary"
+              >
                 <span class="visually-hidden">Searching...</span>
-              </div>
+              </output>
             </div>
 
             <table class="table table-sm table-hover table-striped table-bordered" :class="{ 'table-searching': isSearchingSchool || isSearchingBoard }">
@@ -1178,6 +1182,7 @@ watch([schools, isSearchingBoard], () => {
 /* Modern search styling */
 .search-wrapper {
   position: relative;
+  z-index: 10;
 }
 
 .search-icon {
@@ -1186,7 +1191,7 @@ watch([schools, isSearchingBoard], () => {
   top: 50%;
   transform: translateY(-50%);
   color: #6c757d;
-  z-index: 10;
+  z-index: 101;
 }
 
 .search-input {
@@ -1201,6 +1206,7 @@ watch([schools, isSearchingBoard], () => {
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   border-color: #86b7fe;
   outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
 }
 
 .clear-search-icon {
@@ -1279,25 +1285,11 @@ watch([schools, isSearchingBoard], () => {
   top: 50%;
   transform: translateY(-50%);
   color: #6c757d;
-  animation: spin 1s linear infinite;
-}
-
-/* Ensure search input stays in focus */
-.search-input:focus {
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-  border-color: #86b7fe;
-  outline: 0;
-  z-index: 100; /* Higher z-index to ensure it stays on top */
+  animation: spin 1s linear infinite; /* Ensure this animation is here */
 }
 
 /* Ensure search icons stay visible */
 .search-icon, .clear-search-icon, .search-loading-icon {
   z-index: 101; /* Higher than the input focus z-index */
-}
-
-/* Ensure the search wrapper maintains its position */
-.search-wrapper {
-  position: relative;
-  z-index: 10;
 }
 </style>

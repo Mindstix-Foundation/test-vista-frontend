@@ -1,387 +1,110 @@
 <template>
-  <div class="container mt-3">
-    <div class="row g-2 justify-content-end">
-      <button class="btn btn-close" @click="goBack" aria-label="Close"></button>
-    </div>
-    <div class="row justify-content-center align-items-center my-4">
-      <div class="col col-12 col-sm-10 col-md-8">
-        <h4 class="text-left fw-bolder text-uppercase">
-          {{ isEditMode ? 'Edit Board' : 'Add New Board' }}
-        </h4>
+  <BaseFormLayout 
+    :title="isEditMode ? 'Edit Board' : 'Add New Board'" 
+    :is-submitting="isSubmitting"
+    @submit="handleSubmit"
+    @close="goBack"
+    @keydown.enter.prevent
+  >
+    <!-- Board Details Section -->
+    <div class="col-12 col-sm-10 col-md-8 mb-3">
+      <div class="row g-3">
+        <div class="col-12">
+          <FormInput
+            id="boardName"
+            label="Board Name"
+            v-model="form.name"
+            placeholder="Board Name"
+            :required="true"
+            :is-valid="validationStates.name.valid && !isDuplicateName"
+            :is-touched="validationStates.name.touched"
+            :error-message="isDuplicateName ? 'This board name already exists' : 'Please enter a board name'"
+            next-field-id="boardAbbreviation"
+            :format-value="capitalizeFirstLetter"
+            @input="(e) => handleFormInputChange(e, 'name')"
+            @blur="(e) => handleFormInputBlur(e, 'name')"
+          />
+        </div>
+        <div class="col-12">
+          <FormInput
+            id="boardAbbreviation"
+            label="Board Abbreviation"
+            v-model="form.abbreviation"
+            placeholder="Board Abbreviation"
+            :required="true"
+            :is-valid="validationStates.abbreviation.valid && !isDuplicateAbbreviation"
+            :is-touched="validationStates.abbreviation.touched"
+            :error-message="isDuplicateAbbreviation ? 'This board abbreviation already exists' : 'Please enter a board abbreviation'"
+            next-field-id="country"
+            :format-value="(value) => value.toUpperCase()"
+            @input="(e) => handleFormInputChange(e, 'abbreviation')"
+            @blur="(e) => handleFormInputBlur(e, 'abbreviation')"
+          />
+        </div>
       </div>
     </div>
-    <hr />
 
-    <div id="form-container" class="row mt-4 justify-content-center">
-      <form @submit.prevent="handleSubmit" novalidate>
-        <div class="row gx-2 justify-content-center">
-          <!-- Board Details Section -->
-          <div class="col-12 col-sm-10 col-md-8 mb-2">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    :class="{
-                      'is-invalid':
-                        (!validationStates.name.valid && validationStates.name.touched) ||
-                        isDuplicateName,
-                      'is-valid': validationStates.name.valid && !isDuplicateName,
-                    }"
-                    id="boardName"
-                    v-model="form.name"
-                    @input="(e) => handleInput(e, 'name')"
-                    @blur="(e) => handleBlur(e, 'name')"
-                    placeholder="Board Name"
-                    @keydown="(e) => handleEnterKey(e, 'boardAbbreviation')"
-                  />
-                  <label for="boardName">Board Name <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">
-                    {{
-                      isDuplicateName
-                        ? 'This board name already exists'
-                        : 'Please enter a board name'
-                    }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    :class="{
-                      'is-invalid':
-                        (!validationStates.abbreviation.valid &&
-                          validationStates.abbreviation.touched) ||
-                        isDuplicateAbbreviation,
-                      'is-valid': validationStates.abbreviation.valid && !isDuplicateAbbreviation,
-                    }"
-                    id="boardAbbreviation"
-                    v-model="form.abbreviation"
-                    @input="(e) => handleInput(e, 'abbreviation')"
-                    @blur="(e) => handleBlur(e, 'abbreviation')"
-                    placeholder="Board Abbreviation"
-                    @keydown="(e) => handleEnterKey(e, 'country')"
-                  />
-                  <label for="boardAbbreviation"
-                    >Board Abbreviation <span class="text-danger">*</span></label
-                  >
-                  <div class="invalid-feedback">
-                    {{
-                      isDuplicateAbbreviation
-                        ? 'This board abbreviation already exists'
-                        : 'Please enter a board abbreviation'
-                    }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <!-- Address Section -->
+    <AddressFieldset
+      title="Board"
+      v-model="form.address"
+      :validation-states="{
+        country: validationStates.country,
+        state: validationStates.state,
+        city: validationStates.city,
+        address: validationStates.address,
+        postalCode: validationStates.postalCode
+      }"
+      @country-change="handleCountryChange"
+      @state-change="handleStateChange"
+      @city-change="handleCityChange"
+      @update:validation-states="updateAddressValidation"
+      class="mb-3"
+    />
 
-          <!-- Address Section -->
-          <fieldset class="border p-3 rounded col col-12 col-sm-10 col-md-8 mb-2">
-            <legend class="float-none w-auto px-2">Board Address &nbsp;</legend>
-            <div class="row g-3 justify-content-center">
-              <!-- Country -->
-              <div class="col-12 col-xl-4">
-                <SearchableDropdown
-                  id="country"
-                  label="Country"
-                  placeholder="Search Country"
-                  :items="countries"
-                  v-model="selectedCountry"
-                  :required="true"
-                  :class="{
-                    'is-invalid': !validationStates.country.valid && validationStates.country.touched,
-                    'is-valid': validationStates.country.valid,
-                  }"
-                  nextFieldId="state"
-                  @change="handleCountryChange"
-                />
-                <div class="invalid-feedback">Please select a country</div>
-              </div>
+    <!-- Mediums of Instruction -->
+    <DynamicList
+      title="Mediums of Instruction"
+      v-model="form.mediums"
+      :validation-state="validationStates.mediums"
+      @update:validation-state="updateMediumsValidation"
+      item-label-prefix="Medium"
+      placeholder="Enter Medium"
+      base-id="medium"
+      :format-value="capitalizeFirstLetter"
+      class="col-12 col-sm-10 col-md-8 mb-3"
+    />
 
-              <!-- State -->
-              <div class="col-12 col-xl-4">
-                <SearchableDropdown
-                  id="state"
-                  label="State"
-                  placeholder="Search State"
-                  :items="states"
-                  v-model="selectedState"
-                  :required="true"
-                  :disabled="!form.address.country_id"
-                  :class="{
-                    'is-invalid': !validationStates.state.valid && validationStates.state.touched,
-                    'is-valid': validationStates.state.valid,
-                  }"
-                  nextFieldId="city"
-                  @change="handleStateChange"
-                />
-                <div class="invalid-feedback">Please select a state</div>
-              </div>
+    <!-- Standards and Subjects Section -->
+    <div class="row justify-content-center g-3 mb-3">
+      <!-- Standards Offered -->
+      <DynamicList
+        title="Standards Offered"
+        v-model="form.standards"
+        :validation-state="validationStates.standards"
+        @update:validation-state="updateStandardsValidation"
+        item-label-prefix="Standard"
+        placeholder="Enter Standard"
+        base-id="standard"
+        :format-value="capitalizeFirstLetter"
+        :draggable="true"
+        class="col-12 col-sm-5 col-md-4"
+      />
 
-              <!-- City -->
-              <div class="col-12 col-xl-4">
-                <SearchableDropdown
-                  id="city"
-                  label="City"
-                  placeholder="Search City"
-                  :items="cities"
-                  v-model="selectedCity"
-                  :required="true"
-                  :disabled="!form.address.state_id"
-                  :class="{
-                    'is-invalid': !validationStates.city.valid && validationStates.city.touched,
-                    'is-valid': validationStates.city.valid,
-                  }"
-                  nextFieldId="address"
-                  @change="handleCityChange"
-                />
-                <div class="invalid-feedback">Please select a city</div>
-              </div>
-            </div>
-
-            <!-- Street Address -->
-            <div class="row mt-4">
-              <div class="col-12">
-                <div class="form-floating">
-                  <textarea
-                    class="form-control"
-                    :class="{
-                      'is-invalid':
-                        !validationStates.address.valid && validationStates.address.touched,
-                      'is-valid': validationStates.address.valid,
-                    }"
-                    id="address"
-                    v-model="form.address.street"
-                    placeholder="Address"
-                    style="min-height: 100px"
-                    @input="
-                      (e) => {
-                        autoResizeTextarea(e)
-                        validationStates.address.touched = true
-                        validationStates.address.valid = form.address.street.trim().length > 0
-                      }
-                    "
-                    @keydown="(e) => handleEnterKey(e, 'postalCode')"
-                  ></textarea>
-                  <label for="address">Address <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter an address.</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Postal Code -->
-            <div class="row mt-4">
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    :class="{
-                      'is-invalid':
-                        !validationStates.postalCode.valid && validationStates.postalCode.touched,
-                      'is-valid': validationStates.postalCode.valid,
-                    }"
-                    id="postalCode"
-                    placeholder="Postal Code"
-                    v-model="form.address.postal_code"
-                    @input="
-                      (e) => {
-                        validationStates.postalCode.touched = true
-                        validationStates.postalCode.valid =
-                          form.address.postal_code.trim().length > 0
-                      }
-                    "
-                    @keydown="(e) => handleEnterKey(e, 'medium0')"
-                  />
-                  <label for="postalCode">Postal Code <span class="text-danger">*</span></label>
-                  <div class="invalid-feedback">Please enter a postal code.</div>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Mediums of Instruction -->
-          <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-3">
-            <legend class="float-none w-auto">
-              Mediums of Instruction <span class="text-danger">*</span>
-            </legend>
-            <div class="row g-2">
-              <div v-for="(medium, index) in form.mediums" :key="index" class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    :class="{
-                      'is-valid':
-                        medium.name.trim().length > 0 && !isDuplicateMedium(medium.name, index),
-                      'is-invalid':
-                        (!validationStates.mediums.valid && validationStates.mediums.touched) ||
-                        (medium.name.trim().length > 0 && isDuplicateMedium(medium.name, index)),
-                    }"
-                    :id="'medium' + index"
-                    v-model="medium.name"
-                    @keydown="(e) => handleMediumInput(index, e)"
-                    @focus="focusedMediumIndex = index"
-                    @blur="handleMediumBlur(index)"
-                    @input="
-                      (e) => {
-                        medium.name = capitalizeFirstLetter((e.target as HTMLInputElement).value)
-                        handleMediumInput(index)
-                        validationStates.mediums.touched = true
-                      }
-                    "
-                    placeholder="Enter Medium"
-                  />
-                  <label :for="'medium' + index">Medium Name</label>
-                  <div class="invalid-feedback">
-                    {{
-                      isDuplicateMedium(medium.name, index)
-                        ? 'This medium already exists'
-                        : 'At least one medium is required'
-                    }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Standards and Subjects Section -->
-
-          <div class="row justify-content-center g-2">
-            <!-- Standards Offered -->
-
-            <fieldset class="border p-2 rounded col col-12 col-sm-5 col-md-4 mb-2">
-              <legend class="float-none w-auto">
-                Standards Offered <span class="text-danger">*</span>
-              </legend>
-              <div class="row g-2">
-                <div
-                  v-for="(standard, index) in form.standards"
-                  :key="index"
-                  class="col-12 standard-item"
-                  draggable="true"
-                  @dragstart="dragStart($event, index)"
-                  @dragover.prevent
-                  @dragenter.prevent="dragEnter($event, index)"
-                  @dragleave.prevent
-                  @drop="drop($event, index)"
-                  @dragend="dragEnd"
-                >
-                  <div class="d-flex align-items-center">
-                    <div class="drag-handle me-2" title="Drag to reorder">
-                      <i class="bi bi-grip-vertical"></i>
-                    </div>
-                    <div class="form-floating flex-grow-1">
-                      <input
-                        type="text"
-                        class="form-control"
-                        :class="{
-                          'is-valid':
-                            standard.name.trim().length > 0 &&
-                            !isDuplicateStandard(standard.name, index),
-                          'is-invalid':
-                            (!validationStates.standards.valid &&
-                              validationStates.standards.touched) ||
-                            (standard.name.trim().length > 0 &&
-                              isDuplicateStandard(standard.name, index)),
-                        }"
-                        :id="'standard' + index"
-                        v-model="standard.name"
-                        @keydown="(e) => handleStandardInput(index, e)"
-                        @focus="focusedStandardIndex = index"
-                        @blur="handleStandardBlur(index)"
-                        @input="
-                          (e) => {
-                            standard.name = capitalizeFirstLetter(
-                              (e.target as HTMLInputElement).value,
-                            )
-                            handleStandardInput(index)
-                            validationStates.standards.touched = true
-                          }
-                        "
-                        placeholder="Enter Standard"
-                      />
-                      <label :for="'standard' + index">Standard Name</label>
-                      <div class="invalid-feedback">
-                        {{
-                          isDuplicateStandard(standard.name, index)
-                            ? 'This standard already exists'
-                            : 'At least one standard is required'
-                        }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- Subjects Offered -->
-
-            <fieldset class="border p-2 rounded col col-12 col-sm-5 col-md-4 mb-2 ms-2">
-              <legend class="float-none w-auto">
-                Subjects Offered <span class="text-danger">*</span>
-              </legend>
-              <div class="row g-2">
-                <div v-for="(subject, index) in form.subjects" :key="index" class="col-12">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      :class="{
-                        'is-valid':
-                          subject.name.trim().length > 0 &&
-                          !isDuplicateSubject(subject.name, index),
-                        'is-invalid':
-                          (!validationStates.subjects.valid && validationStates.subjects.touched) ||
-                          (subject.name.trim().length > 0 &&
-                            isDuplicateSubject(subject.name, index)),
-                      }"
-                      :id="'subject' + index"
-                      v-model="subject.name"
-                      @keydown="(e) => handleSubjectInput(index, e)"
-                      @focus="focusedSubjectIndex = index"
-                      @blur="handleSubjectBlur(index)"
-                      @input="
-                        (e) => {
-                          subject.name = capitalizeFirstLetter((e.target as HTMLInputElement).value)
-                          handleSubjectInput(index)
-                          validationStates.subjects.touched = true
-                        }
-                      "
-                      placeholder="Enter Subject"
-                    />
-                    <label :for="'subject' + index">Subject Name</label>
-                    <div class="invalid-feedback">
-                      {{
-                        isDuplicateSubject(subject.name, index)
-                          ? 'This subject already exists'
-                          : 'At least one subject is required'
-                      }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </fieldset>
-          </div>
-
-          <!-- Submit Button -->
-          <div class="col col-12 col-sm-10 col-md-8 mt-4">
-            <div class="text-center">
-              <button type="submit" class="btn btn-dark" :disabled="isSubmitting">
-                <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
+      <!-- Subjects Offered -->
+      <DynamicList
+        title="Subjects Offered"
+        v-model="form.subjects"
+        :validation-state="validationStates.subjects" 
+        @update:validation-state="updateSubjectsValidation"
+        item-label-prefix="Subject"
+        placeholder="Enter Subject"
+        base-id="subject"
+        :format-value="capitalizeFirstLetter"
+        class="col-12 col-sm-5 col-md-4"
+      />
     </div>
-  </div>
+  </BaseFormLayout>
 
   <!-- Save Confirmation Modal -->
   <div
@@ -453,12 +176,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import axiosInstance from '@/config/axios'
-import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
-import type { Item } from '@/components/common/SearchableDropdown.vue'
+import BaseFormLayout from '@/components/common/BaseFormLayout.vue'
+import AddressFieldset from '@/components/common/AddressFieldset.vue'
 import type {
   CreateBoardDto,
   CreateAddressDto,
@@ -466,6 +189,8 @@ import type {
   CreateStandardDto,
   CreateSubjectDto,
 } from '@/models/Board'
+import DynamicList from '@/components/common/DynamicList.vue'
+import FormInput from '@/components/common/FormInput.vue'
 
 interface Country {
   id: number
@@ -563,21 +288,6 @@ const form = ref<BoardFormData>({
   subjects: [{ id: undefined, name: '', board_id: 0 }],
 })
 
-// Reference data
-const countries = ref<Country[]>([])
-const states = ref<State[]>([])
-const cities = ref<City[]>([])
-
-// Add new refs for selected items
-const selectedCountry = ref<Country | null>(null)
-const selectedState = ref<State | null>(null)
-const selectedCity = ref<City | null>(null)
-
-// Add these refs to track which field has focus
-const focusedMediumIndex = ref(-1)
-const focusedStandardIndex = ref(-1)
-const focusedSubjectIndex = ref(-1)
-
 // Add validation state refs
 const validationStates = ref({
   name: { valid: false, touched: false },
@@ -642,68 +352,6 @@ const fetchLocationDetails = async (
   }
 }
 
-// Add drag and drop state variables
-const draggedItemIndex = ref<number | null>(null)
-const dragOverItemIndex = ref<number | null>(null)
-
-// Add drag and drop functions
-const dragStart = (event: DragEvent, index: number) => {
-  if (event.dataTransfer) {
-    draggedItemIndex.value = index
-    event.dataTransfer.effectAllowed = 'move'
-    // Add some transparency to the dragged item
-    const target = event.target as HTMLElement
-    setTimeout(() => {
-      if (target && target.classList) {
-        target.classList.add('dragging')
-      }
-    }, 0)
-  }
-}
-
-const dragEnter = (event: DragEvent, index: number) => {
-  dragOverItemIndex.value = index
-  const target = event.target as HTMLElement
-  const standardItem = target.closest('.standard-item')
-  if (standardItem) {
-    standardItem.classList.add('drag-over')
-  }
-}
-
-const dragEnd = () => {
-  const items = document.querySelectorAll('.standard-item')
-  items.forEach(item => {
-    item.classList.remove('dragging', 'drag-over')
-  })
-  draggedItemIndex.value = null
-  dragOverItemIndex.value = null
-}
-
-const drop = (event: DragEvent, dropIndex: number) => {
-  event.preventDefault()
-
-  if (draggedItemIndex.value === null || draggedItemIndex.value === dropIndex) {
-    return
-  }
-
-  // Get the dragged item
-  const draggedItem = { ...form.value.standards[draggedItemIndex.value] }
-
-  // Remove the dragged item from its original position
-  form.value.standards.splice(draggedItemIndex.value, 1)
-
-  // Insert the dragged item at the new position
-  form.value.standards.splice(dropIndex, 0, draggedItem)
-
-  // Update sequence numbers for all standards
-  form.value.standards.forEach((standard, idx) => {
-    standard.sequence_number = idx + 1
-  })
-
-  // Clear drag state
-  dragEnd()
-}
-
 const fetchBoardData = async (boardId: number) => {
   try {
     isLoading.value = true
@@ -720,8 +368,8 @@ const fetchBoardData = async (boardId: number) => {
         street: boardData.address?.street || '',
         postal_code: boardData.address?.postal_code || '',
         city_id: boardData.address?.city_id ? Number(boardData.address.city_id) : 0,
-        state_id: 0, // Will be set by updateLocationData
-        country_id: 0, // Will be set by updateLocationData
+        state_id: boardData.address?.city?.state_id ? Number(boardData.address.city.state_id) : 0,
+        country_id: boardData.address?.city?.state?.country_id ? Number(boardData.address.city.state.country_id) : 0,
       },
       mediums: boardData.instruction_mediums.map(
         (m: { id: number; instruction_medium: string }) => ({
@@ -754,35 +402,6 @@ const fetchBoardData = async (boardId: number) => {
     })
     form.value.subjects.push({ name: '', board_id: Number(boardId) })
 
-    // Update location data using the nested location data from the API response
-    if (boardData.address?.city) {
-      // Set city data
-      form.value.address.city_id = boardData.address.city.id
-      selectedCity.value = boardData.address.city
-
-      // Set state data
-      if (boardData.address.city.state) {
-        form.value.address.state_id = boardData.address.city.state.id
-        selectedState.value = boardData.address.city.state
-
-        // Load states for this country
-        if (boardData.address.city.state.country_id) {
-          const statesResponse = await axiosInstance.get(`/states?countryId=${boardData.address.city.state.country_id}`)
-          states.value = statesResponse.data
-        }
-
-        // Set country data
-        if (boardData.address.city.state.country) {
-          form.value.address.country_id = boardData.address.city.state.country.id
-          selectedCountry.value = boardData.address.city.state.country
-        }
-
-        // Load cities for this state
-        const citiesResponse = await axiosInstance.get(`/cities?stateId=${boardData.address.city.state.id}`)
-        cities.value = citiesResponse.data
-      }
-    }
-
     // Update validation states
     Object.keys(validationStates.value).forEach((key) => {
       validationStates.value[key as keyof typeof validationStates.value].valid = true
@@ -796,38 +415,12 @@ const fetchBoardData = async (boardId: number) => {
   }
 }
 
-// Fetch reference data
-const fetchCountries = async () => {
-  try {
-    console.log('Fetching countries...')
-    const response = await axiosInstance.get('/countries')
-    console.log('Countries response:', response.data)
-    countries.value = response.data
-    console.log('Countries assigned:', countries.value)
-  } catch (error) {
-    console.error('Error fetching countries:', error)
-    countries.value = []
-  }
-}
-
 // Update onMounted to fetch initial countries
 onMounted(async () => {
   try {
-    // Fetch initial data
-    await fetchCountries()
-
     if (props.isEditMode && props.boardId) {
       await fetchBoardData(parseInt(props.boardId))
     }
-
-    // Auto-resize textarea
-    nextTick(() => {
-      const textarea = document.getElementById('address') as HTMLTextAreaElement
-      if (textarea) {
-        textarea.style.height = ''
-        textarea.style.height = textarea.scrollHeight + 'px'
-      }
-    })
   } catch (error) {
     console.error('Error in component initialization:', error)
   }
@@ -836,23 +429,21 @@ onMounted(async () => {
 // Add type for input field names
 type InputField = 'name' | 'abbreviation';
 
-// Add generic input handlers
-const handleInput = (e: Event, field: InputField) => {
-  const value = (e.target as HTMLInputElement).value
+// Add generic input handlers for FormInput component
+const handleFormInputChange = (e: Event, field: InputField) => {
+  // Update validation state
+  validationStates.value[field].touched = true
+  validationStates.value[field].valid = (e.target as HTMLInputElement).value.trim().length > 0
+
+  // Reset duplicate status while typing
   if (field === 'name') {
-    form.value.name = capitalizeFirstLetter(value)
-    validationStates.value.name.touched = true
-    validationStates.value.name.valid = value.trim().length > 0
-    isDuplicateName.value = false // Reset duplicate status while typing
+    isDuplicateName.value = false
   } else if (field === 'abbreviation') {
-    form.value.abbreviation = value.toUpperCase()
-    validationStates.value.abbreviation.touched = true
-    validationStates.value.abbreviation.valid = value.trim().length > 0
-    isDuplicateAbbreviation.value = false // Reset duplicate status while typing
+    isDuplicateAbbreviation.value = false
   }
 }
 
-const handleBlur = async (e: Event, field: InputField) => {
+const handleFormInputBlur = async (e: Event, field: InputField) => {
   const value = (e.target as HTMLInputElement).value.trim()
   if (!value) return
 
@@ -883,292 +474,45 @@ const handleBlur = async (e: Event, field: InputField) => {
 }
 
 // Update the type definitions for the change handlers
-const handleCountryChange = async (value: Item | null) => {
-  const country = value as (Country | null)
+const handleCountryChange = async (country: Country | null) => {
   try {
-    console.log('Handling country change...')
-    form.value.address.country_id = country?.id || 0
-    form.value.address.state_id = 0
-    form.value.address.city_id = 0
-    selectedState.value = null
-    selectedCity.value = null
-    validationStates.value.state.valid = false
-    validationStates.value.city.valid = false
+    console.log('Handling country change from AddressFieldset...')
     validationStates.value.country.valid = !!country
     validationStates.value.country.touched = true
-
-    if (country?.id) {
-      console.log('Fetching states for country:', country.id)
-      const response = await axiosInstance.get(`/states?countryId=${country.id}`)
-      console.log('States response:', response.data)
-      states.value = response.data
-    } else {
-      states.value = []
-    }
   } catch (error) {
     console.error('Error in handleCountryChange:', error)
-    states.value = []
   }
 }
 
-const handleStateChange = async (value: Item | null) => {
-  const state = value as (State | null)
+const handleStateChange = async (state: State | null) => {
   try {
-    console.log('Handling state change...')
-    form.value.address.state_id = state?.id || 0
-    form.value.address.city_id = 0
-    selectedCity.value = null
-    validationStates.value.city.valid = false
+    console.log('Handling state change from AddressFieldset...')
     validationStates.value.state.valid = !!state
     validationStates.value.state.touched = true
-
-    if (state?.id) {
-      console.log('Fetching cities for state:', state.id)
-      const response = await axiosInstance.get(`/cities?stateId=${state.id}`)
-      console.log('Cities response:', response.data)
-      cities.value = response.data
-    } else {
-      cities.value = []
-    }
   } catch (error) {
     console.error('Error in handleStateChange:', error)
-    cities.value = []
   }
 }
 
-const handleCityChange = (value: Item | null) => {
-  const city = value as (City | null)
-  form.value.address.city_id = city?.id || 0
+const handleCityChange = (city: City | null) => {
+  console.log('Handling city change from AddressFieldset...')
   validationStates.value.city.valid = !!city
   validationStates.value.city.touched = true
 }
 
-// Add watchers for address fields validation
-watch(
-  () => form.value.address.street,
-  (newValue) => {
-    if (validationStates.value.address.touched) {
-      validationStates.value.address.valid = newValue.trim().length > 0
-    }
-  },
-)
-
-watch(
-  () => form.value.address.postal_code,
-  (newValue) => {
-    if (validationStates.value.postalCode.touched) {
-      validationStates.value.postalCode.valid = newValue.trim().length > 0
-    }
-  },
-)
-
-// Update validation functions
-const isDuplicateMedium = (name: string, currentIndex: number) => {
-  const trimmedName = name.trim().toLowerCase()
-  return form.value.mediums.some(
-    (medium, index) => index !== currentIndex && medium.name.trim().toLowerCase() === trimmedName,
-  )
-}
-
-const isDuplicateStandard = (name: string, currentIndex: number) => {
-  const trimmedName = name.trim().toLowerCase()
-  return form.value.standards.some(
-    (standard, index) =>
-      index !== currentIndex && standard.name.trim().toLowerCase() === trimmedName,
-  )
-}
-
-const isDuplicateSubject = (name: string, currentIndex: number) => {
-  const trimmedName = name.trim().toLowerCase()
-  return form.value.subjects.some(
-    (subject, index) => index !== currentIndex && subject.name.trim().toLowerCase() === trimmedName,
-  )
-}
-
-const handleMediumInput = (index: number, event?: KeyboardEvent) => {
-  const currentMedium = form.value.mediums[index]
-
-  // Add new field if last field is filled
-  if (index === form.value.mediums.length - 1 && currentMedium.name.trim() !== '') {
-    form.value.mediums.push({ id: undefined, name: '', board_id: 0 })
-  }
-
-  // Remove empty field if:
-  // 1. It's not the last one AND
-  // 2. Either the field is not focused (user moved away) OR user pressed backspace on an already empty field
-  if (
-    !currentMedium.name.trim() &&
-    form.value.mediums.length > 1 &&
-    index !== form.value.mediums.length - 1 &&
-    (focusedMediumIndex.value !== index || (event?.key === 'Backspace' && currentMedium.name === ''))
-  ) {
-    form.value.mediums.splice(index, 1)
-    // Focus on the previous input if available
-    const prevInput = document.getElementById(`medium${index - 1}`)
-    if (prevInput) prevInput.focus()
-  }
-
-  // Handle Enter key
-  if (event?.key === 'Enter') {
-    event.preventDefault()
-    // If last field is empty, move to standards
-    if (!currentMedium.name.trim() && index === form.value.mediums.length - 1) {
-      const firstStandardInput = document.getElementById('standard0')
-      if (firstStandardInput) firstStandardInput.focus()
-      return
-    }
-
-    // Move to next field
-    const nextInput = document.getElementById(`medium${index + 1}`)
-    if (nextInput) nextInput.focus()
-  }
-
-  validationStates.value.mediums.touched = true
-  validationStates.value.mediums.valid = form.value.mediums.some((m) => m.name.trim())
-}
-
-const handleStandardInput = (index: number, event?: KeyboardEvent) => {
-  const currentStandard = form.value.standards[index]
-
-  // Add new field if last field is filled
-  if (index === form.value.standards.length - 1 && currentStandard.name.trim() !== '') {
-    // Add new standard with next sequence number
-    form.value.standards.push({
-      id: undefined,
-      name: '',
-      board_id: 0,
-      sequence_number: form.value.standards.length + 1
-    })
-  }
-
-  // Remove empty field if:
-  // 1. It's not the last one AND
-  // 2. Either the field is not focused (user moved away) OR user pressed backspace on an already empty field
-  if (
-    !currentStandard.name.trim() &&
-    form.value.standards.length > 1 &&
-    index !== form.value.standards.length - 1 &&
-    (focusedStandardIndex.value !== index || (event?.key === 'Backspace' && currentStandard.name === ''))
-  ) {
-    form.value.standards.splice(index, 1)
-
-    // Update sequence numbers for all standards after removal
-    form.value.standards.forEach((standard, idx) => {
-      standard.sequence_number = idx + 1
-    })
-
-    // Focus on the previous input if available
-    const prevInput = document.getElementById(`standard${index - 1}`)
-    if (prevInput) prevInput.focus()
-  }
-
-  // Handle Enter key
-  if (event?.key === 'Enter') {
-    event.preventDefault()
-    // If last field is empty, move to subjects
-    if (!currentStandard.name.trim() && index === form.value.standards.length - 1) {
-      const firstSubjectInput = document.getElementById('subject0')
-      if (firstSubjectInput) firstSubjectInput.focus()
-      return
-    }
-
-    // Move to next field
-    const nextInput = document.getElementById(`standard${index + 1}`)
-    if (nextInput) nextInput.focus()
-  }
-
-  validationStates.value.standards.touched = true
-  validationStates.value.standards.valid = form.value.standards.some((s) => s.name.trim())
-}
-
-const handleSubjectInput = (index: number, event?: KeyboardEvent) => {
-  const currentSubject = form.value.subjects[index]
-
-  // Add new field if last field is filled
-  if (index === form.value.subjects.length - 1 && currentSubject.name.trim() !== '') {
-    form.value.subjects.push({ id: undefined, name: '', board_id: 0 })
-  }
-
-  // Remove empty field if:
-  // 1. It's not the last one AND
-  // 2. Either the field is not focused (user moved away) OR user pressed backspace on an already empty field
-  if (
-    !currentSubject.name.trim() &&
-    form.value.subjects.length > 1 &&
-    index !== form.value.subjects.length - 1 &&
-    (focusedSubjectIndex.value !== index || (event?.key === 'Backspace' && currentSubject.name === ''))
-  ) {
-    form.value.subjects.splice(index, 1)
-    // Focus on the previous input if available
-    const prevInput = document.getElementById(`subject${index - 1}`)
-    if (prevInput) prevInput.focus()
-  }
-
-  // Handle Enter key
-  if (event?.key === 'Enter') {
-    event.preventDefault()
-    // If last field is empty, move to save button
-    if (!currentSubject.name.trim() && index === form.value.subjects.length - 1) {
-      const saveButton = document.querySelector('button[type="submit"]') as HTMLButtonElement | null
-      if (saveButton) saveButton.focus()
-      return
-    }
-
-    // Move to next field
-    const nextInput = document.getElementById(`subject${index + 1}`)
-    if (nextInput) nextInput.focus()
-  }
-
-  validationStates.value.subjects.touched = true
-  validationStates.value.subjects.valid = form.value.subjects.some((s) => s.name.trim())
-}
-
-// Add methods to handle blur events
-const handleMediumBlur = (index: number) => {
-  focusedMediumIndex.value = -1
-  const currentMedium = form.value.mediums[index]
-  if (!currentMedium.name.trim() && form.value.mediums.length > 1 && index !== form.value.mediums.length - 1) {
-    form.value.mediums.splice(index, 1)
-  }
-}
-
-const handleStandardBlur = (index: number) => {
-  focusedStandardIndex.value = -1
-  const currentStandard = form.value.standards[index]
-  if (!currentStandard.name.trim() && form.value.standards.length > 1 && index !== form.value.standards.length - 1) {
-    form.value.standards.splice(index, 1)
-    // Update sequence numbers for all standards after removal
-    form.value.standards.forEach((standard, idx) => {
-      standard.sequence_number = idx + 1
-    })
-  }
-}
-
-const handleSubjectBlur = (index: number) => {
-  focusedSubjectIndex.value = -1
-  const currentSubject = form.value.subjects[index]
-  if (!currentSubject.name.trim() && form.value.subjects.length > 1 && index !== form.value.subjects.length - 1) {
-    form.value.subjects.splice(index, 1)
-  }
-}
-
-const autoResizeTextarea = (e: Event) => {
-  const textarea = e.target as HTMLTextAreaElement
-  // Reset height to auto to get the correct scrollHeight
-  textarea.style.height = 'auto'
-  // Set the height to match the content
-  textarea.style.height = `${textarea.scrollHeight}px`
-}
-
-// Update the handleEnterKey function to prevent form submission
-const handleEnterKey = (event: KeyboardEvent, nextElementId: string) => {
-  if (event.key === 'Enter') {
-    event.preventDefault() // Prevent form submission
-    const nextElement = document.getElementById(nextElementId)
-    if (nextElement) {
-      nextElement.focus()
-    }
-  }
+// Add a method to handle validation state updates from AddressFieldset
+const updateAddressValidation = (validationState: {
+  country: { valid: boolean; touched: boolean }
+  state: { valid: boolean; touched: boolean }
+  city: { valid: boolean; touched: boolean }
+  address: { valid: boolean; touched: boolean }
+  postalCode: { valid: boolean; touched: boolean }
+}) => {
+  validationStates.value.country = validationState.country
+  validationStates.value.state = validationState.state
+  validationStates.value.city = validationState.city
+  validationStates.value.address = validationState.address
+  validationStates.value.postalCode = validationState.postalCode
 }
 
 // Update the capitalize function to handle multiple words
@@ -1177,23 +521,21 @@ const capitalizeFirstLetter = (str: string) => {
   return str
     .split(' ')
     .map((word) => {
-      // Capitalize every word regardless of length
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      // Only capitalize the first letter, leave the rest as is
+      return word.charAt(0).toUpperCase() + word.slice(1)
     })
     .join(' ')
 }
 
 // Modify handleSubmit to show confirmation modal only in edit mode
-const handleSubmit = async (e: Event) => {
-  e.preventDefault()
-
+const handleSubmit = async () => {
   // Mark all fields as touched to trigger validation display
   Object.keys(validationStates.value).forEach((key) => {
     validationStates.value[key as keyof typeof validationStates.value].touched = true
   })
 
   // Force a DOM update before checking for invalid fields
-  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
 
   // Check if form is valid
   if (!isFormValid.value) {
@@ -1555,6 +897,19 @@ const goBack = () => {
 const isFormValid = computed(() => {
   return Object.values(validationStates.value).every((state) => state.valid)
 })
+
+// Add validation methods for DynamicList components
+const updateMediumsValidation = (validationState: { valid: boolean; touched: boolean }) => {
+  validationStates.value.mediums = validationState
+}
+
+const updateStandardsValidation = (validationState: { valid: boolean; touched: boolean }) => {
+  validationStates.value.standards = validationState
+}
+
+const updateSubjectsValidation = (validationState: { valid: boolean; touched: boolean }) => {
+  validationStates.value.subjects = validationState
+}
 </script>
 
 <style scoped>
@@ -1647,40 +1002,4 @@ textarea {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
-
-/* Drag and drop styles */
-.standard-item {
-  position: relative;
-  cursor: grab;
-  transition: background-color 0.2s, transform 0.2s;
-  border-radius: 0.25rem;
-  padding: 0.25rem;
-}
-
-.standard-item.dragging {
-  opacity: 0.5;
-  cursor: grabbing;
-}
-
-.standard-item.drag-over {
-  background-color: rgba(0, 0, 0, 0.05);
-  transform: scale(1.02);
-}
-
-.drag-handle {
-  cursor: grab;
-  color: #6c757d;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.standard-item.dragging .drag-handle {
-  cursor: grabbing;
-}
-
-/* Rest of your existing styles... */
 </style>

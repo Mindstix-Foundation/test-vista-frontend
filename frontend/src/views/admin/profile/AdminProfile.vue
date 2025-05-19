@@ -13,9 +13,9 @@
     <!-- Loading state -->
     <div v-if="loading" class="row justify-content-center my-5">
       <div class="col-12 text-center">
-        <div class="spinner-border text-primary" role="status">
+        <output class="spinner-border text-primary">
           <span class="visually-hidden">Loading...</span>
-        </div>
+        </output>
       </div>
     </div>
 

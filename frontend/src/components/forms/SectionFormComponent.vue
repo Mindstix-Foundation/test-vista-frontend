@@ -228,6 +228,7 @@
                 v-model="selectedQuestionType"
                 :search-keys="['type_name']"
                 label-key="type_name"
+                :next-field-id="'saveButton'"
                 :class="{
                   'is-invalid':
                     !validationStates.questionType.valid && validationStates.questionType.touched,
@@ -253,11 +254,10 @@
                 v-model="selectedQuestionTypes[index]"
                 :search-keys="['type_name']"
                 label-key="type_name"
+                :next-field-id="getNextFieldId(index)"
                 :class="{
-                  'is-invalid':
-                    !validationStates.questionType.valid && validationStates.questionType.touched,
-                  'is-valid':
-                    validationStates.questionType.valid && validationStates.questionType.touched,
+                  'is-invalid': !isQuestionTypeValid(index) && questionTypeTouched[index],
+                  'is-valid': isQuestionTypeValid(index) && questionTypeTouched[index]
                 }"
                 required
                 @update:modelValue="(value) => handleIndividualQuestionTypeInput(value, index)"
@@ -271,7 +271,7 @@
       <!-- Submit Button -->
       <div class="col col-12 col-sm-10 col-md-8">
         <div class="text-center">
-          <button type="submit" class="btn btn-dark">Save</button>
+          <button id="saveButton" type="submit" class="btn btn-dark">Save</button>
         </div>
       </div>
     </div>
@@ -324,9 +324,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 // Emits
-const emit = defineEmits<{
-  (e: 'submit', data: SectionFormData): void
-}>()
+const emit = defineEmits<(e: 'submit', data: SectionFormData) => void>()
 
 // Form data
 const formData = ref<SectionFormData>({
@@ -373,6 +371,9 @@ const validationStates = ref<ValidationStates>({
 const questionTypes = ref<QuestionType[]>([])
 const selectedQuestionType = ref<QuestionType | null>(null)
 const selectedQuestionTypes = ref<(QuestionType | null)[]>([])
+
+// Add questionTypeTouched array to track touched state for individual question types
+const questionTypeTouched = ref<boolean[]>([])
 
 // Fetch question types
 const fetchQuestionTypes = async () => {
@@ -426,6 +427,11 @@ onMounted(async () => {
     validationStates.value.marksPerQuestion.touched = true
     validationStates.value.questionType.valid = true
     validationStates.value.questionType.touched = true
+    
+    // Initialize touched state for individual question types if not using same type
+    if (!formData.value.sameType) {
+      questionTypeTouched.value = Array(props.initialSectionData.questionTypes.length).fill(true)
+    }
 
     // Now that question types are loaded, set the selected type
     if (props.initialSectionData.sameType) {
@@ -491,10 +497,15 @@ watch(
         selectedQuestionTypes.value = Array(numValue)
           .fill(null)
           .map((_, i) => selectedQuestionTypes.value[i] || null)
+        // Initialize touched state for each question type
+        questionTypeTouched.value = Array(numValue)
+          .fill(false)
+          .map((_, i) => questionTypeTouched.value[i] || false)
       }
     } else {
       formData.value.questionTypes = []
       selectedQuestionTypes.value = []
+      questionTypeTouched.value = []
     }
   },
 )
@@ -507,9 +518,13 @@ watch(
     if (newValue) {
       formData.value.questionTypes = Array(numTotalQuestions).fill(formData.value.questionType)
       selectedQuestionTypes.value = Array(numTotalQuestions).fill(selectedQuestionType.value)
+      // Reset individual touchedState since we're using same type for all
+      questionTypeTouched.value = []
     } else {
       formData.value.questionTypes = Array(numTotalQuestions).fill('')
       selectedQuestionTypes.value = Array(numTotalQuestions).fill(null)
+      // Initialize touched state for each question type
+      questionTypeTouched.value = Array(numTotalQuestions).fill(false)
       // Reset validation state when unchecking same type
       validationStates.value.questionType.valid = false
       selectedQuestionType.value = null
@@ -666,13 +681,43 @@ const handleMarksPerQuestionInput = (e: Event) => {
   });
 }
 
+// Helper function to check if an individual question type is valid
+const isQuestionTypeValid = (index: number) => {
+  return formData.value.questionTypes[index]?.trim() !== ''
+}
+
+// Helper function to get the next field ID for keyboard navigation
+const getNextFieldId = (index: number): string => {
+  // If this is the last question type, go to the save button
+  if (index === formData.value.questionTypes.length - 1) {
+    return 'saveButton'
+  }
+  // Otherwise, go to the next question type
+  return 'questionType' + (index + 1)
+}
+
 const handleIndividualQuestionTypeInput = (value: unknown, index: number) => {
-  validationStates.value.questionType.touched = true
+  // Mark this specific question type as touched
+  if (questionTypeTouched.value.length <= index) {
+    questionTypeTouched.value = Array(formData.value.questionTypes.length).fill(false)
+  }
+  questionTypeTouched.value[index] = true
+  
+  // Update the question type value
   const questionType = value as QuestionType | null
   formData.value.questionTypes[index] = questionType?.type_name || ''
-  validationStates.value.questionType.valid = formData.value.sameType
-    ? selectedQuestionType.value !== null
-    : formData.value.questionTypes.every((type) => type.trim() !== '')
+  
+  // Check if all question types are valid
+  const allTypesValid = formData.value.questionTypes.every((type) => type.trim() !== '')
+  
+  // Only update overall validation status if all types are valid or this is the only type
+  if (formData.value.sameType) {
+    validationStates.value.questionType.valid = selectedQuestionType.value !== null
+  } else {
+    validationStates.value.questionType.valid = allTypesValid
+  }
+  
+  validationStates.value.questionType.touched = true
 }
 
 const handleQuestionTypeInput = () => {

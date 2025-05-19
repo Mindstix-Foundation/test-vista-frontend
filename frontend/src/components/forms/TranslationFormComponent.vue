@@ -26,15 +26,15 @@
           <!-- Original Question Image (only if available and no new image selected) -->
           <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
             <div v-if="imageLoading" class="image-loading-overlay">
-              <div class="spinner-border text-primary" role="status">
+              <output class="spinner-border text-primary">
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               v-if="questionImage.presigned_url || questionImage.image_url"
               :src="questionImage.presigned_url || questionImage.image_url"
               class="question-image"
-              alt="Question Image"
+              alt="Question"
               @load="imageLoading = false"
               @error="handleImageError"
             />
@@ -57,7 +57,7 @@
         </div>
         <div class="mt-5 text-center">
           <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
         </div>
@@ -82,15 +82,15 @@
           <!-- Original Question Image (only if available and no new image selected) -->
           <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
             <div v-if="imageLoading" class="image-loading-overlay">
-              <div class="spinner-border text-primary" role="status">
+              <output class="spinner-border text-primary">
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               v-if="questionImage.presigned_url || questionImage.image_url"
               :src="questionImage.presigned_url || questionImage.image_url"
               class="question-image"
-              alt="Question Image"
+              alt="Question"
               @load="imageLoading = false"
               @error="handleImageError"
             />
@@ -149,7 +149,7 @@
 
         <div class="text-center mt-3">
           <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
         </div>
@@ -174,15 +174,15 @@
           <!-- Original Question Image (only if available and no new image selected) -->
           <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
             <div v-if="imageLoading" class="image-loading-overlay">
-              <div class="spinner-border text-primary" role="status">
+              <output class="spinner-border text-primary">
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               v-if="questionImage.presigned_url || questionImage.image_url"
               :src="questionImage.presigned_url || questionImage.image_url"
               class="question-image"
-              alt="Question Image"
+              alt="Question"
               @load="imageLoading = false"
               @error="handleImageError"
             />
@@ -210,7 +210,7 @@
 
         <div class="text-center">
           <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
         </div>
@@ -235,15 +235,15 @@
           <!-- Original Question Image (only if available and no new image selected) -->
           <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
             <div v-if="imageLoading" class="image-loading-overlay">
-              <div class="spinner-border text-primary" role="status">
+              <output class="spinner-border text-primary">
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               v-if="questionImage.presigned_url || questionImage.image_url"
               :src="questionImage.presigned_url || questionImage.image_url"
               class="question-image"
-              alt="Question Image"
+              alt="Question"
               @load="imageLoading = false"
               @error="handleImageError"
             />
@@ -289,7 +289,7 @@
 
           <!-- Left-hand side (LHS) Translation -->
           <div class="col-md-5">
-            <label class="form-label fw-bold">Left Side Translation</label>
+            <h5 class="form-label fw-bold">Left Side Translation</h5>
             <div id="lhsInputs">
               <div v-for="(pair, index) in originalMatchPairs" :key="'lhs-'+index" class="mb-3">
                 <div class="form-floating">
@@ -305,7 +305,7 @@
 
           <!-- Right-hand side (RHS) Translation -->
           <div class="col-md-5">
-            <label class="form-label fw-bold">Right Side Translation</label>
+            <h5 class="form-label fw-bold">Right Side Translation</h5>
             <div id="rhsInputs">
               <div v-for="(pair, index) in originalMatchPairs" :key="'rhs-'+index" class="mb-3">
                 <div class="form-floating">
@@ -322,7 +322,7 @@
 
         <div class="text-center mt-3">
           <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
         </div>
@@ -347,15 +347,15 @@
           <!-- Original Question Image (only if available and no new image selected) -->
           <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
             <div v-if="imageLoading" class="image-loading-overlay">
-              <div class="spinner-border text-primary" role="status">
+              <output class="spinner-border text-primary">
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               v-if="questionImage.presigned_url || questionImage.image_url"
               :src="questionImage.presigned_url || questionImage.image_url"
               class="question-image"
-              alt="Question Image"
+              alt="Question"
               @load="imageLoading = false"
               @error="handleImageError"
             />
@@ -378,7 +378,7 @@
         </div>
         <div class="mt-5 text-center">
           <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
         </div>

@@ -17,6 +17,7 @@
           v-model="email"
           placeholder="Enter email"
           :class="{ 'is-invalid': emailError }"
+          @keyup.enter="focusPassword"
           required
         />
         <div class="invalid-feedback">Please enter a valid email address.</div>
@@ -24,14 +25,21 @@
 
       <div class="mb-3">
         <label for="password" class="form-label">Password</label>
-        <input
-          type="password"
-          class="form-control"
-          id="password"
-          v-model="password"
-          placeholder="Enter password"
-          required
-        />
+        <div class="password-field">
+          <input
+            :type="showPassword ? 'text' : 'password'"
+            class="form-control"
+            id="password"
+            v-model="password"
+            placeholder="Enter password"
+            @keyup.enter="login"
+            ref="passwordInput"
+            required
+          />
+          <span class="password-toggle" @click="togglePasswordVisibility">
+            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+          </span>
+        </div>
       </div>
 
       <button class="btn btn-primary w-100 mb-2" @click="login">Log In</button>
@@ -59,12 +67,24 @@ const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const emailError = ref(false)
+const showPassword = ref(false)
+const passwordInput = ref<HTMLInputElement | null>(null)
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
+}
+
+const focusPassword = () => {
+  if (passwordInput.value) {
+    passwordInput.value.focus()
+  }
+}
 
 const validateEmail = (email: string) => {
   return String(email)
     .toLowerCase()
     .match(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     )
 }
 
@@ -160,5 +180,27 @@ body {
   font-size: 0.875rem;
   text-align: center;
   margin-top: 10px;
+}
+
+/* Password field styling */
+.password-field {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: #495057;
 }
 </style>

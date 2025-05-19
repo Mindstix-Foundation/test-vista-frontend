@@ -8,16 +8,19 @@
       :placeholder="placeholder"
       v-model="searchText"
       @input="handleInput"
-      @focus="showDropdown = true"
-      @click="showDropdown = true"
+      @focus="handleClick"
+      @click="handleClick"
       @blur="handleBlur"
       autocomplete="off"
       autocorrect="off"
       autocapitalize="off"
       spellcheck="false"
-      :name="($attrs.name as string) || `no-autofill-${Date.now()}-${id}`"
+      :name="`no-autofill-${Date.now()}-${id}`"
       :data-form-type="'other'"
       :data-lpignore="true"
+      aria-autocomplete="none"
+      data-ms-editor="false"
+      data-address-field="no"
       required
       :disabled="disabled"
       @keydown="handleKeydown"
@@ -243,7 +246,11 @@ const handleKeydown = (event: KeyboardEvent) => {
     case 'Enter':
       event.preventDefault()
       if (selectedIndex.value >= 0 && filteredItems.value[selectedIndex.value]) {
+        // If an item is selected in the dropdown, select that item
         selectItem(filteredItems.value[selectedIndex.value])
+      } else if (filteredItems.value.length > 0) {
+        // If no item is selected but there are items in the dropdown, select the first one
+        selectItem(filteredItems.value[0])
       }
       break
     case 'Escape':
@@ -353,6 +360,15 @@ defineExpose({
     selectedIndex.value = -1
   },
 })
+
+// Add a new method to handle click events
+const handleClick = () => {
+  // Show dropdown and update selectedIndex to first item if input is empty and there are items
+  showDropdown.value = true
+  if (!searchText.value.trim() && filteredItems.value.length > 0) {
+    selectedIndex.value = 0 // Pre-select the first item
+  }
+}
 </script>
 
 <style scoped>

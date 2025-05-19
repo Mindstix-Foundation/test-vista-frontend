@@ -23,9 +23,12 @@
       <!-- Loading spinner in content area -->
       <div v-if="isInitialLoading" class="row justify-content-center my-5">
         <div class="col-12 col-sm-10 text-center">
-          <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <output
+            class="spinner-border text-primary d-inline-block"
+            style="width: 3rem; height: 3rem;"
+          >
             <span class="visually-hidden">Loading translation data...</span>
-          </div>
+          </output>
           <p class="mt-3 text-primary">Loading translation data...</p>
         </div>
       </div>
@@ -130,15 +133,15 @@
                 <!-- Original Question Image (only if available and no new image selected) -->
                 <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                   <div v-if="imageLoading" class="image-loading-overlay">
-                    <div class="spinner-border text-primary" role="status">
+                    <output class="spinner-border text-primary">
                       <span class="visually-hidden">Loading image...</span>
-                    </div>
+                    </output>
                   </div>
                   <img
                     v-if="questionImage.presigned_url || questionImage.image_url"
                     :src="questionImage.presigned_url || questionImage.image_url"
                     class="question-image"
-                    alt="Question Image"
+                    alt="Question"
                     @load="imageLoading = false"
                     @error="handleImageError"
                   />
@@ -153,7 +156,7 @@
                   <img
                     :src="questionImagePreview"
                     class="question-image"
-                    alt="New Question Image Preview"
+                    alt="New Question Preview"
                   />
                   <div class="preview-indicator">
                     <span class="badge bg-info">Preview - Will be uploaded on save</span>
@@ -178,7 +181,7 @@
               </div>
               <div class="mt-5 text-center">
                 <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                   {{ isSaving ? 'Updating...' : 'Update' }}
                 </button>
               </div>
@@ -207,15 +210,15 @@
                 <!-- Original Question Image (only if available and no new image selected) -->
                 <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                   <div v-if="imageLoading" class="image-loading-overlay">
-                    <div class="spinner-border text-primary" role="status">
+                    <output class="spinner-border text-primary">
                       <span class="visually-hidden">Loading image...</span>
-                    </div>
+                    </output>
                   </div>
                   <img
                     v-if="questionImage.presigned_url || questionImage.image_url"
                     :src="questionImage.presigned_url || questionImage.image_url"
                     class="question-image"
-                    alt="Question Image"
+                    alt="Question"
                     @load="imageLoading = false"
                     @error="handleImageError"
                   />
@@ -230,7 +233,7 @@
                   <img
                     :src="questionImagePreview"
                     class="question-image"
-                    alt="New Question Image Preview"
+                    alt="New Question Preview"
                   />
                   <div class="preview-indicator">
                     <span class="badge bg-info">Preview - Will be uploaded on save</span>
@@ -278,14 +281,14 @@
                         <!-- Original Option Image -->
                         <div v-if="originalOptionImages && originalOptionImages[index]" class="option-image-container mb-2">
                           <div v-if="optionImageLoading[index]" class="image-loading-overlay">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <output class="spinner-border spinner-border-sm text-primary">
                               <span class="visually-hidden">Loading image...</span>
-                            </div>
+                            </output>
                           </div>
                           <img
                             :src="originalOptionImages[index]"
                             class="option-image"
-                            alt="Option Image"
+                            alt="Option"
                             @load="handleOptionImageLoad(index)"
                             @error="handleOptionImageError(index)"
                           />
@@ -329,7 +332,7 @@
 
                     <!-- Preview of selected image for translation -->
                     <div v-if="optionImagePreviews && optionImagePreviews[index]" class="option-image-preview-container mb-3">
-                      <img :src="optionImagePreviews[index]" class="option-image-preview" alt="Option Image Preview">
+                      <img :src="optionImagePreviews[index]" class="option-image-preview" alt="Option Preview">
                       <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearOptionImage(index)">
                         <i class="bi bi-x"></i>
                       </button>
@@ -343,7 +346,7 @@
 
               <div class="text-center mt-3">
                 <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                   {{ isSaving ? 'Updating...' : 'Update' }}
                 </button>
               </div>
@@ -372,15 +375,15 @@
                 <!-- Original Question Image (only if available and no new image selected) -->
                 <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                   <div v-if="imageLoading" class="image-loading-overlay">
-                    <div class="spinner-border text-primary" role="status">
+                    <output class="spinner-border text-primary">
                       <span class="visually-hidden">Loading image...</span>
-                    </div>
+                    </output>
                   </div>
                   <img
                     v-if="questionImage.presigned_url || questionImage.image_url"
                     :src="questionImage.presigned_url || questionImage.image_url"
                     class="question-image"
-                    alt="Question Image"
+                    alt="Question"
                     @load="imageLoading = false"
                     @error="handleImageError"
                   />
@@ -395,7 +398,7 @@
                   <img
                     :src="questionImagePreview"
                     class="question-image"
-                    alt="New Question Image Preview"
+                    alt="New Question Preview"
                   />
                   <div class="preview-indicator">
                     <span class="badge bg-info">Preview - Will be uploaded on save</span>
@@ -437,15 +440,15 @@
                           <!-- Left image if available -->
                           <div v-if="originalMatchPairLeftImages[index]" class="pair-image-container mt-2">
                             <div v-if="pairLeftImageLoading[index]" class="image-loading-overlay">
-                              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                              <output class="spinner-border spinner-border-sm text-primary">
                                 <span class="visually-hidden">Loading image...</span>
-                              </div>
+                              </output>
                                 </div>
                             <img 
                               v-if="originalMatchPairLeftImages[index]"
                               :src="originalMatchPairLeftImages[index]"
                               class="pair-image"
-                              alt="Left Item Image"
+                              alt="Left Item"
                               @load="() => handlePairLeftImageLoad(index)"
                               @error="() => handlePairLeftImageError(index)"
                             />
@@ -474,15 +477,15 @@
                           <!-- Right image if available -->
                           <div v-if="originalMatchPairRightImages[index]" class="pair-image-container mt-2">
                             <div v-if="pairRightImageLoading[index]" class="image-loading-overlay">
-                              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                              <output class="spinner-border spinner-border-sm text-primary">
                                 <span class="visually-hidden">Loading image...</span>
-                              </div>
+                              </output>
                             </div>
                             <img 
                               v-if="originalMatchPairRightImages[index]"
                               :src="originalMatchPairRightImages[index]"
                               class="pair-image"
-                              alt="Right Item Image"
+                              alt="Right Item"
                               @load="() => handlePairRightImageLoad(index)"
                               @error="() => handlePairRightImageError(index)"
                             />
@@ -545,7 +548,7 @@
                               
                               <!-- Preview of selected image -->
                               <div v-if="pairLeftImagePreviews[index]" class="pair-image-preview-container mt-2">
-                                <img :src="pairLeftImagePreviews[index]" class="pair-image-preview" alt="Left Item Image Preview">
+                                <img :src="pairLeftImagePreviews[index]" class="pair-image-preview" alt="Left Item Preview">
                                 <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearPairLeftImage(index)">
                                   <i class="bi bi-x"></i>
                                 </button>
@@ -602,7 +605,7 @@
                             
                             <!-- Preview of selected image -->
                             <div v-if="pairRightImagePreviews[index]" class="pair-image-preview-container mt-2">
-                              <img :src="pairRightImagePreviews[index]" class="pair-image-preview" alt="Right Item Image Preview">
+                              <img :src="pairRightImagePreviews[index]" class="pair-image-preview" alt="Right Item Preview">
                               <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearPairRightImage(index)">
                                 <i class="bi bi-x"></i>
                               </button>
@@ -617,7 +620,7 @@
 
               <div class="text-center mt-3">
                 <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                   {{ isSaving ? 'Updating...' : 'Update' }}
                 </button>
               </div>
@@ -630,9 +633,9 @@
 
     <!-- Keep the fullscreen loading overlay only for saving operations -->
     <div v-if="isFullscreenLoading" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
-      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+      <output class="spinner-border text-light" style="width: 3rem; height: 3rem;">
         <span class="visually-hidden">Updating translation...</span>
-      </div>
+      </output>
     </div>
   </div>
 </template>
@@ -862,377 +865,339 @@ function handleImageChange(event: Event) {
   }
 }
 
-// Main method to update an existing translation
+// Helper function to process image uploads
+async function uploadImage(file) {
+  console.log("Uploading file:", file.name, file.size, "bytes");
+  
+  // Create the form data with the file
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  // STEP 1: Upload the image to get the URL
+  console.log("STEP 1: Calling /images/upload API...");
+  const uploadResponse = await axiosInstance.post(
+    '/images/upload',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 30000
+    }
+  );
+  
+  if (!uploadResponse.data || !uploadResponse.data.image_url) {
+    throw new Error("Upload response is missing image_url");
+  }
+  
+  // STEP 2: Create the image record with the URL
+  const imageCreateRequest = {
+    image_url: uploadResponse.data.image_url,
+    original_filename: file.name,
+    file_size: file.size,
+    file_type: file.type,
+    width: uploadResponse.data.width || 0,
+    height: uploadResponse.data.height || 0
+  };
+  
+  console.log("STEP 2: Calling /images API with:", imageCreateRequest);
+  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+  
+  if (!imageResponse.data || !imageResponse.data.id) {
+    throw new Error("Image creation response is missing id");
+  }
+  
+  return imageResponse.data.id;
+}
+
+// Helper to process main question image
+async function processMainQuestionImage(initialImageId) {
+  let mainImageId = initialImageId;
+  
+  if (selectedQuestionFile.value) {
+    console.log('New image file reference found. Starting upload process...');
+    try {
+      mainImageId = await uploadImage(selectedQuestionFile.value);
+      console.log('NEW IMAGE ID CREATED:', mainImageId);
+    } catch (uploadError) {
+      handleImageUploadError(uploadError);
+      return null; // Return null to indicate error
+    }
+  }
+  
+  return mainImageId;
+}
+
+// Separate function to handle image upload errors
+function handleImageUploadError(error: unknown) {
+  console.error('Error in image upload process:', error);
+  const axiosError = error as AxiosErrorResponse;
+  if (axiosError.response?.status === 400 && axiosError.response?.data?.message) {
+    isSaving.value = false;
+    isFullscreenLoading.value = false;
+    toastStore.showToast({
+      title: 'Image Upload Error',
+      message: axiosError.response.data.message,
+      type: 'error'
+    });
+  }
+}
+
+// Helper to generate MCQ options data
+async function generateMcqOptionsData() {
+  if (!(
+    (questionType.value === QUESTION_TYPES.MCQ ||
+     questionType.value === QUESTION_TYPES.ODD_ONE_OUT ||
+     questionType.value === QUESTION_TYPES.TRUE_FALSE) &&
+    translatedOptions.value.length > 0
+  )) {
+    return null;
+  }
+  
+  const mcqOptions = [];
+  
+  // Find both the original translation and the translation we're editing
+  const originalTranslation = availableTranslations.value[selectedTranslationIndex.value];
+  const translationToEdit = availableTranslations.value.find(
+    (text) => text.id === translatedQuestion.value.id
+  );
+  
+  for (let i = 0; i < translatedOptions.value.length; i++) {
+    if (!translatedOptions.value[i].trim()) continue;
+    
+    const originalOption = originalTranslation?.mcq_options?.[i];
+    const existingOption = translationToEdit?.mcq_options?.[i];
+    
+    const optionData = await processMcqOption(i, originalOption, existingOption);
+    mcqOptions.push(optionData);
+  }
+  
+  return mcqOptions;
+}
+
+// Helper for processing individual MCQ options
+async function processMcqOption(index, originalOption, existingOption) {
+  const optionData = {
+    option_text: translatedOptions.value[index],
+    is_correct: originalOption ? originalOption.is_correct : false
+  };
+  
+  // Use the ID from the translation we're editing if it exists
+  if (existingOption?.id) {
+    optionData.id = existingOption.id;
+  }
+  
+  // Handle new option images
+  if (selectedOptionFiles.value?.[index]) {
+    try {
+      const file = selectedOptionFiles.value[index]!;
+      const imageId = await uploadImage(file);
+      if (imageId) {
+        optionData.image_id = imageId;
+      }
+    } catch (error) {
+      console.error(`Error uploading image for option ${index + 1}:`, error);
+    }
+  } else if (existingOption?.image_id) {
+    // Preserve existing image ID from the translation we're editing
+    optionData.image_id = existingOption.image_id;
+  }
+  
+  return optionData;
+}
+
+// Helper to generate match pairs data
+async function generateMatchPairsData() {
+  if (!(
+    (questionType.value === QUESTION_TYPES.MATCH_PAIRS ||
+     questionType.value === QUESTION_TYPES.COMPLETE_CORRELATION) &&
+    translatedMatchPairs.value.length > 0
+  )) {
+    return null;
+  }
+  
+  const matchPairs = [];
+  
+  // Find the translation we're editing
+  const translationToEdit = availableTranslations.value.find(
+    (text) => text.id === translatedQuestion.value.id
+  );
+  
+  for (let i = 0; i < translatedMatchPairs.value.length; i++) {
+    const pair = translatedMatchPairs.value[i];
+    const existingPair = translationToEdit?.match_pairs?.[i];
+    
+    const pairData = await processMatchPair(i, pair, existingPair);
+    matchPairs.push(pairData);
+  }
+  
+  return matchPairs;
+}
+
+// Helper for processing individual match pairs
+async function processMatchPair(index, pair, existingPair) {
+  const pairData = {
+    left_text: pair.left_text || '',
+    right_text: pair.right_text || ''
+  };
+  
+  // Add pair ID if it exists (for updating existing pairs)
+  if (existingPair?.id) {
+    pairData.id = existingPair.id;
+  }
+  
+  // Process left image
+  await processMatchPairImage(
+    index, 
+    pairData, 
+    'left', 
+    `leftPairImage${index}`,
+    originalMatchPairLeftImages.value[index] !== null,
+    pairLeftImageIds.value[index]
+  );
+  
+  // Process right image
+  await processMatchPairImage(
+    index, 
+    pairData, 
+    'right', 
+    `rightPairImage${index}`,
+    originalMatchPairRightImages.value[index] !== null,
+    pairRightImageIds.value[index]
+  );
+  
+  return pairData;
+}
+
+// Helper for processing match pair images (left or right)
+async function processMatchPairImage(index, pairData, side, inputId, originalHasImage, existingImageId) {
+  const imageInput = document.getElementById(inputId) as HTMLInputElement;
+  const hasNewImage = imageInput?.files && imageInput.files.length > 0;
+  
+  if (originalHasImage && existingImageId !== null) {
+    if (hasNewImage && imageInput.files) {
+      try {
+        const imageId = await uploadImage(imageInput.files[0]);
+        pairData[`${side}_image_id`] = imageId;
+      } catch (error) {
+        console.error(`Error uploading ${side} pair image:`, error);
+        // If upload fails, use original image ID since we must maintain consistency
+        pairData[`${side}_image_id`] = existingImageId;
+      }
+    } else {
+      // No new image uploaded, use original image ID
+      pairData[`${side}_image_id`] = existingImageId;
+    }
+  } else if (hasNewImage) {
+    // Original has no image, warn user and skip image upload
+    toastStore.showToast({
+      title: 'Warning',
+      message: `Cannot add ${side} image to pair ${index + 1} when original pair has no ${side} image`,
+      type: 'warning'
+    });
+  }
+}
+
+// Helper to validate question data before saving
+function validateQuestionData() {
+  if (!questionId.value) {
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Question ID is missing',
+      type: 'error'
+    });
+    return false;
+  }
+
+  if (!translatedQuestion.value.id) {
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Translation not found for editing',
+      type: 'error'
+    });
+    return false;
+  }
+  
+  return true;
+}
+
+// Helper to prepare question data object
+function prepareQuestionTextData(mainImageId, mcqOptions, matchPairs) {
+  const questionTextData = {
+    question_text: translatedQuestion.value.question
+  };
+
+  // Add image ID if available
+  if (mainImageId) {
+    questionTextData.image_id = mainImageId;
+  }
+  
+  // Add MCQ options if available
+  if (mcqOptions) {
+    questionTextData.mcq_options = mcqOptions;
+  }
+  
+  // Add match pairs if available
+  if (matchPairs) {
+    questionTextData.match_pairs = matchPairs;
+  }
+  
+  return questionTextData;
+}
+
+// Main method to update an existing translation - refactored for lower complexity
 async function updateTranslation() {
   try {
     console.log("Starting updateTranslation method");
-    console.log("newImageSelected state:", newImageSelected.value);
-    console.log("File reference available:", !!selectedQuestionFile.value);
-
-    if (!questionId.value) {
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question ID is missing',
-        type: 'error'
-      });
+    
+    // Step 1: Validate question data
+    if (!validateQuestionData()) {
       return;
     }
-
-    if (!translatedQuestion.value.id) {
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Translation not found for editing',
-        type: 'error'
-      });
-      return;
-    }
-
-    // Enable both loading indicators
+    
+    // Step 2: Set loading states
     isSaving.value = true;
     isFullscreenLoading.value = true;
-
-    // Get the translation ID we're updating
-    const translationTextId = translatedQuestion.value.id;
-
-    // Process the main question image first
+    
+    // Step 3: Process main question image
     let mainImageId = questionImage.value?.id || null;
-    console.log('Initial image ID:', mainImageId);
-
-    // Check if we have a new image to upload using our direct file reference
-    if (selectedQuestionFile.value) {
-      console.log('New image file reference found. Starting upload process...');
-
-      try {
-        const file = selectedQuestionFile.value;
-        console.log("Uploading file:", file.name, file.size, "bytes");
-
-        // Create the form data with the file
-        const formData = new FormData();
-        formData.append('file', file);
-
-        // STEP 1: Upload the image to get the URL
-        console.log("STEP 1: Calling /images/upload API...");
-        const uploadResponse = await axiosInstance.post(
-          '/images/upload',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            },
-            timeout: 30000
-          }
-        );
-
-        console.log("Upload API response:", uploadResponse.data);
-
-        if (!uploadResponse.data || !uploadResponse.data.image_url) {
-          throw new Error("Upload response is missing image_url");
-        }
-
-        // STEP 2: Create the image record with the URL
-        const imageCreateRequest = {
-          image_url: uploadResponse.data.image_url,
-          original_filename: file.name,
-          file_size: file.size,
-          file_type: file.type,
-          width: uploadResponse.data.width || 0,
-          height: uploadResponse.data.height || 0
-        };
-
-        console.log("STEP 2: Calling /images API with:", imageCreateRequest);
-        const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-
-        console.log("Image creation API response:", imageResponse.data);
-
-        if (!imageResponse.data || !imageResponse.data.id) {
-          throw new Error("Image creation response is missing id");
-        }
-
-        // Use the new image ID
-        mainImageId = imageResponse.data.id;
-        console.log('NEW IMAGE ID CREATED:', mainImageId);
-      } catch (error: unknown) {
-        console.error('Error in image upload process:', error);
-        const axiosError = error as AxiosErrorResponse;
-        if (axiosError.response?.status === 400 && axiosError.response?.data?.message) {
-          isSaving.value = false;
-          isFullscreenLoading.value = false;
-          toastStore.showToast({
-            title: 'Image Upload Error',
-            message: axiosError.response.data.message,
-            type: 'error'
-          });
-          return;
-        }
-      }
+    try {
+      mainImageId = await processMainQuestionImage(mainImageId);
+    } catch {
+      return; // Error already handled in the function
     }
-
-    // Prepare the question text data based on question type
-    const questionTextData: {
-      question_text: string;
-      image_id?: number | null;
-      mcq_options?: Array<{
-        id?: number;
-        option_text: string;
-        is_correct: boolean;
-        image_id?: number | null;
-      }>;
-      match_pairs?: Array<{
-        id?: number;
-        left_text: string;
-        right_text: string;
-        left_image_id?: number | null;
-        right_image_id?: number | null;
-      }>;
-    } = {
-      question_text: translatedQuestion.value.question
-    };
-
-    // Add image ID if available
-    if (mainImageId) {
-      questionTextData.image_id = mainImageId;
-    }
-
-    // Handle MCQ options if this is an MCQ question
-    if (
-      (questionType.value === QUESTION_TYPES.MCQ ||
-       questionType.value === QUESTION_TYPES.ODD_ONE_OUT ||
-       questionType.value === QUESTION_TYPES.TRUE_FALSE) &&
-      translatedOptions.value.length > 0
-    ) {
-      const mcqOptions = [];
-
-      // Find both the original translation and the translation we're editing
-      const originalTranslation = availableTranslations.value[selectedTranslationIndex.value];
-      const translationToEdit = availableTranslations.value.find(
-        (text) => text.id === translatedQuestion.value.id
-      );
-
-      for (let i = 0; i < translatedOptions.value.length; i++) {
-        if (!translatedOptions.value[i].trim()) continue;
-
-        const originalOption = originalTranslation?.mcq_options?.[i];
-        const existingOption = translationToEdit?.mcq_options?.[i];
-        
-        const optionData: {
-          id?: number;
-          option_text: string;
-          is_correct: boolean;
-          image_id?: number | null;
-        } = {
-          option_text: translatedOptions.value[i],
-          is_correct: originalOption ? originalOption.is_correct : false
-        };
-
-        // Use the ID from the translation we're editing if it exists
-        if (existingOption?.id) {
-          optionData.id = existingOption.id;
-        }
-
-        // Handle new option images
-        if (selectedOptionFiles.value?.[i]) {
-          try {
-            const file = selectedOptionFiles.value[i]!;
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const uploadResponse = await axiosInstance.post('/images/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              timeout: 30000
-            });
-
-            if (uploadResponse.data?.image_url) {
-              const imageCreateRequest = {
-                image_url: uploadResponse.data.image_url,
-                original_filename: file.name,
-                file_size: file.size,
-                file_type: file.type,
-                width: uploadResponse.data.width || 0,
-                height: uploadResponse.data.height || 0
-              };
-
-              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              if (imageResponse.data?.id) {
-                optionData.image_id = imageResponse.data.id;
-              }
-            }
-          } catch (error) {
-            console.error(`Error uploading image for option ${i + 1}:`, error);
-          }
-        } else if (existingOption?.image_id) {
-          // Preserve existing image ID from the translation we're editing
-          optionData.image_id = existingOption.image_id;
-        }
-
-        mcqOptions.push(optionData);
-      }
-
-      questionTextData.mcq_options = mcqOptions;
-    }
-
-    // Handle match pairs if this is a matching question
-    if (
-      (questionType.value === QUESTION_TYPES.MATCH_PAIRS ||
-       questionType.value === QUESTION_TYPES.COMPLETE_CORRELATION) &&
-      translatedMatchPairs.value.length > 0
-    ) {
-      const matchPairs = [];
-
-      // Get the original translation data for reference
-      const originalTranslation = availableTranslations.value[selectedTranslationIndex.value];
-      const translationToEdit = availableTranslations.value.find(
-        (text) => text.id === translatedQuestion.value.id
-      );
-
-      for (let i = 0; i < translatedMatchPairs.value.length; i++) {
-        const pair = translatedMatchPairs.value[i];
-        const originalPair = originalTranslation?.match_pairs?.[i];
-        const existingPair = translationToEdit?.match_pairs?.[i];
-        
-        const pairData: {
-          id?: number;
-          left_text: string;
-          right_text: string;
-          left_image_id?: number | null;
-          right_image_id?: number | null;
-        } = {
-          left_text: pair.left_text || '',
-          right_text: pair.right_text || ''
-        };
-
-        // Add pair ID if it exists (for updating existing pairs)
-        if (existingPair?.id) {
-          pairData.id = existingPair.id;
-        }
-
-        // Handle left image
-        const leftImageInput = document.getElementById(`leftPairImage${i}`) as HTMLInputElement;
-        const hasNewLeftImage = leftImageInput?.files && leftImageInput.files.length > 0;
-        const originalHasLeftImage = originalMatchPairLeftImages.value[i] !== null;
-
-        if (originalHasLeftImage && pairLeftImageIds.value[i] !== null) {
-          if (hasNewLeftImage && leftImageInput.files) {
-            try {
-              const formData = new FormData();
-              formData.append('file', leftImageInput.files[0]);
-
-              const uploadResponse = await axiosInstance.post(
-                '/images/upload',
-                formData,
-                {
-                  headers: {
-                    'Content-Type': 'multipart/form-data'
-                  }
-                }
-              );
-
-              const imageCreateRequest = {
-                image_url: uploadResponse.data.image_url,
-                original_filename: uploadResponse.data.original_filename || leftImageInput.files[0].name,
-                file_size: uploadResponse.data.file_size || leftImageInput.files[0].size,
-                file_type: uploadResponse.data.file_type || leftImageInput.files[0].type,
-                width: uploadResponse.data.width,
-                height: uploadResponse.data.height
-              };
-
-              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              pairData.left_image_id = imageResponse.data.id;
-            } catch (error) {
-              console.error('Error uploading left pair image:', error);
-              // If upload fails, use original image ID since we must maintain consistency
-              pairData.left_image_id = pairLeftImageIds.value[i] as number;
-            }
-          } else {
-            // No new image uploaded, use original image ID
-            pairData.left_image_id = pairLeftImageIds.value[i] as number;
-          }
-        } else if (hasNewLeftImage) {
-          // Original has no image, warn user and skip image upload
-          toastStore.showToast({
-            title: 'Warning',
-            message: `Cannot add left image to pair ${i + 1} when original pair has no left image`,
-            type: 'warning'
-          });
-        }
-
-        // Handle right image
-        const rightImageInput = document.getElementById(`rightPairImage${i}`) as HTMLInputElement;
-        const hasNewRightImage = rightImageInput?.files && rightImageInput.files.length > 0;
-        const originalHasRightImage = originalMatchPairRightImages.value[i] !== null;
-
-        if (originalHasRightImage && pairRightImageIds.value[i] !== null) {
-          if (hasNewRightImage && rightImageInput.files) {
-            try {
-              const formData = new FormData();
-              formData.append('file', rightImageInput.files[0]);
-
-              const uploadResponse = await axiosInstance.post(
-                '/images/upload',
-                formData,
-                {
-                  headers: {
-                    'Content-Type': 'multipart/form-data'
-                  }
-                }
-              );
-
-              const imageCreateRequest = {
-                image_url: uploadResponse.data.image_url,
-                original_filename: uploadResponse.data.original_filename || rightImageInput.files[0].name,
-                file_size: uploadResponse.data.file_size || rightImageInput.files[0].size,
-                file_type: uploadResponse.data.file_type || rightImageInput.files[0].type,
-                width: uploadResponse.data.width,
-                height: uploadResponse.data.height
-              };
-
-              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              pairData.right_image_id = imageResponse.data.id;
-            } catch (error) {
-              console.error('Error uploading right pair image:', error);
-              // If upload fails, use original image ID since we must maintain consistency
-              pairData.right_image_id = pairRightImageIds.value[i] as number;
-            }
-          } else {
-            // No new image uploaded, use original image ID
-            pairData.right_image_id = pairRightImageIds.value[i] as number;
-          }
-        } else if (hasNewRightImage) {
-          // Original has no image, warn user and skip image upload
-          toastStore.showToast({
-            title: 'Warning',
-            message: `Cannot add right image to pair ${i + 1} when original pair has no right image`,
-            type: 'warning'
-          });
-        }
-
-        matchPairs.push(pairData);
-      }
-
-      questionTextData.match_pairs = matchPairs;
-    }
-
-    // Prepare the final request payload using the new API structure
+    
+    // Step 4: Process MCQ options if needed
+    const mcqOptions = await generateMcqOptionsData();
+    
+    // Step 5: Process match pairs if needed
+    const matchPairs = await generateMatchPairsData();
+    
+    // Step 6: Prepare question text data
+    const questionTextData = prepareQuestionTextData(mainImageId, mcqOptions, matchPairs);
+    
+    // Step 7: Prepare the final request payload
     const updatePayload = {
       board_question: false, // Since this is a translation, we don't modify board_question status
-      question_text_id: translationTextId,
+      question_text_id: translatedQuestion.value.id,
       question_text_data: questionTextData,
       question_topic_data: {
         topic_id: topicId.value
       }
     };
-
+    
     console.log('Final update payload:', JSON.stringify(updatePayload));
-
-    // Make the update request using the new endpoint
+    
+    // Step 8: Make the API request
     const updateResponse = await axiosInstance.put(`/questions/edit/${questionId.value}`, updatePayload);
     console.log('Translation updated successfully:', updateResponse.data);
-
-    // Check if any translations were unverified
+    
+    // Step 9: Handle success
     if (updateResponse.data.translations_unverified > 0) {
       console.log(`${updateResponse.data.translations_unverified} translations were unverified due to this update`);
     }
-
-    // Show success message and navigate back
+    
+    // Navigate back with success message
     router.push({
       name: 'questionDashboard',
       query: {
@@ -1242,7 +1207,6 @@ async function updateTranslation() {
     });
   } catch (error: unknown) {
     console.error('Error updating translation:', error);
-
     const axiosError = error as AxiosErrorResponse;
     toastStore.showToast({
       title: 'Error',
@@ -1253,6 +1217,266 @@ async function updateTranslation() {
     // Disable both loading indicators
     isSaving.value = false;
     isFullscreenLoading.value = false;
+  }
+}
+
+// Helper functions to reduce cognitive complexity in loadQuestionData
+
+// Get question ID from route parameters
+function getQuestionIdFromRoute() {
+  const id = route.params.id || route.query.id;
+  if (!id) {
+    console.error('Question ID not provided');
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Question ID not provided',
+      type: 'error'
+    });
+    router.push({ name: 'questionDashboard' });
+    return null;
+  }
+  return Number(id);
+}
+
+// Validate question has topics and return topic ID
+function validateAndGetTopicId(questionDetails: Record<string, unknown>) {
+  if (!questionDetails.question_texts ||
+      !Array.isArray(questionDetails.question_texts) ||
+      !questionDetails.question_texts[0] ||
+      !questionDetails.question_texts[0].topic ||
+      !questionDetails.question_texts[0].topic.id) {
+    console.error('Question has no associated topic');
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Question has no associated topic',
+      type: 'error'
+    });
+    router.push({ name: 'questionDashboard' });
+    return null;
+  }
+  
+  return questionDetails.question_texts[0].topic.id;
+}
+
+// Find translation to edit for the target medium
+function findTranslationToEdit(allQuestionTexts: QuestionTranslation[], targetMediumId: number) {
+  interface QuestionTextTopic {
+    instruction_medium_id: number;
+    instruction_medium: {
+      id: number;
+      instruction_medium: string;
+    };
+  }
+
+  interface QuestionTextWithTopics extends QuestionTranslation {
+    question_text_topics: QuestionTextTopic[];
+  }
+
+  const translationToEdit = allQuestionTexts.find(
+    (text: QuestionTextWithTopics) => text.question_text_topics &&
+           text.question_text_topics.some((topic: QuestionTextTopic) => topic.instruction_medium_id === targetMediumId)
+  );
+
+  if (!translationToEdit) {
+    console.log('No translation found to edit for medium ID:', targetMediumId);
+    toastStore.showToast({
+      title: 'Error',
+      message: 'No translation found for this medium',
+      type: 'error'
+    });
+    router.push({ name: 'questionDashboard' });
+    return null;
+  }
+
+  console.log('Found translation to edit in question details:', translationToEdit);
+  return translationToEdit;
+}
+
+// Process available translations
+function processAvailableTranslations(questionData: Record<string, unknown>, targetMediumId: number) {
+  if (!questionData.question_texts || !Array.isArray(questionData.question_texts) || questionData.question_texts.length === 0) {
+    return { availableTranslations: [], originalTranslation: null, originalIndex: -1 };
+  }
+
+  // Save the original translation for reference before filtering
+  const originalTranslation = questionData.question_texts.find(
+    (text: QuestionTranslation) => text.translation_status === 'original'
+  );
+
+  // Filter out the current medium's translation from available translations
+  const filteredTranslations = questionData.question_texts.filter((text: QuestionTranslation) => {
+    // Only include translations that aren't for the current medium
+    return text.medium.id !== targetMediumId;
+  });
+
+  console.log(`Filtered available translations. Removed current medium (ID: ${targetMediumId}) from list.`);
+  console.log(`Available translations count: ${filteredTranslations.length}`);
+
+  // Find the original translation for reference
+  const originalIndex = filteredTranslations.findIndex(t => t.translation_status === 'original');
+  
+  return { 
+    availableTranslations: filteredTranslations, 
+    originalTranslation, 
+    originalIndex: originalIndex >= 0 ? originalIndex : 0
+  };
+}
+
+// Setup translation to edit
+function setupTranslationToEdit(translationToEdit: QuestionTranslation, translationMedium: Record<string, unknown>, questionType: string) {
+  editingTranslationIndex.value = -1; // We're not editing from the verified list
+  translatedQuestion.value = {
+    question: translationToEdit.question_text,
+    type: questionType,
+    id: translationToEdit.id
+  };
+
+  // Get the translation's image if available
+  if (translationToEdit.image_id && translationToEdit.image) {
+    imageLoading.value = true;
+    questionImage.value = {
+      id: translationToEdit.image_id,
+      presigned_url: translationToEdit.image.presigned_url,
+      image_url: translationToEdit.image.image_url
+    };
+  }
+}
+
+// Set reference translation content
+function setReferenceTranslation(referenceTranslation: QuestionTranslation | null) {
+  if (!referenceTranslation) {
+    console.warn('No reference translation available for content. Using minimal fallback.');
+    // Provide minimal original content for reference
+    originalQuestion.value = 'No reference translation available';
+    return;
+  }
+
+  originalQuestion.value = referenceTranslation.question_text;
+
+  // If original has an image, show it
+  if (referenceTranslation.image_id && referenceTranslation.image && !questionImage.value) {
+    imageLoading.value = true;
+    questionImage.value = {
+      id: referenceTranslation.image_id,
+      presigned_url: referenceTranslation.image.presigned_url,
+      image_url: referenceTranslation.image.image_url
+    };
+  }
+}
+
+// Process MCQ options for the reference translation
+function processMcqOptions(referenceTranslation: QuestionTranslation, translationToEdit: QuestionTranslation) {
+  if (!(questionType.value === QUESTION_TYPES.MCQ ||
+        questionType.value === QUESTION_TYPES.ODD_ONE_OUT ||
+        questionType.value === QUESTION_TYPES.TRUE_FALSE) ||
+      !referenceTranslation.mcq_options) {
+    return;
+  }
+
+  originalOptions.value = referenceTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
+
+  // Extract option images and correct answers
+  originalOptionImages.value = Array(originalOptions.value.length).fill(null);
+  optionImageLoading.value = Array(originalOptions.value.length).fill(false);
+  optionImageError.value = Array(originalOptions.value.length).fill(false);
+  originalOptionIsCorrect.value = Array(originalOptions.value.length).fill(false);
+  optionImageIds.value = Array(originalOptions.value.length).fill(null);
+
+  // Process each option
+  referenceTranslation.mcq_options.forEach((option: McqOption, index: number) => {
+    if (option.is_correct) {
+      originalOptionIsCorrect.value[index] = true;
+    }
+
+    if (option.image_id && option.image && option.image.presigned_url) {
+      originalOptionImages.value[index] = option.image.presigned_url;
+      optionImageLoading.value[index] = true;
+      optionImageIds.value[index] = option.image_id;
+    }
+  });
+
+  // Now load the translated options
+  if (translationToEdit.mcq_options) {
+    translatedOptions.value = Array(originalOptions.value.length).fill('');
+    translationToEdit.mcq_options.forEach((option: McqOption, index: number) => {
+      if (index < translatedOptions.value.length) {
+        translatedOptions.value[index] = option.option_text;
+      }
+    });
+  }
+}
+
+// Process match pairs for the reference translation
+function processMatchPairs(referenceTranslation: QuestionTranslation, translationToEdit: QuestionTranslation) {
+  if (!(questionType.value === QUESTION_TYPES.MATCH_PAIRS ||
+        questionType.value === QUESTION_TYPES.COMPLETE_CORRELATION) ||
+      !referenceTranslation.match_pairs ||
+      referenceTranslation.match_pairs.length === 0) {
+    return;
+  }
+
+  // Initialize match pair arrays
+  originalMatchPairs.value = referenceTranslation.match_pairs.map(
+    (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
+  );
+  
+  initializeMatchPairArrays();
+  processMatchPairImages(referenceTranslation);
+  loadTranslatedMatchPairs(translationToEdit);
+}
+
+// Initialize arrays for match pair images
+function initializeMatchPairArrays() {
+  originalMatchPairLeftImages.value = Array(originalMatchPairs.value.length).fill(null);
+  originalMatchPairRightImages.value = Array(originalMatchPairs.value.length).fill(null);
+  pairLeftImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
+  pairLeftImageError.value = Array(originalMatchPairs.value.length).fill(false);
+  pairRightImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
+  pairRightImageError.value = Array(originalMatchPairs.value.length).fill(false);
+  pairLeftImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
+  pairRightImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
+  pairLeftImageIds.value = Array(originalMatchPairs.value.length).fill(null);
+  pairRightImageIds.value = Array(originalMatchPairs.value.length).fill(null);
+}
+
+// Process images for match pairs
+function processMatchPairImages(referenceTranslation: QuestionTranslation) {
+  if (!referenceTranslation.match_pairs) return;
+  
+  referenceTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
+    // Handle left image
+    if (pair.left_image_id && pair.left_image) {
+      const leftUrl = pair.left_image.presigned_url || pair.left_image.image_url;
+      if (leftUrl) {
+        originalMatchPairLeftImages.value[index] = leftUrl;
+        pairLeftImageLoading.value[index] = true;
+      }
+      pairLeftImageIds.value[index] = pair.left_image_id;
+    }
+    
+    // Handle right image
+    if (pair.right_image_id && pair.right_image) {
+      const rightUrl = pair.right_image.presigned_url || pair.right_image.image_url;
+      if (rightUrl) {
+        originalMatchPairRightImages.value[index] = rightUrl;
+        pairRightImageLoading.value[index] = true;
+      }
+      pairRightImageIds.value[index] = pair.right_image_id;
+    }
+  });
+}
+
+// Load translated match pairs
+function loadTranslatedMatchPairs(translationToEdit: QuestionTranslation) {
+  if (translationToEdit.match_pairs && translationToEdit.match_pairs.length > 0) {
+    translatedMatchPairs.value = translationToEdit.match_pairs.map(
+      (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
+    );
+  } else {
+    // Initialize empty pairs matching original length
+    translatedMatchPairs.value = Array(originalMatchPairs.value.length)
+      .fill(0)
+      .map(() => ({ left_text: '', right_text: '' }));
   }
 }
 
@@ -1267,81 +1491,29 @@ async function loadQuestionData() {
     const startTime = Date.now();
 
     // Get question ID from route params
-    const id = route.params.id || route.query.id;
-    if (!id) {
-      console.error('Question ID not provided');
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question ID not provided',
-        type: 'error'
-      });
-      router.push({ name: 'questionDashboard' });
-      return;
-    }
-
-    questionId.value = Number(id);
+    const id = getQuestionIdFromRoute();
+    if (!id) return;
+    
+    questionId.value = id;
 
     // First, we need to fetch the question to get its associated topic ID
-    // since we can't just use the chapter ID
     const questionDetailsResponse = await axiosInstance.get(`/questions/${questionId.value}`);
     const questionDetails = questionDetailsResponse.data;
 
     // Check if question has any question_texts with topics
-    if (!questionDetails.question_texts ||
-        !questionDetails.question_texts[0] ||
-        !questionDetails.question_texts[0].topic ||
-        !questionDetails.question_texts[0].topic.id) {
-      console.error('Question has no associated topic');
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question has no associated topic',
-        type: 'error'
-      });
-      router.push({ name: 'questionDashboard' });
-      return;
-    }
-
-    // Get the topic ID from the question details
-    topicId.value = questionDetails.question_texts[0].topic.id;
-
+    const topicIdValue = validateAndGetTopicId(questionDetails);
+    if (!topicIdValue) return;
+    
+    topicId.value = topicIdValue;
     console.log(`Using topic ID: ${topicId.value} for question ID: ${questionId.value}`);
 
     // Get target medium ID (the medium we're editing the translation for)
     const targetMediumId = parseInt(questionBankData.value.mediumId.toString());
 
-    // Define interfaces for question text topics
-    interface QuestionTextTopic {
-      instruction_medium_id: number;
-      instruction_medium: {
-        id: number;
-        instruction_medium: string;
-      };
-    }
-
-    interface QuestionTextWithTopics extends QuestionTranslation {
-      question_text_topics: QuestionTextTopic[];
-    }
-
-    // Find the translation for the target medium in the full question details
-    // This will be used for pre-filling the form, regardless of verification status
+    // Find the translation for the target medium
     const allQuestionTexts = questionDetails.question_texts || [];
-    const translationToEdit = allQuestionTexts.find(
-      (text: QuestionTextWithTopics) => text.question_text_topics &&
-             text.question_text_topics.some((topic: QuestionTextTopic) => topic.instruction_medium_id === targetMediumId)
-    );
-
-    if (translationToEdit) {
-      console.log('Found translation to edit in question details:', translationToEdit);
-    } else {
-      console.log('No translation found to edit for medium ID:', targetMediumId);
-      toastStore.showToast({
-        title: 'Error',
-        message: 'No translation found for this medium',
-        type: 'error'
-      });
-      router.push({ name: 'questionDashboard' });
-      return;
-    }
+    const translationToEdit = findTranslationToEdit(allQuestionTexts, targetMediumId);
+    if (!translationToEdit) return;
 
     // Now fetch ONLY verified texts for the available translations list
     const response = await axiosInstance.get(`/questions/${questionId.value}/topic/${topicId.value}/verified-texts`);
@@ -1351,172 +1523,35 @@ async function loadQuestionData() {
     questionType.value = questionData.question_type.type_name;
     console.log(`Question type: ${questionType.value}`);
 
-    // Set available translations to ONLY the verified translations
-    if (questionData.question_texts && questionData.question_texts.length > 0) {
-      // Save the original translation for reference before filtering
-      const originalTranslationBeforeFilter = questionData.question_texts.find(
-        (text: QuestionTranslation) => text.translation_status === 'original'
-      );
+    // Process available translations
+    const { availableTranslations: filteredTranslations, originalTranslation, originalIndex } = 
+      processAvailableTranslations(questionData, targetMediumId);
+    
+    availableTranslations.value = filteredTranslations;
+    selectedTranslationIndex.value = originalIndex;
 
-      // Filter out the current medium's translation from available translations
-      availableTranslations.value = questionData.question_texts.filter((text: QuestionTranslation) => {
-        // Only include translations that aren't for the current medium
-        return text.medium.id !== targetMediumId;
-      });
+    // Get the translation medium
+    const translationMedium = translationToEdit.question_text_topics.find(
+      (topic: { instruction_medium_id: number; instruction_medium: { id: number; instruction_medium: string } }) => 
+        topic.instruction_medium_id === targetMediumId
+    )?.instruction_medium;
 
-      console.log(`Filtered available translations. Removed current medium (ID: ${targetMediumId}) from list.`);
-      console.log(`Available translations count: ${availableTranslations.value.length}`);
+    if (translationMedium) {
+      // Set up the translation to edit
+      setupTranslationToEdit(translationToEdit, translationMedium, questionType.value);
 
-      // Find the original translation for reference
-      const originalIndex = availableTranslations.value.findIndex(t => t.translation_status === 'original');
-      selectedTranslationIndex.value = originalIndex >= 0 ? originalIndex : 0;
-
-      // Add the translation medium data to the translationToEdit for consistency
-      const translationMedium = translationToEdit.question_text_topics.find(
-        (topic: QuestionTextTopic) => topic.instruction_medium_id === targetMediumId
-      )?.instruction_medium;
-
-      if (translationMedium) {
-        // Set up the translation to edit
-        editingTranslationIndex.value = -1; // We're not editing from the verified list
-        translatedQuestion.value = {
-          question: translationToEdit.question_text,
-          type: questionType.value,
-          id: translationToEdit.id
-        };
-
-        // Get the translation's image if available
-        if (translationToEdit.image_id && translationToEdit.image) {
-          imageLoading.value = true;
-          questionImage.value = {
-            id: translationToEdit.image_id,
-            presigned_url: translationToEdit.image.presigned_url,
-            image_url: translationToEdit.image.image_url
-          };
-        }
-
-        // Set original question text for reference
-        // If no translations are available after filtering, use the original we saved earlier
-        const referenceTranslation = availableTranslations.value.length > 0 ?
-          availableTranslations.value[selectedTranslationIndex.value] : originalTranslationBeforeFilter;
-
-        if (referenceTranslation) {
-          originalQuestion.value = referenceTranslation.question_text;
-
-          // If original has an image, show it
-          if (referenceTranslation.image_id && referenceTranslation.image && !questionImage.value) {
-            imageLoading.value = true;
-            questionImage.value = {
-              id: referenceTranslation.image_id,
-              presigned_url: referenceTranslation.image.presigned_url,
-              image_url: referenceTranslation.image.image_url
-            };
-          }
-
-          // For MCQ, set original options for reference
-          if ((questionType.value === QUESTION_TYPES.MCQ ||
-               questionType.value === QUESTION_TYPES.ODD_ONE_OUT ||
-               questionType.value === QUESTION_TYPES.TRUE_FALSE) &&
-              referenceTranslation.mcq_options) {
-
-            originalOptions.value = referenceTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
-
-            // Extract option images and correct answers
-            originalOptionImages.value = Array(originalOptions.value.length).fill(null);
-            optionImageLoading.value = Array(originalOptions.value.length).fill(false);
-            optionImageError.value = Array(originalOptions.value.length).fill(false);
-            originalOptionIsCorrect.value = Array(originalOptions.value.length).fill(false);
-            optionImageIds.value = Array(originalOptions.value.length).fill(null);
-
-            // Process each option
-            referenceTranslation.mcq_options.forEach((option: McqOption, index: number) => {
-              if (option.is_correct) {
-                originalOptionIsCorrect.value[index] = true;
-              }
-
-              if (option.image_id && option.image && option.image.presigned_url) {
-                originalOptionImages.value[index] = option.image.presigned_url;
-                optionImageLoading.value[index] = true;
-                optionImageIds.value[index] = option.image_id;
-              }
-            });
-
-            // Now load the translated options
-            if (translationToEdit.mcq_options) {
-              translatedOptions.value = Array(originalOptions.value.length).fill('');
-              translationToEdit.mcq_options.forEach((option: McqOption, index: number) => {
-                if (index < translatedOptions.value.length) {
-                  translatedOptions.value[index] = option.option_text;
-                }
-              });
-            }
-          }
-
-          // For matching pairs, set original and translated pairs
-          if ((questionType.value === QUESTION_TYPES.MATCH_PAIRS ||
-               questionType.value === QUESTION_TYPES.COMPLETE_CORRELATION) &&
-              referenceTranslation.match_pairs &&
-              referenceTranslation.match_pairs.length > 0) {
-
-            // Initialize match pair arrays
-            originalMatchPairs.value = referenceTranslation.match_pairs.map(
-              (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
-            );
-            
-            // Initialize arrays for match pair images
-            originalMatchPairLeftImages.value = Array(originalMatchPairs.value.length).fill(null);
-            originalMatchPairRightImages.value = Array(originalMatchPairs.value.length).fill(null);
-            pairLeftImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
-            pairLeftImageError.value = Array(originalMatchPairs.value.length).fill(false);
-            pairRightImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
-            pairRightImageError.value = Array(originalMatchPairs.value.length).fill(false);
-            pairLeftImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
-            pairRightImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
-            pairLeftImageIds.value = Array(originalMatchPairs.value.length).fill(null);
-            pairRightImageIds.value = Array(originalMatchPairs.value.length).fill(null);
-            
-            // Extract image URLs for each pair
-            if (referenceTranslation.match_pairs) {
-              referenceTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
-                // Handle left image
-                if (pair.left_image_id && pair.left_image) {
-                  const leftUrl = pair.left_image.presigned_url || pair.left_image.image_url;
-                  if (leftUrl) {
-                    originalMatchPairLeftImages.value[index] = leftUrl;
-                    pairLeftImageLoading.value[index] = true;
-                  }
-                  pairLeftImageIds.value[index] = pair.left_image_id;
-                }
-                
-                // Handle right image
-                if (pair.right_image_id && pair.right_image) {
-                  const rightUrl = pair.right_image.presigned_url || pair.right_image.image_url;
-                  if (rightUrl) {
-                    originalMatchPairRightImages.value[index] = rightUrl;
-                    pairRightImageLoading.value[index] = true;
-                  }
-                  pairRightImageIds.value[index] = pair.right_image_id;
-                }
-              });
-            }
-
-            // Load translated match pairs if available
-            if (translationToEdit.match_pairs && translationToEdit.match_pairs.length > 0) {
-              translatedMatchPairs.value = translationToEdit.match_pairs.map(
-                (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
-              );
-            } else {
-              // Initialize empty pairs matching original length
-              translatedMatchPairs.value = Array(originalMatchPairs.value.length)
-                .fill(0)
-                .map(() => ({ left_text: '', right_text: '' }));
-            }
-          }
-        } else {
-          console.warn('No reference translation available for content. Using minimal fallback.');
-          // Provide minimal original content for reference
-          originalQuestion.value = 'No reference translation available';
-        }
+      // Set reference translation for displaying original content
+      const referenceTranslation = availableTranslations.value.length > 0 ?
+        availableTranslations.value[selectedTranslationIndex.value] : originalTranslation;
+      
+      setReferenceTranslation(referenceTranslation);
+      
+      if (referenceTranslation) {
+        // Process MCQ options if applicable
+        processMcqOptions(referenceTranslation, translationToEdit);
+        
+        // Process match pairs if applicable
+        processMatchPairs(referenceTranslation, translationToEdit);
       }
     }
 

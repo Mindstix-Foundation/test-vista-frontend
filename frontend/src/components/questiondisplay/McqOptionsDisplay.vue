@@ -29,14 +29,16 @@
             <!-- Option Image if available -->
             <div v-if="optionImages && optionImages[optIndex]" class="option-image-container mt-2">
               <div v-if="optionImageLoading[optIndex]" class="image-loading-overlay">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <output
+                  class="spinner-border spinner-border-sm text-primary"
+                >
                   <span class="visually-hidden">Loading image...</span>
-                </div>
+                </output>
               </div>
               <img
                 :src="optionImages[optIndex]"
                 class="option-image"
-                alt="Option Image"
+                alt="Option"
                 @load="handleImageLoad(optIndex)"
                 @error="handleImageError(optIndex)"
               />

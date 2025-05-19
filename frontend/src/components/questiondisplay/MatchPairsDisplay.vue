@@ -42,14 +42,17 @@
           <!-- Left side image if available -->
           <div v-if="leftImages && leftImages[idx]" class="pair-image-container mt-2">
             <div v-if="leftImageLoading[idx]" class="image-loading-overlay">
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <output
+ class=
+"spinner-border spinner-border-sm text-primary"
+>
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               :src="leftImages[idx]"
               class="pair-image"
-              alt="Left Item Image"
+              alt="Left Item"
               @load="handleLeftImageLoad(idx)"
               @error="handleLeftImageError(idx)"
               :data-side="'left'"
@@ -97,14 +100,17 @@
           <!-- Right side image if available -->
           <div v-if="rightImages && rightImages[idx]" class="pair-image-container mt-2">
             <div v-if="rightImageLoading[idx]" class="image-loading-overlay">
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <output
+ class=
+"spinner-border spinner-border-sm text-primary"
+>
                 <span class="visually-hidden">Loading image...</span>
-              </div>
+              </output>
             </div>
             <img
               :src="rightImages[idx]"
               class="pair-image"
-              alt="Right Item Image"
+              alt="Right Item"
               @load="handleRightImageLoad(idx)"
               @error="handleRightImageError(idx)"
               :data-side="'right'"
@@ -238,7 +244,6 @@ function handleLeftImageLoad(index: number): void {
   if (imgElement && imgElement.naturalWidth === 0) {
     console.warn(`Left image ${index} appears to have loaded but has zero width for question:`, props.questionId);
     handleLeftImageError(index);
-    return;
   }
 }
 
@@ -274,7 +279,6 @@ function handleRightImageLoad(index: number): void {
   if (imgElement && imgElement.naturalWidth === 0) {
     console.warn(`Right image ${index} appears to have loaded but has zero width for question:`, props.questionId);
     handleRightImageError(index);
-    return;
   }
 }
 

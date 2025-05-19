@@ -739,7 +739,53 @@ const closeToast = (): void => {
   showToast.value = false
 }
 
-// Update the restoreFormState function
+// Helper functions to reduce complexity in restoreFormState
+const restoreMediumsSelection = (formState) => {
+  if (!formState.selectedMediums) return
+  
+  selectedMediums.value = formState.selectedMediums
+  // Update the selected state in instructionMediums
+  instructionMediums.value.forEach(medium => {
+    medium.selected = selectedMediums.value.some(m => m.id === medium.id)
+  })
+  // Update selectAll state
+  selectAllMediums.value = instructionMediums.value.length > 0 && 
+    instructionMediums.value.every(m => m.selected)
+}
+
+const restoreChaptersSelection = (formState) => {
+  if (!formState.chapters || chapters.value.length === 0) return
+  
+  formState.chapters.forEach((savedChapter: {id: number, selected: boolean}) => {
+    const matchingChapter = chapters.value.find(c => c.id === savedChapter.id)
+    if (matchingChapter) {
+      matchingChapter.selected = savedChapter.selected
+    }
+  })
+  
+  // Update selectAll checkbox state based on individual selections
+  selectAllChapters.value = chapters.value.length > 0 && chapters.value.every(c => c.selected)
+  
+  // Trigger an update of selected chapters
+  updateSelectedChapters()
+}
+
+const restoreMarksSelection = async (formState) => {
+  if (!formState.totalMarks) return
+  
+  await fetchAvailableMarks()
+  
+  if (!formState.selectedMarksObj || availableMarks.value.length === 0) return
+  
+  selectedMarksObj.value = availableMarks.value.find(
+    m => m.name === formState.selectedMarksObj.name
+  ) || null
+  
+  if (selectedMarksObj.value) {
+    totalMarks.value = parseInt(selectedMarksObj.value.name, 10)
+  }
+}
+
 const restoreFormState = async () => {
   try {
     const savedState = localStorage.getItem('testPaperDashboardState')
@@ -747,17 +793,8 @@ const restoreFormState = async () => {
     
     const formState = JSON.parse(savedState)
     
-    // Restore selected values first
-    if (formState.selectedMediums) {
-      selectedMediums.value = formState.selectedMediums
-      // Update the selected state in instructionMediums
-      instructionMediums.value.forEach(medium => {
-        medium.selected = selectedMediums.value.some(m => m.id === medium.id)
-      })
-      // Update selectAll state
-      selectAllMediums.value = instructionMediums.value.length > 0 && 
-        instructionMediums.value.every(m => m.selected)
-    }
+    // Restore selected values in separate functions
+    restoreMediumsSelection(formState)
     
     if (formState.selectedStandardObj) {
       selectedStandardObj.value = formState.selectedStandardObj
@@ -773,36 +810,10 @@ const restoreFormState = async () => {
       questionSource.value = formState.questionSource
     }
     
-    // Restore chapter selections
-    if (formState.chapters && chapters.value.length > 0) {
-      formState.chapters.forEach((savedChapter: {id: number, selected: boolean}) => {
-        const matchingChapter = chapters.value.find(c => c.id === savedChapter.id)
-        if (matchingChapter) {
-          matchingChapter.selected = savedChapter.selected
-        }
-      })
-      
-      // Update selectAll checkbox state based on individual selections
-      selectAllChapters.value = chapters.value.length > 0 && chapters.value.every(c => c.selected)
-      
-      // Trigger an update of selected chapters
-      updateSelectedChapters()
-    }
+    // Restore chapters and marks using helper functions
+    restoreChaptersSelection(formState)
+    await restoreMarksSelection(formState)
     
-    // Restore total marks and selected marks object after chapter data is loaded
-    if (formState.totalMarks) {
-      await fetchAvailableMarks()
-      
-      if (formState.selectedMarksObj && availableMarks.value.length > 0) {
-        selectedMarksObj.value = availableMarks.value.find(
-          m => m.name === formState.selectedMarksObj.name
-        ) || null
-        
-        if (selectedMarksObj.value) {
-          totalMarks.value = parseInt(selectedMarksObj.value.name, 10)
-        }
-      }
-    }
   } catch (error) {
     console.error('Error restoring form state:', error)
   }

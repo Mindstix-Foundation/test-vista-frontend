@@ -42,9 +42,11 @@
         @submit="updateChapter"
       />
       <div v-else class="text-center">
-        <div class="spinner-border" role="status">
+        <output
+          class="spinner-border"
+        >
           <span class="visually-hidden">Loading...</span>
-        </div>
+        </output>
       </div>
     </div>
   </div>

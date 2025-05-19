@@ -17,9 +17,9 @@
 
     <!-- Loading State -->
     <div v-if="isLoading && !isSearching" class="text-center my-5">
-      <div class="spinner-border text-primary" role="status">
+      <output class="spinner-border text-primary d-block">
         <span class="visually-hidden">Loading...</span>
-      </div>
+      </output>
     </div>
 
     <!-- Error State -->
@@ -73,9 +73,9 @@
           <div class="table-responsive position-relative">
             <!-- Loading overlay for search -->
             <div v-if="isSearching" class="search-loading-overlay">
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <output class="spinner-border spinner-border-sm text-primary">
                 <span class="visually-hidden">Searching...</span>
-              </div>
+              </output>
             </div>
 
             <table class="table table-sm table-hover table-striped table-bordered" :class="{ 'table-searching': isSearching }">
@@ -228,9 +228,8 @@
         class="modal fade"
         id="boardInfoModal"
         tabindex="-1"
-        :aria-hidden="!showInfoModal"
-        role="dialog"
         aria-labelledby="boardInfoModalLabel"
+        aria-hidden="true"
       >
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content">
@@ -475,7 +474,6 @@ const selectedBoard = ref<BoardDetails | null>(null)
 const isLoading = ref(true)
 const isSearching = ref(false)
 const error = ref<string | null>(null)
-const showInfoModal = ref(false)
 const associatedSchools = ref<Array<{ id: number; name: string }>>([])
 const confirmationText = ref('')
 const deleteModal = ref<Modal | null>(null)
@@ -765,7 +763,10 @@ const showBoardInfo = async (board: Board) => {
     selectedBoard.value = null // Reset selected board first
     const boardDetails = await fetchBoardDetails(board.id)
     selectedBoard.value = boardDetails
-    showInfoModal.value = true
+    
+    // Show the modal using Bootstrap's Modal API
+    const modal = new Modal(document.getElementById('boardInfoModal') as HTMLElement)
+    modal.show()
   } catch (error) {
     console.error('Error fetching board details:', error)
   }
@@ -919,17 +920,6 @@ watch(
   },
 )
 
-// Add watcher for showInfoModal to manage focus
-watch(showInfoModal, (newValue) => {
-  if (!newValue) {
-    // When modal is closing, ensure focus is moved to a safe element
-    const mainContainer = document.querySelector('.container') as HTMLElement
-    if (mainContainer) {
-      mainContainer.focus()
-    }
-  }
-})
-
 // Add this to ensure focus is maintained after data updates
 watch([boards, isSearching], () => {
   // If we were searching and now we're done, restore focus to search input
@@ -983,6 +973,14 @@ const handleSortChange = () => {
 }
 </script>
 
+<!-- Global styles for modal backdrop -->
+<style>
+.modal-backdrop {
+  opacity: 0.5 !important;
+  background-color: rgba(0, 0, 0, 0.25) !important;
+}
+</style>
+
 <style scoped>
 /* Mobile styles */
 @media (max-width: 576px) {
@@ -1031,6 +1029,14 @@ const handleSortChange = () => {
     background-color: #dc3545 !important;
     color: white !important;
   }
+}
+
+/* Adjust modal backdrop opacity to match School Dashboard modals */
+:deep(.modal-backdrop),
+::v-deep .modal-backdrop,
+:global(.modal-backdrop) {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  opacity: 0.5 !important;
 }
 
 #navBoard {
@@ -1201,22 +1207,8 @@ const handleSortChange = () => {
   to { transform: translateY(-50%) rotate(360deg); }
 }
 
-/* Ensure search input stays in focus */
-.search-input:focus {
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-  border-color: #86b7fe;
-  outline: 0;
-  z-index: 100; /* Higher z-index to ensure it stays on top */
-}
-
 /* Ensure search icons stay visible */
 .search-icon, .clear-search-icon, .search-loading-icon {
   z-index: 101; /* Higher than the input focus z-index */
-}
-
-/* Ensure the search wrapper maintains its position */
-.search-wrapper {
-  position: relative;
-  z-index: 10;
 }
 </style>

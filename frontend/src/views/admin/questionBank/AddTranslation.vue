@@ -48,9 +48,9 @@
       <!-- Loading spinner in content area -->
       <div v-if="isLoading" class="row justify-content-center my-5">
         <div class="col-12 col-sm-10 text-center">
-          <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <output class="spinner-border text-primary" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Loading translation data...</span>
-          </div>
+          </output>
           <p class="mt-3 text-primary">Loading translation data...</p>
         </div>
       </div>
@@ -153,15 +153,15 @@
                   <!-- Original Question Image (only if available and no new image selected) -->
                   <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                     <div v-if="imageLoading" class="image-loading-overlay">
-                      <div class="spinner-border text-primary" role="status">
+                      <output class="spinner-border text-primary">
                         <span class="visually-hidden">Loading image...</span>
-                      </div>
+                      </output>
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
                       :src="questionImage.presigned_url || questionImage.image_url"
                       class="question-image"
-                      alt="Question Image"
+                      alt="Question"
                       @load="imageLoading = false"
                       @error="handleImageError"
                     />
@@ -197,7 +197,7 @@
                 </div>
                 <div class="mt-5 text-center">
                   <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                    <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                     {{ isSaving ? 'Saving...' : 'Save' }}
                   </button>
                 </div>
@@ -225,15 +225,15 @@
                   <!-- Original Question Image (only if available and no new image selected) -->
                   <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                     <div v-if="imageLoading" class="image-loading-overlay">
-                      <div class="spinner-border text-primary" role="status">
+                      <output class="spinner-border text-primary">
                         <span class="visually-hidden">Loading image...</span>
-                      </div>
+                      </output>
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
                       :src="questionImage.presigned_url || questionImage.image_url"
                       class="question-image"
-                      alt="Question Image"
+                      alt="Question"
                       @load="imageLoading = false"
                       @error="handleImageError"
                     />
@@ -283,14 +283,14 @@
                       <!-- Original Option Image -->
                       <div v-if="originalOptionImages && originalOptionImages[index]" class="option-image-container mb-2">
                         <div v-if="optionImageLoading[index]" class="image-loading-overlay">
-                          <div class="spinner-border spinner-border-sm text-primary" role="status">
+                          <output class="spinner-border spinner-border-sm text-primary">
                             <span class="visually-hidden">Loading image...</span>
-                          </div>
+                          </output>
                         </div>
                         <img
                           :src="originalOptionImages[index]"
                           class="option-image"
-                          alt="Option Image"
+                          alt="Option"
                           @load="handleOptionImageLoad(index)"
                           @error="handleOptionImageError(index)"
                         />
@@ -322,7 +322,7 @@
 
                         <!-- Preview of selected image for translation -->
                         <div v-if="optionImagePreviews[index]" class="option-image-preview-container mt-2">
-                          <img :src="optionImagePreviews[index]" class="option-image-preview" alt="Option Image Preview">
+                          <img :src="optionImagePreviews[index]" class="option-image-preview" alt="Option Preview">
                           <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearOptionImage(index)">
                             <i class="bi bi-x"></i>
                           </button>
@@ -344,7 +344,7 @@
 
                 <div class="text-center mt-3">
                   <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                    <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                     {{ isSaving ? 'Saving...' : 'Save' }}
                   </button>
                 </div>
@@ -372,28 +372,15 @@
                   <!-- Original Question Image (only if available and no new image selected) -->
                   <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                     <div v-if="imageLoading" class="image-loading-overlay">
-                      <div class="spinner-border text-primary" role="status">
+                      <output class="spinner-border text-primary">
                         <span class="visually-hidden">Loading image...</span>
-                      </div>
+                      </output>
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
                       :src="questionImage.presigned_url || questionImage.image_url"
                       class="question-image"
-                      alt="Question Image"
-                      @load="imageLoading = false"
-                      @error="handleImageError"
-                    />
-                    <div v-if="imageError" class="image-error-message">
-                      <i class="bi bi-exclamation-triangle"></i>
-                      Failed to load image
-
-                    </div>
-                    <img
-                      v-if="questionImage.presigned_url || questionImage.image_url"
-                      :src="questionImage.presigned_url || questionImage.image_url"
-                      class="question-image"
-                      alt="Question Image"
+                      alt="Question"
                       @load="imageLoading = false"
                       @error="handleImageError"
                     />
@@ -435,7 +422,7 @@
 
                 <div class="text-center">
                   <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                    <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                     {{ isSaving ? 'Saving...' : 'Save' }}
                   </button>
                 </div>
@@ -464,15 +451,15 @@
                   <!-- Original Question Image (only if available and no new image selected) -->
                   <div v-if="questionImage && !newImageSelected" class="question-image-container mb-3 mt-2">
                     <div v-if="imageLoading" class="image-loading-overlay">
-                      <div class="spinner-border text-primary" role="status">
+                      <output class="spinner-border text-primary">
                         <span class="visually-hidden">Loading image...</span>
-                      </div>
+                      </output>
                     </div>
                     <img
                       v-if="questionImage.presigned_url || questionImage.image_url"
                       :src="questionImage.presigned_url || questionImage.image_url"
                       class="question-image"
-                      alt="Question Image"
+                      alt="Question"
                       @load="imageLoading = false"
                       @error="handleImageError"
                     />
@@ -532,14 +519,14 @@
                             <!-- Left image if available -->
                             <div v-if="originalMatchPairLeftImages && originalMatchPairLeftImages[index]" class="pair-image-container mt-2">
                               <div v-if="pairLeftImageLoading[index]" class="image-loading-overlay">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <output class="spinner-border spinner-border-sm text-primary">
                                   <span class="visually-hidden">Loading image...</span>
-                                </div>
+                                </output>
                               </div>
                               <img
                                 :src="originalMatchPairLeftImages[index]"
                                 class="pair-image"
-                                alt="Left Item Image"
+                                alt="Left Item"
                                 @load="handlePairLeftImageLoad(index)"
                                 @error="handlePairLeftImageError(index)"
                               />
@@ -568,14 +555,14 @@
                             <!-- Right image if available -->
                             <div v-if="originalMatchPairRightImages && originalMatchPairRightImages[index]" class="pair-image-container mt-2">
                               <div v-if="pairRightImageLoading[index]" class="image-loading-overlay">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <output class="spinner-border spinner-border-sm text-primary">
                                   <span class="visually-hidden">Loading image...</span>
-                                </div>
+                                </output>
                               </div>
                               <img
                                 :src="originalMatchPairRightImages[index]"
                                 class="pair-image"
-                                alt="Right Item Image"
+                                alt="Right Item"
                                 @load="handlePairRightImageLoad(index)"
                                 @error="handlePairRightImageError(index)"
                               />
@@ -639,7 +626,7 @@
                                 
                                 <!-- Preview of selected image -->
                                 <div v-if="pairLeftImagePreviews[index]" class="pair-image-preview-container mt-2">
-                                  <img :src="pairLeftImagePreviews[index]" class="pair-image-preview" alt="Left Item Image Preview">
+                                  <img :src="pairLeftImagePreviews[index]" class="pair-image-preview" alt="Left Item Preview">
                                   <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearPairLeftImage(index)">
                                     <i class="bi bi-x"></i>
                                   </button>
@@ -696,7 +683,7 @@
                               
                               <!-- Preview of selected image -->
                               <div v-if="pairRightImagePreviews[index]" class="pair-image-preview-container mt-2">
-                                <img :src="pairRightImagePreviews[index]" class="pair-image-preview" alt="Right Item Image Preview">
+                                <img :src="pairRightImagePreviews[index]" class="pair-image-preview" alt="Right Item Preview">
                                 <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearPairRightImage(index)">
                                   <i class="bi bi-x"></i>
                                 </button>
@@ -711,7 +698,7 @@
 
                 <div class="text-center">
                   <button type="submit" class="btn btn-dark" id="saveButton" :disabled="isSaving">
-                    <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <output v-if="isSaving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></output>
                     {{ isSaving ? 'Saving...' : 'Save' }}
                   </button>
                 </div>
@@ -724,9 +711,12 @@
 
     <!-- Loading overlay shown during submission -->
     <div v-if="isFullscreenLoading" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
-      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+      <output
+        class="spinner-border text-light"
+        style="width: 3rem; height: 3rem;"
+      >
         <span class="visually-hidden">Saving translation...</span>
-      </div>
+      </output>
     </div>
   </div>
 </template>
@@ -933,351 +923,233 @@ function handleImageChange(event: Event) {
   }
 }
 
+// Helper function to create a toast notification
+function showToast(title, message, type) {
+  toastStore.showToast({
+    title,
+    message,
+    type
+  });
+}
+
+// Helper function to handle image upload
+async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const uploadResponse = await axiosInstance.post(
+    '/images/upload',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+  );
+
+  const imageCreateRequest = {
+    image_url: uploadResponse.data.image_url,
+    original_filename: uploadResponse.data.original_filename || file.name,
+    file_size: uploadResponse.data.file_size || file.size,
+    file_type: uploadResponse.data.file_type || file.type,
+    width: uploadResponse.data.width,
+    height: uploadResponse.data.height
+  };
+
+  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
+  return imageResponse.data.id;
+}
+
+// Helper function to handle image processing logic
+async function processImage(inputElement, originalImageId, originalHasImage, warningMessage) {
+  const hasNewImage = inputElement?.files && inputElement.files.length > 0;
+  
+  if (!originalHasImage) {
+    if (hasNewImage) {
+      showToast('Warning', warningMessage, 'warning');
+    }
+    return null;
+  }
+  
+  if (!hasNewImage) {
+    return originalImageId;
+  }
+  
+  try {
+    return await uploadImage(inputElement.files[0]);
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    return originalImageId;
+  }
+}
+
+// Helper function to process MCQ options
+async function processMcqOptions(translationRequest) {
+  if (!['Multiple Choice Question (MCQ)', 'Odd One Out', 'True or False'].includes(questionType.value) || 
+      translatedOptions.value.length === 0) {
+    return;
+  }
+
+  translationRequest.mcq_options = [];
+
+  for (let i = 0; i < translatedOptions.value.length; i++) {
+    if (translatedOptions.value[i].trim() === '') continue;
+    
+    const optionObj = {
+      option_text: translatedOptions.value[i],
+      is_correct: originalOptionIsCorrect.value[i]
+    };
+
+    const originalHasOptionImage = originalOptionImages.value[i] !== null;
+    const optionImageInput = document.getElementById(`optionImage${i + 1}`) as HTMLInputElement;
+    
+    const imageId = await processImage(
+      optionImageInput,
+      optionImageIds.value[i] as number,
+      originalHasOptionImage && optionImageIds.value[i] !== null,
+      `Cannot add image to option ${i + 1} when original option has no image`
+    );
+    
+    if (imageId) {
+      optionObj.image_id = imageId;
+    }
+
+    translationRequest.mcq_options.push(optionObj);
+  }
+}
+
+// Helper function to process match pairs
+async function processMatchPairs(translationRequest) {
+  if (!['Match the Pairs', 'Complete the Correlation'].includes(questionType.value) || 
+      translatedMatchPairs.value.length === 0) {
+    return;
+  }
+
+  translationRequest.match_pairs = [];
+
+  for (let i = 0; i < translatedMatchPairs.value.length; i++) {
+    const pair = translatedMatchPairs.value[i];
+    const pairObj = {
+      left_text: pair.left_text || '',
+      right_text: pair.right_text || ''
+    };
+
+    // Process left image
+    const originalHasLeftImage = originalMatchPairLeftImages.value[i] !== null;
+    const leftImageInput = document.getElementById(`leftPairImage${i}`) as HTMLInputElement;
+    
+    const leftImageId = await processImage(
+      leftImageInput,
+      pairLeftImageIds.value[i] as number,
+      originalHasLeftImage && pairLeftImageIds.value[i] !== null,
+      `Cannot add left image to pair ${i + 1} when original pair has no left image`
+    );
+    
+    if (leftImageId) {
+      pairObj.left_image_id = leftImageId;
+    }
+
+    // Process right image
+    const originalHasRightImage = originalMatchPairRightImages.value[i] !== null;
+    const rightImageInput = document.getElementById(`rightPairImage${i}`) as HTMLInputElement;
+    
+    const rightImageId = await processImage(
+      rightImageInput,
+      pairRightImageIds.value[i] as number,
+      originalHasRightImage && pairRightImageIds.value[i] !== null,
+      `Cannot add right image to pair ${i + 1} when original pair has no right image`
+    );
+    
+    if (rightImageId) {
+      pairObj.right_image_id = rightImageId;
+    }
+
+    translationRequest.match_pairs.push(pairObj);
+  }
+}
+
+// Helper function to handle fill in the blanks
+function processFillInTheBlanks(translationRequest) {
+  if (questionType.value !== 'Fill in the Blanks') {
+    return;
+  }
+  
+  if (availableTranslations.value.length > 0 && 
+      availableTranslations.value[selectedTranslationIndex.value].answer_text) {
+    translationRequest.answer_text = availableTranslations.value[selectedTranslationIndex.value].answer_text;
+  }
+}
+
+// Get query parameters for navigation
+function getQueryParams() {
+  const currentRoute = router.currentRoute.value;
+  
+  return {
+    success: 'true',
+    message: 'Translation added successfully',
+    page: currentRoute.query.returnPage || undefined,
+    sort: currentRoute.query.returnSort || undefined,
+    topic: currentRoute.query.returnTopic || undefined,
+    type: currentRoute.query.returnType || undefined,
+    search: currentRoute.query.returnSearch || undefined
+  };
+}
+
 async function saveTranslation() {
   try {
     if (!questionId.value) {
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question ID is missing',
-        type: 'error'
-      });
+      showToast('Error', 'Question ID is missing', 'error');
       return;
     }
 
-    // Enable both loading indicators
+    // Enable loading indicators
     isSaving.value = true;
     isFullscreenLoading.value = true;
 
-    // Get medium ID from localStorage (this is the target language ID)
+    // Prepare the translation request
     const targetMediumId = parseInt(questionBankData.value.mediumId.toString());
-
-    // Prepare the translation request object for the new API
-    const translationRequest: {
-      question_text: string;
-      image_id?: number;
-      instruction_medium_id: number;
-      mcq_options?: Array<{
-        option_text: string;
-        image_id?: number;
-        is_correct: boolean;
-      }>;
-      match_pairs?: Array<{
-        left_text: string;
-        right_text: string;
-        left_image_id?: number;
-        right_image_id?: number;
-      }>;
-      answer_text?: string;
-    } = {
+    const translationRequest = {
       question_text: translatedQuestion.value.question,
       instruction_medium_id: targetMediumId
     };
 
-    // Handle question image according to API requirements
+    // Process question image
     const questionImageInput = document.getElementById('inputGroupFile01') as HTMLInputElement;
-    const hasNewQuestionImage = questionImageInput?.files && questionImageInput.files.length > 0;
-    const originalHasImage = questionImage.value !== null;
-
-    // If original has image, translation MUST include an image_id
-    if (originalHasImage && questionImage.value) {
-      if (hasNewQuestionImage && questionImageInput.files) {
-        // Upload new image
-        try {
-          const formData = new FormData();
-          formData.append('file', questionImageInput.files[0]);
-
-          const uploadResponse = await axiosInstance.post(
-            '/images/upload',
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            }
-          );
-
-          const imageCreateRequest = {
-            image_url: uploadResponse.data.image_url,
-            original_filename: uploadResponse.data.original_filename || questionImageInput.files[0].name,
-            file_size: uploadResponse.data.file_size || questionImageInput.files[0].size,
-            file_type: uploadResponse.data.file_type || questionImageInput.files[0].type,
-            width: uploadResponse.data.width,
-            height: uploadResponse.data.height
-          };
-
-          const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-          translationRequest.image_id = imageResponse.data.id;
-        } catch (error) {
-          console.error('Error uploading new question image:', error);
-          // If upload fails, use original image ID since we must include an image
-          translationRequest.image_id = questionImage.value.id;
-        }
-      } else {
-        // No new image uploaded, use original image ID
-        translationRequest.image_id = questionImage.value.id;
-      }
-    } else {
-      // Original has no image, translation should NOT include image_id
-      if (hasNewQuestionImage) {
-        toastStore.showToast({
-          title: 'Warning',
-          message: 'Cannot add image to translation when original question has no image',
-          type: 'warning'
-        });
-      }
-      // Ensure image_id is not included in request
-      delete translationRequest.image_id;
-    }
-
-    // Handle MCQ options
-    if ((questionType.value === 'Multiple Choice Question (MCQ)' || 
-         questionType.value === 'Odd One Out' || 
-         questionType.value === 'True or False') && 
-        translatedOptions.value.length > 0) {
-
-      translationRequest.mcq_options = [];
-
-      for (let i = 0; i < translatedOptions.value.length; i++) {
-        if (translatedOptions.value[i].trim() !== '') {
-          const optionObj: {
-            option_text: string;
-            is_correct: boolean;
-            image_id?: number;
-          } = {
-            option_text: translatedOptions.value[i],
-            is_correct: originalOptionIsCorrect.value[i]
-          };
-
-          // Handle option image - maintain consistency with original
-          const originalHasOptionImage = originalOptionImages.value[i] !== null;
-          const optionImageInput = document.getElementById(`optionImage${i + 1}`) as HTMLInputElement;
-          const hasNewOptionImage = optionImageInput?.files && optionImageInput.files.length > 0;
-
-          if (originalHasOptionImage && optionImageIds.value[i] !== null) {
-            if (hasNewOptionImage && optionImageInput.files) {
-              try {
-                const formData = new FormData();
-                formData.append('file', optionImageInput.files[0]);
-
-                const uploadResponse = await axiosInstance.post(
-                  '/images/upload',
-                  formData,
-                  {
-                    headers: {
-                      'Content-Type': 'multipart/form-data'
-                    }
-                  }
-                );
-
-                const imageCreateRequest = {
-                  image_url: uploadResponse.data.image_url,
-                  original_filename: uploadResponse.data.original_filename || optionImageInput.files[0].name,
-                  file_size: uploadResponse.data.file_size || optionImageInput.files[0].size,
-                  file_type: uploadResponse.data.file_type || optionImageInput.files[0].type,
-                  width: uploadResponse.data.width,
-                  height: uploadResponse.data.height
-                };
-
-                const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-                optionObj.image_id = imageResponse.data.id;
-              } catch (error) {
-                console.error('Error uploading option image:', error);
-                // If upload fails, use original image ID since we must maintain consistency
-                optionObj.image_id = optionImageIds.value[i] as number;
-              }
-            } else {
-              // No new image uploaded, use original image ID
-              optionObj.image_id = optionImageIds.value[i] as number;
-            }
-          } else if (hasNewOptionImage) {
-            // Original has no image, warn user and skip image upload
-            toastStore.showToast({
-              title: 'Warning',
-              message: `Cannot add image to option ${i + 1} when original option has no image`,
-              type: 'warning'
-            });
-          }
-
-          translationRequest.mcq_options.push(optionObj);
-        }
-      }
-    }
-
-    // Handle Match Pairs
-    if ((questionType.value === 'Match the Pairs' || 
-         questionType.value === 'Complete the Correlation') && 
-        translatedMatchPairs.value.length > 0) {
-
-      translationRequest.match_pairs = [];
-
-      for (let i = 0; i < translatedMatchPairs.value.length; i++) {
-        const pair = translatedMatchPairs.value[i];
-        // Remove the condition that requires both left and right text
-        const pairObj: {
-          left_text: string;
-          right_text: string;
-          left_image_id?: number;
-          right_image_id?: number;
-        } = {
-          left_text: pair.left_text || '', // Use empty string if not provided
-          right_text: pair.right_text || '' // Use empty string if not provided
-        };
-
-        // Handle left image
-        const originalHasLeftImage = originalMatchPairLeftImages.value[i] !== null;
-        const leftImageInput = document.getElementById(`leftPairImage${i}`) as HTMLInputElement;
-        const hasNewLeftImage = leftImageInput?.files && leftImageInput.files.length > 0;
-
-        if (originalHasLeftImage && pairLeftImageIds.value[i] !== null) {
-          if (hasNewLeftImage && leftImageInput.files) {
-            try {
-              const formData = new FormData();
-              formData.append('file', leftImageInput.files[0]);
-
-              const uploadResponse = await axiosInstance.post(
-                '/images/upload',
-                formData,
-                {
-                  headers: {
-                    'Content-Type': 'multipart/form-data'
-                  }
-                }
-              );
-
-              const imageCreateRequest = {
-                image_url: uploadResponse.data.image_url,
-                original_filename: uploadResponse.data.original_filename || leftImageInput.files[0].name,
-                file_size: uploadResponse.data.file_size || leftImageInput.files[0].size,
-                file_type: uploadResponse.data.file_type || leftImageInput.files[0].type,
-                width: uploadResponse.data.width,
-                height: uploadResponse.data.height
-              };
-
-              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              pairObj.left_image_id = imageResponse.data.id;
-            } catch (error) {
-              console.error('Error uploading left pair image:', error);
-              // If upload fails, use original image ID since we must maintain consistency
-              pairObj.left_image_id = pairLeftImageIds.value[i] as number;
-            }
-          } else {
-            // No new image uploaded, use original image ID
-            pairObj.left_image_id = pairLeftImageIds.value[i] as number;
-          }
-        } else if (hasNewLeftImage) {
-          // Original has no image, warn user and skip image upload
-          toastStore.showToast({
-            title: 'Warning',
-            message: `Cannot add left image to pair ${i + 1} when original pair has no left image`,
-            type: 'warning'
-          });
-        }
-
-        // Handle right image
-        const originalHasRightImage = originalMatchPairRightImages.value[i] !== null;
-        const rightImageInput = document.getElementById(`rightPairImage${i}`) as HTMLInputElement;
-        const hasNewRightImage = rightImageInput?.files && rightImageInput.files.length > 0;
-
-        if (originalHasRightImage && pairRightImageIds.value[i] !== null) {
-          if (hasNewRightImage && rightImageInput.files) {
-            try {
-              const formData = new FormData();
-              formData.append('file', rightImageInput.files[0]);
-
-              const uploadResponse = await axiosInstance.post(
-                '/images/upload',
-                formData,
-                {
-                  headers: {
-                    'Content-Type': 'multipart/form-data'
-                  }
-                }
-              );
-
-              const imageCreateRequest = {
-                image_url: uploadResponse.data.image_url,
-                original_filename: uploadResponse.data.original_filename || rightImageInput.files[0].name,
-                file_size: uploadResponse.data.file_size || rightImageInput.files[0].size,
-                file_type: uploadResponse.data.file_type || rightImageInput.files[0].type,
-                width: uploadResponse.data.width,
-                height: uploadResponse.data.height
-              };
-
-              const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-              pairObj.right_image_id = imageResponse.data.id;
-            } catch (error) {
-              console.error('Error uploading right pair image:', error);
-              // If upload fails, use original image ID since we must maintain consistency
-              pairObj.right_image_id = pairRightImageIds.value[i] as number;
-            }
-          } else {
-            // No new image uploaded, use original image ID
-            pairObj.right_image_id = pairRightImageIds.value[i] as number;
-          }
-        } else if (hasNewRightImage) {
-          // Original has no image, warn user and skip image upload
-          toastStore.showToast({
-            title: 'Warning',
-            message: `Cannot add right image to pair ${i + 1} when original pair has no right image`,
-            type: 'warning'
-          });
-        }
-
-        translationRequest.match_pairs.push(pairObj);
-      }
-    }
-
-    // Handle Fill in the Blanks questions
-    if (questionType.value === 'Fill in the Blanks') {
-      // Get the correct answer from the original translation
-      if (availableTranslations.value.length > 0 &&
-          availableTranslations.value[selectedTranslationIndex.value].answer_text) {
-        translationRequest.answer_text = availableTranslations.value[selectedTranslationIndex.value].answer_text;
-      }
-    }
-
-    // Use the translate API endpoint to submit the translation
-    const translationResponse = await axiosInstance.post(
-      `/questions/${questionId.value}/translate`,
-      translationRequest
+    const imageId = await processImage(
+      questionImageInput,
+      questionImage.value?.id,
+      questionImage.value !== null,
+      'Cannot add image to translation when original question has no image'
     );
+    
+    if (imageId) {
+      translationRequest.image_id = imageId;
+    }
 
-    console.log('Translation saved successfully:', translationResponse.data);
+    // Process different question types
+    await processMcqOptions(translationRequest);
+    await processMatchPairs(translationRequest);
+    processFillInTheBlanks(translationRequest);
 
-    // Get the current route query parameters before navigating back
-    const currentRoute = router.currentRoute.value;
-    console.log('AddTranslation - Current route query params:', currentRoute.query);
+    // Submit the translation
+    await axiosInstance.post(`/questions/${questionId.value}/translate`, translationRequest);
 
-    const queryParams = {
-      success: 'true',
-      message: 'Translation added successfully',
-      // Preserve filter states from return parameters
-      page: currentRoute.query.returnPage || undefined,
-      sort: currentRoute.query.returnSort || undefined,
-      topic: currentRoute.query.returnTopic || undefined,
-      type: currentRoute.query.returnType || undefined,
-      search: currentRoute.query.returnSearch || undefined
-    };
-
-    console.log('AddTranslation - Navigating back with query params:', queryParams);
-
-    // Navigate back to translation pending page with all query params
+    // Navigate back with appropriate query params
     router.push({
       name: 'translationPending',
-      query: queryParams
+      query: getQueryParams()
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error saving translation:', error);
-
-    // Show error toast using toast store
+    
     const axiosError = error as AxiosErrorResponse;
-    toastStore.showToast({
-      title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to save translation',
-      type: 'error'
-    });
+    showToast(
+      'Error',
+      axiosError.response?.data?.message || 'Failed to save translation',
+      'error'
+    );
   } finally {
-    // Disable both loading indicators
+    // Disable loading indicators
     isSaving.value = false;
     isFullscreenLoading.value = false;
   }
@@ -1293,194 +1165,260 @@ async function loadQuestionData() {
     const minLoadingTime = 800; // Increased to 800ms for smoother experience
     const startTime = Date.now();
 
-    // Get question ID from route params or query
-    const id = route.params.id || route.query.id;
-    if (!id) {
-      console.error('Question ID not provided');
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question ID not provided',
-        type: 'error'
-      });
-      router.push({ name: 'translationPending' });
-      return;
-    }
+    const id = getQuestionIdFromRoute();
+    if (!id) return;
 
     questionId.value = Number(id);
-
-    // First, we need to fetch the question to get its associated topic ID
-    // since we can't just use the chapter ID
-    const questionDetailsResponse = await axiosInstance.get(`/questions/${questionId.value}`);
-    const questionDetails = questionDetailsResponse.data;
-
-    // Check if question has any question_texts with topics
-    if (!questionDetails.question_texts ||
-        !questionDetails.question_texts[0] ||
-        !questionDetails.question_texts[0].topic ||
-        !questionDetails.question_texts[0].topic.id) {
-      console.error('Question has no associated topic');
-      toastStore.showToast({
-        title: 'Error',
-        message: 'Question has no associated topic',
-        type: 'error'
-      });
-      router.push({ name: 'translationPending' });
-      return;
-    }
-
-    // Get the topic ID from the question details
-    topicId.value = questionDetails.question_texts[0].topic.id;
-
-    console.log(`Using topic ID: ${topicId.value} for question ID: ${questionId.value}`);
-
+    
+    // Fetch question details and verify it has a topic
+    if (!await fetchQuestionDetails()) return;
+    
     // Now fetch verified texts using the correct topic ID
-    const response = await axiosInstance.get(`/questions/${questionId.value}/topic/${topicId.value}/verified-texts`);
-    const questionData = response.data;
-
+    const questionData = await fetchVerifiedTexts();
+    
     // Set question type
     questionType.value = questionData.question_type.type_name;
     console.log(`Question type: ${questionType.value}`);
 
-    // Store all available translations
-    if (questionData.question_texts && questionData.question_texts.length > 0) {
-      availableTranslations.value = questionData.question_texts;
-
-      // Find the original translation if it exists
-      const originalIndex = availableTranslations.value.findIndex(t => t.translation_status === 'original');
-      // Set default translation to the original one if available, otherwise use the first one
-      selectedTranslationIndex.value = originalIndex >= 0 ? originalIndex : 0;
-
-      // Set original question from the selected translation
-      if (availableTranslations.value.length > 0) {
-        const selectedTranslation = availableTranslations.value[selectedTranslationIndex.value];
-        originalQuestion.value = selectedTranslation.question_text;
-        translatedQuestion.value.type = questionType.value;
-
-        // Get image if available
-        if (selectedTranslation.image_id && selectedTranslation.image) {
-          imageLoading.value = true;
-          questionImage.value = {
-            id: selectedTranslation.image_id,
-            presigned_url: selectedTranslation.image.presigned_url,
-            image_url: selectedTranslation.image.image_url
-          };
-        }
-
-        // Set original options for MCQ, Odd One Out, and True/False
-        if ((questionType.value === 'Multiple Choice Question (MCQ)' ||
-             questionType.value === 'Odd One Out' ||
-             questionType.value === 'True or False') &&
-            selectedTranslation.mcq_options) {
-          originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
-          // Initialize translated options array with the same length
-          translatedOptions.value = Array(originalOptions.value.length).fill('');
-
-          // Extract option images and correct options
-          originalOptionImages.value = Array(originalOptions.value.length).fill(null);
-          optionImageLoading.value = Array(originalOptions.value.length).fill(false);
-          optionImageError.value = Array(originalOptions.value.length).fill(false);
-          originalOptionIsCorrect.value = Array(originalOptions.value.length).fill(false);
-          optionImageIds.value = Array(originalOptions.value.length).fill(null);
-          optionImagePreviews.value = Array(originalOptions.value.length).fill(null);
-
-          // Loop through options to extract images and correct status
-          selectedTranslation.mcq_options.forEach((option: McqOption, index: number) => {
-            // Set correct option
-            if (option.is_correct) {
-              originalOptionIsCorrect.value[index] = true;
-            }
-
-            // Set option image if available
-            if (option.image_id && option.image && option.image.presigned_url) {
-              originalOptionImages.value[index] = option.image.presigned_url;
-              optionImageLoading.value[index] = true;
-              optionImageIds.value[index] = option.image_id;
-            }
-          });
-        }
-
-        // Set original match pairs for Match the Pairs or Complete the Correlation
-        if ((questionType.value === 'Match the Pairs' ||
-             questionType.value === 'Complete the Correlation') &&
-            selectedTranslation.match_pairs &&
-            selectedTranslation.match_pairs.length > 0) {
-
-          originalMatchPairs.value = selectedTranslation.match_pairs.map(
-            (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
-          );
-
-          // Initialize translatedMatchPairs with empty strings for each pair
-          translatedMatchPairs.value = Array(originalMatchPairs.value.length)
-            .fill(0)
-            .map(() => ({ left_text: '', right_text: '' }));
-            
-          // Initialize arrays for match pair images
-          originalMatchPairLeftImages.value = Array(originalMatchPairs.value.length).fill(null);
-          originalMatchPairRightImages.value = Array(originalMatchPairs.value.length).fill(null);
-          pairLeftImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
-          pairLeftImageError.value = Array(originalMatchPairs.value.length).fill(false);
-          pairRightImageLoading.value = Array(originalMatchPairs.value.length).fill(false);
-          pairRightImageError.value = Array(originalMatchPairs.value.length).fill(false);
-          pairLeftImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
-          pairRightImagePreviews.value = Array(originalMatchPairs.value.length).fill(null);
-          pairLeftImageIds.value = Array(originalMatchPairs.value.length).fill(null);
-          pairRightImageIds.value = Array(originalMatchPairs.value.length).fill(null);
-          
-          // Extract image URLs for each pair
-          selectedTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
-            // Handle left side image
-            if (pair.left_image_id) {
-              const leftImage = pair.left_image;
-              if (leftImage && leftImage.presigned_url) {
-                originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
-                pairLeftImageLoading.value[index] = true;
-                pairLeftImageIds.value[index] = pair.left_image_id;
-              }
-            }
-            
-            // Handle right side image
-            if (pair.right_image_id) {
-              const rightImage = pair.right_image;
-              if (rightImage && rightImage.presigned_url) {
-                originalMatchPairRightImages.value[index] = rightImage.presigned_url;
-                pairRightImageLoading.value[index] = true;
-                pairRightImageIds.value[index] = pair.right_image_id;
-              }
-            }
-          });
-        }
-      }
-    }
+    // Process all available translations
+    processAvailableTranslations(questionData);
 
     // Initialize textareas
-    setTimeout(() => {
-      document.querySelectorAll('textarea').forEach(textarea => {
-        autoResize({ target: textarea } as unknown as Event);
-      });
-    }, 0);
+    initializeTextareas();
 
     // Ensure minimum loading time to avoid flickering UI
-    const elapsedTime = Date.now() - startTime;
-    if (elapsedTime < minLoadingTime) {
-      await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
-    }
+    await ensureMinimumLoadingTime(startTime, minLoadingTime);
 
   } catch (error: unknown) {
-    console.error('Error loading question data:', error);
-
-    const axiosError = error as AxiosErrorResponse;
-    toastStore.showToast({
-      title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to load question data',
-      type: 'error'
-    });
-
-    // Redirect back if we couldn't load the question
-    router.push({ name: 'translationPending' });
+    handleLoadError(error);
   } finally {
     // Clear loading state when done
     isLoading.value = false;
   }
+}
+
+// Helper functions to reduce complexity
+
+function getQuestionIdFromRoute() {
+  const id = route.params.id || route.query.id;
+  if (!id) {
+    console.error('Question ID not provided');
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Question ID not provided',
+      type: 'error'
+    });
+    router.push({ name: 'translationPending' });
+    return null;
+  }
+  return id;
+}
+
+async function fetchQuestionDetails() {
+  const questionDetailsResponse = await axiosInstance.get(`/questions/${questionId.value}`);
+  const questionDetails = questionDetailsResponse.data;
+
+  // Check if question has any question_texts with topics
+  if (!questionDetails.question_texts ||
+      !questionDetails.question_texts[0] ||
+      !questionDetails.question_texts[0].topic ||
+      !questionDetails.question_texts[0].topic.id) {
+    console.error('Question has no associated topic');
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Question has no associated topic',
+      type: 'error'
+    });
+    router.push({ name: 'translationPending' });
+    return false;
+  }
+
+  // Get the topic ID from the question details
+  topicId.value = questionDetails.question_texts[0].topic.id;
+  console.log(`Using topic ID: ${topicId.value} for question ID: ${questionId.value}`);
+  return true;
+}
+
+async function fetchVerifiedTexts() {
+  const response = await axiosInstance.get(`/questions/${questionId.value}/topic/${topicId.value}/verified-texts`);
+  return response.data;
+}
+
+function processAvailableTranslations(questionData) {
+  if (!questionData.question_texts || questionData.question_texts.length === 0) return;
+  
+  availableTranslations.value = questionData.question_texts;
+
+  // Find the original translation if it exists
+  const originalIndex = availableTranslations.value.findIndex(t => t.translation_status === 'original');
+  // Set default translation to the original one if available, otherwise use the first one
+  selectedTranslationIndex.value = originalIndex >= 0 ? originalIndex : 0;
+
+  // Process selected translation if available
+  if (availableTranslations.value.length > 0) {
+    processSelectedTranslation(availableTranslations.value[selectedTranslationIndex.value]);
+  }
+}
+
+function processSelectedTranslation(selectedTranslation) {
+  originalQuestion.value = selectedTranslation.question_text;
+  translatedQuestion.value.type = questionType.value;
+
+  // Process question image
+  processQuestionImage(selectedTranslation);
+  
+  // Process options based on question type
+  processQuestionOptions(selectedTranslation);
+}
+
+function processQuestionImage(selectedTranslation) {
+  if (selectedTranslation.image_id && selectedTranslation.image) {
+    imageLoading.value = true;
+    questionImage.value = {
+      id: selectedTranslation.image_id,
+      presigned_url: selectedTranslation.image.presigned_url,
+      image_url: selectedTranslation.image.image_url
+    };
+  }
+}
+
+function processQuestionOptions(selectedTranslation) {
+  const isMcqType = questionType.value === 'Multiple Choice Question (MCQ)' || 
+                   questionType.value === 'Odd One Out' ||
+                   questionType.value === 'True or False';
+                   
+  if (isMcqType && selectedTranslation.mcq_options) {
+    processMcqOptions(selectedTranslation);
+  }
+  
+  const isMatchPairsType = (questionType.value === 'Match the Pairs' || 
+                          questionType.value === 'Complete the Correlation') &&
+                          selectedTranslation.match_pairs &&
+                          selectedTranslation.match_pairs.length > 0;
+                          
+  if (isMatchPairsType) {
+    processMatchPairs(selectedTranslation);
+  }
+}
+
+function processMcqOptions(selectedTranslation) {
+  originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
+  // Initialize translated options array with the same length
+  translatedOptions.value = Array(originalOptions.value.length).fill('');
+
+  // Initialize arrays for option images and correct status
+  initializeMcqArrays(originalOptions.value.length);
+  
+  // Process each option
+  selectedTranslation.mcq_options.forEach((option: McqOption, index: number) => {
+    processOptionDetails(option, index);
+  });
+}
+
+function initializeMcqArrays(length) {
+  originalOptionImages.value = Array(length).fill(null);
+  optionImageLoading.value = Array(length).fill(false);
+  optionImageError.value = Array(length).fill(false);
+  originalOptionIsCorrect.value = Array(length).fill(false);
+  optionImageIds.value = Array(length).fill(null);
+  optionImagePreviews.value = Array(length).fill(null);
+}
+
+function processOptionDetails(option, index) {
+  // Set correct option
+  if (option.is_correct) {
+    originalOptionIsCorrect.value[index] = true;
+  }
+
+  // Set option image if available
+  if (option.image_id && option.image && option.image.presigned_url) {
+    originalOptionImages.value[index] = option.image.presigned_url;
+    optionImageLoading.value[index] = true;
+    optionImageIds.value[index] = option.image_id;
+  }
+}
+
+function processMatchPairs(selectedTranslation) {
+  originalMatchPairs.value = selectedTranslation.match_pairs.map(
+    (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
+  );
+
+  // Initialize translatedMatchPairs with empty strings for each pair
+  translatedMatchPairs.value = Array(originalMatchPairs.value.length)
+    .fill(0)
+    .map(() => ({ left_text: '', right_text: '' }));
+    
+  // Initialize arrays for match pair images
+  initializeMatchPairArrays(originalMatchPairs.value.length);
+  
+  // Process each match pair
+  selectedTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
+    processMatchPairImages(pair, index);
+  });
+}
+
+function initializeMatchPairArrays(length) {
+  originalMatchPairLeftImages.value = Array(length).fill(null);
+  originalMatchPairRightImages.value = Array(length).fill(null);
+  pairLeftImageLoading.value = Array(length).fill(false);
+  pairLeftImageError.value = Array(length).fill(false);
+  pairRightImageLoading.value = Array(length).fill(false);
+  pairRightImageError.value = Array(length).fill(false);
+  pairLeftImagePreviews.value = Array(length).fill(null);
+  pairRightImagePreviews.value = Array(length).fill(null);
+  pairLeftImageIds.value = Array(length).fill(null);
+  pairRightImageIds.value = Array(length).fill(null);
+}
+
+function processMatchPairImages(pair, index) {
+  // Handle left side image
+  if (pair.left_image_id) {
+    const leftImage = pair.left_image;
+    if (leftImage && leftImage.presigned_url) {
+      originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
+      pairLeftImageLoading.value[index] = true;
+      pairLeftImageIds.value[index] = pair.left_image_id;
+    }
+  }
+  
+  // Handle right side image
+  if (pair.right_image_id) {
+    const rightImage = pair.right_image;
+    if (rightImage && rightImage.presigned_url) {
+      originalMatchPairRightImages.value[index] = rightImage.presigned_url;
+      pairRightImageLoading.value[index] = true;
+      pairRightImageIds.value[index] = pair.right_image_id;
+    }
+  }
+}
+
+function initializeTextareas() {
+  setTimeout(() => {
+    document.querySelectorAll('textarea').forEach(textarea => {
+      autoResize({ target: textarea } as unknown as Event);
+    });
+  }, 0);
+}
+
+async function ensureMinimumLoadingTime(startTime, minLoadingTime) {
+  const elapsedTime = Date.now() - startTime;
+  if (elapsedTime < minLoadingTime) {
+    await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+  }
+}
+
+function handleLoadError(error) {
+  console.error('Error loading question data:', error);
+
+  const axiosError = error as AxiosErrorResponse;
+  toastStore.showToast({
+    title: 'Error',
+    message: axiosError.response?.data?.message || 'Failed to load question data',
+    type: 'error'
+  });
+
+  // Redirect back if we couldn't load the question
+  router.push({ name: 'translationPending' });
 }
 
 // New function to handle changing the selected translation
@@ -1893,38 +1831,23 @@ onUnmounted(() => {
   position: relative;
   max-width: 100%;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 4px;
   background-color: #f8f9fa;
-  min-height: 120px;
+  min-height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.option-image {
-  max-width: 100%;
-  max-height: 150px;
-  object-fit: contain;
-  display: block;
-  margin: 0 auto;
+  border: 1px solid #dee2e6;
 }
 
 .option-image-preview-container {
-  position: relative;
-  max-width: 100%;
-  overflow: hidden;
-  border-radius: 6px;
-  background-color: #f8f9fa;
-  min-height: 120px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   border: 1px dashed #ced4da;
 }
 
+.option-image,
 .option-image-preview {
   max-width: 100%;
-  max-height: 150px;
+  max-height: 120px;
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -1958,34 +1881,6 @@ onUnmounted(() => {
   .option-image-preview-container {
     min-height: 80px;
   }
-}
-
-/* MCQ specific styles */
-.option-image-container,
-.option-image-preview-container {
-  position: relative;
-  max-width: 100%;
-  overflow: hidden;
-  border-radius: 4px;
-  background-color: #f8f9fa;
-  min-height: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 1px solid #dee2e6;
-}
-
-.option-image-preview-container {
-  border: 1px dashed #ced4da;
-}
-
-.option-image,
-.option-image-preview {
-  max-width: 100%;
-  max-height: 120px;
-  object-fit: contain;
-  display: block;
-  margin: 0 auto;
 }
 
 .form-floating {

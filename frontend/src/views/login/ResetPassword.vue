@@ -50,7 +50,10 @@
       </div>
 
       <button class="btn btn-primary w-100 mb-3" @click="resetPassword" :disabled="isLoading">
-        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+        <output
+          v-if="isLoading"
+          class="spinner-border spinner-border-sm me-2"
+        ></output>
         Reset Password
       </button>
 

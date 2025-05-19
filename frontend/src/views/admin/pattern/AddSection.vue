@@ -79,87 +79,137 @@ const handleSubmit = async (formData: SectionFormData) => {
     console.log('- nextSequenceNumber:', nextSequenceNumber)
     console.log('- Form data:', formData)
 
-    if (isFromEditPattern && patternId && !storeOnly.value) {
-      // Create section immediately in backend for edit pattern
-      const { data: createdSection } = await axiosInstance.post('/sections', {
-        pattern_id: Number(patternId),
-        sequence_number: Number(nextSequenceNumber),
-        section_number: Number(formData.questionNumber),
-        sub_section: formData.subQuestion,
-        section_name: formData.sectionName,
-        total_questions: Number(formData.totalQuestions),
-        mandotory_questions: Number(formData.requiredQuestions),
-        marks_per_question: Number(formData.marksPerQuestion),
-      })
-
-      // Create subsection question types
-      if (formData.sameType) {
-        // If same type for all questions, create single entry with sequential number 0
-        const questionType = await getQuestionTypeByName(formData.questionType)
-        if (questionType) {
-          await createSubsectionQuestionType(createdSection.id, 0, questionType.id)
-        }
-      } else {
-        // Create entries for different question types
-        for (let i = 0; i < formData.questionTypes.length; i++) {
-          const questionType = await getQuestionTypeByName(formData.questionTypes[i])
-          if (questionType) {
-            await createSubsectionQuestionType(createdSection.id, i + 1, questionType.id)
-          }
-        }
-      }
-
-      // Return to edit pattern page after successful creation
-      router.push({
-        name: 'editPattern',
-        params: { id: patternId },
-        query: { from: 'editSection' }
-      })
-    } else if (isFromEditPattern && patternId && storeOnly.value) {
-      // Add to store for edit pattern mode without API calls
-      console.log('Adding section to store for edit pattern mode')
-      const sectionData: SectionData = {
-        questionNumber: formData.questionNumber || nextSectionNumber,
-        subQuestion: formData.subQuestion,
-        sectionName: formData.sectionName,
-        totalQuestions: Number(formData.totalQuestions),
-        requiredQuestions: Number(formData.requiredQuestions),
-        marksPerQuestion: Number(formData.marksPerQuestion),
-        sameType: formData.sameType,
-        questionType: formData.questionType,
-        questionTypes: formData.questionTypes,
-        seqencial_section_number: Number(nextSequenceNumber),
-        isNew: true, // Mark as new section
-        isModified: false, // Not modified since it's new
-      }
-      patternStore.addSection(sectionData)
-      router.push({
-        name: 'editPattern',
-        params: { id: patternId },
-        query: { from: 'editSection' }
-      })
-    } else {
-      // Add to store for new pattern creation
-      console.log('Adding section to store for new pattern creation')
-      const sectionData: SectionData = {
-        questionNumber: formData.questionNumber || nextSectionNumber,
-        subQuestion: formData.subQuestion,
-        sectionName: formData.sectionName,
-        totalQuestions: Number(formData.totalQuestions),
-        requiredQuestions: Number(formData.requiredQuestions),
-        marksPerQuestion: Number(formData.marksPerQuestion),
-        sameType: formData.sameType,
-        questionType: formData.questionType,
-        questionTypes: formData.questionTypes,
-        seqencial_section_number: patternStore.sections.length + 1,
-      }
-      patternStore.addSection(sectionData)
-      router.push({ name: 'createPattern' })
-    }
+    // Handle section creation based on context
+    await handleSectionCreation(
+      isFromEditPattern,
+      patternId,
+      nextSequenceNumber,
+      nextSectionNumber,
+      formData
+    )
   } catch (error) {
     console.error('Error handling section submission:', error)
     // Handle error (show error message to user)
   }
+}
+
+// Helper function to handle different cases of section creation
+const handleSectionCreation = async (
+  isFromEditPattern: boolean,
+  patternId: string,
+  nextSequenceNumber: string,
+  nextSectionNumber: string,
+  formData: SectionFormData
+) => {
+  if (isFromEditPattern && patternId && !storeOnly.value) {
+    await createSectionInBackend(patternId, nextSequenceNumber, formData)
+  } else if (isFromEditPattern && patternId && storeOnly.value) {
+    addSectionToStoreForEditPattern(patternId, nextSectionNumber, nextSequenceNumber, formData)
+  } else {
+    addSectionToStoreForNewPattern(nextSectionNumber, formData)
+  }
+}
+
+// Helper function to create section in backend
+const createSectionInBackend = async (
+  patternId: string,
+  nextSequenceNumber: string,
+  formData: SectionFormData
+) => {
+  // Create section immediately in backend for edit pattern
+  const { data: createdSection } = await axiosInstance.post('/sections', {
+    pattern_id: Number(patternId),
+    sequence_number: Number(nextSequenceNumber),
+    section_number: Number(formData.questionNumber),
+    sub_section: formData.subQuestion,
+    section_name: formData.sectionName,
+    total_questions: Number(formData.totalQuestions),
+    mandotory_questions: Number(formData.requiredQuestions),
+    marks_per_question: Number(formData.marksPerQuestion),
+  })
+
+  await setupQuestionTypes(formData, createdSection.id)
+
+  // Return to edit pattern page after successful creation
+  navigateToEditPattern(patternId)
+}
+
+// Helper function to handle question types
+const setupQuestionTypes = async (formData: SectionFormData, sectionId: number) => {
+  if (formData.sameType) {
+    // If same type for all questions, create single entry with sequential number 0
+    const questionType = await getQuestionTypeByName(formData.questionType)
+    if (questionType) {
+      await createSubsectionQuestionType(sectionId, 0, questionType.id)
+    }
+  } else {
+    // Create entries for different question types
+    await createMultipleQuestionTypes(formData.questionTypes, sectionId)
+  }
+}
+
+// Helper function to create multiple question types
+const createMultipleQuestionTypes = async (questionTypes: string[], sectionId: number) => {
+  for (let i = 0; i < questionTypes.length; i++) {
+    const questionType = await getQuestionTypeByName(questionTypes[i])
+    if (questionType) {
+      await createSubsectionQuestionType(sectionId, i + 1, questionType.id)
+    }
+  }
+}
+
+// Helper function to add section to store for edit pattern mode
+const addSectionToStoreForEditPattern = (
+  patternId: string,
+  nextSectionNumber: string,
+  nextSequenceNumber: string,
+  formData: SectionFormData
+) => {
+  console.log('Adding section to store for edit pattern mode')
+  const sectionData: SectionData = {
+    questionNumber: formData.questionNumber || nextSectionNumber,
+    subQuestion: formData.subQuestion,
+    sectionName: formData.sectionName,
+    totalQuestions: Number(formData.totalQuestions),
+    requiredQuestions: Number(formData.requiredQuestions),
+    marksPerQuestion: Number(formData.marksPerQuestion),
+    sameType: formData.sameType,
+    questionType: formData.questionType,
+    questionTypes: formData.questionTypes,
+    seqencial_section_number: Number(nextSequenceNumber),
+    isNew: true, // Mark as new section
+    isModified: false, // Not modified since it's new
+  }
+  patternStore.addSection(sectionData)
+  navigateToEditPattern(patternId)
+}
+
+// Helper function to add section to store for new pattern
+const addSectionToStoreForNewPattern = (nextSectionNumber: string, formData: SectionFormData) => {
+  console.log('Adding section to store for new pattern creation')
+  const sectionData: SectionData = {
+    questionNumber: formData.questionNumber || nextSectionNumber,
+    subQuestion: formData.subQuestion,
+    sectionName: formData.sectionName,
+    totalQuestions: Number(formData.totalQuestions),
+    requiredQuestions: Number(formData.requiredQuestions),
+    marksPerQuestion: Number(formData.marksPerQuestion),
+    sameType: formData.sameType,
+    questionType: formData.questionType,
+    questionTypes: formData.questionTypes,
+    seqencial_section_number: patternStore.sections.length + 1,
+  }
+  patternStore.addSection(sectionData)
+  router.push({ name: 'createPattern' })
+}
+
+// Helper function to navigate to edit pattern
+const navigateToEditPattern = (patternId: string) => {
+  router.push({
+    name: 'editPattern',
+    params: { id: patternId },
+    query: { from: 'editSection' }
+  })
 }
 
 const getQuestionTypeByName = async (typeName: string) => {

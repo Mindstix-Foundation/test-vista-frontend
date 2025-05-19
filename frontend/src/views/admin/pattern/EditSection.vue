@@ -19,9 +19,9 @@
       <hr />
     </div>
     <div v-if="loading" class="row justify-content-center mt-5">
-      <div class="spinner-border text-primary" role="status">
+      <output class="spinner-border text-primary">
         <span class="visually-hidden">Loading...</span>
-      </div>
+      </output>
     </div>
     <div v-else id="form-container" class="row mt-4 justify-content-center">
       <SectionFormComponent
@@ -181,129 +181,146 @@ const createSubsectionQuestionType = async (
   return data
 }
 
+// Helper function to validate section marks
+const validateSectionMarks = (requiredQuestions: number, marksPerQuestion: number, availableMarks: number): boolean => {
+  const sectionMarks = requiredQuestions * marksPerQuestion
+  
+  console.log('EditSection - Section marks calculation:', {
+    requiredQuestions,
+    marksPerQuestion,
+    totalSectionMarks: sectionMarks,
+    availableMarks,
+    remainingAfterUpdate: availableMarks - sectionMarks
+  })
+
+  if (sectionMarks > availableMarks) {
+    console.error('EditSection - Section marks exceed available marks:', {
+      sectionMarks,
+      availableMarks,
+      difference: sectionMarks - availableMarks
+    })
+    alert(`Section marks (${sectionMarks}) exceed available marks (${availableMarks}). Please reduce the marks per question or the number of required questions.`)
+    return false
+  }
+  
+  return true
+}
+
+// Helper function to update section in backend
+const updateSectionInBackend = async (formData: SectionFormData, sectionIdValue: string) => {
+  loading.value = true
+  console.log('EditSection - Updating section in backend')
+
+  // Update section details
+  await axiosInstance.put(`/sections/${sectionIdValue}`, {
+    sub_section: formData.subQuestion,
+    section_name: formData.sectionName,
+    total_questions: Number(formData.totalQuestions),
+    mandotory_questions: Number(formData.requiredQuestions),
+    marks_per_question: Number(formData.marksPerQuestion),
+    sequence_number: Number(route.query.sequenceNumber),
+    section_number: Number(route.query.sectionNumber),
+  })
+
+  // Get current question types
+  const { data: currentSectionData } = await axiosInstance.get(`/sections/${sectionIdValue}`)
+
+  // Delete all existing question types first
+  for (const qt of currentSectionData.subsection_question_types) {
+    await axiosInstance.delete(`/subsection-question-types/${qt.id}`)
+  }
+
+  await updateQuestionTypes(formData, Number(sectionIdValue))
+}
+
+// Helper function to update question types
+const updateQuestionTypes = async (formData: SectionFormData, sectionIdValue: number) => {
+  if (formData.sameType) {
+    // Create single question type with sequential number 0
+    const questionType = await getQuestionTypeByName(formData.questionType)
+    if (questionType) {
+      await createSubsectionQuestionType(sectionIdValue, 0, questionType.id)
+    }
+  } else {
+    // Create multiple question types with sequential numbers
+    for (let i = 0; i < formData.questionTypes.length; i++) {
+      const questionType = await getQuestionTypeByName(formData.questionTypes[i])
+      if (questionType) {
+        await createSubsectionQuestionType(sectionIdValue, i + 1, questionType.id)
+      }
+    }
+  }
+}
+
+// Helper function to prepare section data for store
+const prepareSectionDataForStore = (formData: SectionFormData, isNew: boolean = false, sectionIdValue?: string) => {
+  return {
+    id: sectionIdValue ? Number(sectionIdValue) : undefined,
+    questionNumber: formData.questionNumber,
+    subQuestion: formData.subQuestion,
+    sectionName: formData.sectionName,
+    totalQuestions: Number(formData.totalQuestions),
+    requiredQuestions: Number(formData.requiredQuestions),
+    marksPerQuestion: Number(formData.marksPerQuestion),
+    sameType: formData.sameType,
+    questionType: formData.questionType,
+    questionTypes: formData.questionTypes,
+    seqencial_section_number: isNew 
+      ? patternStore.sections[sectionIndex.value].seqencial_section_number
+      : Number(route.query.sequenceNumber || 0),
+    isModified: !isNew,
+    isNew: isNew,
+  }
+}
+
+// Helper function to navigate back after update
+const navigateBack = (isEditPattern: boolean, patternIdValue?: string) => {
+  if (isEditPattern) {
+    router.push({
+      name: 'editPattern',
+      params: { id: patternIdValue },
+      query: { from: 'editSection' }
+    })
+  } else {
+    router.push({
+      name: 'createPattern',
+      query: { from: 'editSection' }
+    })
+  }
+}
+
 const handleSubmit = async (formData: SectionFormData) => {
   try {
-    console.log('EditSection - Processing form submission');
-
-    // Calculate the marks for this section
-    const sectionMarks = Number(formData.requiredQuestions) * Number(formData.marksPerQuestion);
-    const availableMarks = Number(route.query.remainingMarks || 0);
-
-    console.log('EditSection - Section marks calculation:', {
-      requiredQuestions: Number(formData.requiredQuestions),
-      marksPerQuestion: Number(formData.marksPerQuestion),
-      totalSectionMarks: sectionMarks,
-      availableMarks,
-      remainingAfterUpdate: availableMarks - sectionMarks
-    });
-
-    // Validate that the section marks don't exceed available marks
-    if (sectionMarks > availableMarks) {
-      console.error('EditSection - Section marks exceed available marks:', {
-        sectionMarks,
-        availableMarks,
-        difference: sectionMarks - availableMarks
-      });
-      alert(`Section marks (${sectionMarks}) exceed available marks (${availableMarks}). Please reduce the marks per question or the number of required questions.`);
-      return;
+    console.log('EditSection - Processing form submission')
+    
+    // Validate section marks
+    const requiredQuestions = Number(formData.requiredQuestions)
+    const marksPerQuestion = Number(formData.marksPerQuestion)
+    const availableMarks = Number(route.query.remainingMarks || 0)
+    
+    if (!validateSectionMarks(requiredQuestions, marksPerQuestion, availableMarks)) {
+      return
     }
 
+    // Handle three different cases
     if (isFromEditPattern.value && sectionId.value && !storeOnly.value) {
-      // Update section in backend immediately
-      loading.value = true
-      console.log('EditSection - Updating section in backend');
-
-      // Update section details
-      await axiosInstance.put(`/sections/${sectionId.value}`, {
-        sub_section: formData.subQuestion,
-        section_name: formData.sectionName,
-        total_questions: Number(formData.totalQuestions),
-        mandotory_questions: Number(formData.requiredQuestions),
-        marks_per_question: Number(formData.marksPerQuestion),
-        sequence_number: Number(route.query.sequenceNumber),
-        section_number: Number(route.query.sectionNumber),
-      })
-
-      // Get current question types
-      const { data: currentSectionData } = await axiosInstance.get(`/sections/${sectionId.value}`)
-
-      // Delete all existing question types first
-      for (const qt of currentSectionData.subsection_question_types) {
-        await axiosInstance.delete(`/subsection-question-types/${qt.id}`)
-      }
-
-      // Create new question types based on form data
-      if (formData.sameType) {
-        // Create single question type with sequential number 0
-        const questionType = await getQuestionTypeByName(formData.questionType)
-        if (questionType) {
-          await createSubsectionQuestionType(Number(sectionId.value), 0, questionType.id)
-        }
-      } else {
-        // Create multiple question types with sequential numbers
-        for (let i = 0; i < formData.questionTypes.length; i++) {
-          const questionType = await getQuestionTypeByName(formData.questionTypes[i])
-          if (questionType) {
-            await createSubsectionQuestionType(Number(sectionId.value), i + 1, questionType.id)
-          }
-        }
-      }
-
-      // Return to edit pattern page after successful update
-      router.push({
-        name: 'editPattern',
-        params: { id: patternId.value },
-        query: { from: 'editSection' }
-      })
-    } else if (isFromEditPattern.value && storeOnly.value) {
-      // Update section in store only for edit pattern mode
-      console.log('EditSection - Updating section in store');
-
-      const sectionData = {
-        id: sectionId.value ? Number(sectionId.value) : undefined,
-        questionNumber: formData.questionNumber,
-        subQuestion: formData.subQuestion,
-        sectionName: formData.sectionName,
-        totalQuestions: Number(formData.totalQuestions),
-        requiredQuestions: Number(formData.requiredQuestions),
-        marksPerQuestion: Number(formData.marksPerQuestion),
-        sameType: formData.sameType,
-        questionType: formData.questionType,
-        questionTypes: formData.questionTypes,
-        seqencial_section_number: Number(route.query.sequenceNumber || 0),
-        isModified: true, // Mark as modified
-        isNew: false, // Not a new section
-      }
-
+      // Case 1: Update section in backend immediately
+      await updateSectionInBackend(formData, sectionId.value)
+      navigateBack(true, patternId.value)
+    } 
+    else if (isFromEditPattern.value && storeOnly.value) {
+      // Case 2: Update section in store only for edit pattern mode
+      console.log('EditSection - Updating section in store')
+      const sectionData = prepareSectionDataForStore(formData, false, sectionId.value)
       patternStore.updateSection(sectionIndex.value, sectionData)
-      console.log('EditSection - Section updated in store, navigating back');
-
-      router.push({
-        name: 'editPattern',
-        params: { id: patternId.value },
-        query: { from: 'editSection' }
-      })
-    } else {
-      // Update section in store for new pattern creation
-      console.log('EditSection - Updating section for new pattern');
-      const sectionData = {
-        questionNumber: formData.questionNumber,
-        subQuestion: formData.subQuestion,
-        sectionName: formData.sectionName,
-        totalQuestions: Number(formData.totalQuestions),
-        requiredQuestions: Number(formData.requiredQuestions),
-        marksPerQuestion: Number(formData.marksPerQuestion),
-        sameType: formData.sameType,
-        questionType: formData.questionType,
-        questionTypes: formData.questionTypes,
-        seqencial_section_number:
-          patternStore.sections[sectionIndex.value].seqencial_section_number,
-      }
+      navigateBack(true, patternId.value)
+    } 
+    else {
+      // Case 3: Update section in store for new pattern creation
+      console.log('EditSection - Updating section for new pattern')
+      const sectionData = prepareSectionDataForStore(formData, true)
       patternStore.updateSection(sectionIndex.value, sectionData)
-      router.push({
-        name: 'createPattern',
-        query: { from: 'editSection' }
-      })
+      navigateBack(false)
     }
   } catch (error) {
     console.error('Error updating section:', error)

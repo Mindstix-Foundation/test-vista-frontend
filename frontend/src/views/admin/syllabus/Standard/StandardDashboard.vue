@@ -821,6 +821,8 @@ const removeSelectedSubjects = async () => {
 .table-responsive {
   height: 100%;
   overflow-y: auto;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.05);
 }
 
 .table thead {
@@ -833,12 +835,6 @@ const removeSelectedSubjects = async () => {
 .table th {
   background-color: white;
   border-bottom: 2px solid #dee2e6;
-}
-
-/* Remove dark theme from table header */
-.table-dark {
-  --bs-table-bg: white;
-  --bs-table-color: #212529;
 }
 
 /* Ensure checkbox column width is consistent */
@@ -939,11 +935,6 @@ const removeSelectedSubjects = async () => {
 /* Ensure consistent spacing */
 .container {
   max-width: 1200px;
-}
-
-.table-responsive {
-  border-radius: 0.25rem;
-  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.05);
 }
 
 /* Highlight text styling */
