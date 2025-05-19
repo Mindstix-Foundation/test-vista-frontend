@@ -14,49 +14,72 @@
       <div v-else>
         <!-- Header with title and action button - using BoardDashboard pattern -->
         <div class="row mb-3">
+                <div class="row justify-content-end">
+                <button type="button" class="btn btn-close ms-2 align-self-center d-none d-sm-inline-block" aria-label="Close" @click="goBack"></button>
+                </div>
+
           <div class="row justify-content-center align-items-center g-2 mb-4">
             <div class="col-12 col-sm-4">
-              <h5 class="text-start m-0 fw-bolder">TEST PAPER PREVIEW</h5>
-              <!-- Small screen only - buttons for mobile -->
-              <div class="d-sm-none mt-3">
-                <div class="row g-2">
-                  <div class="col-6">
+              <!-- Mobile view title with medium button after -->
+              <div class="d-flex align-items-center d-sm-none mb-2">
+                <h5 class="text-start m-0 fw-bolder me-2 mobile-title">TEST PAPER PREVIEW</h5>
                 <button 
-                      class="btn btn-custom w-100 d-flex justify-content-center align-items-center"
-                  id="changeAllButtonMobile" 
-                  @click="changeAllQuestions"
-                  :disabled="isChangingAllQuestions"
+                  class="btn btn-custom medium-button-mobile"
+                  @click="toggleMediumDropdown"
+                  ref="mediumButtonMobileRef"
                 >
-                  <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <i v-else class="bi bi-arrow-clockwise me-2"></i> 
-                      <span>{{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}</span>
+                  <i class="bi bi-translate"></i> {{ currentMediumName }}
                 </button>
-                  </div>
-                  <div class="col-6">
-                    <button 
-                      class="btn btn-custom w-100 d-flex justify-content-center align-items-center"
-                      id="changeAllLayoutButtonMobile" 
-                      @click="(event) => showGlobalLayoutOptions(event)"
-                    >
-                      <i class="bi bi-grid me-2"></i> <span>Option Style</span>
-                    </button>
-                  </div>
+              </div>
+              
+              <!-- Desktop view title only -->
+              <h5 class="text-start m-0 fw-bolder d-none d-sm-block">TEST PAPER PREVIEW</h5>
+              
+              <!-- Mobile view other action buttons -->
+              <div class="d-sm-none mt-2">
+                <div class="d-flex gap-2">
+                  <button 
+                    class="btn btn-custom mobile-action-btn flex-grow-1 d-flex justify-content-center align-items-center"
+                    id="changeAllButtonMobile" 
+                    @click="changeAllQuestions"
+                    :disabled="isChangingAllQuestions"
+                  >
+                    <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <i v-else class="bi bi-arrow-clockwise me-1"></i> 
+                    <span>{{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}</span>
+                  </button>
+                  <button 
+                    class="btn btn-custom mobile-action-btn flex-grow-1 d-flex justify-content-center align-items-center"
+                    id="changeAllLayoutButtonMobile" 
+                    @click="(event) => showGlobalLayoutOptions(event)"
+                  >
+                    <i class="bi bi-grid me-1"></i> <span>Option Style</span>
+                  </button>
                 </div>
               </div>
+              
+              <!-- Medium dropdown for mobile -->
+             
             </div>
             <div class="col-12 col-sm-8 dynamic-style text-end">
               <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
                 <!-- Buttons for desktop/tablet screens -->
                 <div class="d-none d-sm-flex gap-2">
                 <button 
+                    class="btn btn-custom dropdown-toggle"
+                    @click="toggleMediumDropdown"
+                  >
+                    <i class="bi bi-translate me-1"></i> {{ currentMediumName }}
+                  </button>
+                  <button 
                     class="btn btn-custom" 
-                  @click="changeAllQuestions"
-                  :disabled="isChangingAllQuestions"
-                >
-                  <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <i v-else class="bi bi-arrow-clockwise me-2"></i> 
+                    @click="changeAllQuestions"
+                    :disabled="isChangingAllQuestions"
+                  >
+                    <span v-if="isChangingAllQuestions" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <i v-else class="bi bi-arrow-clockwise me-2"></i> 
                     {{ isChangingAllQuestions ? 'Changing...' : 'New Set' }}
-                </button>
+                  </button>
                   <button 
                     class="btn btn-custom" 
                     @click="(event) => showGlobalLayoutOptions(event)"
@@ -72,278 +95,317 @@
                     <i class="bi bi-save me-1"></i> Save
                   </button>
                 </div>
-                <button type="button" class="btn btn-close ms-2 align-self-center d-none d-sm-inline-block" aria-label="Close" @click="goBack"></button>
               </div>
             </div>
           </div>
           <hr class="mt-2" />
         </div>
 
-        <div class="text-center document-header">
-          <h5 class="school-name">{{ schoolName }}</h5>
-          <!-- Editable Test Paper Title -->
-          <div class="editable-title">
-            <h3 v-if="!isEditingTitle" class="paper-title">
-              {{ paperTitle }}
-              <button class="edit-icon" @click="startEditingTitle" title="Edit title">
-                <i class="bi bi-pencil"></i>
-              </button>
-            </h3>
-            <div v-else class="edit-title-form">
-              <input 
-                type="text" 
-                class="form-control" 
-                v-model="paperTitle" 
-                ref="titleInput"
-                placeholder="Enter test paper title"
-                @keyup.enter="stopEditingTitle"
-              >
-              <div class="d-flex mt-2">
-                <button class="btn btn-sm btn-outline-secondary me-2" @click="cancelEditingTitle">Cancel</button>
-                <button class="btn btn-sm btn-primary" @click="stopEditingTitle">Save</button>
+        <!-- New View Mode Toggle for Mobile -->
+        <div class="row mb-3 d-md-none">
+          <div class="col-12 d-flex justify-content-center">
+            <div class="view-mode-toggle-container">
+              <div class="form-check form-switch form-check-inline">
+                <input class="form-check-input" type="checkbox" id="viewModeToggle" v-model="mobileViewMode">
+                <label class="form-check-label" for="viewModeToggle">
+                  <span v-if="mobileViewMode"><i class="bi bi-phone me-1"></i> Mobile View</span>
+                  <span v-else><i class="bi bi-file-earmark-text me-1"></i> A4 Preview</span>
+                </label>
               </div>
-            </div>
-          </div>
-          <p style="margin-bottom: 5px;"><strong>Subject:</strong> {{ subjectName }} | <strong>Standard:</strong> {{ standardName }}</p>
-          <p style="margin-top: 5px;">
-            <strong>Time:</strong> 
-            <span v-if="!isEditingTime" class="editable-field">
-              {{ testDuration }}
-              <button class="edit-icon" @click="startEditingTime" title="Edit time duration">
-                <i class="bi bi-pencil"></i>
-              </button>
-            </span>
-            <span v-else class="edit-time-form">
-              <div class="d-inline-flex align-items-center time-inputs-container">
-                <div class="d-flex align-items-center me-2">
+              <!-- New zoom slider for A4 view on mobile -->
+              <div v-if="!mobileViewMode" class="zoom-control-container mt-2">
+                <div class="zoom-label d-flex align-items-center justify-content-center">
+                  <i class="bi bi-zoom-out me-2"></i>
                   <input 
-                    type="number" 
-                    class="form-control form-control-sm me-1" 
-                    v-model="hours"
-                    min="0"
-                    max="12"
-                    ref="hoursInput"
-                    style="width: 60px;"
-                  > 
-                  <span>Hour(s)</span>
-                </div>
-                <div class="d-flex align-items-center me-2">
-                  <input 
-                    type="number" 
-                    class="form-control form-control-sm me-1" 
-                    v-model="minutes"
-                    min="0"
-                    max="59"
-                    style="width: 60px;"
+                    type="range" 
+                    class="form-range zoom-slider" 
+                    min="50" 
+                    max="100" 
+                    step="5" 
+                    v-model="zoomLevel"
+                    @input="updateZoom"
                   >
-                  <span>Min(s)</span>
+                  <i class="bi bi-zoom-in ms-2"></i>
                 </div>
-                <div class="time-edit-buttons">
-                  <button class="btn btn-sm btn-outline-secondary me-1" @click="cancelEditingTime">
-                    <i class="bi bi-x"></i>
-                  </button>
-                  <button class="btn btn-sm btn-primary" @click="stopEditingTime">
-                    <i class="bi bi-check"></i>
-                  </button>
-                </div>
+                <div class="zoom-value">{{ zoomLevel }}%</div>
               </div>
-            </span>
-            | <strong>Total Marks:</strong> {{ totalMarks }}
-          </p>
-          
-          <!-- Exam Instructions Section -->
-          <div class="exam-instructions-container mt-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-              <h5 class="m-0 me-2">Exam Instructions</h5>
-              <button class="edit-icon" @click="startEditingInstructions" title="Edit instructions">
-                <i class="bi bi-pencil"></i>
-              </button>
-            </div>
-            
-            <!-- Instructions Display View -->
-            <div v-if="!isEditingInstructions" class="instructions-display">
-              <ul class="text-start instruction-list" v-if="examInstructions.length > 0">
-                <li v-for="(instruction, index) in examInstructions" :key="index">
-                  {{ instruction }}
-                </li>
-              </ul>
-              <p v-else class="text-muted fst-italic">Click the pencil icon to add exam instructions</p>
-            </div>
-            
-            <!-- Instructions Edit View -->
-            <div v-else class="instructions-edit-form">
-              <div class="form-group">
-                <textarea 
-                  class="form-control instruction-textarea" 
-                  v-model="instructionsText"
-                  placeholder="Enter instructions (press Enter for new line)"
-                  ref="instructionsTextarea"
-                ></textarea>
-                <div class="text-muted small mt-1">Press Enter for a new line. Each line will appear as a bullet point.</div>
-              </div>
-              <div class="d-flex justify-content-center mt-2">
-                <button class="btn btn-sm btn-outline-secondary me-2" @click="cancelEditingInstructions">Cancel</button>
-                <button class="btn btn-sm btn-primary" @click="saveInstructions">Save</button>
+              <div v-if="!mobileViewMode" class="scroll-hint d-md-none">
+                <small><i class="bi bi-arrows-expand-horizontal"></i> Scroll horizontally to view full page</small>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <hr>
 
-      <!-- Questions Section - MS Office A4 style layout -->
-      <div class="a4-paper-section mb-4" 
-        v-for="(section, sectionIndex) in testPaperSections" 
-        :key="sectionIndex"
-        :class="{ 'refreshing': isChangingAllQuestions }"
-      >
-        <!-- Section Header -->
-        <div class="section-header">
-          <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
-         
-          <div class="section-marks">
-            <strong>
-              <span class="nowrap">
-                {{ section.totalMarks }} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
-              </span>
-            </strong>
-          </div>
-        </div>
-        
-        <!-- Questions List - Plain A4 style -->
-        <div class="section-content">
-          <div class="question-list">
-            <div v-for="(question, questionIndex) in section.questions" :key="questionIndex" class="question-item">
-              <div class="question-wrapper" :id="`question-${sectionIndex}-${questionIndex}`">
-                <div class="d-flex w-100">
-                <!-- Question Content -->
-                <div class="question-content">
-                  <div class="question-text">
-                    {{ question.questionNumber }}. {{ question.questionText }}
-                    <span v-if="question.questionType" class="question-type-badge">
-                      {{ question.questionType }}
-                    </span>
-                      <button v-if="question.options && question.options.length > 0" 
-                              class="edit-icon ms-2" 
-                              @click="(event) => showLayoutOptions(sectionIndex, questionIndex, event)" 
-                              title="Change options layout"
-                              style="vertical-align: middle; margin-top: -2px;">
-                        <i class="bi bi-grid"></i>
+        <!-- A4 Paper Wrapper -->
+        <div class="a4-paper-container" :class="{'mobile-view': mobileViewMode}">
+          <div class="a4-paper-card" :style="a4PaperStyle">
+            <div class="text-center document-header">
+              <h5 class="school-name">{{ schoolName }}</h5>
+              <!-- Editable Test Paper Title -->
+              <div class="editable-title">
+                <h3 v-if="!isEditingTitle" class="paper-title">
+                  {{ paperTitle }}
+                  <button class="edit-icon" @click="startEditingTitle" title="Edit title">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </h3>
+                <div v-else class="edit-title-form">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    v-model="paperTitle" 
+                    ref="titleInput"
+                    placeholder="Enter test paper title"
+                    @keyup.enter="stopEditingTitle"
+                  >
+                  <div class="d-flex mt-2">
+                    <button class="btn btn-sm btn-outline-secondary me-2" @click="cancelEditingTitle">Cancel</button>
+                    <button class="btn btn-sm btn-primary" @click="stopEditingTitle">Save</button>
+                  </div>
+                </div>
+              </div>
+              <p style="margin-bottom: 5px;"><strong>Subject:</strong> {{ subjectName }} | <strong>Standard:</strong> {{ standardName }}</p>
+              <p style="margin-top: 5px;">
+                <strong>Time:</strong> 
+                <span v-if="!isEditingTime" class="editable-field">
+                  {{ testDuration }}
+                  <button class="edit-icon" @click="startEditingTime" title="Edit time duration">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </span>
+                <span v-else class="edit-time-form">
+                  <div class="d-inline-flex align-items-center time-inputs-container">
+                    <div class="d-flex align-items-center me-2">
+                      <input 
+                        type="number" 
+                        class="form-control form-control-sm me-1" 
+                        v-model="hours"
+                        min="0"
+                        max="12"
+                        ref="hoursInput"
+                        style="width: 60px;"
+                      > 
+                      <span>Hour(s)</span>
+                    </div>
+                    <div class="d-flex align-items-center me-2">
+                      <input 
+                        type="number" 
+                        class="form-control form-control-sm me-1" 
+                        v-model="minutes"
+                        min="0"
+                        max="59"
+                        style="width: 60px;"
+                      >
+                      <span>Min(s)</span>
+                    </div>
+                    <div class="time-edit-buttons">
+                      <button class="btn btn-sm btn-outline-secondary me-1" @click="cancelEditingTime">
+                        <i class="bi bi-x"></i>
+                      </button>
+                      <button class="btn btn-sm btn-primary" @click="stopEditingTime">
+                        <i class="bi bi-check"></i>
                       </button>
                     </div>
-                    
-                    <!-- MCQ Options -->
-                    <div v-if="question.options && question.options.length > 0" class="options-container">
-                    <!-- Layout selector popup -->
-                    <div v-if="activeLayoutSelector.sectionIndex === sectionIndex && activeLayoutSelector.questionIndex === questionIndex" 
-                        class="layout-selector"
-                        ref="layoutSelectorRef"
-                        @click.stop>
-                      <div class="layout-options">
-                        <div class="layout-option-title">Select Options Layout</div>
-                        <div class="layout-cards">
-                          <div class="layout-option">
-                            <div 
-                              class="layout-card" 
-                              :class="{ 'active': getOptionLayout(sectionIndex, questionIndex) === 'row' }"
-                              @click="setOptionLayout(sectionIndex, questionIndex, 'row')"
-                            >
-                              <div class="layout-preview row-layout">
-                                <div>A</div><div>B</div><div>C</div><div>D</div>
-                              </div>
-                            </div>
-                            <div class="layout-label">Single Row</div>
-                          </div>
-                          
-                          <div class="layout-option">
-                            <div 
-                              class="layout-card" 
-                              :class="{ 'active': getOptionLayout(sectionIndex, questionIndex) === 'grid' }"
-                              @click="setOptionLayout(sectionIndex, questionIndex, 'grid')"
-                            >
-                              <div class="layout-preview grid-layout">
-                                <div>A</div><div>B</div>
-                                <div>C</div><div>D</div>
-                              </div>
-                            </div>
-                            <div class="layout-label">2x2 Grid</div>
-                          </div>
-                          
-                          <div class="layout-option">
-                            <div 
-                              class="layout-card" 
-                              :class="{ 'active': getOptionLayout(sectionIndex, questionIndex) === 'column' }"
-                              @click="setOptionLayout(sectionIndex, questionIndex, 'column')"
-                            >
-                              <div class="layout-preview column-layout">
-                                <div>A</div>
-                                <div>B</div>
-                                <div>C</div>
-                                <div>D</div>
-                              </div>
-                            </div>
-                            <div class="layout-label">Single Column</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Row layout (all options in one row) -->
-                    <div v-if="getOptionLayout(sectionIndex, questionIndex) === 'row'" class="options-row">
-                      <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-row">
-                        <span class="option-label">{{ option.label }})</span>
-                        <span class="option-text">{{ option.text }}</span>
-                      </div>
-                    </div>
-                    
-                    <!-- Grid layout (2x2) -->
-                    <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'grid'" class="options-grid">
-                      <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-grid">
-                        <span class="option-label">{{ option.label }})</span>
-                        <span class="option-text">{{ option.text }}</span>
-                      </div>
-                    </div>
-                    
-                    <!-- Column layout (all options in one column) -->
-                    <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'column'" class="options-column">
-                      <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-column">
-                        <span class="option-label">{{ option.label }})</span>
-                        <span class="option-text">{{ option.text }}</span>
-                      </div>
-                    </div>
                   </div>
-                  
-                  <!-- Match Pairs -->
-                  <div v-if="question.matchPairs && question.matchPairs.length > 0" class="match-pairs-container">
-                    <div class="row">
-                      <div class="col-6">
-                        <div v-for="(pair, pairIndex) in question.matchPairs" :key="`left-${pairIndex}`" class="match-pair-item">
-                          {{ pairIndex + 1 }}. {{ pair.leftText }}
-                        </div>
-                      </div>
-                      <div class="col-6">
-                        <div v-for="(pair, pairIndex) in question.matchPairs" :key="`right-${pairIndex}`" class="match-pair-item">
-                          {{ pair.rightText }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                </span>
+                | <strong>Total Marks:</strong> {{ totalMarks }}
+              </p>
+              
+              <!-- Exam Instructions Section -->
+              <div class="exam-instructions-container mt-4">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                  <h5 class="m-0 me-2">Exam Instructions</h5>
+                  <button class="edit-icon" @click="startEditingInstructions" title="Edit instructions">
+                    <i class="bi bi-pencil"></i>
+                  </button>
                 </div>
                 
-                <!-- Marks and Change Button -->
-                <div class="question-marks">
-                  <div class="marks-row">
-                    <span class="marks fw-bold me-2">{{ question.marks }}</span>
-                      <button class="btn btn-sm btn-custom shuffle-button" @click="changeQuestion(sectionIndex, questionIndex)">
-                      <span class="d-inline-flex align-items-center">
-                          <i class="bi bi-arrow-clockwise me-md-1"></i><span class="d-none d-sm-inline">Change</span>
-                      </span>
-                    </button>
-                    </div>
+                <!-- Instructions Display View -->
+                <div v-if="!isEditingInstructions" class="instructions-display">
+                  <ul class="text-start instruction-list" v-if="examInstructions.length > 0">
+                    <li v-for="(instruction, index) in examInstructions" :key="index">
+                      {{ instruction }}
+                    </li>
+                  </ul>
+                  <p v-else class="text-muted fst-italic">Click the pencil icon to add exam instructions</p>
+                </div>
+                
+                <!-- Instructions Edit View -->
+                <div v-else class="instructions-edit-form">
+                  <div class="form-group">
+                    <textarea 
+                      class="form-control instruction-textarea" 
+                      v-model="instructionsText"
+                      placeholder="Enter instructions (press Enter for new line)"
+                      ref="instructionsTextarea"
+                    ></textarea>
+                    <div class="text-muted small mt-1">Press Enter for a new line. Each line will appear as a bullet point.</div>
+                  </div>
+                  <div class="d-flex justify-content-center mt-2">
+                    <button class="btn btn-sm btn-outline-secondary me-2" @click="cancelEditingInstructions">Cancel</button>
+                    <button class="btn btn-sm btn-primary" @click="saveInstructions">Save</button>
                   </div>
                 </div>
               </div>
-              <hr class="question-divider" />
+            </div>
+            <hr>
+
+            <!-- Questions Section - MS Office A4 style layout -->
+            <div class="a4-paper-section mb-4" 
+              v-for="(section, sectionIndex) in testPaperSections" 
+              :key="sectionIndex"
+              :class="{ 'refreshing': isChangingAllQuestions }"
+            >
+              <!-- Section Header -->
+              <div class="section-header">
+                <div class="section-title"><strong>{{ section.sectionNumberDisplay ||  section.sectionNumber }} ) {{ section.sectionName }}</strong> <span v-if="section.mandotory_questions && section.questions && section.mandotory_questions < section.questions.length" class="nowrap">[ Any {{ section.mandotory_questions }} ]</span></div>
+              
+                <div class="section-marks">
+                  <strong>
+                    <span class="nowrap">
+                      {{ section.totalMarks }} <span class="d-none d-sm-inline">Marks</span><span class="d-inline d-sm-none">M</span>
+                    </span>
+                  </strong>
+                </div>
+              </div>
+              
+              <!-- Questions List - Plain A4 style -->
+              <div class="section-content">
+                <div class="question-list">
+                  <div v-for="(question, questionIndex) in section.questions" :key="questionIndex" class="question-item">
+                    <div class="question-wrapper" :id="`question-${sectionIndex}-${questionIndex}`">
+                      <div class="d-flex w-100">
+                      <!-- Question Content -->
+                      <div class="question-content">
+                        <div class="question-text">
+                          {{ question.questionNumber }}. {{ question.questionText }}
+                          <span v-if="question.questionType" class="question-type-badge">
+                            {{ question.questionType }}
+                          </span>
+                            <button v-if="question.options && question.options.length > 0" 
+                                    class="edit-icon ms-2" 
+                                    @click="(event) => showLayoutOptions(sectionIndex, questionIndex, event)" 
+                                    title="Change options layout"
+                                    style="vertical-align: middle; margin-top: -2px;">
+                              <i class="bi bi-grid"></i>
+                            </button>
+                          </div>
+                          
+                          <!-- MCQ Options -->
+                          <div v-if="question.options && question.options.length > 0" class="options-container">
+                          <!-- Layout selector popup -->
+                          <div v-if="activeLayoutSelector.sectionIndex === sectionIndex && activeLayoutSelector.questionIndex === questionIndex" 
+                              class="layout-selector"
+                              ref="layoutSelectorRef"
+                              @click.stop>
+                            <div class="layout-options">
+                              <div class="layout-option-title">Select Options Layout</div>
+                              <div class="layout-cards">
+                                <div class="layout-option">
+                                  <div 
+                                    class="layout-card" 
+                                    :class="{ 'active': getOptionLayout(sectionIndex, questionIndex) === 'row' }"
+                                    @click="setOptionLayout(sectionIndex, questionIndex, 'row')"
+                                  >
+                                    <div class="layout-preview row-layout">
+                                      <div>A</div><div>B</div><div>C</div><div>D</div>
+                                    </div>
+                                  </div>
+                                  <div class="layout-label">Single Row</div>
+                                </div>
+                                
+                                <div class="layout-option">
+                                  <div 
+                                    class="layout-card" 
+                                    :class="{ 'active': getOptionLayout(sectionIndex, questionIndex) === 'grid' }"
+                                    @click="setOptionLayout(sectionIndex, questionIndex, 'grid')"
+                                  >
+                                    <div class="layout-preview grid-layout">
+                                      <div>A</div><div>B</div>
+                                      <div>C</div><div>D</div>
+                                    </div>
+                                  </div>
+                                  <div class="layout-label">2x2 Grid</div>
+                                </div>
+                                
+                                <div class="layout-option">
+                                  <div 
+                                    class="layout-card" 
+                                    :class="{ 'active': getOptionLayout(sectionIndex, questionIndex) === 'column' }"
+                                    @click="setOptionLayout(sectionIndex, questionIndex, 'column')"
+                                  >
+                                    <div class="layout-preview column-layout">
+                                      <div>A</div>
+                                      <div>B</div>
+                                      <div>C</div>
+                                      <div>D</div>
+                                    </div>
+                                  </div>
+                                  <div class="layout-label">Single Column</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Row layout (all options in one row) -->
+                          <div v-if="getOptionLayout(sectionIndex, questionIndex) === 'row'" class="options-row">
+                            <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-row">
+                              <span class="option-label">{{ option.label }})</span>
+                              <span class="option-text">{{ option.text }}</span>
+                            </div>
+                          </div>
+                          
+                          <!-- Grid layout (2x2) -->
+                          <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'grid'" class="options-grid">
+                            <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-grid">
+                              <span class="option-label">{{ option.label }})</span>
+                              <span class="option-text">{{ option.text }}</span>
+                            </div>
+                          </div>
+                          
+                          <!-- Column layout (all options in one column) -->
+                          <div v-else-if="getOptionLayout(sectionIndex, questionIndex) === 'column'" class="options-column">
+                            <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="option-item-column">
+                              <span class="option-label">{{ option.label }})</span>
+                              <span class="option-text">{{ option.text }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Match Pairs -->
+                        <div v-if="question.matchPairs && question.matchPairs.length > 0" class="match-pairs-container">
+                          <div class="row">
+                            <div class="col-6">
+                              <div v-for="(pair, pairIndex) in question.matchPairs" :key="`left-${pairIndex}`" class="match-pair-item">
+                                {{ pairIndex + 1 }}. {{ pair.leftText }}
+                              </div>
+                            </div>
+                            <div class="col-6">
+                              <div v-for="(pair, pairIndex) in question.matchPairs" :key="`right-${pairIndex}`" class="match-pair-item">
+                                {{ pair.rightText }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Marks and Change Button -->
+                      <div class="question-marks">
+                        <div class="marks-row">
+                          <span class="marks fw-bold me-2">{{ question.marks }}</span>
+                            <button class="btn btn-sm btn-custom shuffle-button" @click="changeQuestion(sectionIndex, questionIndex)">
+                            <span class="d-inline-flex align-items-center">
+                                <i class="bi bi-arrow-clockwise me-md-1"></i><span class="d-none d-sm-inline">Change</span>
+                            </span>
+                          </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <hr class="question-divider" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -433,6 +495,31 @@
           </div>
         </div>  
       </div>
+      
+      <!-- Medium Dropdown (single instance for both mobile and desktop) -->
+      <div 
+        v-if="showMediumDropdown" 
+        class="medium-dropdown-mobile"
+        ref="mediumDropdownMobileRef"
+      >
+        <div class="medium-dropdown-header">Select Medium</div>
+        <div class="medium-dropdown-items">
+          <div 
+            v-for="medium in availableMediums" 
+            :key="medium.id"
+            class="medium-dropdown-item"
+            :class="{ 'active': medium.id === currentMediumId }"
+            @click="changeMedium(medium.id)"
+          >
+            {{ medium.name }}
+          </div>
+        </div>
+        <div class="text-center mt-2">
+          <button class="btn btn-sm btn-outline-secondary" @click="toggleMediumDropdown">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -472,8 +559,35 @@ const getOptionLayout = (sectionIndex: number, questionIndex: number) => {
 const setOptionLayout = (sectionIndex: number, questionIndex: number, layout: string) => {
   const key = `${sectionIndex}-${questionIndex}`
   optionsLayouts.value[key] = layout
+  
+  // Save the updated layouts to localStorage
+  saveOptionLayoutsToLocalStorage()
+  
   // Auto-close the layout selector after making a selection
   hideLayoutOptions()
+}
+
+// Save option layouts to localStorage
+const saveOptionLayoutsToLocalStorage = () => {
+  try {
+    localStorage.setItem('optionsLayouts', JSON.stringify(optionsLayouts.value))
+    console.log('Saved option layouts to localStorage')
+  } catch (error) {
+    console.error('Error saving option layouts to localStorage:', error)
+  }
+}
+
+// Load option layouts from localStorage
+const loadOptionLayoutsFromLocalStorage = () => {
+  try {
+    const savedLayouts = localStorage.getItem('optionsLayouts')
+    if (savedLayouts) {
+      optionsLayouts.value = JSON.parse(savedLayouts)
+      console.log('Loaded option layouts from localStorage')
+    }
+  } catch (error) {
+    console.error('Error loading option layouts from localStorage:', error)
+  }
 }
 
 // Show layout options for a specific question
@@ -781,6 +895,7 @@ interface ChapterMark {
   absoluteMarks: number;
 }
 
+// Add interface for ApiResponse
 interface ApiResponse {
   patternId: number;
   patternName?: string;
@@ -788,6 +903,8 @@ interface ApiResponse {
   absoluteMarks: number;
   sectionAllocations: SectionAllocation[];
   chapterMarks: ChapterMark[];
+  mediums?: ApiMedium[];
+  questionOrigin?: string;
 }
 
 // Display interfaces for transformed API data
@@ -835,24 +952,40 @@ const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null)
 // Store raw API data for debugging
 const apiData = ref<ApiResponse | null>(null)
 
-// Function to get the latest data based on which endpoint was last used
-const getLatestData = () => {
-  if (lastUsedEndpoint.value === 'distribute' && distributeData.value) {
-    console.log('Using data from distribute endpoint');
-    return distributeData.value;
-  } else if (lastUsedEndpoint.value === 'allocation' && allocationData.value) {
-    console.log('Using data from allocation endpoint');
-    return allocationData.value;
-  } else {
-    // Use whatever data is available if lastUsedEndpoint is not set
-    return distributeData.value || allocationData.value || null;
+// Helper function to get the latest test paper data
+const getLatestData = (): ApiResponse | null => {
+  // First check if we have already loaded data in apiData
+  if (apiData.value) {
+    return apiData.value;
   }
-};
+  
+  // If not, try to get data from localStorage
+  try {
+    const storedData = loadStoredData();
+    return storedData;
+  } catch (error) {
+    console.error('Error getting latest test paper data:', error);
+    return null;
+  }
+}
 
 // Load data from localStorage based on lastUsedEndpoint
 const loadStoredData = () => {
   try {
-    // Check if lastUsedEndpoint is in the route query
+    // First check if we have finalQuestionsDistribution data from the final API call
+    const finalDistributionData = localStorage.getItem('finalQuestionsDistribution');
+    if (finalDistributionData && route.query.hasFinalDistribution === 'true') {
+      try {
+        const parsedData = JSON.parse(finalDistributionData);
+        console.log('Loaded final questions distribution data from localStorage');
+        apiData.value = parsedData;
+        return parsedData;
+      } catch (e) {
+        console.error('Error parsing final questions distribution data:', e);
+      }
+    }
+    
+    // If no final distribution data, check lastUsedEndpoint
     const endpointFromRoute = route.query.lastUsedEndpoint as string;
     if (endpointFromRoute) {
       lastUsedEndpoint.value = endpointFromRoute as 'allocation' | 'distribute';
@@ -897,6 +1030,14 @@ const loadStoredData = () => {
 // Fetch test paper questions from API
 const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
   try {
+    // First check if we already have final questions distribution data
+    if (storedData && route.query.hasFinalDistribution === 'true') {
+      console.log('Using final questions distribution data');
+      apiData.value = storedData;
+      transformApiDataToDisplayFormat(storedData);
+      return;
+    }
+    
     // Use stored data if available, otherwise create request data
     let requestData;
     
@@ -1004,12 +1145,15 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
       }
     }
 
-    // Make the API call
+    // Make the API call to get final questions distribution
     const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData)
     
     if (response.data) {
       apiData.value = response.data
       console.log('API Response Data Structure:', response.data)
+      
+      // Save the data to localStorage for future use
+      localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
       
       // Check for question_text_topics in the first question if available
       if (response.data.sectionAllocations && 
@@ -1038,11 +1182,29 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
 // Transform API data to display format
 const transformApiDataToDisplayFormat = (data: ApiResponse) => {
   if (!data || !data.sectionAllocations) {
-    return
+    console.error('Invalid API data: missing sectionAllocations');
+    return;
   }
 
-  const displaySections: DisplaySection[] = []
-  let sectionNumberCounter = 1
+  // Extract available mediums from the API response if available
+  if (data.mediums && data.mediums.length > 0) {
+    console.log('Mediums from API:', data.mediums);
+    availableMediums.value = data.mediums.map((medium: ApiMedium) => ({
+      id: medium.id,
+      name: medium.instruction_medium
+    }));
+    
+    // If current medium is not in the available list, reset to the first one
+    if (!availableMediums.value.some(m => m.id === currentMediumId.value) && availableMediums.value.length > 0) {
+      console.log('Current medium not in available list, resetting to:', availableMediums.value[0].name);
+      currentMediumId.value = availableMediums.value[0].id;
+    }
+  } else {
+    console.warn('No mediums available in API response');
+  }
+
+  const displaySections: DisplaySection[] = [];
+  let sectionNumberCounter = 1;
 
   // Sort sections by sequentialNumber or sectionId for consistent ordering
   const sortedSections = [...data.sectionAllocations].sort((a, b) => {
@@ -1069,17 +1231,37 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
       subSection: section.subSection,
       sectionNumberDisplay: sectionNumberDisplay,
       mandotory_questions: section.mandotory_questions
-    }
+    };
 
-    let questionNumberCounter = 1
+    let questionNumberCounter = 1;
 
     // Process each subsection within a section
     section.subsectionAllocations.forEach(subsection => {
       // Process each chapter's questions within a subsection
       subsection.allocatedChapters.forEach(chapter => {
         if (chapter.question) {
-          const question = chapter.question
-          const questionText = question.question_texts[0] // Using the first question text
+          const question = chapter.question;
+          
+          // Find the correct question text based on the current medium
+          let questionText: QuestionText | undefined;
+          
+          if (question.question_texts && question.question_texts.length > 0) {
+            // First try to find an exact match for the current medium
+            questionText = question.question_texts.find(text => 
+              text.question_text_topics && 
+              text.question_text_topics.length > 0 && 
+              text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+            );
+            
+            // If no match, use the first question text as a fallback
+            if (!questionText) {
+              console.warn(`No question text found for medium ID ${currentMediumId.value}, using first available`);
+              questionText = question.question_texts[0];
+            }
+          } else {
+            console.warn('Question has no question_texts array, skipping');
+            return; // Skip this question if no question texts available
+          }
           
           // Extract topic ID from either topic or question_text_topics
           let topicId: number | undefined;
@@ -1096,8 +1278,9 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
             marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions), // Use marks_per_question if available
             questionType: question.question_type.type_name,
             originalQuestion: question,
-            topicId: topicId
-          }
+            topicId: topicId,
+            chapterId: chapter.chapterId // Store the chapter ID with the question
+          };
 
           // Process MCQ options if they exist
           if (questionText.mcq_options && questionText.mcq_options.length > 0) {
@@ -1106,29 +1289,29 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
                 label: String.fromCharCode(65 + index), // A, B, C, D...
                 text: option.option_text,
                 isCorrect: option.is_correct
-              }
-            })
+              };
+            });
           }
 
           // Process match pairs if they exist
           if (questionText.match_pairs && questionText.match_pairs.length > 0) {
             displayQuestion.matchPairs = questionText.match_pairs.map(pair => {
               return {
-                leftText: pair.left_text,
-                rightText: pair.right_text
-              }
-            })
+                leftText: pair.left_text || '', // Handle null left_text
+                rightText: pair.right_text || '' // Handle null right_text
+              };
+            });
           }
 
-          displaySection.questions.push(displayQuestion)
+          displaySection.questions.push(displayQuestion);
         }
-      })
-    })
+      });
+    });
 
-    displaySections.push(displaySection)
-  })
+    displaySections.push(displaySection);
+  });
 
-  testPaperSections.value = displaySections
+  testPaperSections.value = displaySections;
 }
 
 // Change a single question - calls the API to get a replacement
@@ -1155,13 +1338,12 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       throw new Error('Question text ID not found');
     }
     
-    // Get the instruction medium ID from question_text_topics
-    let mediumId = 1; // Default to 1 as fallback
-    if (originalQuestion.question_texts && 
-        originalQuestion.question_texts.length > 0 && 
-        originalQuestion.question_texts[0].question_text_topics && 
-        originalQuestion.question_texts[0].question_text_topics.length > 0) {
-      mediumId = originalQuestion.question_texts[0].question_text_topics[0].instruction_medium_id;
+    // Get all available medium IDs instead of just the current one
+    const mediumIds = availableMediums.value.map(medium => medium.id);
+    
+    // If no medium IDs available, use the current medium ID as fallback
+    if (mediumIds.length === 0) {
+      mediumIds.push(currentMediumId.value);
     }
     
     // Find the chapter ID for the current question
@@ -1301,7 +1483,7 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
     
     console.log('Change question parameters:', {
       questionTextIds,
-      mediumIds: [mediumId],
+      mediumIds,
       chapterId,
       questionOrigin: 'both'
     });
@@ -1314,8 +1496,10 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       queryParams.append('questionTextIds', id.toString());
     });
     
-    // Add medium IDs
-    queryParams.append('mediumIds', mediumId.toString());
+    // Add all medium IDs
+    mediumIds.forEach(id => {
+      queryParams.append('mediumIds', id.toString());
+    });
     
     // Add chapter ID
     queryParams.append('chapterId', chapterId.toString());
@@ -1323,15 +1507,31 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
     // Add question origin
     queryParams.append('questionOrigin', 'both');
     
-    // Make the API call
+    // Make the API call to get a replacement question
     const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
     
     if (response.data && response.data.question) {
       const newQuestion = response.data.question;
       console.log('New question received:', newQuestion);
       
-      // Transform the new question to display format
-      const questionText = newQuestion.question_texts[0]; // Using the first question text
+      // Find the correct question text based on the current medium
+      let questionText: QuestionText | undefined;
+      
+      if (newQuestion.question_texts && newQuestion.question_texts.length > 0) {
+        // First try to find an exact match for the current medium
+        questionText = newQuestion.question_texts.find(text => 
+          text.question_text_topics && 
+          text.question_text_topics.length > 0 && 
+          text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+        );
+        
+        // If no match, use the first question text as a fallback
+        if (!questionText) {
+          questionText = newQuestion.question_texts[0];
+        }
+      } else {
+        throw new Error('No question texts available in the new question');
+      }
       
       // Extract topic ID from question_topics or question_text_topics
       let topicId: number | undefined;
@@ -1376,6 +1576,10 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
       // Replace the question in the section
       section.questions[questionIndex] = displayQuestion;
       
+      // Update the stored API data structure to include this new question
+      // This is the key step to ensure medium changes work with changed questions
+      updateStoredApiDataWithNewQuestion(sectionIndex, questionIndex, newQuestion, chapterId);
+      
       console.log('Question successfully changed');
     } else {
       console.error('Unexpected API response format:', response.data);
@@ -1397,19 +1601,169 @@ const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
   }
 }
 
-// Save page functionality (placeholder)
-const savePage = () => {
-  console.log('Navigating to save test paper page...')
+// New function to update the stored API data structure with a new question
+const updateStoredApiDataWithNewQuestion = (sectionIndex: number, questionIndex: number, newQuestion: Question, chapterId: number) => {
+  if (!apiData.value || !apiData.value.sectionAllocations) {
+    console.warn('Cannot update stored API data: no apiData available');
+    return;
+  }
   
-  // Navigate to save test paper page with the necessary data
-  router.push({
-    name: 'saveTestPaper',
-    query: {
-      ...route.query, // Pass along current query params
-      paperTitle: paperTitle.value,
-      testDuration: `${hours.value}:${minutes.value}`
+  try {
+    // Find the section in the API data that corresponds to the display section
+    const section = testPaperSections.value[sectionIndex];
+    
+    // Find the corresponding section in the API data
+    const apiSection = apiData.value.sectionAllocations.find(s => 
+      s.sectionName === section.sectionName && 
+      (s.section_number === section.sectionNumber || s.sequentialNumber === section.sectionNumber)
+    );
+    
+    if (!apiSection) {
+      console.warn(`Cannot find section in API data for section index ${sectionIndex}`);
+      return;
     }
-  })
+    
+    // Now we need to find the corresponding question in the API data structure
+    // Loop through all subsections and their allocated chapters
+    let found = false;
+    
+    for (const subsection of apiSection.subsectionAllocations) {
+      if (found) break;
+      
+      for (let i = 0; i < subsection.allocatedChapters.length; i++) {
+        const chapter = subsection.allocatedChapters[i];
+        
+        // If this chapter has a question and it's the one we're replacing
+        if (chapter.question) {
+          // Count how many questions we've seen so far
+          let questionCount = 0;
+          
+          // Count questions in all previous subsections
+          for (const prevSubsection of apiSection.subsectionAllocations) {
+            if (prevSubsection === subsection) {
+              // For the current subsection, count questions up to the current chapter
+              for (let j = 0; j < i; j++) {
+                if (prevSubsection.allocatedChapters[j].question) {
+                  questionCount++;
+                }
+              }
+              break;
+            } else {
+              // For previous subsections, count all questions
+              for (const prevChapter of prevSubsection.allocatedChapters) {
+                if (prevChapter.question) {
+                  questionCount++;
+                }
+              }
+            }
+          }
+          
+          // If this is the question we're looking for
+          if (questionCount === questionIndex) {
+            // Replace the question in the API data structure
+            chapter.question = newQuestion;
+            
+            // Update the chapter ID if needed
+            if (chapter.chapterId !== chapterId) {
+              chapter.chapterId = chapterId;
+            }
+            
+            console.log(`Updated question in API data at section ${sectionIndex}, question ${questionIndex}`);
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (!found) {
+      console.warn(`Could not find question in API data for section ${sectionIndex}, question ${questionIndex}`);
+    }
+    
+    // Update the stored data
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(apiData.value));
+    console.log('Updated finalQuestionsDistribution in localStorage with new question');
+  } catch (error) {
+    console.error('Error updating stored API data with new question:', error);
+  }
+}
+
+// Save page functionality (placeholder)
+const savePage = async () => {
+  try {
+    console.log('Saving test paper...');
+    
+    // Show loading indicator or disable button here
+    const saveButton = document.querySelector('.btn-dark') as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Saving...';
+    }
+    
+    // Get the current test paper data
+    const latestData = getLatestData();
+    if (!latestData) {
+      throw new Error('No test paper data available');
+    }
+
+    // Save the current data to localStorage for the saveTestPaper page to use
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(latestData));
+    console.log('Saved test paper data to localStorage');
+
+    // Extract the pattern ID from latest data
+    const patternId = latestData.patternId ? latestData.patternId.toString() : route.query.patternId;
+    console.log(`Using pattern ID: ${patternId}`);
+
+    // Get chapters and weightages from the data
+    const chapters: number[] = [];
+    const weightages: number[] = [];
+
+    if (latestData.chapterMarks && latestData.chapterMarks.length > 0) {
+      latestData.chapterMarks.forEach(chapterMark => {
+        chapters.push(chapterMark.chapterId);
+        
+        // Use absolute marks directly (actual marks, not percentage)
+        weightages.push(chapterMark.absoluteMarks);
+      });
+    }
+    
+    // Get user ID and school ID from user profile
+    const userId = userProfile.value?.id;
+    const schoolId = userProfile.value?.schools && userProfile.value.schools.length > 0 
+      ? userProfile.value.schools[0].id 
+      : null;
+      
+    if (!userId || !schoolId) {
+      throw new Error('User ID or School ID not available');
+    }
+    
+    // Navigate to saveTestPaper page with all the necessary data
+    router.push({
+      name: 'saveTestPaper',
+      query: {
+        ...route.query, // Pass along current query params
+        paperTitle: paperTitle.value,
+        testDuration: `${hours.value}:${minutes.value}`,
+        saveRequested: 'true', // Flag to indicate save should be performed
+        userId: userId.toString(),
+        schoolId: schoolId.toString(),
+        chapters: JSON.stringify(chapters),
+        weightages: JSON.stringify(weightages),
+        patternId: patternId ? patternId.toString() : '1' // Ensure pattern ID is passed
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error saving test paper:', error);
+    alert('Failed to save test paper. Please try again.');
+    
+    // Reset save button
+    const saveButton = document.querySelector('.btn-dark') as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.innerHTML = '<i class="bi bi-save me-1"></i> Save';
+    }
+  }
 }
 
 // Go back button handler
@@ -1433,6 +1787,9 @@ const initializeComponent = async () => {
     hours.value = 1
     minutes.value = 0
     
+    // Load saved option layouts
+    loadOptionLayoutsFromLocalStorage()
+    
     // Load user profile and school name
     await fetchUserProfile()
     
@@ -1441,6 +1798,15 @@ const initializeComponent = async () => {
     
     // Fetch test paper questions
     await fetchTestPaperQuestions(storedData)
+    
+    // Extract available mediums from API data after questions are loaded
+    fetchAvailableMediums()
+    
+    // Load saved zoom level from localStorage
+    const savedZoomLevel = localStorage.getItem('a4ZoomLevel');
+    if (savedZoomLevel) {
+      zoomLevel.value = parseInt(savedZoomLevel);
+    }
     
     console.log('Test paper initialized with data from API')
   } catch (error) {
@@ -1486,6 +1852,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleLayoutSelectorsOnScroll)
   document.removeEventListener('click', handleGlobalLayoutClickOutside)
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', handleMediumDropdownClickOutside)
 })
 
 // Show/hide back-to-top button based on scroll position
@@ -1518,11 +1885,26 @@ const changeAllQuestions = async () => {
       throw new Error('Failed to get request data for changing questions');
     }
     
+    // Use the original request data without modifying it
     const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData);
     
     if (response.data) {
       console.log('New questions received from API');
       apiData.value = response.data;
+      
+      // Extract available mediums from the response
+      if (response.data.mediums && response.data.mediums.length > 0) {
+        availableMediums.value = response.data.mediums.map((medium: ApiMedium) => ({
+          id: medium.id,
+          name: medium.instruction_medium
+        }));
+        
+        // If current medium is not in the available list, reset to the first one
+        if (!availableMediums.value.some(m => m.id === currentMediumId.value) && availableMediums.value.length > 0) {
+          currentMediumId.value = availableMediums.value[0].id;
+        }
+      }
+      
       transformApiDataToDisplayFormat(response.data);
     } else {
       throw new Error('Unexpected API response format when changing questions');
@@ -1633,6 +2015,9 @@ const applyGlobalLayout = (layout: string) => {
     });
   });
   
+  // Save the updated layouts to localStorage
+  saveOptionLayoutsToLocalStorage()
+  
   // Show feedback
   const layoutNames = {
     'row': 'Single Row',
@@ -1669,6 +2054,12 @@ const handleLayoutSelectorsOnScroll = () => {
   // Hide individual layout selector if visible
   if (activeLayoutSelector.value.sectionIndex !== -1) {
     hideLayoutOptions()
+  }
+  
+  // Hide medium dropdown if visible
+  if (showMediumDropdown.value) {
+    showMediumDropdown.value = false
+    document.removeEventListener('click', handleMediumDropdownClickOutside)
   }
 }
 
@@ -1707,6 +2098,317 @@ const saveInstructions = () => {
   // Save to localStorage for persistence
   localStorage.setItem('examInstructions', JSON.stringify(examInstructions.value))
 }
+
+// Medium selection state and refs
+interface Medium {
+  id: number;
+  name: string;
+}
+
+// Define interface for API Medium response
+interface ApiMedium {
+  id: number;
+  instruction_medium: string;
+}
+
+const availableMediums = ref<Medium[]>([]);
+const currentMediumId = ref<number>(1); // Default medium ID
+const currentMediumName = computed(() => {
+  const medium = availableMediums.value.find(m => m.id === currentMediumId.value);
+  return medium ? medium.name : 'Medium';
+});
+const showMediumDropdown = ref(false);
+const mediumButtonMobileRef = ref<HTMLElement | null>(null);
+const mediumDropdownMobileRef = ref<HTMLElement | null>(null);
+
+// Function to toggle medium dropdown
+const toggleMediumDropdown = (event: MouseEvent) => {
+  event.stopPropagation();
+  showMediumDropdown.value = !showMediumDropdown.value;
+  
+  if (showMediumDropdown.value) {
+    nextTick(() => {
+      // Get the clicked button (could be mobile or desktop)
+      const clickedElement = event.target as HTMLElement;
+      const buttonElement = clickedElement.closest('button') as HTMLElement;
+      
+      if (buttonElement && mediumDropdownMobileRef.value) {
+        const buttonRect = buttonElement.getBoundingClientRect();
+        mediumDropdownMobileRef.value.style.position = 'fixed';
+        mediumDropdownMobileRef.value.style.top = `${buttonRect.bottom + 5}px`;
+        
+        // Center horizontally relative to the button
+        const dropdownWidth = mediumDropdownMobileRef.value.offsetWidth;
+        const buttonCenterX = buttonRect.left + (buttonRect.width / 2);
+        const leftPosition = buttonCenterX - (dropdownWidth / 2);
+        
+        // Ensure it doesn't go off-screen on the left
+        const adjustedLeft = Math.max(10, leftPosition);
+        
+        // Ensure it doesn't go off-screen on the right
+        const rightEdge = adjustedLeft + dropdownWidth;
+        if (rightEdge > window.innerWidth - 10) {
+          mediumDropdownMobileRef.value.style.left = `${window.innerWidth - dropdownWidth - 10}px`;
+        } else {
+          mediumDropdownMobileRef.value.style.left = `${adjustedLeft}px`;
+        }
+        
+        // Remove centered transform
+        mediumDropdownMobileRef.value.style.transform = 'none';
+      }
+      
+      // Add click outside listener
+      document.addEventListener('click', handleMediumDropdownClickOutside);
+    });
+  } else {
+    document.removeEventListener('click', handleMediumDropdownClickOutside);
+  }
+};
+
+// Handle click outside medium dropdown
+const handleMediumDropdownClickOutside = (event: MouseEvent) => {
+  const dropdown = mediumDropdownMobileRef.value;
+  
+  // Check if click is outside dropdown
+  if (dropdown && !dropdown.contains(event.target as Node)) {
+    showMediumDropdown.value = false;
+    document.removeEventListener('click', handleMediumDropdownClickOutside);
+  }
+};
+
+// Fetch available mediums
+const fetchAvailableMediums = () => {
+  try {
+    // Extract mediums from the API response data
+    if (apiData.value && apiData.value.mediums && apiData.value.mediums.length > 0) {
+      availableMediums.value = apiData.value.mediums.map((medium: ApiMedium) => ({
+        id: medium.id,
+        name: medium.instruction_medium
+      }));
+      
+      // If no current medium ID is set, set to the first available medium
+      if (availableMediums.value.length > 0 && currentMediumId.value === 1) {
+        currentMediumId.value = availableMediums.value[0].id;
+      }
+    } else {
+      // If no mediums in API data, use default
+      availableMediums.value = [{ id: 1, name: 'English' }];
+    }
+  } catch (error) {
+    console.error('Error extracting available mediums:', error);
+    // Add default medium as fallback
+    availableMediums.value = [{ id: 1, name: 'English' }];
+  }
+};
+
+// Change the current medium
+const changeMedium = async (mediumId: number) => {
+  if (currentMediumId.value === mediumId) {
+    // If same medium, just close the dropdown
+    showMediumDropdown.value = false;
+    return;
+  }
+  
+  // Store the previous medium for reference
+  const previousMediumId = currentMediumId.value;
+  
+  // Update current medium ID
+  currentMediumId.value = mediumId;
+  showMediumDropdown.value = false;
+  
+  // Show toast notification for medium change
+  const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
+  showLayoutChangeToast(`Changed to ${mediumName} medium`);
+  
+  try {
+    // For questions that have been individually changed, we need to check if they have
+    // the correct language version and potentially fetch new ones
+    
+    // First transform the existing data for immediate display
+    if (apiData.value) {
+      transformApiDataToDisplayFormat(apiData.value);
+    }
+    
+    // Then check each question to see if it needs to be updated
+    const questionsToFetch = [];
+    
+    for (let sectionIndex = 0; sectionIndex < testPaperSections.value.length; sectionIndex++) {
+      const section = testPaperSections.value[sectionIndex];
+      
+      for (let questionIndex = 0; questionIndex < section.questions.length; questionIndex++) {
+        const question = section.questions[questionIndex];
+        const originalQuestion = question.originalQuestion;
+        
+        // Check if this question has a text for the current medium
+        const hasTextForCurrentMedium = originalQuestion.question_texts.some(text => 
+          text.question_text_topics && 
+          text.question_text_topics.length > 0 && 
+          text.question_text_topics[0].instruction_medium_id === mediumId
+        );
+        
+        // If no text for current medium, add to list of questions to fetch
+        if (!hasTextForCurrentMedium && question.chapterId) {
+          questionsToFetch.push({
+            sectionIndex,
+            questionIndex,
+            questionTextId: originalQuestion.question_texts[0].id,
+            chapterId: question.chapterId
+          });
+        }
+      }
+    }
+    
+    // If we found questions that need updating, fetch them one by one
+    if (questionsToFetch.length > 0) {
+      console.log(`Found ${questionsToFetch.length} questions that need updating for medium ${mediumId}`);
+      
+      // Show loading state
+      isChangingAllQuestions.value = true;
+      
+      // Process each question that needs updating
+      for (const questionInfo of questionsToFetch) {
+        await fetchQuestionWithNewMedium(
+          questionInfo.sectionIndex,
+          questionInfo.questionIndex,
+          questionInfo.questionTextId,
+          questionInfo.chapterId,
+          mediumId
+        );
+      }
+      
+      // Hide loading state
+      isChangingAllQuestions.value = false;
+    }
+  } catch (error) {
+    console.error('Error changing medium:', error);
+    // In case of error, revert to previous medium
+    currentMediumId.value = previousMediumId;
+    showLayoutChangeToast('Failed to change medium. Please try again.');
+  }
+};
+
+// Helper function to fetch a specific question with new medium
+const fetchQuestionWithNewMedium = async (
+  sectionIndex: number,
+  questionIndex: number,
+  questionTextId: number,
+  chapterId: number,
+  mediumId: number
+) => {
+  try {
+    // Get all available medium IDs
+    const mediumIds = availableMediums.value.map(medium => medium.id);
+    
+    // Make sure the target medium is included
+    if (!mediumIds.includes(mediumId)) {
+      mediumIds.push(mediumId);
+    }
+    
+    // Build query params
+    const queryParams = new URLSearchParams();
+    
+    // Add question text ID
+    queryParams.append('questionTextIds', questionTextId.toString());
+    
+    // Add all medium IDs
+    mediumIds.forEach(id => {
+      queryParams.append('mediumIds', id.toString());
+    });
+    
+    // Add chapter ID
+    queryParams.append('chapterId', chapterId.toString());
+    
+    // Add question origin
+    queryParams.append('questionOrigin', 'both');
+    
+    // Make the API call to get a replacement question
+    const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
+    
+    if (response.data && response.data.question) {
+      const newQuestion = response.data.question;
+      
+      // Check if the new question has the text for the current medium
+      const hasTextForCurrentMedium = newQuestion.question_texts.some(text => 
+        text.question_text_topics && 
+        text.question_text_topics.length > 0 && 
+        text.question_text_topics[0].instruction_medium_id === mediumId
+      );
+      
+      if (hasTextForCurrentMedium) {
+        // Update the question in our display data
+        const section = testPaperSections.value[sectionIndex];
+        const question = section.questions[questionIndex];
+        
+        // Store the new question data
+        question.originalQuestion = newQuestion;
+        
+        // Find the correct question text based on the current medium
+        const questionText = newQuestion.question_texts.find(text => 
+          text.question_text_topics && 
+          text.question_text_topics.length > 0 && 
+          text.question_text_topics[0].instruction_medium_id === mediumId
+        ) || newQuestion.question_texts[0];
+        
+        // Update the question display
+        question.questionText = questionText.question_text;
+        
+        // Process MCQ options if they exist
+        if (questionText.mcq_options && questionText.mcq_options.length > 0) {
+          question.options = questionText.mcq_options.map((option, index) => {
+            return {
+              label: String.fromCharCode(65 + index), // A, B, C, D...
+              text: option.option_text,
+              isCorrect: option.is_correct
+            };
+          });
+        }
+        
+        // Process match pairs if they exist
+        if (questionText.match_pairs && questionText.match_pairs.length > 0) {
+          question.matchPairs = questionText.match_pairs.map(pair => {
+            return {
+              leftText: pair.left_text || '', // Handle null left_text
+              rightText: pair.right_text || '' // Handle null right_text
+            };
+          });
+        }
+        
+        console.log(`Updated question ${sectionIndex}-${questionIndex} with medium ${mediumId}`);
+      } else {
+        console.warn(`New question does not have text for medium ${mediumId}`);
+      }
+    } else {
+      console.error('Unexpected API response format:', response.data);
+    }
+  } catch (error) {
+    console.error('Error fetching question with new medium:', error);
+  }
+};
+
+// Add mobileViewMode state
+const mobileViewMode = ref(false);
+
+// Add zoom level state and computed style for A4 paper
+const zoomLevel = ref(100);
+
+// Computed style for A4 paper based on zoom level
+const a4PaperStyle = computed(() => {
+  if (!mobileViewMode.value && zoomLevel.value < 100) {
+    const scale = zoomLevel.value / 100;
+    return {
+      transform: `scale(${scale})`,
+      transformOrigin: 'top center',
+      marginBottom: `${30 - (30 * scale)}px`
+    };
+  }
+  return {};
+});
+
+// Update zoom function
+const updateZoom = () => {
+  // Update localStorage to remember user's preference
+  localStorage.setItem('a4ZoomLevel', zoomLevel.value.toString());
+};
 </script>
 
 <style scoped>
@@ -2957,6 +3659,282 @@ const saveInstructions = () => {
   
   .instructions-edit-form .instruction-textarea {
     min-height: 100px;
+  }
+}
+
+/* Medium dropdown styles */
+.medium-dropdown, .medium-dropdown-mobile {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1050;
+  animation: fadeIn 0.2s ease-in-out;
+  min-width: 180px;
+}
+
+.medium-dropdown-mobile {
+  position: fixed;
+  width: 90%;
+  max-width: 250px;
+  padding: 10px;
+  border-radius: 8px;
+  animation: fadeInDropdown 0.2s ease-out;
+}
+
+.medium-dropdown-header {
+  font-weight: bold;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.medium-dropdown-items {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.medium-dropdown-item {
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.medium-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.medium-dropdown-item.active {
+  background-color: #e9f5ff;
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* Add mobile styles for the medium button */
+@media (max-width: 576px) {
+  .medium-dropdown-mobile {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+  
+  .medium-dropdown-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .medium-dropdown-item:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Styles for mobile medium button that appears after the title */
+.medium-button-mobile {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  min-width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-left: auto; /* Push to right side if there's space */
+}
+
+/* Extra responsive styles for very small mobile screens */
+@media (max-width: 375px) {
+  .medium-button-mobile,
+  .mobile-action-btn {
+    padding: 5px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .d-flex h5.fw-bolder,
+  .mobile-title {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile title style */
+.mobile-title {
+  font-size: 1.1rem;
+}
+
+/* Styles for mobile medium button that appears after the title */
+.medium-button-mobile {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  min-width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-left: auto; /* Push to right side if there's space */
+}
+
+/* Consistent styling for mobile action buttons */
+.mobile-action-btn {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+/* Animation for dropdown that appears from top */
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.medium-dropdown-mobile {
+  position: fixed;
+  width: 90%;
+  max-width: 250px;
+  padding: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1050;
+  animation: fadeInDropdown 0.2s ease-out;
+}
+
+/* A4 Paper Card Styles */
+.a4-paper-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 30px;
+  overflow-x: auto; /* Add horizontal scrolling for small screens */
+  -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+}
+
+.a4-paper-card {
+  width: 210mm; /* A4 width */
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 10mm; /* Standard A4 margins */
+  border: 1px solid #ddd;
+  margin: 0 auto;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0; /* Prevent paper from shrinking */
+  /* Add transition for smooth zoom effect */
+  transition: transform 0.2s ease;
+}
+
+/* Mobile view mode styles */
+.mobile-view {
+  width: 100%;
+  padding: 0;
+  overflow-x: visible; /* Reset overflow behavior for mobile view */
+}
+
+.mobile-view .a4-paper-card {
+  width: 100%; /* Allow full width for mobile view mode */
+  min-width: auto; /* Allow to shrink in mobile view */
+  max-width: 100%; /* Ensure it doesn't exceed screen width */
+  min-height: auto;
+  padding: 15px;
+  box-shadow: none;
+  border: none;
+  margin: 0;
+  overflow: visible;
+  flex-shrink: 1; /* Allow shrinking in mobile view */
+  transform: none !important; /* Reset any transform in mobile view */
+}
+
+/* For screens smaller than tablets, ensure A4 remains visible */
+@media (max-width: 768px) {
+  .a4-paper-container:not(.mobile-view) {
+    justify-content: flex-start; /* Align to start for better scrolling UX */
+    padding-bottom: 10px; /* Add space for scrollbar */
+  }
+  
+  .a4-paper-container:not(.mobile-view)::after {
+    content: '';
+    display: block;
+    width: 20px; /* Space after the A4 paper */
+    flex-shrink: 0;
+  }
+}
+
+/* For desktop screens, improve A4 display */
+@media (min-width: 769px) {
+  .preview-container {
+    padding-bottom: 60px;
+  }
+  
+  .a4-paper-container {
+    max-width: 210mm; /* Limit to A4 width */
+    margin-left: auto;
+    margin-right: auto;
+    overflow-x: visible; /* No horizontal scroll needed on desktop */
+  }
+  
+  .a4-paper-card {
+    max-width: 100%; /* Ensure it fits within container */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); /* Enhanced shadow for desktop */
+  }
+}
+
+/* View Mode Toggle Styles */
+.view-mode-toggle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+  background-color: rgba(255,255,255,0.9);
+  padding: 5px 15px;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.form-check-input {
+  margin-right: 10px;
+}
+
+.scroll-hint {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* Print styles for A4 paper */
+@media print {
+  .a4-paper-card {
+    width: 210mm;
+    height: 297mm;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+  }
+  
+  /* Hide view mode toggle when printing */
+  .view-mode-toggle-container {
+    display: none !important;
+  }
+  
+  /* Always use A4 preview mode when printing */
+  .mobile-view .a4-paper-card {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm;
   }
 }
 </style> 

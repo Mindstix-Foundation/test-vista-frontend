@@ -23,6 +23,7 @@
     "@vuelidate/validators": "^2.0.4",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
+    "html2pdf.js": "^0.10.3",
     "pinia": "^2.3.0",
     "pinia-plugin-persistedstate": "^4.2.0",
     "sortablejs": "^1.15.6",

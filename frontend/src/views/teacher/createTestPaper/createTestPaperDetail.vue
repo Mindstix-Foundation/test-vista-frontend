@@ -871,6 +871,12 @@ const initializeChapterSelections = () => {
     return;
   }
   
+  // If there's only one chapter, automatically set hasGeneratedDistribution to true
+  if (sortedChapters.length === 1) {
+    console.log('Only one chapter detected, automatically setting hasGeneratedDistribution to true');
+    hasGeneratedDistribution.value = true;
+  }
+  
   // Get pattern sections
   const sections = patternDetails.value?.sections || [];
   if (sections.length === 0) {
@@ -959,21 +965,43 @@ const fetchTestPaperAllocation = async () => {
     // Get chapter IDs
     const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
-    // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
-                    '1';
+    // Get medium IDs from route parameters - properly parse to avoid NaN values
+    let mediumIds = [];
+    if (route.query.mediumId) {
+      const mediumIdParam = route.query.mediumId.toString();
+      // Handle both single value and comma-separated values
+      mediumIds = mediumIdParam.split(',')
+                   .map(id => parseInt(id.trim(), 10))
+                   .filter(id => !isNaN(id));
+    }
     
-    // Check if chapter assignments can be included
-    // (they should only be included if at least one assignment exists)
-    console.log('Selected chapters for allocation:', selectedChapters.value);
+    // If no valid medium IDs found in route parameters, try fallback options
+    if (mediumIds.length === 0) {
+      console.warn('No valid medium IDs found in route parameters, using fallback');
+      
+      // Try to get from user profile
+      if (userProfile.value?.teaching_subjects?.[0]?.medium?.id) {
+        const mediumIdFromProfile = parseInt(userProfile.value.teaching_subjects[0].medium.id, 10);
+        if (!isNaN(mediumIdFromProfile)) {
+          mediumIds.push(mediumIdFromProfile);
+        }
+      }
+      
+      // Last resort fallback - only if needed
+      if (mediumIds.length === 0) {
+        console.warn('Using default medium ID 1 as last resort');
+        mediumIds.push(1);
+      }
+    }
+    
+    console.log('Using medium IDs for allocation:', mediumIds);
     
     // Call the API endpoint with the current selected chapters
     const response = await axiosInstance.get('/test-paper/allocation', {
       params: {
         patternId: patternId,
         chapterIds: chapterIds.split(',').map(Number),
-        mediumIds: [Number(mediumId)],
+        mediumIds: mediumIds,
         questionOrigin: questionSource.value || 'both'
       }
     });
@@ -1085,6 +1113,12 @@ onMounted(async () => {
     // Fetch chapter marks ranges
     await fetchChapterMarksRanges();
     
+    // If there's only one chapter, automatically set hasGeneratedDistribution to true
+    if (chapters.value.length === 1) {
+      console.log('Only one chapter detected on mount, automatically setting hasGeneratedDistribution to true');
+      hasGeneratedDistribution.value = true;
+    }
+    
     // Initialize chapter selections - this will make a single API call after assignments
     initializeChapterSelections();
     
@@ -1092,7 +1126,10 @@ onMounted(async () => {
     updateUsedQuestionsCount();
     
     // Set initial state of hasGeneratedDistribution based on whether we have allocation data
+    // Only override if we didn't already set it for a single chapter
+    if (chapters.value.length > 1) {
     hasGeneratedDistribution.value = false;
+    }
   } catch (error) {
     console.error('Error during component initialization:', error);
     // Reset the pending flag even if there was an error
@@ -1101,7 +1138,7 @@ onMounted(async () => {
 });
 
 // Form submission handler
-const createTestPaper = () => {
+const createTestPaper = async () => {
   if (!isMarksDistributionValid.value) {
     if (totalAssignedMarks.value > absoluteMarks.value) {
       alert(`Total assigned marks (${totalAssignedMarks.value}) exceed the required ${absoluteMarks.value} marks. Please adjust the marks to create a test paper.`);
@@ -1118,42 +1155,57 @@ const createTestPaper = () => {
     }
   }
   
-  // Gather all the selected chapters data
-  const questionAssignments = Object.entries(selectedChapters.value).map(([key, chapterId]) => {
-    const [sectionId, questionIndex] = key.split('-').map(Number);
-    return {
-      sectionId,
-      questionIndex,
-      chapterId
-    };
-  });
-  
-  // Log data for debugging
-  console.log('Creating test paper with question source:', questionSource.value)
-  console.log('Chapters with marks distribution:', chapters.value)
-  console.log('Pattern details:', patternDetails.value)
-  console.log('Question assignments:', questionAssignments)
-  
-  // Prepare query parameters to pass to the test paper preview page
-  const queryParams = {
-    // Display names for UI
-    board: encodeURIComponent(boardName.value),
-    medium: encodeURIComponent(mediumName.value),
-    standard: encodeURIComponent(standardName.value),
-    subject: encodeURIComponent(subjectName.value),
-    patternName: encodeURIComponent(patternName.value),
-    
-    // Other details
-    totalMarks: route.query.totalMarks as string, // Use original totalMarks from route instead of absoluteMarks
-    // Add last used endpoint info
-    lastUsedEndpoint: lastUsedEndpoint.value
+  // First make sure we have allocation data from either method
+  if (!testPaperAllocation.value) {
+    alert('No allocation data available. Please generate marks distribution first.');
+    return;
   }
   
-  // Navigate to the test paper preview page
-  router.push({
-    name: 'testPaperPreview',
-    query: queryParams
-  })
+  try {
+    isLoading.value = true;
+    
+    // Log data for debugging
+    console.log('Creating test paper with allocation data:', testPaperAllocation.value);
+    
+    // Make the POST request to get the final questions distribution
+    const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', testPaperAllocation.value);
+    
+    console.log('Final questions distribution response:', response.data);
+    
+    if (!response.data) {
+      throw new Error('No data received from final questions distribution API');
+    }
+    
+    // Save the final questions distribution response to localStorage for use in preview
+    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
+    
+    // Prepare query parameters to pass to the test paper preview page
+    const queryParams = {
+      // Display names for UI
+      board: encodeURIComponent(boardName.value),
+      medium: encodeURIComponent(mediumName.value),
+      standard: encodeURIComponent(standardName.value),
+      subject: encodeURIComponent(subjectName.value),
+      patternName: encodeURIComponent(patternName.value),
+      
+      // Other details
+      totalMarks: route.query.totalMarks as string,
+      // Add a flag indicating the questions distribution is available in localStorage
+      hasFinalDistribution: 'true'
+    }
+    
+    // Navigate to the test paper preview page
+    router.push({
+      name: 'testPaperPreview',
+      query: queryParams
+    });
+    
+  } catch (error) {
+    console.error('Error creating test paper:', error);
+    showErrorToast(error instanceof Error ? error.message : 'Failed to create test paper. Please try again.');
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 // Fetch user profile to get school ID
