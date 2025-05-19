@@ -61,7 +61,7 @@
                 @input="autoResize" required></textarea>
               <label for="question" class="form-label">{{ getLabelText }}</label>
               <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
-                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <img :src="existingImageUrl" alt="Existing Question" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
                 <div class="d-flex justify-content-between align-items-center">
                   <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
                   <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
@@ -107,7 +107,7 @@
               <textarea id="mcqText" v-model="mcqQuestion.question" class="form-control" rows="3" placeholder="Type your MCQ question here..." @input="autoResize" required></textarea>
               <label for="mcqText" class="form-label">Question</label>
               <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
-                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <img :src="existingImageUrl" alt="Existing Question" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
                 <div class="d-flex justify-content-between align-items-center">
                   <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
                   <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
@@ -249,7 +249,7 @@
                         placeholder="Type your question here, use '_____' for blanks." @input="autoResize" required></textarea>
               <label for="fillInTheBlankQuestion" class="form-label">Question</label>
               <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
-                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <img :src="existingImageUrl" alt="Existing Question" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
                 <div class="d-flex justify-content-between align-items-center">
                   <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
                   <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
@@ -299,7 +299,7 @@
               <label for="pairQuestion" class="form-label">Question</label>
               <textarea id="pairQuestion" v-model="matchPairQuestion.question" class="form-control" rows="3" placeholder="Enter the question (e.g., Match the terms with their definitions)" @input="autoResize" required></textarea>
               <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
-                <img :src="existingImageUrl" alt="Existing Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <img :src="existingImageUrl" alt="Existing Question" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
                 <div class="d-flex justify-content-between align-items-center">
                   <p class="text-muted mb-0"><small>Current Image: {{ existingImageName }}</small></p>
                   <button type="button" class="btn btn-danger btn-sm" @click="removeExistingImage">
@@ -783,68 +783,98 @@ async function fetchTopics() {
     const chapterId = props.chapterId || (props.questionBankData?.chapterId ?? null);
 
     if (!chapterId) {
-      topics.value = [];
-
-      // Add a special "error" topic that will be displayed to the user
-      topics.value.push('Error: Chapter ID is missing. Please go back and select a chapter.');
-      selectedTopic.value = topics.value[0];
+      setErrorTopic('Error: Chapter ID is missing. Please go back and select a chapter.');
       return;
     }
 
-    // Fetch topics from API based on chapterId
-    const response = await axiosInstance.get('/topics', {
-      params: {
-        chapterId: chapterId
-      }
-    }).catch(() => ({ data: [] })); // Fallback to empty array if API fails
-
-    // Transform the API response to extract topic names
-    if (response.data && Array.isArray(response.data)) {
-      topics.value = response.data.map((topic: Topic) => topic.name)
-
-      // Store the mapping of topic names to IDs
-      response.data.forEach((topic: Topic) => {
-        if (topic.name && topic.id) {
-          topicMap.value.set(topic.name, topic.id)
-        }
-      })
-    } else {
-      topics.value = ['Error: Invalid response from API']
-    }
-
-    // If no topics from API, try to extract from stored questions
-    if (topics.value.length === 0 || topics.value[0].startsWith('Error:')) {
-      // Try fallback to local storage
-      const storedQuestions = localStorage.getItem('questions')
-      if (storedQuestions) {
-        try {
-          const questions = JSON.parse(storedQuestions)
-          const uniqueTopics = new Set<string>()
-
-          questions.forEach((q: { topic?: string; topics?: { topic: string }[] }) => {
-            if (q.topic) uniqueTopics.add(q.topic)
-            if (q.topics) {
-              q.topics.forEach((t: { topic: string }) => uniqueTopics.add(t.topic))
-            }
-          })
-
-          const localTopics = Array.from(uniqueTopics)
-          if (localTopics.length > 0) {
-            topics.value = localTopics
-          } else if (!topics.value.length || topics.value[0].startsWith('Error:')) {
-            topics.value = ['No topics found. Please create topics first.']
-          }
-        } catch {
-          if (!topics.value.length || topics.value[0].startsWith('Error:')) {
-            topics.value = ['Error: Could not load topics']
-          }
-        }
-      } else if (topics.value.length === 0) {
-        topics.value = ['No topics found. Please create topics first.']
-      }
+    // Try API first, then fallback to localStorage if needed
+    await fetchTopicsFromApi(chapterId);
+    
+    // If no valid topics found, try localStorage fallback
+    if (needsLocalStorageFallback()) {
+      tryLocalStorageFallback();
     }
   } catch {
-    topics.value = ['Error: Could not load topics']
+    setErrorTopic('Error: Could not load topics');
+  }
+}
+
+function setErrorTopic(errorMessage) {
+  topics.value = [errorMessage];
+  selectedTopic.value = topics.value[0];
+}
+
+function needsLocalStorageFallback() {
+  return topics.value.length === 0 || topics.value[0].startsWith('Error:');
+}
+
+async function fetchTopicsFromApi(chapterId) {
+  // Fetch topics from API based on chapterId
+  const response = await axiosInstance.get('/topics', {
+    params: {
+      chapterId: chapterId
+    }
+  }).catch(() => ({ data: [] })); // Fallback to empty array if API fails
+
+  processApiResponse(response);
+}
+
+function processApiResponse(response) {
+  // Transform the API response to extract topic names
+  if (response.data && Array.isArray(response.data)) {
+    topics.value = response.data.map((topic: Topic) => topic.name);
+    mapTopicIdsToNames(response.data);
+  } else {
+    topics.value = ['Error: Invalid response from API'];
+  }
+}
+
+function mapTopicIdsToNames(topicsData) {
+  // Store the mapping of topic names to IDs
+  topicsData.forEach((topic: Topic) => {
+    if (topic.name && topic.id) {
+      topicMap.value.set(topic.name, topic.id);
+    }
+  });
+}
+
+function tryLocalStorageFallback() {
+  const storedQuestions = localStorage.getItem('questions');
+  
+  if (!storedQuestions) {
+    if (topics.value.length === 0) {
+      topics.value = ['No topics found. Please create topics first.'];
+    }
+    return;
+  }
+  
+  try {
+    extractTopicsFromLocalStorage(storedQuestions);
+  } catch {
+    if (needsLocalStorageFallback()) {
+      topics.value = ['Error: Could not load topics'];
+    }
+  }
+}
+
+function extractTopicsFromLocalStorage(storedQuestions) {
+  const questions = JSON.parse(storedQuestions);
+  const uniqueTopics = new Set<string>();
+
+  // Extract topics from questions
+  questions.forEach((q: { topic?: string; topics?: { topic: string }[] }) => {
+    if (q.topic) uniqueTopics.add(q.topic);
+    if (q.topics) {
+      q.topics.forEach((t: { topic: string }) => uniqueTopics.add(t.topic));
+    }
+  });
+
+  const localTopics = Array.from(uniqueTopics);
+  
+  if (localTopics.length > 0) {
+    topics.value = localTopics;
+  } else if (needsLocalStorageFallback()) {
+    topics.value = ['No topics found. Please create topics first.'];
   }
 }
 
@@ -855,149 +885,193 @@ async function fetchQuestionData() {
     const response = await axiosInstance.get<QuestionResponse>(`/questions/${props.questionId}`)
     const questionData: QuestionResponse = response.data
 
-    // Set the topic and type based on the question data
-    if (questionData.question_topics && questionData.question_topics.length > 0) {
-      const topicId = questionData.question_topics[0].topic_id
-      const topicResponse = await axiosInstance.get(`/topics/${topicId}`)
-      selectedTopic.value = topicResponse.data.name
-    }
-
-    if (questionData.question_type) {
-      selectedType.value = questionData.question_type.type_name
-    }
-
-    // Check for image and set if available
-    if (questionData.question_texts && questionData.question_texts.length > 0) {
-      const questionText = questionData.question_texts[0].question_text
-
-      // Check if there's an image associated with this question
-      if (questionData.question_texts[0].image_id && questionData.question_texts[0].image) {
-        existingImageUrl.value = questionData.question_texts[0].image.presigned_url;
-        existingImageName.value = questionData.question_texts[0].image.original_filename || 'question_image';
-        existingImageId.value = questionData.question_texts[0].image.id;
-        console.log('Image found:', existingImageUrl.value);
-      }
-
-      // Fill the appropriate question form based on question type
-      switch (selectedType.value) {
-        case 'True or False':
-        case 'Give Scientific Reasons':
-        case 'Short Answer Question':
-        case 'Complete and Identify Reaction':
-        case 'Short Note':
-        case 'One-Word Answer':
-          descriptiveQuestion.value.question = questionText
-          descriptiveQuestion.value.isPreviousExam = questionData.board_question
-          break
-
-        case 'Multiple Choice Question (MCQ)':
-          mcqQuestion.value.question = questionText
-          mcqQuestion.value.isPreviousExam = questionData.board_question
-
-          // Fetch MCQ options
-          if (questionData.question_options) {
-            questionData.question_options.forEach((option: { option_text: string; is_correct: boolean }, index: number) => {
-              if (index < 4) {
-                mcqQuestion.value.options[index] = option.option_text
-                if (option.is_correct) {
-                  mcqQuestion.value.correctOption = (index + 1).toString()
-                }
-              }
-            })
-          }
-          break
-
-        case 'Odd One Out':
-          descriptiveQuestion.value.question = questionText
-          descriptiveQuestion.value.isPreviousExam = questionData.board_question
-          // Get the correct answer if available
-          if (questionData.question_answers && questionData.question_answers.length > 0) {
-            descriptiveQuestion.value.question += '\n\nOdd One Out: ' + questionData.question_answers[0].answer_text
-          }
-          break
-
-        case 'Complete the Correlation':
-          descriptiveQuestion.value.question = questionText
-          descriptiveQuestion.value.isPreviousExam = questionData.board_question
-          // Get any additional correlation notes if available
-          if (questionData.question_answers && questionData.question_answers.length > 0) {
-            descriptiveQuestion.value.question += '\n\nCorrelation Notes: ' + questionData.question_answers[0].answer_text
-          }
-          break
-
-        case 'Fill in the Blanks':
-          fillBlankQuestion.value.question = questionText
-          fillBlankQuestion.value.isPreviousExam = questionData.board_question
-          break
-
-        case 'Match the Pairs':
-          matchPairQuestion.value.question = questionText
-          matchPairQuestion.value.isPreviousExam = questionData.board_question
-
-          // Fetch matching pairs from question_texts
-          if (questionData.question_texts && questionData.question_texts[0].match_pairs) {
-            const matchPairs = questionData.question_texts[0].match_pairs;
-            if (matchPairs.length > 0) {
-              // Initialize arrays with the pairs data
-              matchPairQuestion.value.lhs = matchPairs.map((pair: { left_text: string }) => pair.left_text)
-              matchPairQuestion.value.rhs = matchPairs.map((pair: { right_text: string }) => pair.right_text)
-
-              // Handle option images
-              matchPairs.forEach((pair: { 
-                left_text: string;
-                right_text: string;
-                left_image?: {
-                  id: number;
-                  presigned_url: string;
-                  original_filename: string;
-                };
-                right_image?: {
-                  id: number;
-                  presigned_url: string;
-                  original_filename: string;
-                };
-              }, index: number) => {
-                // Handle left image if exists
-                if (pair.left_image) {
-                  optionImageIds.value[index] = pair.left_image.id;
-                  // Create image preview for left side
-                  const optionImageContainer = document.getElementById(`lhsInput${index + 1}`);
-                  if (optionImageContainer) {
-                    createImagePreview(optionImageContainer, pair.left_image.presigned_url, index);
-                  }
-                }
-
-                // Handle right image if exists
-                if (pair.right_image) {
-                  optionImageIds.value[index + 10] = pair.right_image.id;
-                  // Create image preview for right side
-                  const optionImageContainer = document.getElementById(`rhsInput${index + 1}`);
-                  if (optionImageContainer) {
-                    createImagePreview(optionImageContainer, pair.right_image.presigned_url, index + 10);
-                  }
-                }
-              });
-            }
-          } else {
-            // Initialize with default empty state
-            matchPairQuestion.value.lhs = ['']
-            matchPairQuestion.value.rhs = ['', '']
-          }
-
-          // Ensure we have at least one LHS item and two RHS items
-          if (matchPairQuestion.value.lhs.length === 0) {
-            matchPairQuestion.value.lhs = ['']
-          }
-          if (matchPairQuestion.value.rhs.length < 2) {
-            while (matchPairQuestion.value.rhs.length < 2) {
-              matchPairQuestion.value.rhs.push('')
-            }
-          }
-          break
-      }
-    }
+    setTopicAndType(questionData)
+    processQuestionTexts(questionData)
   } catch (error) {
     console.error('Error fetching question data:', error)
+  }
+}
+
+function setTopicAndType(questionData: QuestionResponse) {
+  // Set topic if available
+  if (questionData.question_topics && questionData.question_topics.length > 0) {
+    setTopicFromId(questionData.question_topics[0].topic_id)
+  }
+  
+  // Set question type if available
+  if (questionData.question_type) {
+    selectedType.value = questionData.question_type.type_name
+  }
+}
+
+async function setTopicFromId(topicId: number) {
+  try {
+    const topicResponse = await axiosInstance.get(`/topics/${topicId}`)
+    selectedTopic.value = topicResponse.data.name
+  } catch (error) {
+    console.error('Error fetching topic:', error)
+  }
+}
+
+function processQuestionTexts(questionData: QuestionResponse) {
+  if (!questionData.question_texts || questionData.question_texts.length === 0) return
+  
+  const questionText = questionData.question_texts[0].question_text
+  
+  // Check for image
+  processQuestionImage(questionData.question_texts[0])
+  
+  // Process based on question type
+  processQuestionByType(questionData, questionText)
+}
+
+function processQuestionImage(questionTextData: QuestionResponse['question_texts'][0]) {
+  if (questionTextData.image_id && questionTextData.image) {
+    existingImageUrl.value = questionTextData.image.presigned_url
+    existingImageName.value = questionTextData.image.original_filename || 'question_image'
+    existingImageId.value = questionTextData.image.id
+  }
+}
+
+function processQuestionByType(questionData: QuestionResponse, questionText: string) {
+  // Group question types by their processing requirements
+  if (isDescriptiveType()) {
+    processDescriptiveQuestion(questionData, questionText)
+  } else if (selectedType.value === 'Multiple Choice Question (MCQ)') {
+    processMCQQuestion(questionData, questionText)
+  } else if (selectedType.value === 'Fill in the Blanks') {
+    processFillInBlanksQuestion(questionData, questionText)
+  } else if (selectedType.value === 'Match the Pairs') {
+    processMatchPairsQuestion(questionData, questionText)
+  }
+}
+
+function isDescriptiveType() {
+  return ['True or False', 'Give Scientific Reasons', 'Short Answer Question', 
+         'Complete and Identify Reaction', 'Short Note', 'One-Word Answer', 
+         'Odd One Out', 'Complete the Correlation'].includes(selectedType.value)
+}
+
+function processDescriptiveQuestion(questionData: QuestionResponse, questionText: string) {
+  descriptiveQuestion.value.question = questionText
+  descriptiveQuestion.value.isPreviousExam = questionData.board_question
+
+  // Additional processing for specific types
+  if (selectedType.value === 'Odd One Out') {
+    addOddOneOutInfo(questionData)
+  } else if (selectedType.value === 'Complete the Correlation') {
+    addCorrelationNotes(questionData)
+  }
+}
+
+function addOddOneOutInfo(questionData: QuestionResponse) {
+  if (questionData.question_answers && questionData.question_answers.length > 0) {
+    descriptiveQuestion.value.question += '\n\nOdd One Out: ' + questionData.question_answers[0].answer_text
+  }
+}
+
+function addCorrelationNotes(questionData: QuestionResponse) {
+  if (questionData.question_answers && questionData.question_answers.length > 0) {
+    descriptiveQuestion.value.question += '\n\nCorrelation Notes: ' + questionData.question_answers[0].answer_text
+  }
+}
+
+function processMCQQuestion(questionData: QuestionResponse, questionText: string) {
+  mcqQuestion.value.question = questionText
+  mcqQuestion.value.isPreviousExam = questionData.board_question
+
+  // Process MCQ options
+  if (questionData.question_options) {
+    processMCQOptions(questionData.question_options)
+  }
+}
+
+function processMCQOptions(options: QuestionResponse['question_options']) {
+  options.forEach((option, index) => {
+    if (index < 4) {
+      mcqQuestion.value.options[index] = option.option_text
+      if (option.is_correct) {
+        mcqQuestion.value.correctOption = (index + 1).toString()
+      }
+    }
+  })
+}
+
+function processFillInBlanksQuestion(questionData: QuestionResponse, questionText: string) {
+  fillBlankQuestion.value.question = questionText
+  fillBlankQuestion.value.isPreviousExam = questionData.board_question
+}
+
+function processMatchPairsQuestion(questionData: QuestionResponse, questionText: string) {
+  matchPairQuestion.value.question = questionText
+  matchPairQuestion.value.isPreviousExam = questionData.board_question
+  
+  processMatchPairs(questionData)
+  ensureMinimumPairs()
+}
+
+function processMatchPairs(questionData: QuestionResponse) {
+  if (!questionData.question_texts || !questionData.question_texts[0].match_pairs) {
+    resetMatchPairs()
+    return
+  }
+  
+  const matchPairs = questionData.question_texts[0].match_pairs
+  
+  if (matchPairs.length > 0) {
+    setMatchPairsData(matchPairs)
+    processMatchPairsImages(matchPairs)
+  } else {
+    resetMatchPairs()
+  }
+}
+
+function setMatchPairsData(matchPairs: any[]) {
+  matchPairQuestion.value.lhs = matchPairs.map(pair => pair.left_text)
+  matchPairQuestion.value.rhs = matchPairs.map(pair => pair.right_text)
+}
+
+function resetMatchPairs() {
+  matchPairQuestion.value.lhs = ['']
+  matchPairQuestion.value.rhs = ['', '']
+}
+
+function processMatchPairsImages(matchPairs: any[]) {
+  matchPairs.forEach((pair, index) => {
+    processLeftImage(pair, index)
+    processRightImage(pair, index)
+  })
+}
+
+function processLeftImage(pair: any, index: number) {
+  if (pair.left_image) {
+    optionImageIds.value[index] = pair.left_image.id
+    const optionImageContainer = document.getElementById(`lhsInput${index + 1}`)
+    if (optionImageContainer) {
+      createImagePreview(optionImageContainer, pair.left_image.presigned_url, index)
+    }
+  }
+}
+
+function processRightImage(pair: any, index: number) {
+  if (pair.right_image) {
+    optionImageIds.value[index + 10] = pair.right_image.id
+    const optionImageContainer = document.getElementById(`rhsInput${index + 1}`)
+    if (optionImageContainer) {
+      createImagePreview(optionImageContainer, pair.right_image.presigned_url, index + 10)
+    }
+  }
+}
+
+function ensureMinimumPairs() {
+  // Ensure we have at least one LHS item
+  if (matchPairQuestion.value.lhs.length === 0) {
+    matchPairQuestion.value.lhs = ['']
+  }
+  
+  // Ensure we have at least two RHS items
+  while (matchPairQuestion.value.rhs.length < 2) {
+    matchPairQuestion.value.rhs.push('')
   }
 }
 
@@ -1265,68 +1339,107 @@ watch(questionImageFile, (newValue) => {
   console.log('questionImageFile changed:', newValue);
 }, { immediate: true });
 
-// Update the handleQuestionImageUpload function to properly set values
+// Helper functions for image upload validation and processing
+function validateImageType(file: File): string | null {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    return 'Only .jpg, .jpeg, and .webp files are allowed';
+  }
+  return null;
+}
+
+function validateImageSize(file: File): string | null {
+  const minSize = 10 * 1024; // 10KB in bytes
+  const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+
+  if (file.size < minSize) {
+    return 'Image size must be at least 10KB';
+  }
+  if (file.size > maxSize) {
+    return 'Image size must not exceed 5MB';
+  }
+  return null;
+}
+
+function clearQuestionImageIfNeeded(type: 'question' | 'option') {
+  if (type === 'question') {
+    questionImageFile.value = null;
+  }
+}
+
+function setQuestionImage(file: File) {
+  console.log('Setting question image file:', file.name);
+  questionImageFile.value = file;
+  shouldDeleteImage.value = false; // Reset deletion flag since we're adding a new image
+}
+
+function setOptionImage(file: File, index: number) {
+  const newOptionImages = [...mcqOptionImages.value];
+  newOptionImages[index] = file;
+  mcqOptionImages.value = newOptionImages;
+}
+
+function clearOptionImage(index: number) {
+  const newOptionImages = [...mcqOptionImages.value];
+  newOptionImages[index] = null;
+  mcqOptionImages.value = newOptionImages;
+}
+
+// Main image upload handler with reduced complexity
 function handleQuestionImageUpload(event: Event, type: 'question' | 'option' = 'question', optionIndex?: number) {
   const input = event.target as HTMLInputElement;
   imageUploadError.value = null; // Reset error message
 
-  if (input.files && input.files.length > 0) {
-    const file = input.files[0];
+  // No file selected case
+  if (!input.files || input.files.length === 0) {
+    handleNoFileSelected(type, optionIndex);
+    return;
+  }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      imageUploadError.value = 'Only .jpg, .jpeg, and .webp files are allowed';
-      input.value = ''; // Clear the input
-      if (type === 'question') {
-        questionImageFile.value = null;
-      }
-      return;
-    }
+  const file = input.files[0];
+  
+  // Validate file and handle any errors
+  const validationError = validateImageFile(file);
+  if (validationError) {
+    handleImageValidationError(validationError, input, type);
+    return;
+  }
 
-    // Validate file size (between 10KB and 5MB)
-    const minSize = 10 * 1024; // 10KB in bytes
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+  // File passed all validations, process it based on type
+  processValidImage(file, type, optionIndex);
+}
 
-    if (file.size < minSize) {
-      imageUploadError.value = 'Image size must be at least 10KB';
-      input.value = ''; // Clear the input
-      if (type === 'question') {
-        questionImageFile.value = null;
-      }
-      return;
-    }
+function handleNoFileSelected(type: 'question' | 'option', optionIndex?: number) {
+  if (type === 'question') {
+    questionImageFile.value = null;
+  } else if (type === 'option' && optionIndex !== undefined) {
+    clearOptionImage(optionIndex);
+  }
+}
 
-    if (file.size > maxSize) {
-      imageUploadError.value = 'Image size must not exceed 5MB';
-      input.value = ''; // Clear the input
-      if (type === 'question') {
-        questionImageFile.value = null;
-      }
-      return;
-    }
+function validateImageFile(file: File): string | null {
+  // Check file type first
+  const typeError = validateImageType(file);
+  if (typeError) return typeError;
+  
+  // Then check file size
+  const sizeError = validateImageSize(file);
+  if (sizeError) return sizeError;
+  
+  return null; // No errors
+}
 
-    // File passed all validations
-    if (type === 'question') {
-      console.log('Setting question image file:', file.name);
-      questionImageFile.value = file;
-      shouldDeleteImage.value = false; // Reset deletion flag since we're adding a new image
-    } else if (type === 'option' && optionIndex !== undefined) {
-      // Set the specific index to the file
-      const newOptionImages = [...mcqOptionImages.value];
-      newOptionImages[optionIndex] = file;
-      mcqOptionImages.value = newOptionImages;
-    }
-  } else {
-    // No file selected or file selection cancelled
-    if (type === 'question') {
-      questionImageFile.value = null;
-    } else if (type === 'option' && optionIndex !== undefined) {
-      // Set the specific index to null
-      const newOptionImages = [...mcqOptionImages.value];
-      newOptionImages[optionIndex] = null;
-      mcqOptionImages.value = newOptionImages;
-    }
+function handleImageValidationError(errorMessage: string, input: HTMLInputElement, type: 'question' | 'option') {
+  imageUploadError.value = errorMessage;
+  input.value = ''; // Clear the input
+  clearQuestionImageIfNeeded(type);
+}
+
+function processValidImage(file: File, type: 'question' | 'option', optionIndex?: number) {
+  if (type === 'question') {
+    setQuestionImage(file);
+  } else if (type === 'option' && optionIndex !== undefined) {
+    setOptionImage(file, optionIndex);
   }
 }
 
@@ -1393,117 +1506,138 @@ function createImagePreview(container: HTMLElement, imageUrl: string, index: num
   container.appendChild(previewDiv);
 }
 
-// Initialize textareas and fetch data on mount
-onMounted(() => {
-  // Explicitly set image file refs to null
+// New helper functions to reduce complexity in onMounted
+function initializeImageRefs() {
   questionImageFile.value = null;
   mcqOptionImages.value = Array(20).fill(null);
   optionImageIds.value = Array(20).fill(null);
   optionImageDeleteFlags.value = Array(20).fill(false);
   imageUploadError.value = null;
+}
 
-  fetchQuestionTypes()
-  fetchTopics()
+function initializeSearchableDropdownValues() {
+  if (!props.useSearchableDropdown) return;
+  
+  if (selectedTopic.value) {
+    const topicId = topicMap.value.get(selectedTopic.value) || 0;
+    selectedTopicObject.value = {
+      id: topicId,
+      name: selectedTopic.value
+    } as Item;
+  }
+
+  if (selectedType.value) {
+    const typeId = questionTypeMap.value.get(selectedType.value) || 0;
+    selectedTypeObject.value = {
+      id: typeId,
+      name: selectedType.value
+    } as Item;
+  }
+}
+
+function initializeMcqOptions() {
+  if (!props.initialOptions || props.initialOptions.length === 0) return;
+  
+  mcqQuestion.value.options = [...props.initialOptions];
+  while (mcqQuestion.value.options.length < 4) {
+    mcqQuestion.value.options.push('');
+  }
+  
+  if (props.initialCorrectOption !== undefined && props.initialCorrectOption >= 0) {
+    mcqQuestion.value.correctOption = (props.initialCorrectOption + 1).toString();
+  }
+}
+
+function setupOptionImagePreview(optionIndex) {
+  if (!props.initialOptionImages?.[optionIndex]) return;
+  
+  // Store the image IDs for later use
+  if (props.initialOptionImageIds?.[optionIndex]) {
+    optionImageIds.value[optionIndex] = props.initialOptionImageIds[optionIndex];
+  }
+
+  // Display existing option images in the UI
+  const optionImageContainer = document.getElementById(`option${String.fromCharCode(65 + optionIndex)}ImagePreview`);
+  if (!optionImageContainer) return;
+  
+  // Clear any existing content
+  optionImageContainer.innerHTML = '';
+  
+  // Create the image preview
+  createOptionImagePreview(optionImageContainer, props.initialOptionImages[optionIndex], optionIndex);
+}
+
+function createOptionImagePreview(container, imageUrl, optionIndex) {
+  const imagePreview = document.createElement('div');
+  imagePreview.className = 'image-preview mb-2';
+
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.alt = `Option ${String.fromCharCode(65 + optionIndex)} Image`;
+  img.className = 'img-fluid mb-2';
+  img.style.maxHeight = '100px';
+  img.style.borderRadius = '5px';
+
+  const infoContainer = document.createElement('div');
+  infoContainer.className = 'd-flex justify-content-between align-items-center';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn btn-danger btn-sm';
+  removeBtn.innerHTML = '<i class="bi bi-trash"></i> Remove';
+  removeBtn.onclick = (e) => {
+    e.preventDefault();
+    // Remove the image preview
+    imagePreview.remove();
+
+    // Mark this option image for deletion when form is submitted
+    if (props.initialOptionImageIds?.[optionIndex]) {
+      console.log(`Marking option image ${optionIndex} for deletion`);
+      optionImageDeleteFlags.value[optionIndex] = true;
+    }
+  };
+
+  infoContainer.appendChild(removeBtn);
+  imagePreview.appendChild(img);
+  imagePreview.appendChild(infoContainer);
+  container.appendChild(imagePreview);
+}
+
+function initializeOptionImages() {
+  if (!props.initialOptionImages || props.initialOptionImages.length === 0) return;
+  
+  console.log('Setting up option images from props:', props.initialOptionImages);
+  
+  // Create image preview elements for each option that has an image
+  for (let i = 0; i < props.initialOptionImages.length; i++) {
+    setupOptionImagePreview(i);
+  }
+}
+
+function initializeTextareas() {
+  setTimeout(() => {
+    document.querySelectorAll('textarea').forEach(textarea => {
+      textarea.style.height = textarea.scrollHeight + 'px';
+    });
+  }, 0);
+}
+
+// Refactored onMounted function with reduced complexity
+onMounted(() => {
+  initializeImageRefs();
+  fetchQuestionTypes();
+  fetchTopics();
 
   if (isEditMode.value && props.questionId) {
     fetchQuestionData().then(() => {
-      if (props.useSearchableDropdown) {
-        // Initialize SearchableDropdown values if in edit mode
-        if (selectedTopic.value) {
-          const topicId = topicMap.value.get(selectedTopic.value) || 0
-          selectedTopicObject.value = {
-            id: topicId,
-            name: selectedTopic.value
-          } as Item
-        }
-
-        if (selectedType.value) {
-          const typeId = questionTypeMap.value.get(selectedType.value) || 0
-          selectedTypeObject.value = {
-            id: typeId,
-            name: selectedType.value
-          } as Item
-        }
-      }
-
-      // Initialize MCQ options from props if provided
-      if (props.initialOptions && props.initialOptions.length > 0) {
-        mcqQuestion.value.options = [...props.initialOptions]
-        while (mcqQuestion.value.options.length < 4) {
-          mcqQuestion.value.options.push('')
-        }
-      }
-
-      if (props.initialCorrectOption !== undefined && props.initialCorrectOption >= 0) {
-        mcqQuestion.value.correctOption = (props.initialCorrectOption + 1).toString()
-      }
-
-      // Load option image data if provided
-      if (props.initialOptionImages && props.initialOptionImages.length > 0) {
-        console.log('Setting up option images from props:', props.initialOptionImages);
-
-        // Create image preview elements for each option that has an image
-        for (let i = 0; i < props.initialOptionImages.length; i++) {
-          if (props.initialOptionImages[i]) {
-            // Store the image IDs for later use
-            if (props.initialOptionImageIds && props.initialOptionImageIds[i]) {
-              optionImageIds.value[i] = props.initialOptionImageIds[i];
-            }
-
-            // Display existing option images in the UI
-            const optionImageContainer = document.getElementById(`option${String.fromCharCode(65 + i)}ImagePreview`);
-            if (optionImageContainer) {
-              // Clear any existing content
-              optionImageContainer.innerHTML = '';
-
-              // Create the image preview HTML
-              const imagePreview = document.createElement('div');
-              imagePreview.className = 'image-preview mb-2';
-
-              const img = document.createElement('img');
-              img.src = props.initialOptionImages[i];
-              img.alt = `Option ${String.fromCharCode(65 + i)} Image`;
-              img.className = 'img-fluid mb-2';
-              img.style.maxHeight = '100px';
-              img.style.borderRadius = '5px';
-
-              const infoContainer = document.createElement('div');
-              infoContainer.className = 'd-flex justify-content-between align-items-center';
-
-              const removeBtn = document.createElement('button');
-              removeBtn.type = 'button';
-              removeBtn.className = 'btn btn-danger btn-sm';
-              removeBtn.innerHTML = '<i class="bi bi-trash"></i> Remove';
-              removeBtn.onclick = (e) => {
-                e.preventDefault();
-                // Remove the image preview
-                imagePreview.remove();
-
-                // Mark this option image for deletion when form is submitted
-                if (props.initialOptionImageIds && props.initialOptionImageIds[i]) {
-                  console.log(`Marking option image ${i} for deletion`);
-                  optionImageDeleteFlags.value[i] = true;
-                }
-              };
-
-              infoContainer.appendChild(removeBtn);
-              imagePreview.appendChild(img);
-              imagePreview.appendChild(infoContainer);
-              optionImageContainer.appendChild(imagePreview);
-            }
-          }
-        }
-      }
-    })
+      initializeSearchableDropdownValues();
+      initializeMcqOptions();
+      initializeOptionImages();
+    });
   }
 
-  // Initialize textareas
-  setTimeout(() => {
-    document.querySelectorAll('textarea').forEach(textarea => {
-      textarea.style.height = textarea.scrollHeight + 'px'
-    })
-  }, 0)
-})
+  initializeTextareas();
+});
 </script>
 
 <style scoped>

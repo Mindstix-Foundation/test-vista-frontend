@@ -37,6 +37,7 @@ const logDimensions = () => {
 }
 
 onMounted(() => {
+  console.log('AddSchool component mounted - ready to receive submit events')
   logDimensions()
   window.addEventListener('resize', logDimensions)
 })
@@ -46,6 +47,7 @@ onUnmounted(() => {
 })
 
 const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
+  console.log('handleSchoolSubmit received data:', schoolData)
   try {
     isSubmitting.value = true // Show loading spinner
 

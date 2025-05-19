@@ -58,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await axiosInstance.get('/auth/profile')
 
       // Set user ID from profile response if not already set
-      if (response.data && response.data.id && !userId.value) {
+      if (response?.data?.id && !userId.value) {
         userId.value = response.data.id
         localStorage.setItem('user_id', response.data.id.toString())
       }

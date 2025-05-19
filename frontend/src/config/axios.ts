@@ -22,7 +22,7 @@ axiosInstance.interceptors.request.use(
     return config
   },
   (error) => {
-    return Promise.reject(error)
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)))
   },
 )
 
@@ -39,7 +39,7 @@ axiosInstance.interceptors.response.use(
       // Dispatch a custom event that components can listen for
       window.dispatchEvent(new CustomEvent('auth:expired'))
     }
-    return Promise.reject(error)
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)))
   },
 )
 

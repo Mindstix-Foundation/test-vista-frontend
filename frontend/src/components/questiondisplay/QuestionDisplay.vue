@@ -26,16 +26,16 @@
     <div v-if="imageUrl" class="question-image-container mb-3">
       <!-- Loading overlay -->
       <div v-if="imageLoadingState" class="image-loading-overlay">
-        <div class="spinner-border text-primary" role="status">
+        <output class="spinner-border text-primary">
           <span class="visually-hidden">Loading image...</span>
-        </div>
+        </output>
       </div>
 
       <!-- The actual image - always render when imageUrl exists -->
       <img
         :src="imageUrl"
         class="question-image"
-        alt="Question Image"
+        alt="Question"
         @load="handleImageLoad"
         @error="handleImageError"
         ref="questionImage"
@@ -55,9 +55,9 @@
 
     <!-- Fallback for no image -->
     <div v-else-if="imageLoading" class="question-image-loading-container mb-3">
-      <div class="spinner-border text-primary" role="status">
+      <output class="spinner-border text-primary">
         <span class="visually-hidden">Loading image...</span>
-      </div>
+      </output>
     </div>
 
     <!-- MCQ Options -->

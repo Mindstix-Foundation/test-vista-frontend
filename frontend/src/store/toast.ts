@@ -18,9 +18,9 @@ export const useToastStore = defineStore('toast', {
   actions: {
     showToast(toast: Partial<ToastState>) {
       this.show = true
-      this.title = toast.title || ''
-      this.message = toast.message || ''
-      this.type = toast.type || 'info'
+      this.title = toast.title ?? ''
+      this.message = toast.message ?? ''
+      this.type = toast.type ?? 'info'
 
       // Auto hide after 3 seconds
       setTimeout(() => {

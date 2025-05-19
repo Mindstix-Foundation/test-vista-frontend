@@ -65,9 +65,7 @@ interface ChapterFormData {
   topics: string[]
 }
 
-const emit = defineEmits<{
-  (e: 'submit', data: ChapterFormData): void
-}>()
+const emit = defineEmits<(e: 'submit', data: ChapterFormData) => void>()
 
 // Function to capitalize the first letter of a string
 const capitalizeFirstLetter = (str: string): string => {

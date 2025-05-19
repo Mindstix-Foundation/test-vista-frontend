@@ -109,9 +109,9 @@
                   :next-field-id="'filterSubject'"
                 />
                 <div v-if="loadingStandards" class="dropdown-loading-overlay">
-                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <output class="spinner-border spinner-border-sm text-primary">
                     <span class="visually-hidden">Loading standards...</span>
-                  </div>
+                  </output>
                 </div>
               </div>
             </div>
@@ -129,9 +129,9 @@
                   :search-keys="['name']"
                 />
                 <div v-if="loadingSubjects" class="dropdown-loading-overlay">
-                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <output class="spinner-border spinner-border-sm text-primary">
                     <span class="visually-hidden">Loading subjects...</span>
-                  </div>
+                  </output>
                 </div>
               </div>
             </div>
@@ -154,17 +154,17 @@
 
       <!-- Loading Spinner -->
       <div v-else-if="loading && !isSearching" class="col col-12 col-sm-10 text-center py-5">
-        <div class="spinner-border text-primary" role="status">
+        <output class="spinner-border text-primary">
           <span class="visually-hidden">Loading...</span>
-        </div>
+        </output>
       </div>
 
       <!-- Search Loading Overlay -->
       <div v-if="isSearching" class="col col-12 col-sm-10 position-relative">
         <div class="search-loading-overlay">
-          <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <output class="spinner-border spinner-border-sm text-primary">
             <span class="visually-hidden">Searching...</span>
-          </div>
+          </output>
         </div>
       </div>
 
@@ -689,92 +689,116 @@ const fetchPatterns = async () => {
     if (!isSearching.value) {
       loading.value = true;
     }
-    const queryParams = new URLSearchParams()
-
-    // Add pagination and sorting parameters
-    queryParams.append('page', currentPage.value.toString())
-    queryParams.append('page_size', pageSize.toString())
-
-    // Format sort parameters according to API specification
-    queryParams.append('sort_by', sortBy.value)
-    queryParams.append('sort_order', sortOrder.value)
-
-    // Add search parameter if provided
-    if (searchQuery.value) {
-      queryParams.append('search', searchQuery.value)
-    }
-
-    // Add filter parameters
-    if (selectedBoard.value?.id) {
-      queryParams.append('boardId', selectedBoard.value.id.toString())
-    }
-    if (selectedStandard.value?.id) {
-      queryParams.append('standardId', selectedStandard.value.id.toString())
-    }
-    if (selectedSubject.value?.id) {
-      queryParams.append('subjectId', selectedSubject.value.id.toString())
-    }
-    if (totalMarks.value) {
-      queryParams.append('totalMarks', totalMarks.value)
-    }
-
-    console.log('API request parameters:', queryParams.toString())
-    const response = await axiosInstance.get(`/patterns?${queryParams.toString()}`)
-
-    // Check if response has data property that contains the array and pagination info
-    if (response.data && typeof response.data === 'object') {
-      if (response.data.data && Array.isArray(response.data.data)) {
-        // Handle paginated response format
-        patterns.value = response.data.data.map((pattern: Pattern) => ({
-          ...pattern,
-          isExpanded: false,
-        }))
-
-        // Use the meta information from the API response
-        if (response.data.meta) {
-          totalItems.value = response.data.meta.total || 0
-          totalPages.value = response.data.meta.total_pages || 1
-
-          console.log('Pagination data from meta:', {
-            totalItems: totalItems.value,
-            totalPages: totalPages.value,
-            currentPage: currentPage.value,
-            pageSize: response.data.meta.page_size,
-            patternsLength: patterns.value.length
-          })
-        } else {
-          // Fallback if meta is missing
-          totalItems.value = patterns.value.length
-          totalPages.value = Math.ceil(totalItems.value / pageSize)
-        }
-      } else if (Array.isArray(response.data)) {
-        // Handle array response format (fallback)
-        patterns.value = response.data.map((pattern: Pattern) => ({
-          ...pattern,
-          isExpanded: false,
-        }))
-        totalItems.value = patterns.value.length
-        totalPages.value = Math.ceil(totalItems.value / pageSize)
-      } else {
-        console.error('Unexpected response format:', response.data)
-        patterns.value = []
-        totalItems.value = 0
-        totalPages.value = 0
-      }
-    } else {
-      patterns.value = []
-      totalItems.value = 0
-      totalPages.value = 0
-    }
+    
+    const queryParams = buildQueryParams();
+    console.log('API request parameters:', queryParams.toString());
+    
+    const response = await axiosInstance.get(`/patterns?${queryParams.toString()}`);
+    processApiResponse(response);
   } catch (error) {
-    console.error('Error fetching patterns:', error)
-    patterns.value = []
-    totalItems.value = 0
-    totalPages.value = 0
+    console.error('Error fetching patterns:', error);
+    resetPatternsData();
   } finally {
     loading.value = false
     isSearching.value = false
   }
+}
+
+// Helper function to build query parameters
+const buildQueryParams = () => {
+  const queryParams = new URLSearchParams();
+  
+  // Add pagination and sorting parameters
+  queryParams.append('page', currentPage.value.toString());
+  queryParams.append('page_size', pageSize.toString());
+  queryParams.append('sort_by', sortBy.value);
+  queryParams.append('sort_order', sortOrder.value);
+  
+  // Add search and filters
+  addSearchAndFilters(queryParams);
+  
+  return queryParams;
+}
+
+// Helper function to add search and filter parameters
+const addSearchAndFilters = (queryParams: URLSearchParams) => {
+  if (searchQuery.value) {
+    queryParams.append('search', searchQuery.value);
+  }
+  
+  if (selectedBoard.value?.id) {
+    queryParams.append('boardId', selectedBoard.value.id.toString());
+  }
+  
+  if (selectedStandard.value?.id) {
+    queryParams.append('standardId', selectedStandard.value.id.toString());
+  }
+  
+  if (selectedSubject.value?.id) {
+    queryParams.append('subjectId', selectedSubject.value.id.toString());
+  }
+  
+  if (totalMarks.value) {
+    queryParams.append('totalMarks', totalMarks.value);
+  }
+}
+
+// Helper function to process API response
+const processApiResponse = (response: any) => {
+  if (!response.data || typeof response.data !== 'object') {
+    resetPatternsData();
+    return;
+  }
+  
+  if (response.data.data && Array.isArray(response.data.data)) {
+    handlePaginatedResponse(response.data);
+  } else if (Array.isArray(response.data)) {
+    handleArrayResponse(response.data);
+  } else {
+    console.error('Unexpected response format:', response.data);
+    resetPatternsData();
+  }
+}
+
+// Helper function to handle paginated response format
+const handlePaginatedResponse = (data: any) => {
+  patterns.value = data.data.map((pattern: Pattern) => ({
+    ...pattern,
+    isExpanded: false,
+  }));
+  
+  if (data.meta) {
+    totalItems.value = data.meta.total || 0;
+    totalPages.value = data.meta.total_pages || 1;
+    console.log('Pagination data from meta:', {
+      totalItems: totalItems.value,
+      totalPages: totalPages.value,
+      currentPage: currentPage.value,
+      pageSize: data.meta.page_size,
+      patternsLength: patterns.value.length
+    });
+  } else {
+    // Fallback if meta is missing
+    totalItems.value = patterns.value.length;
+    totalPages.value = Math.ceil(totalItems.value / pageSize);
+  }
+}
+
+// Helper function to handle array response format
+const handleArrayResponse = (data: any[]) => {
+  patterns.value = data.map((pattern: Pattern) => ({
+    ...pattern,
+    isExpanded: false,
+  }));
+  totalItems.value = patterns.value.length;
+  totalPages.value = Math.ceil(totalItems.value / pageSize);
+}
+
+// Helper function to reset patterns data
+const resetPatternsData = () => {
+  patterns.value = [];
+  totalItems.value = 0;
+  totalPages.value = 0;
 }
 
 // Fetch boards from API
@@ -838,48 +862,58 @@ function handleSortChange() {
 onMounted(() => {
   // Initialize from route query if present
   const route = useRoute()
-
-  // Initialize sort parameters from query params if present
-  if (route.query.sort_by && route.query.sort_order) {
-    const sortByParam = route.query.sort_by as string
-    const sortOrderParam = route.query.sort_order as string
-
-    // Map API sort parameters to our sort options
-    if (sortByParam === 'name') {
-      sortOption.value = `pattern_name_${sortOrderParam}`
-    } else {
-      sortOption.value = `${sortByParam}_${sortOrderParam}`
-    }
-  }
-
-  // Initialize page from query params if present
-  if (route.query.page) {
-    const page = parseInt(route.query.page as string)
-    if (!isNaN(page) && page > 0) {
-      currentPage.value = page
-    }
-  }
-
+  
+  initializeSortFromRoute(route)
+  initializePageFromRoute(route)
+  initializeFilterState()
+  
   fetchBoards()
   fetchPatterns()
-
-  // Check if the filter element has the 'show' class initially
-  const filterElement = document.getElementById('filter')
-  if (filterElement) {
-    // Check if the element has the 'show' class initially
-    if (filterElement.classList.contains('show')) {
-      isFilterOpen.value = true
-
-      // Update filter button appearance
-      const filterBtn = document.querySelector('.filter-btn')
-      if (filterBtn) {
-        filterBtn.classList.add('active')
-      }
-    } else {
-      isFilterOpen.value = false
-    }
-  }
 })
+
+// Helper function to initialize sort parameters from route
+const initializeSortFromRoute = (route: any) => {
+  if (!route.query.sort_by || !route.query.sort_order) return
+  
+  const sortByParam = route.query.sort_by as string
+  const sortOrderParam = route.query.sort_order as string
+  
+  // Map API sort parameters to our sort options
+  sortOption.value = sortByParam === 'name' 
+    ? `pattern_name_${sortOrderParam}` 
+    : `${sortByParam}_${sortOrderParam}`
+}
+
+// Helper function to initialize page from route
+const initializePageFromRoute = (route: any) => {
+  if (!route.query.page) return
+  
+  const page = parseInt(route.query.page as string)
+  if (!isNaN(page) && page > 0) {
+    currentPage.value = page
+  }
+}
+
+// Helper function to initialize filter state
+const initializeFilterState = () => {
+  const filterElement = document.getElementById('filter')
+  if (!filterElement) return
+  
+  // Check if the element has the 'show' class initially
+  isFilterOpen.value = filterElement.classList.contains('show')
+  
+  if (isFilterOpen.value) {
+    updateFilterButtonAppearance()
+  }
+}
+
+// Helper function to update filter button appearance
+const updateFilterButtonAppearance = () => {
+  const filterBtn = document.querySelector('.filter-btn')
+  if (filterBtn) {
+    filterBtn.classList.add('active')
+  }
+}
 
 // Add watcher to maintain focus after search completes
 watch(isSearching, (newVal) => {
@@ -1146,6 +1180,7 @@ watch([selectedBoard, selectedStandard, selectedSubject, totalMarks], async () =
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   border-color: #86b7fe;
   outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
 }
 
 .clear-search-icon {
@@ -1231,23 +1266,9 @@ watch([selectedBoard, selectedStandard, selectedSubject, totalMarks], async () =
   animation: spin 1s linear infinite;
 }
 
-/* Ensure search input stays in focus */
-.search-input:focus {
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-  border-color: #86b7fe;
-  outline: 0;
-  z-index: 100; /* Higher z-index to ensure it stays on top */
-}
-
 /* Ensure search icons stay visible */
 .search-icon, .clear-search-icon, .search-loading-icon {
   z-index: 101; /* Higher than the input focus z-index */
-}
-
-/* Ensure the search wrapper maintains its position */
-.search-field {
-  position: relative;
-  z-index: 10;
 }
 
 /* Dropdown loading overlay */

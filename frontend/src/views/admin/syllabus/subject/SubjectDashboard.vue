@@ -59,9 +59,11 @@
         <div class="col col-12 col-sm-9 p-0 m-0">
           <!-- Loading Spinner -->
           <div v-if="isLoading" class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
+            <output
+              class="spinner-border text-primary"
+            >
               <span class="visually-hidden">Loading...</span>
-            </div>
+            </output>
           </div>
 
           <!-- No Data Message -->

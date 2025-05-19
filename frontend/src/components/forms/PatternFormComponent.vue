@@ -20,6 +20,7 @@
                 v-model="formData.patternName"
                 @input="handlePatternNameInput"
                 @blur="handlePatternNameBlur"
+                @keydown.enter.prevent="focusNextElement('filterBoard')"
                 required
               />
               <label for="patternName">Pattern Name <span class="text-danger">*</span></label>
@@ -36,6 +37,7 @@
               :items="boards"
               v-model="formData.selectedBoard"
               :search-keys="['name', 'abbreviation']"
+              :next-field-id="'filterStandard'"
               :class="{
                 'is-invalid': !validationStates.board.valid && validationStates.board.touched,
                 'is-valid': validationStates.board.valid && validationStates.board.touched,
@@ -93,6 +95,7 @@
                 v-model="formData.selectedSubject"
                 :disabled="!formData.selectedBoard"
                 :search-keys="['name']"
+                :next-field-id="'totalMarks'"
                 :class="{
                   'is-invalid': !validationStates.subject.valid && validationStates.subject.touched,
                   'is-valid': validationStates.subject.valid && validationStates.subject.touched,
@@ -127,6 +130,7 @@
                 v-model="formData.totalMarks"
                 @input="handleTotalMarksInput"
                 @blur="handleTotalMarksBlur"
+                @keydown.enter.prevent="focusAddSectionButton"
                 required
               />
               <label for="totalMarks">Total Marks <span class="text-danger">*</span></label>
@@ -158,6 +162,7 @@
                 style="border: 1px solid gray !important"
                 @click="addSection"
                 :disabled="remainingMarks <= 0"
+                id="addSectionBtn"
               >
                 Add Section
               </button>
@@ -257,7 +262,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 import axiosInstance from '@/config/axios'
 
@@ -328,6 +333,7 @@ const emit = defineEmits<{
       total_marks: number
     },
   ): void
+  (e: 'totalMarksChanged', total_marks: number): void
 }>()
 
 // Form data
@@ -534,6 +540,9 @@ const handleTotalMarksInput = () => {
   validationStates.value.totalMarks.touched = true
   validationStates.value.totalMarks.valid = formData.value.totalMarks > 0
   calculateRemainingMarks()
+  
+  // Emit event when total marks changes to update the store
+  emit('totalMarksChanged', formData.value.totalMarks)
 }
 
 const handleTotalMarksBlur = () => {
@@ -541,6 +550,9 @@ const handleTotalMarksBlur = () => {
 }
 
 const calculateRemainingMarks = () => {
+  // Validate total marks
+  validationStates.value.totalMarks.valid = formData.value.totalMarks > 0
+  
   // Calculate total section marks from all added sections
   const totalSectionMarks = sections.reduce((total, section) => {
     const sectionMarks = section.requiredQuestions * section.marksPerQuestion;
@@ -642,6 +654,29 @@ const addSection = () => {
   emit('addSection', { ...formData.value, remainingMarks: remainingMarks.value })
 }
 
+// Helper methods for keyboard navigation
+const focusNextElement = (elementId: string) => {
+  nextTick(() => {
+    const element = document.getElementById(elementId)
+    if (element) {
+      element.focus()
+      // If it's a dropdown, trigger click to show options
+      if (element.classList.contains('form-control')) {
+        element.click()
+      }
+    }
+  })
+}
+
+const focusAddSectionButton = () => {
+  nextTick(() => {
+    const addSectionBtn = document.getElementById('addSectionBtn')
+    if (addSectionBtn && !addSectionBtn.hasAttribute('disabled')) {
+      addSectionBtn.focus()
+    }
+  })
+}
+
 // Keep the computed watchers for debugging
 watch(
   () => availableStandards.value,
@@ -663,6 +698,8 @@ defineExpose({
   recalculateRemainingMarks: () => {
     console.log('PatternForm - Recalculating remaining marks');
     calculateRemainingMarks();
+    // Emit current total marks to ensure store is synced
+    emit('totalMarksChanged', formData.value.totalMarks);
     return remainingMarks.value;
   }
 })

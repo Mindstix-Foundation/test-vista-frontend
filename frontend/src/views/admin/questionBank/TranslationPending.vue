@@ -128,17 +128,20 @@
           <!-- Loading indicators -->
           <!-- Initial loading spinner (below search/filter, only shown during initial load) -->
           <div v-if="isInitialLoading" class="col-12 col-md-10 text-center my-5">
-            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <output
+              class="spinner-border text-primary"
+              style="width: 3rem; height: 3rem;"
+            >
               <span class="visually-hidden">Loading questions...</span>
-            </div>
+            </output>
             <p class="mt-3 text-primary">Loading translation questions...</p>
           </div>
 
           <!-- Loading overlay for search - only shown during search/filtering -->
           <div v-if="isSearching && !isInitialLoading" class="search-loading-overlay">
-            <div class="spinner-border text-primary" role="status">
+            <output class="spinner-border text-primary">
               <span class="visually-hidden">Searching...</span>
-            </div>
+            </output>
           </div>
 
           <!-- Questions list - only shown when not in initial loading -->
@@ -354,17 +357,6 @@ interface Question {
   lhsImages?: (string | null)[];
   rhsImages?: (string | null)[];
   translationStatus?: string | null;
-}
-
-// Define interface for paginated API response
-interface PaginatedApiResponse<T> {
-  data: T[];
-  meta: {
-    total: number;
-    current_page: number;
-    last_page: number;
-    per_page: number;
-  };
 }
 
 // Define the topic structure to include IDs
@@ -707,152 +699,7 @@ async function fetchQuestions() {
 
     // Transform API response to match our component's expected structure
     questions.value = (response.data.data || []).map((apiQuestion: ApiQuestion) => {
-      // Get the first question text (assuming there's at least one)
-      const questionTextData = apiQuestion.question_texts.length > 0
-        ? apiQuestion.question_texts[0]
-        : null;
-
-      const questionText = questionTextData
-        ? questionTextData.question_text
-        : '';
-
-      // Get image ID and presigned URL if available
-      let imageId = null;
-      let imageUrl = null;
-
-      if (questionTextData) {
-        if (questionTextData.image_id && questionTextData.image) {
-          imageId = questionTextData.image_id;
-          imageUrl = questionTextData.image.presigned_url;
-
-          // Basic validation
-          if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined') {
-            imageUrl = null;
-          }
-        }
-      }
-
-      // Extract translation status
-      const translationStatus = questionTextData && questionTextData.translation_status
-        ? questionTextData.translation_status
-        : null;
-
-      // Extract topics
-      const questionTopics = apiQuestion.question_topics.map(qt => ({
-        topic: qt.topic.name,
-        id: qt.topic_id
-      }));
-
-      // Handle MCQ options if present
-      let options = undefined;
-      let optionImages = undefined;
-      let correctOptionIndex = undefined;
-      let correctAnswer = undefined;
-
-      // Handle Odd One Out
-      if (apiQuestion.question_type.type_name === 'Odd One Out' &&
-          questionTextData &&
-          questionTextData.mcq_options &&
-          questionTextData.mcq_options.length > 0) {
-
-        // For display purposes only, extract the options and correct index
-        options = questionTextData.mcq_options.map(opt => opt.option_text);
-        correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
-        if (correctOptionIndex !== -1) {
-          // Set the correct answer to the text of the odd one out
-          correctAnswer = options[correctOptionIndex];
-        }
-      }
-      // Handle True/False
-      else if (apiQuestion.question_type.type_name === 'True or False' &&
-          questionTextData) {
-        // Try to determine correct answer from mcq_options
-        if (questionTextData.mcq_options && questionTextData.mcq_options.length > 0) {
-          const trueOption = questionTextData.mcq_options.find(opt => opt.option_text.toLowerCase() === 'true');
-          if (trueOption) {
-            correctAnswer = trueOption.is_correct ? 'True' : 'False';
-          } else {
-            const correctOption = questionTextData.mcq_options.find(opt => opt.is_correct);
-            if (correctOption) {
-              correctAnswer = correctOption.option_text;
-            }
-          }
-        }
-      }
-      // Handle Complete the Correlation
-      else if (apiQuestion.question_type.type_name === 'Complete the Correlation' &&
-          questionTextData &&
-          questionTextData.match_pairs &&
-          questionTextData.match_pairs.length > 0) {
-
-        // If no correctAnswer is set, provide a default
-        correctAnswer = "See question for correlation details";
-      }
-      // Handle MCQ options
-      else if (apiQuestion.question_type.type_name === 'Multiple Choice Question (MCQ)' &&
-          questionTextData &&
-          questionTextData.mcq_options.length > 0) {
-        options = questionTextData.mcq_options.map(opt => opt.option_text);
-        correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
-        if (correctOptionIndex === -1) correctOptionIndex = undefined;
-
-        // For MCQ options, create option images array that preserves the structure
-        const optionImagesArray = questionTextData.mcq_options.map(opt =>
-          opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
-        );
-
-        // Filter out null values and set optionImages only if at least one non-null image exists
-        const filteredImages = optionImagesArray.filter((img): img is string => img !== null);
-        optionImages = filteredImages.length > 0 ? filteredImages : undefined;
-      }
-
-      // Handle match pairs if present
-      let lhs = undefined;
-      let rhs = undefined;
-      let lhsImages = undefined;
-      let rhsImages = undefined;
-
-      if (apiQuestion.question_type.type_name === 'Match the Pairs' &&
-          questionTextData &&
-          questionTextData.match_pairs &&
-          questionTextData.match_pairs.length > 0) {
-
-        // Extract text content - keep null values to maintain structure
-        lhs = questionTextData.match_pairs.map(pair => pair.left_text || null);
-        rhs = questionTextData.match_pairs.map(pair => pair.right_text || null);
-
-        // Extract image URLs for left and right sides - keep null values to maintain structure
-        lhsImages = questionTextData.match_pairs.map(pair =>
-          pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
-        );
-
-        rhsImages = questionTextData.match_pairs.map(pair =>
-          pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
-        );
-
-        // Always include the arrays, even if they only contain nulls
-        // This ensures the structure is maintained for display
-      }
-
-      return {
-        id: apiQuestion.id,
-        question: questionText,
-        type: apiQuestion.question_type.type_name,
-        topics: questionTopics,
-        options: options,
-        optionImages: optionImages,
-        correctOptionIndex: correctOptionIndex,
-        lhs: lhs,
-        rhs: rhs,
-        lhsImages: lhsImages,
-        rhsImages: rhsImages,
-        isPreviousExam: apiQuestion.board_question,
-        isVerified: apiQuestion.is_verified,
-        imageId: imageId,
-        imageUrl: imageUrl,
-        translationStatus: translationStatus,
-        correctAnswer: correctAnswer
-      };
+      return transformApiQuestionToDisplayFormat(apiQuestion);
     });
 
     // If we don't have topics yet or they need refreshing, fetch them
@@ -901,7 +748,404 @@ function updateUrlParams() {
   });
 }
 
-// Add logging to onMounted hook
+// Helper functions to process question data from API response
+function transformApiQuestionToDisplayFormat(apiQuestion: ApiQuestion) {
+  // Get the first question text (assuming there's at least one)
+  const questionTextData: ApiQuestionText | null = apiQuestion.question_texts.length > 0
+    ? apiQuestion.question_texts[0]
+    : null;
+
+  const questionText = questionTextData
+    ? questionTextData.question_text
+    : '';
+
+  // Extract basic data
+  const { imageId, imageUrl } = extractImageData(questionTextData);
+  const translationStatus = extractTranslationStatus(questionTextData);
+  const questionTopics = extractTopics(apiQuestion);
+
+  // Process question type specific data
+  const {
+    options,
+    optionImages,
+    correctOptionIndex,
+    correctAnswer,
+    lhs,
+    rhs,
+    lhsImages,
+    rhsImages
+  } = processQuestionTypeSpecificData(apiQuestion, questionTextData);
+
+  // Return the transformed question object
+  return {
+    id: apiQuestion.id,
+    question: questionText,
+    type: apiQuestion.question_type.type_name,
+    topics: questionTopics,
+    options,
+    optionImages,
+    correctOptionIndex,
+    lhs,
+    rhs,
+    lhsImages,
+    rhsImages,
+    isPreviousExam: apiQuestion.board_question,
+    isVerified: apiQuestion.is_verified,
+    imageId,
+    imageUrl,
+    translationStatus,
+    correctAnswer
+  };
+}
+
+function extractImageData(questionTextData: ApiQuestionText | null) {
+  let imageId = null;
+  let imageUrl = null;
+
+  if (questionTextData && questionTextData.image_id && questionTextData.image) {
+    imageId = questionTextData.image_id;
+    imageUrl = questionTextData.image.presigned_url;
+
+    // Basic validation
+    if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined') {
+      imageUrl = null;
+    }
+  }
+
+  return { imageId, imageUrl };
+}
+
+function extractTranslationStatus(questionTextData: ApiQuestionText | null) {
+  return questionTextData && questionTextData.translation_status
+    ? questionTextData.translation_status
+    : null;
+}
+
+function extractTopics(apiQuestion: ApiQuestion) {
+  return apiQuestion.question_topics.map(qt => ({
+    topic: qt.topic.name,
+    id: qt.topic_id
+  }));
+}
+
+function processQuestionTypeSpecificData(apiQuestion: ApiQuestion, questionTextData: ApiQuestionText | null) {
+  const typeName = apiQuestion.question_type.type_name;
+  
+  // Initialize with default values
+  const result = {
+    options: undefined,
+    optionImages: undefined,
+    correctOptionIndex: undefined,
+    correctAnswer: undefined,
+    lhs: undefined,
+    rhs: undefined,
+    lhsImages: undefined,
+    rhsImages: undefined
+  };
+
+  // Process based on question type
+  if (typeName === 'Odd One Out') {
+    Object.assign(result, processOddOneOut(questionTextData));
+  } 
+  else if (typeName === 'True or False') {
+    Object.assign(result, processTrueOrFalse(questionTextData));
+  } 
+  else if (typeName === 'Complete the Correlation') {
+    Object.assign(result, processCompleteCorrelation(questionTextData));
+  } 
+  else if (typeName === 'Multiple Choice Question (MCQ)') {
+    Object.assign(result, processMCQ(questionTextData));
+  } 
+  else if (typeName === 'Match the Pairs') {
+    Object.assign(result, processMatchPairs(questionTextData));
+  }
+
+  return result;
+}
+
+function processOddOneOut(questionTextData: ApiQuestionText | null) {
+  const result = {
+    options: undefined,
+    correctOptionIndex: undefined,
+    correctAnswer: undefined
+  };
+
+  if (questionTextData?.mcq_options?.length > 0) {
+    // For display purposes only, extract the options and correct index
+    result.options = questionTextData.mcq_options.map((opt: ApiMcqOption) => opt.option_text);
+    result.correctOptionIndex = questionTextData.mcq_options.findIndex((opt: ApiMcqOption) => opt.is_correct);
+    
+    if (result.correctOptionIndex !== -1) {
+      // Set the correct answer to the text of the odd one out
+      result.correctAnswer = result.options[result.correctOptionIndex];
+    }
+  }
+
+  return result;
+}
+
+function processTrueOrFalse(questionTextData: ApiQuestionText | null) {
+  const result = {
+    correctAnswer: undefined
+  };
+
+  if (questionTextData?.mcq_options?.length > 0) {
+    const trueOption = questionTextData.mcq_options.find(
+      (opt: ApiMcqOption) => opt.option_text.toLowerCase() === 'true'
+    );
+    
+    if (trueOption) {
+      result.correctAnswer = trueOption.is_correct ? 'True' : 'False';
+    } else {
+      const correctOption = questionTextData.mcq_options.find((opt: ApiMcqOption) => opt.is_correct);
+      if (correctOption) {
+        result.correctAnswer = correctOption.option_text;
+      }
+    }
+  }
+
+  return result;
+}
+
+function processCompleteCorrelation(questionTextData: ApiQuestionText | null) {
+  const result = {
+    correctAnswer: undefined
+  };
+
+  if (questionTextData?.match_pairs?.length > 0) {
+    // If no correctAnswer is set, provide a default
+    result.correctAnswer = "See question for correlation details";
+  }
+
+  return result;
+}
+
+function processMCQ(questionTextData: ApiQuestionText | null) {
+  const result = {
+    options: undefined,
+    optionImages: undefined,
+    correctOptionIndex: undefined
+  };
+
+  if (questionTextData?.mcq_options?.length > 0) {
+    result.options = questionTextData.mcq_options.map((opt: ApiMcqOption) => opt.option_text);
+    result.correctOptionIndex = questionTextData.mcq_options.findIndex((opt: ApiMcqOption) => opt.is_correct);
+    
+    if (result.correctOptionIndex === -1) result.correctOptionIndex = undefined;
+
+    // Process option images
+    const optionImagesArray = questionTextData.mcq_options.map((opt: ApiMcqOption) =>
+      opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
+    );
+
+    // Filter out null values and set optionImages only if at least one non-null image exists
+    const filteredImages = optionImagesArray.filter((img: string | null): img is string => img !== null);
+    result.optionImages = filteredImages.length > 0 ? filteredImages : undefined;
+  }
+
+  return result;
+}
+
+function processMatchPairs(questionTextData: ApiQuestionText | null) {
+  const result = {
+    lhs: undefined,
+    rhs: undefined,
+    lhsImages: undefined,
+    rhsImages: undefined
+  };
+
+  if (questionTextData?.match_pairs?.length > 0) {
+    // Extract text content - keep null values to maintain structure
+    result.lhs = questionTextData.match_pairs.map((pair: ApiMatchPair) => pair.left_text || null);
+    result.rhs = questionTextData.match_pairs.map((pair: ApiMatchPair) => pair.right_text || null);
+
+    // Extract image URLs for left and right sides
+    result.lhsImages = questionTextData.match_pairs.map((pair: ApiMatchPair) =>
+      pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
+    );
+
+    result.rhsImages = questionTextData.match_pairs.map((pair: ApiMatchPair) =>
+      pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
+    );
+  }
+
+  return result;
+}
+
+// Helper functions for handling route query parameters
+function handleReturnParameters(route) {
+  console.log('TranslationPending - Found return parameters, restoring state');
+  
+  restorePageNumberFromQuery(route.query.returnPage);
+  restoreSortOptionFromQuery(route.query.returnSort);
+  
+  // Remove return parameters and update URL
+  const newQuery = { ...route.query };
+  delete newQuery.returnPage;
+  delete newQuery.returnSort;
+  delete newQuery.returnTopic;
+  delete newQuery.returnType;
+  
+  // Keep success message if present
+  if (route.query.success && route.query.message) {
+    newQuery.success = route.query.success as string;
+    newQuery.message = route.query.message as string;
+  }
+
+  updateRouterQuery(newQuery);
+}
+
+function handleRegularParameters(route) {
+  restoreSearchQueryFromQuery(route.query.search);
+  restorePageNumberFromQuery(route.query.page);
+  restoreSortOptionFromQuery(route.query.sort);
+}
+
+function restoreSearchQueryFromQuery(searchParam) {
+  if (searchParam) {
+    console.log('TranslationPending - Restoring search query:', searchParam);
+    searchQuery.value = searchParam as string;
+  }
+}
+
+function restorePageNumberFromQuery(pageParam) {
+  if (pageParam) {
+    const pageNum = parseInt(pageParam as string, 10);
+    if (!isNaN(pageNum) && pageNum > 0) {
+      console.log('TranslationPending - Restoring page number:', pageNum);
+      currentPage.value = pageNum;
+    }
+  }
+}
+
+function restoreSortOptionFromQuery(sortParam) {
+  if (sortParam) {
+    const sortValue = sortParam as string;
+    if (sortMappings[sortValue]) {
+      console.log('TranslationPending - Restoring sort option:', sortValue);
+      sortOption.value = sortValue;
+    }
+  }
+}
+
+function updateRouterQuery(newQuery) {
+  router.replace({ query: newQuery }).catch(() => {
+    // Ignore navigation errors
+  });
+}
+
+async function restoreTopicFilter(topicParam) {
+  if (!topicParam) return;
+  
+  const topicId = parseInt(topicParam as string, 10);
+  console.log('TranslationPending - Attempting to restore topic filter:', topicId);
+  const topic = topicsWithIds.value.find(t => t.id === topicId);
+  
+  if (topic) {
+    console.log('TranslationPending - Found matching topic:', topic);
+    selectedTopicObj.value = topic;
+    showFilterSection();
+  }
+}
+
+async function restoreTypeFilter(typeParam) {
+  if (!typeParam) return;
+  
+  const typeId = parseInt(typeParam as string, 10);
+  console.log('TranslationPending - Attempting to restore type filter:', typeId);
+  const type = questionTypesWithIds.value.find(t => t.id === typeId);
+  
+  if (type) {
+    console.log('TranslationPending - Found matching type:', type);
+    selectedTypeObj.value = type;
+    showFilterSection();
+  }
+}
+
+function showFilterSection() {
+  isFilterOpen.value = true;
+  const filterElement = document.getElementById('filter');
+  
+  if (filterElement) {
+    console.log('TranslationPending - Showing filter section');
+    new Collapse(filterElement).show();
+    const filterBtn = document.querySelector('.filter-btn');
+    
+    if (filterBtn) {
+      filterBtn.classList.add('active');
+    }
+  }
+}
+
+function handleSuccessMessage(route) {
+  if (route.query.success === 'true' && route.query.message) {
+    console.log('TranslationPending - Showing success message:', route.query.message);
+    toastStore.showToast({
+      title: 'Success',
+      message: route.query.message as string,
+      type: 'success'
+    });
+
+    // Remove success and message params while preserving other query params
+    const newQuery = { ...route.query };
+    delete newQuery.success;
+    delete newQuery.message;
+    console.log('TranslationPending - Updating query params after success:', newQuery);
+    updateRouterQuery(newQuery);
+  }
+}
+
+async function ensureMinimumLoadingTime(startTime, minLoadingTime) {
+  const elapsedTime = Date.now() - startTime;
+  if (elapsedTime < minLoadingTime) {
+    await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+  }
+}
+
+async function initializeFromStoredData(storedData) {
+  questionBankData.value = JSON.parse(storedData);
+  const route = useRouter().currentRoute.value;
+  
+  console.log('TranslationPending - Initial route query params:', route.query);
+
+  // Check for return parameters first
+  if (route.query.returnPage || route.query.returnSort || route.query.returnTopic || route.query.returnType) {
+    handleReturnParameters(route);
+  } else {
+    await handleNormalInitialization(route);
+  }
+}
+
+async function handleNormalInitialization(route) {
+  // Handle regular query parameters
+  handleRegularParameters(route);
+  
+  // Fetch topics for filters
+  console.log('TranslationPending - Fetching topics');
+  await fetchTopicsForChapter();
+  console.log('TranslationPending - Available topics:', topicsWithIds.value);
+  
+  // Restore filters from URL if present
+  await restoreTopicFilter(route.query.topic);
+  await restoreTypeFilter(route.query.type);
+  
+  logCurrentFilterState();
+  
+  // Fetch questions with current parameters
+  await fetchQuestions();
+}
+
+function logCurrentFilterState() {
+  console.log('TranslationPending - Current filter state:', {
+    search: searchQuery.value,
+    page: currentPage.value,
+    sort: sortOption.value,
+    topic: selectedTopicObj.value,
+    type: selectedTypeObj.value
+  });
+}
+
+// Refactored onMounted hook
 onMounted(async () => {
   console.log('TranslationPending - Component mounting');
   isInitialLoading.value = true;
@@ -910,153 +1154,14 @@ onMounted(async () => {
   const startTime = Date.now();
 
   const storedData = localStorage.getItem('questionBank');
+  
   if (storedData) {
-    questionBankData.value = JSON.parse(storedData);
-    const route = useRouter().currentRoute.value;
+    await initializeFromStoredData(storedData);
+    await ensureMinimumLoadingTime(startTime, minLoadingTime);
+    isInitialLoading.value = false;
     
-    console.log('TranslationPending - Initial route query params:', route.query);
-
-    // Check for return parameters first
-    if (route.query.returnPage || route.query.returnSort || route.query.returnTopic || route.query.returnType) {
-      console.log('TranslationPending - Found return parameters, restoring state');
-      
-      if (route.query.returnPage) {
-        const pageNum = parseInt(route.query.returnPage as string, 10);
-        if (!isNaN(pageNum) && pageNum > 0) {
-          console.log('TranslationPending - Restoring page number:', pageNum);
-          currentPage.value = pageNum;
-        }
-      }
-
-      if (route.query.returnSort) {
-        const sortValue = route.query.returnSort as string;
-        if (sortMappings[sortValue]) {
-          console.log('TranslationPending - Restoring sort option:', sortValue);
-          sortOption.value = sortValue;
-        }
-      }
-
-      // Remove return parameters and update URL
-      const newQuery = { ...route.query };
-      delete newQuery.returnPage;
-      delete newQuery.returnSort;
-      delete newQuery.returnTopic;
-      delete newQuery.returnType;
-      
-      // Keep success message if present
-      if (route.query.success && route.query.message) {
-        newQuery.success = route.query.success as string;
-        newQuery.message = route.query.message as string;
-      }
-
-      router.replace({ query: newQuery }).catch(() => {
-        // Ignore navigation errors
-      });
-    } else {
-      // Handle regular query parameters as before
-      if (route.query.search) {
-        console.log('TranslationPending - Restoring search query:', route.query.search);
-        searchQuery.value = route.query.search as string;
-      }
-
-      if (route.query.page) {
-        const pageNum = parseInt(route.query.page as string, 10);
-        if (!isNaN(pageNum) && pageNum > 0) {
-          console.log('TranslationPending - Restoring page number:', pageNum);
-          currentPage.value = pageNum;
-        }
-      }
-
-      if (route.query.sort) {
-        const sortValue = route.query.sort as string;
-        if (sortMappings[sortValue]) {
-          console.log('TranslationPending - Restoring sort option:', sortValue);
-          sortOption.value = sortValue;
-        }
-      }
-
-      console.log('TranslationPending - Fetching topics');
-      await fetchTopicsForChapter();
-      console.log('TranslationPending - Available topics:', topicsWithIds.value);
-
-      // Handle topic filter
-      if (route.query.topic) {
-        const topicId = parseInt(route.query.topic as string, 10);
-        console.log('TranslationPending - Attempting to restore topic filter:', topicId);
-        const topic = topicsWithIds.value.find(t => t.id === topicId);
-        if (topic) {
-          console.log('TranslationPending - Found matching topic:', topic);
-          selectedTopicObj.value = topic;
-          isFilterOpen.value = true;
-          const filterElement = document.getElementById('filter');
-          if (filterElement) {
-            console.log('TranslationPending - Showing filter section');
-            new Collapse(filterElement).show();
-            const filterBtn = document.querySelector('.filter-btn');
-            if (filterBtn) {
-              filterBtn.classList.add('active');
-            }
-          }
-        }
-      }
-
-      // Handle question type filter
-      if (route.query.type) {
-        const typeId = parseInt(route.query.type as string, 10);
-        console.log('TranslationPending - Attempting to restore type filter:', typeId);
-        const type = questionTypesWithIds.value.find(t => t.id === typeId);
-        if (type) {
-          console.log('TranslationPending - Found matching type:', type);
-          selectedTypeObj.value = type;
-          isFilterOpen.value = true;
-          const filterElement = document.getElementById('filter');
-          if (filterElement) {
-            console.log('TranslationPending - Showing filter section');
-            new Collapse(filterElement).show();
-            const filterBtn = document.querySelector('.filter-btn');
-            if (filterBtn) {
-              filterBtn.classList.add('active');
-            }
-          }
-        }
-      }
-
-      console.log('TranslationPending - Current filter state:', {
-        search: searchQuery.value,
-        page: currentPage.value,
-        sort: sortOption.value,
-        topic: selectedTopicObj.value,
-        type: selectedTypeObj.value
-      });
-
-      await fetchQuestions();
-
-      const elapsedTime = Date.now() - startTime;
-      if (elapsedTime < minLoadingTime) {
-        await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
-      }
-
-      isInitialLoading.value = false;
-
-      // Handle success message
-      if (route.query.success === 'true' && route.query.message) {
-        console.log('TranslationPending - Showing success message:', route.query.message);
-        toastStore.showToast({
-          title: 'Success',
-          message: route.query.message as string,
-          type: 'success'
-        });
-
-        // Remove success and message params while preserving other query params
-        const newQuery = { ...route.query };
-        delete newQuery.success;
-        delete newQuery.message;
-        console.log('TranslationPending - Updating query params after success:', newQuery);
-        router.replace({ query: newQuery }).catch(() => {
-          // Ignore navigation errors
-        });
-      }
-    }
+    // Handle success message if present
+    handleSuccessMessage(useRouter().currentRoute.value);
   } else {
     console.log('TranslationPending - No stored data found, redirecting to questionBank');
     isInitialLoading.value = false;

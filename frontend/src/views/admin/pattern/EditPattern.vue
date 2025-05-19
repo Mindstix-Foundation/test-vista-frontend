@@ -12,9 +12,9 @@
       <hr />
     </div>
     <div v-if="loading" class="row justify-content-center mt-5">
-      <div class="spinner-border text-primary" role="status">
+      <output class="spinner-border text-primary">
         <span class="visually-hidden">Loading...</span>
-      </div>
+      </output>
     </div>
     <div v-else-if="error" class="row justify-content-center mt-5">
       <div class="alert alert-danger" role="alert">
@@ -27,6 +27,7 @@
         @addSection="handleAddSection"
         @editSection="editSection"
         @deleteSection="deleteSection"
+        @totalMarksChanged="handleTotalMarksChange"
         :initial-data="formData"
         :sections="patternStore.sections"
         :is-edit-mode="true"
@@ -175,6 +176,21 @@ let deleteSectionModal: Modal | null = null
 // Add this near the top of the script section
 const isFirstMount = ref(true);
 
+// Add the total marks change handler
+const handleTotalMarksChange = (totalMarks: number) => {
+  console.log('EditPattern - Total marks changed:', totalMarks)
+  
+  // Update the local formData
+  formData.value.totalMarks = totalMarks
+  
+  // Update the store
+  patternStore.formData.totalMarks = totalMarks
+  
+  // Recalculate remaining marks in the store
+  console.log('EditPattern - Updated total marks in store:', patternStore.formData.totalMarks)
+  console.log('EditPattern - New remaining marks:', patternStore.remainingMarks)
+}
+
 // Fetch pattern data
 const fetchPattern = async () => {
   try {
@@ -292,262 +308,299 @@ const handlePatternUpdate = async (updateData: PatternUpdateData) => {
   try {
     loading.value = true
     error.value = null
-
-    // Debug check for sections to delete
-    console.log('=== DEBUG: Sections to Delete ===');
-    console.log('Current sectionsToDelete array:', sectionsToDelete.value);
-    console.log('Current sections in store:', patternStore.sections.map(s => ({
-      id: s.id,
-      name: s.sectionName
-    })));
-    console.log('================================');
-
-    // Update pattern details
-    await axiosInstance.put(`/patterns/${route.params.id}`, {
-      pattern_name: updateData.pattern_name,
-      board_id: updateData.board_id,
-      standard_id: updateData.standard_id,
-      subject_id: updateData.subject_id,
-      total_marks: updateData.total_marks,
-    })
-
-    // Process all section changes
-    console.log('Processing section changes...')
-    console.log('Sections to delete:', sectionsToDelete.value)
-
-    // Log a summary of all sequence numbers
-    const sequenceNumbers = patternStore.sections.map(s => s.seqencial_section_number).sort((a, b) => a - b);
-    console.log('Current sequence numbers (sorted):', sequenceNumbers);
-
-    // Check for duplicate sequence numbers
-    const uniqueSequenceNumbers = new Set(sequenceNumbers);
-    if (uniqueSequenceNumbers.size !== sequenceNumbers.length) {
-      console.warn('WARNING: Duplicate sequence numbers detected!');
-
-      // Find duplicates
-      const counts: Record<number, number> = {};
-      const duplicates: number[] = [];
-      sequenceNumbers.forEach(num => {
-        counts[num] = (counts[num] || 0) + 1;
-        if (counts[num] > 1 && !duplicates.includes(num)) {
-          duplicates.push(num);
-        }
-      });
-
-      console.warn('Duplicate sequence numbers:', duplicates);
-
-      // Auto-fix duplicate sequence numbers
-      console.log('Auto-fixing duplicate sequence numbers...');
-
-      // Sort sections by sequence number first, then by ID (if exists) or creation order
-      const sortedSections = [...patternStore.sections].sort((a, b) => {
-        if (a.seqencial_section_number !== b.seqencial_section_number) {
-          return a.seqencial_section_number - b.seqencial_section_number;
-        }
-        // If sequence numbers are the same, sort by ID if available
-        if (a.id && b.id) {
-          return a.id - b.id;
-        }
-        // For new sections without IDs, keep their relative order
-        return 0;
-      });
-
-      // Reassign sequence numbers
-      sortedSections.forEach((section, index) => {
-        const newSequenceNumber = index + 1;
-        if (section.seqencial_section_number !== newSequenceNumber) {
-          console.log(`Changing sequence number for section "${section.sectionName}" from ${section.seqencial_section_number} to ${newSequenceNumber}`);
-          section.seqencial_section_number = newSequenceNumber;
-          section.isModified = true;
-        }
-      });
-
-      // Log the fixed sequence numbers
-      console.log('Fixed sequence numbers:', patternStore.sections.map(s => ({
-        id: s.id,
-        sectionName: s.sectionName,
-        sequenceNumber: s.seqencial_section_number
-      })));
-    }
-
-    console.log('Sections in store:', patternStore.sections.map(s => ({
-      id: s.id,
-      sectionName: s.sectionName,
-      sequenceNumber: s.seqencial_section_number,
-      isNew: s.isNew,
-      isModified: s.isModified
-    })))
-
-    // STEP 1: Delete sections that were marked for deletion
-    console.log('STEP 1: Deleting sections');
-    console.log(`Found ${sectionsToDelete.value.length} sections to delete:`, sectionsToDelete.value);
-
-    if (sectionsToDelete.value.length > 0) {
-      console.log('Sections to delete are available, proceeding with deletion');
-
-      // Make a copy of the sections to delete to avoid issues with the array being modified during iteration
-      const sectionsToDeleteCopy = [...sectionsToDelete.value];
-
-      for (const sectionId of sectionsToDeleteCopy) {
-        try {
-          console.log(`Attempting to delete section with ID: ${sectionId}`);
-
-          // Log the API call details
-          console.log(`DELETE API call: /sections/${sectionId}`);
-
-          // This will delete the section and all its associated data (including subsection question types)
-          // The backend API handles the cascading deletion
-          const response = await axiosInstance.delete(`/sections/${sectionId}`);
-
-          console.log(`API response for deletion:`, response);
-          console.log(`Successfully deleted section with ID: ${sectionId}`);
-        } catch (error) {
-          console.error(`Error deleting section with ID: ${sectionId}:`, error);
-          throw new Error(`Failed to delete section with ID: ${sectionId}`);
-        }
-      }
-
-      // Clear the sectionsToDelete array after successful deletion
-      console.log('All sections deleted successfully, clearing sectionsToDelete array');
-      sectionsToDelete.value = [];
-
-      // Clear localStorage
-      try {
-        localStorage.removeItem('sectionsToDelete');
-        console.log('Cleared sectionsToDelete from localStorage');
-      } catch (error) {
-        console.error('Error clearing sectionsToDelete from localStorage:', error);
-      }
-    } else {
-      console.log('No sections to delete, skipping deletion step');
-    }
-
-    // STEP 2: Update existing sections (not new ones)
-    console.log('STEP 2: Updating existing sections');
-    const existingSections = patternStore.sections.filter(section => !section.isNew && section.isModified && section.id);
-    console.log(`Found ${existingSections.length} existing sections to update`);
-
-    for (const section of existingSections) {
-      if (!section.id) continue; // Skip if no ID (should not happen due to filter above)
-
-      console.log('Updating modified section:', {
-        id: section.id,
-        sectionName: section.sectionName,
-        sequenceNumber: section.seqencial_section_number,
-        questionNumber: section.questionNumber
-      });
-
-      await axiosInstance.put(`/sections/${section.id}`, {
-        sub_section: section.subQuestion,
-        section_name: section.sectionName,
-        total_questions: section.totalQuestions,
-        mandotory_questions: section.requiredQuestions,
-        marks_per_question: section.marksPerQuestion,
-        sequence_number: section.seqencial_section_number,
-        section_number: Number(section.questionNumber),
-      });
-
-      // Get current question types
-      const { data: currentQuestionTypes } = await axiosInstance.get(
-        `/subsection-question-types?sectionId=${section.id}`
-      );
-
-      // Delete all existing question types
-      for (const qt of currentQuestionTypes) {
-        console.log(`Deleting question type: ${qt.id}`);
-        await axiosInstance.delete(`/subsection-question-types/${qt.id}`);
-      }
-
-      // Create new question types
-      if (section.sameType) {
-        // Create single question type with sequential number 0
-        console.log(`Creating question type for modified section: ${section.questionType}`);
-        const questionType = await getQuestionTypeByName(section.questionType);
-        if (questionType && section.id) {
-          await createSubsectionQuestionType(section.id, 0, questionType.id);
-        }
-      } else {
-        // Create multiple question types with sequential numbers
-        console.log(`Creating multiple question types for modified section: ${section.questionTypes.join(', ')}`);
-        for (let i = 0; i < section.questionTypes.length; i++) {
-          const questionType = await getQuestionTypeByName(section.questionTypes[i]);
-          if (questionType && section.id) {
-            await createSubsectionQuestionType(section.id, i + 1, questionType.id);
-          }
-        }
-      }
-    }
-
-    // STEP 3: Create new sections
-    console.log('STEP 3: Creating new sections');
-    const newSections = patternStore.sections.filter(section => section.isNew);
-    console.log(`Found ${newSections.length} new sections to create`);
-
-    for (const section of newSections) {
-      console.log('Creating new section:', {
-        sectionName: section.sectionName,
-        sequenceNumber: section.seqencial_section_number,
-        questionNumber: section.questionNumber
-      });
-
-      const { data: createdSection } = await axiosInstance.post('/sections', {
-        pattern_id: Number(route.params.id),
-        sequence_number: section.seqencial_section_number,
-        section_number: Number(section.questionNumber),
-        sub_section: section.subQuestion,
-        section_name: section.sectionName,
-        total_questions: section.totalQuestions,
-        mandotory_questions: section.requiredQuestions,
-        marks_per_question: section.marksPerQuestion,
-      });
-
-      console.log('Section created successfully:', {
-        id: createdSection.id,
-        sequenceNumber: createdSection.sequence_number
-      });
-
-      // Create question types for the new section
-      if (section.sameType) {
-        // If same type for all questions, create single entry with sequential number 0
-        console.log(`Creating question type for new section: ${section.questionType}`);
-        const questionType = await getQuestionTypeByName(section.questionType);
-        if (questionType && createdSection.id) {
-          await createSubsectionQuestionType(createdSection.id, 0, questionType.id);
-        }
-      } else {
-        // Create entries for different question types
-        console.log(`Creating multiple question types for new section: ${section.questionTypes.join(', ')}`);
-        for (let i = 0; i < section.questionTypes.length; i++) {
-          const questionType = await getQuestionTypeByName(section.questionTypes[i]);
-          if (questionType && createdSection.id) {
-            await createSubsectionQuestionType(createdSection.id, i + 1, questionType.id);
-          }
-        }
-      }
-    }
-
-    // Show success toast
-    toastStore.showToast({
-      type: 'success',
-      title: 'Success',
-      message: 'Pattern updated successfully!',
-    })
-
-    // Navigate back to pattern list after successful update
-    router.push('/admin/pattern')
+    
+    // Update pattern basic details
+    await updatePatternBasicDetails(updateData)
+    
+    // Process section changes
+    await processSectionChanges()
+    
+    // Show success toast and navigate back
+    handleSuccess()
   } catch (err) {
-    console.error('Error updating pattern:', err)
-    error.value = 'Failed to update pattern. Please try again.'
-
-    // Show error toast
-    toastStore.showToast({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to update pattern. Please try again.',
-    })
+    handleError(err)
   } finally {
     loading.value = false
   }
+}
+
+// Helper function to update pattern basic details
+const updatePatternBasicDetails = async (updateData: PatternUpdateData) => {
+  await axiosInstance.put(`/patterns/${route.params.id}`, {
+    pattern_name: updateData.pattern_name,
+    board_id: updateData.board_id,
+    standard_id: updateData.standard_id,
+    subject_id: updateData.subject_id,
+    total_marks: formData.value.totalMarks,
+  })
+  
+  // Log debug info
+  logDebugInfo()
+}
+
+// Helper function to log debug information
+const logDebugInfo = () => {
+  console.log('=== DEBUG: Sections to Delete ===')
+  console.log('Current sectionsToDelete array:', sectionsToDelete.value)
+  console.log('Current sections in store:', patternStore.sections.map(s => ({
+    id: s.id,
+    name: s.sectionName
+  })))
+  console.log('================================')
+  
+  // Log and check sequence numbers
+  const sequenceNumbers = patternStore.sections.map(s => s.seqencial_section_number).sort((a, b) => a - b)
+  console.log('Current sequence numbers (sorted):', sequenceNumbers)
+  
+  // Check for duplicate sequence numbers
+  const uniqueSequenceNumbers = new Set(sequenceNumbers)
+  if (uniqueSequenceNumbers.size !== sequenceNumbers.length) {
+    handleDuplicateSequenceNumbers(sequenceNumbers)
+  }
+  
+  console.log('Sections in store:', patternStore.sections.map(s => ({
+    id: s.id,
+    sectionName: s.sectionName,
+    sequenceNumber: s.seqencial_section_number,
+    isNew: s.isNew,
+    isModified: s.isModified
+  })))
+}
+
+// Helper function to handle duplicate sequence numbers
+const handleDuplicateSequenceNumbers = (sequenceNumbers: number[]) => {
+  console.warn('WARNING: Duplicate sequence numbers detected!')
+  
+  // Find duplicates
+  const counts: Record<number, number> = {}
+  const duplicates: number[] = []
+  sequenceNumbers.forEach(num => {
+    counts[num] = (counts[num] || 0) + 1
+    if (counts[num] > 1 && !duplicates.includes(num)) {
+      duplicates.push(num)
+    }
+  })
+  
+  console.warn('Duplicate sequence numbers:', duplicates)
+  
+  // Auto-fix duplicate sequence numbers
+  console.log('Auto-fixing duplicate sequence numbers...')
+  
+  // Sort sections
+  const sortedSections = [...patternStore.sections].sort((a, b) => {
+    if (a.seqencial_section_number !== b.seqencial_section_number) {
+      return a.seqencial_section_number - b.seqencial_section_number
+    }
+    if (a.id && b.id) {
+      return a.id - b.id
+    }
+    return 0
+  })
+  
+  // Reassign sequence numbers
+  sortedSections.forEach((section, index) => {
+    const newSequenceNumber = index + 1
+    if (section.seqencial_section_number !== newSequenceNumber) {
+      console.log(`Changing sequence number for section "${section.sectionName}" from ${section.seqencial_section_number} to ${newSequenceNumber}`)
+      section.seqencial_section_number = newSequenceNumber
+      section.isModified = true
+    }
+  })
+  
+  // Log the fixed sequence numbers
+  console.log('Fixed sequence numbers:', patternStore.sections.map(s => ({
+    id: s.id,
+    sectionName: s.sectionName,
+    sequenceNumber: s.seqencial_section_number
+  })))
+}
+
+// Helper function to process all section changes
+const processSectionChanges = async () => {
+  // Process in three steps:
+  // 1. Delete sections marked for deletion
+  await deleteSections()
+  
+  // 2. Update existing sections
+  await updateExistingSections()
+  
+  // 3. Create new sections
+  await createNewSections()
+}
+
+// Helper function to delete sections
+const deleteSections = async () => {
+  console.log('STEP 1: Deleting sections')
+  console.log(`Found ${sectionsToDelete.value.length} sections to delete:`, sectionsToDelete.value)
+  
+  if (sectionsToDelete.value.length > 0) {
+    console.log('Sections to delete are available, proceeding with deletion')
+    const sectionsToDeleteCopy = [...sectionsToDelete.value]
+    
+    for (const sectionId of sectionsToDeleteCopy) {
+      try {
+        console.log(`Attempting to delete section with ID: ${sectionId}`)
+        console.log(`DELETE API call: /sections/${sectionId}`)
+        const response = await axiosInstance.delete(`/sections/${sectionId}`)
+        console.log(`API response for deletion:`, response)
+        console.log(`Successfully deleted section with ID: ${sectionId}`)
+      } catch (error) {
+        console.error(`Error deleting section with ID: ${sectionId}:`, error)
+        throw new Error(`Failed to delete section with ID: ${sectionId}`)
+      }
+    }
+    
+    // Clear the sectionsToDelete array after successful deletion
+    console.log('All sections deleted successfully, clearing sectionsToDelete array')
+    sectionsToDelete.value = []
+    
+    // Clear localStorage
+    try {
+      localStorage.removeItem('sectionsToDelete')
+      console.log('Cleared sectionsToDelete from localStorage')
+    } catch (error) {
+      console.error('Error clearing sectionsToDelete from localStorage:', error)
+    }
+  } else {
+    console.log('No sections to delete, skipping deletion step')
+  }
+}
+
+// Helper function to update existing sections
+const updateExistingSections = async () => {
+  console.log('STEP 2: Updating existing sections')
+  const existingSections = patternStore.sections.filter(section => !section.isNew && section.isModified && section.id)
+  console.log(`Found ${existingSections.length} existing sections to update`)
+  
+  for (const section of existingSections) {
+    if (!section.id) continue
+    
+    console.log('Updating modified section:', {
+      id: section.id,
+      sectionName: section.sectionName,
+      sequenceNumber: section.seqencial_section_number,
+      questionNumber: section.questionNumber
+    })
+    
+    // Update section data
+    await axiosInstance.put(`/sections/${section.id}`, {
+      sub_section: section.subQuestion,
+      section_name: section.sectionName,
+      total_questions: section.totalQuestions,
+      mandotory_questions: section.requiredQuestions,
+      marks_per_question: section.marksPerQuestion,
+      sequence_number: section.seqencial_section_number,
+      section_number: Number(section.questionNumber),
+    })
+    
+    // Update question types
+    await updateSectionQuestionTypes(section)
+  }
+}
+
+// Helper function to update question types for a section
+const updateSectionQuestionTypes = async (section: any) => {
+  if (!section.id) return
+  
+  // Get current question types
+  const { data: currentQuestionTypes } = await axiosInstance.get(
+    `/subsection-question-types?sectionId=${section.id}`
+  )
+  
+  // Delete all existing question types
+  for (const qt of currentQuestionTypes) {
+    console.log(`Deleting question type: ${qt.id}`)
+    await axiosInstance.delete(`/subsection-question-types/${qt.id}`)
+  }
+  
+  // Create new question types
+  await createQuestionTypesForSection(section)
+}
+
+// Helper function to create question types for a section
+const createQuestionTypesForSection = async (section: any) => {
+  if (!section.id) return
+  
+  if (section.sameType) {
+    // Create single question type with sequential number 0
+    console.log(`Creating question type for section: ${section.questionType}`)
+    const questionType = await getQuestionTypeByName(section.questionType)
+    if (questionType && section.id) {
+      await createSubsectionQuestionType(section.id, 0, questionType.id)
+    }
+  } else {
+    // Create multiple question types with sequential numbers
+    console.log(`Creating multiple question types for section: ${section.questionTypes.join(', ')}`)
+    for (let i = 0; i < section.questionTypes.length; i++) {
+      const questionType = await getQuestionTypeByName(section.questionTypes[i])
+      if (questionType && section.id) {
+        await createSubsectionQuestionType(section.id, i + 1, questionType.id)
+      }
+    }
+  }
+}
+
+// Helper function to create new sections
+const createNewSections = async () => {
+  console.log('STEP 3: Creating new sections')
+  const newSections = patternStore.sections.filter(section => section.isNew)
+  console.log(`Found ${newSections.length} new sections to create`)
+  
+  for (const section of newSections) {
+    console.log('Creating new section:', {
+      sectionName: section.sectionName,
+      sequenceNumber: section.seqencial_section_number,
+      questionNumber: section.questionNumber
+    })
+    
+    // Create section
+    const { data: createdSection } = await axiosInstance.post('/sections', {
+      pattern_id: Number(route.params.id),
+      sequence_number: section.seqencial_section_number,
+      section_number: Number(section.questionNumber),
+      sub_section: section.subQuestion,
+      section_name: section.sectionName,
+      total_questions: section.totalQuestions,
+      mandotory_questions: section.requiredQuestions,
+      marks_per_question: section.marksPerQuestion,
+    })
+    
+    console.log('Section created successfully:', {
+      id: createdSection.id,
+      sequenceNumber: createdSection.sequence_number
+    })
+    
+    // Create question types for the new section
+    await createQuestionTypesForSection({
+      ...section,
+      id: createdSection.id
+    })
+  }
+}
+
+// Helper function to handle success
+const handleSuccess = () => {
+  toastStore.showToast({
+    type: 'success',
+    title: 'Success',
+    message: 'Pattern updated successfully!',
+  })
+  
+  // Navigate back to pattern list
+  router.push('/admin/pattern')
+}
+
+// Helper function to handle error
+const handleError = (err: any) => {
+  console.error('Error updating pattern:', err)
+  error.value = 'Failed to update pattern. Please try again.'
+  
+  // Show error toast
+  toastStore.showToast({
+    type: 'error',
+    title: 'Error',
+    message: 'Failed to update pattern. Please try again.',
+  })
 }
 
 const getQuestionTypeByName = async (typeName: string) => {
@@ -726,6 +779,29 @@ watch(
   { deep: true }
 );
 
+// Add a watch to monitor totalMarks changes from the local form
+watch(
+  () => formData.value.totalMarks,
+  (newTotalMarks) => {
+    console.log('EditPattern - Total marks changed in form, updating store:', newTotalMarks);
+    patternStore.formData.totalMarks = newTotalMarks;
+  }
+);
+
+// Add a watch to monitor totalMarks changes from the store
+watch(
+  () => patternStore.formData.totalMarks,
+  (newTotalMarks) => {
+    console.log('EditPattern - Total marks changed in store, updating form:', newTotalMarks);
+    formData.value.totalMarks = newTotalMarks;
+    
+    // Force recalculation in the form component
+    if (formComponent.value) {
+      formComponent.value.recalculateRemainingMarks?.();
+    }
+  }
+);
+
 // Add a watch to monitor sectionsToDelete changes
 watch(
   () => sectionsToDelete.value,
@@ -735,30 +811,45 @@ watch(
   { deep: true }
 );
 
-onMounted(() => {
-  console.log('EditPattern - Component mounted, isFirstMount:', isFirstMount.value);
-  console.log('EditPattern - Current sections to delete:', sectionsToDelete.value);
-
-  // Check if there are any saved sections to delete in localStorage
+// Helper function to restore sections to delete from localStorage
+const restoreSectionsToDeleteFromLocalStorage = () => {
   try {
     const savedSectionsToDelete = localStorage.getItem('sectionsToDelete');
-    if (savedSectionsToDelete) {
-      const parsedSectionsToDelete = JSON.parse(savedSectionsToDelete);
-      if (Array.isArray(parsedSectionsToDelete) && parsedSectionsToDelete.length > 0) {
-        console.log('Found saved sections to delete in localStorage:', parsedSectionsToDelete);
-
-        // Only restore if sectionsToDelete is empty
-        if (sectionsToDelete.value.length === 0) {
-          sectionsToDelete.value = parsedSectionsToDelete;
-          console.log('Restored sections to delete from localStorage');
-        } else {
-          console.log('sectionsToDelete already has values, not restoring from localStorage');
-        }
+    if (!savedSectionsToDelete) return;
+    
+    const parsedSectionsToDelete = JSON.parse(savedSectionsToDelete);
+    
+    if (Array.isArray(parsedSectionsToDelete) && parsedSectionsToDelete.length > 0) {
+      console.log('Found saved sections to delete in localStorage:', parsedSectionsToDelete);
+      
+      // Only restore if sectionsToDelete is empty
+      if (sectionsToDelete.value.length === 0) {
+        sectionsToDelete.value = parsedSectionsToDelete;
+        console.log('Restored sections to delete from localStorage');
+      } else {
+        console.log('sectionsToDelete already has values, not restoring from localStorage');
       }
     }
   } catch (error) {
     console.error('Error checking localStorage for sectionsToDelete:', error);
   }
+};
+
+// Helper function to restore form data from pattern store
+const restoreFormDataFromStore = () => {
+  if (patternStore.formData) {
+    formData.value = { ...patternStore.formData };
+    console.log('EditPattern - Restored form data from pattern store:', formData.value);
+  }
+  loading.value = false;
+};
+
+onMounted(() => {
+  console.log('EditPattern - Component mounted, isFirstMount:', isFirstMount.value);
+  console.log('EditPattern - Current sections to delete:', sectionsToDelete.value);
+
+  // Check if there are any saved sections to delete in localStorage
+  restoreSectionsToDeleteFromLocalStorage();
 
   // Check if we're returning from EditSection or AddSection
   const previousRoute = router.currentRoute.value.query.from;
@@ -767,24 +858,14 @@ onMounted(() => {
 
   if (previousRoute === 'editSection' && (hasModifiedSections || hasNewSections)) {
     console.log('EditPattern - Returning from EditSection with modified or new data, skipping fetch');
-    // Make sure formData is properly set from patternStore
-    if (patternStore.formData) {
-      formData.value = { ...patternStore.formData };
-      console.log('EditPattern - Restored form data from pattern store:', formData.value);
-    }
-    loading.value = false;
+    restoreFormDataFromStore();
   } else if (isFirstMount.value) {
     console.log('EditPattern - First mount, fetching pattern data');
     fetchPattern();
     isFirstMount.value = false;
   } else {
     console.log('EditPattern - Remounted but not from EditSection, skipping fetch');
-    // Make sure formData is properly set from patternStore
-    if (patternStore.formData) {
-      formData.value = { ...patternStore.formData };
-      console.log('EditPattern - Restored form data from pattern store:', formData.value);
-    }
-    loading.value = false;
+    restoreFormDataFromStore();
   }
 
   // Initialize delete section modal

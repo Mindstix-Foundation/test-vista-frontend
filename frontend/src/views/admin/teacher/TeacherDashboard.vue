@@ -81,9 +81,11 @@
         <div class="table-responsive position-relative">
           <!-- Loading overlay for search -->
           <div v-if="isSearchingTeacher || isSearchingSchool" class="search-loading-overlay">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <output
+              class="spinner-border spinner-border-sm text-primary"
+            >
               <span class="visually-hidden">Searching...</span>
-            </div>
+            </output>
           </div>
 
           <table
@@ -541,6 +543,19 @@ interface TeacherApiResponse {
   schools?: string[] // Array of school names
 }
 
+// Define a type for the pagination metadata
+interface PaginationMeta {
+  total?: number;
+  total_pages?: number;
+  page_size?: number;
+}
+
+// Define a type for the overall API response from /users endpoint
+interface UsersListApiResponse {
+  data?: TeacherApiResponse[];
+  meta?: PaginationMeta;
+}
+
 // Add interface for teaching assignment
 interface TeachingAssignment {
   id: number
@@ -714,6 +729,85 @@ onMounted(async () => {
   await fetchTeachers()
 })
 
+// Helper functions for fetchTeachers
+const buildApiParams = () => {
+  const params: Record<string, string | number> = {
+    page: currentPage.value,
+    page_size: pageSize,
+    sort_by: sortBy.value,
+    sort_order: sortOrder.value,
+    roleId: teacherRoleId.value
+  }
+
+  if (teacherSearch.value) {
+    params.search = teacherSearch.value
+  }
+
+  if (schoolSearch.value) {
+    params.schoolSearch = schoolSearch.value
+  }
+
+  if (selectedStatus.value !== 'All') {
+    params.status = selectedStatus.value === 'Grant' ? 'true' : 'false'
+  }
+
+  return params
+}
+
+const resetTeachersList = () => {
+  teachers.value = []
+  totalItems.value = 0
+  totalPages.value = 0
+}
+
+const processResponseData = (responseData: UsersListApiResponse) => {
+  if (!responseData?.data || !Array.isArray(responseData.data)) {
+    console.error('Unexpected response format:', responseData)
+    resetTeachersList()
+    return
+  }
+
+  // Map the API response to our teacher interface
+  teachers.value = responseData.data.map((user: TeacherApiResponse) => ({
+    id: user.id,
+    name: user.name,
+    emailId: user.email_id || '',
+    contactNumber: user.contact_number || '',
+    alternateContactNumber: user.alternate_contact_number || '',
+    highestQualification: user.highest_qualification || '',
+    status: user.status,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
+    school: user.schools && user.schools.length > 0
+      ? { id: 0, name: user.schools[0] }
+      : { id: 0, name: '' },
+    teacherSubjects: [],
+  }))
+
+  updatePaginationInfo(responseData)
+}
+
+const updatePaginationInfo = (responseData: UsersListApiResponse) => {
+  if (responseData.meta) {
+    totalItems.value = responseData.meta.total || 0
+    totalPages.value = responseData.meta.total_pages || 1
+
+    console.log('Pagination data from meta:', {
+      totalItems: totalItems.value,
+      totalPages: totalPages.value,
+      currentPage: currentPage.value,
+      pageSize: responseData.meta.page_size,
+      teachersLength: teachers.value.length
+    })
+  } else {
+    // Fallback if meta is missing
+    totalItems.value = teachers.value.length
+    totalPages.value = Math.ceil(totalItems.value / pageSize)
+  }
+
+  console.log('Final teachers data:', teachers.value)
+}
+
 const fetchTeachers = async () => {
   try {
     if (!teacherRoleId.value) {
@@ -724,92 +818,22 @@ const fetchTeachers = async () => {
     if (!isSearchingTeacher.value && !isSearchingSchool.value) {
       loading.value = true
     }
+    
     console.log('Starting teacher data fetch process...')
-
-    // Define the API parameters for pagination, sorting, and search
-    const params: Record<string, string | number> = {
-      page: currentPage.value,
-      page_size: pageSize,
-      sort_by: sortBy.value,
-      sort_order: sortOrder.value,
-      roleId: teacherRoleId.value // Add roleId parameter
-    }
-
-    // Add search parameter if teacherSearch is provided
-    if (teacherSearch.value) {
-      params.search = teacherSearch.value
-    }
-
-    // Add schoolSearch parameter if schoolSearch is provided
-    if (schoolSearch.value) {
-      params.schoolSearch = schoolSearch.value
-    }
-
-    // Add status filter if not "All"
-    if (selectedStatus.value !== 'All') {
-      params.status = selectedStatus.value === 'Grant' ? 'true' : 'false'
-    }
-
-    // Fetch teachers with pagination and search parameters
+    const params = buildApiParams()
+    
     console.log('Fetching teachers with params:', params)
     const response = await axiosInstance.get('/users', { params })
     console.log('API Response:', response.data)
 
-    // Check if response has data property that contains the array and pagination info
     if (response.data && typeof response.data === 'object') {
-      if (response.data.data && Array.isArray(response.data.data)) {
-        // Map the API response to our teacher interface
-        teachers.value = response.data.data.map((user: TeacherApiResponse) => ({
-          id: user.id,
-          name: user.name,
-          emailId: user.email_id || '',
-          contactNumber: user.contact_number || '',
-          alternateContactNumber: user.alternate_contact_number || '',
-          highestQualification: user.highest_qualification || '',
-          status: user.status,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-          school: user.schools && user.schools.length > 0
-            ? { id: 0, name: user.schools[0] } // Using first school from the array
-            : { id: 0, name: '' },
-          teacherSubjects: [],
-        }))
-
-        // Use the meta information from the API response
-        if (response.data.meta) {
-          totalItems.value = response.data.meta.total || 0
-          totalPages.value = response.data.meta.total_pages || 1
-
-          console.log('Pagination data from meta:', {
-            totalItems: totalItems.value,
-            totalPages: totalPages.value,
-            currentPage: currentPage.value,
-            pageSize: response.data.meta.page_size,
-            teachersLength: teachers.value.length
-          })
-        } else {
-          // Fallback if meta is missing
-          totalItems.value = teachers.value.length
-          totalPages.value = Math.ceil(totalItems.value / pageSize)
-        }
-
-        console.log('Final teachers data:', teachers.value)
-      } else {
-        console.error('Unexpected response format:', response.data)
-        teachers.value = []
-        totalItems.value = 0
-        totalPages.value = 0
-      }
+      processResponseData(response.data)
     } else {
-      teachers.value = []
-      totalItems.value = 0
-      totalPages.value = 0
+      resetTeachersList()
     }
   } catch (error) {
     console.error('Error in fetchTeachers:', error)
-    teachers.value = []
-    totalItems.value = 0
-    totalPages.value = 0
+    resetTeachersList()
   } finally {
     loading.value = false
     isSearchingTeacher.value = false
@@ -1517,22 +1541,17 @@ function highlightText(text: string, search: string): string {
 }
 
 /* Ensure search input stays in focus */
+/* The following .search-input:focus block is a duplicate and will be removed.
 .search-input:focus {
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   border-color: #86b7fe;
   outline: 0;
   z-index: 100; /* Higher z-index to ensure it stays on top */
-}
+} */
 
 /* Ensure search icons stay visible */
 .search-icon, .clear-search-icon, .search-loading-icon {
   z-index: 101; /* Higher than the input focus z-index */
-}
-
-/* Ensure the search wrapper maintains its position */
-.search-wrapper {
-  position: relative;
-  z-index: 10;
 }
 
 /* Subject badge styling */
