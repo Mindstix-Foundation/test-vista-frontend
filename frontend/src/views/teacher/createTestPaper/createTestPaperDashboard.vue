@@ -441,7 +441,7 @@ const fetchUserProfile = async () => {
     const response = await axiosInstance.get('/auth/profile')
     console.log('User profile response:', response.data)
     
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       console.log('User profile set:', userProfile.value)
       console.log('School ID:', schoolId.value)
@@ -873,7 +873,7 @@ const fetchAvailableMarks = async () => {
     })
     
     // Transform marks for the dropdown
-    if (response.data && response.data.marks) {
+    if (response.data?.marks) {
       availableMarks.value = response.data.marks.map((mark: number) => ({
         id: mark,
         name: mark.toString()

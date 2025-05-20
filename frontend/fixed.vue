@@ -1054,7 +1054,7 @@ const useStoredDistributionData = (data: ApiResponse) => {
 };
 
 // Prepare request data from stored data or create fallback
-const prepareRequestData = (storedData?: ApiResponse): ApiResponse => {
+const prepareRequestData = (storedData?: ApiResponse): any => {
   if (storedData) {
     console.log('Using data from last used endpoint:', lastUsedEndpoint.value);
     return storedData;
@@ -1166,7 +1166,7 @@ const createMockData = () => {
 };
 
 // Fetch questions from API and process response
-const fetchAndProcessQuestions = async (requestData: ApiResponse) => {
+const fetchAndProcessQuestions = async (requestData: any) => {
   // Make the API call to get final questions distribution
   const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData);
   
@@ -1659,7 +1659,7 @@ const isSimilarQuestion = (
   if (question.originalQuestion.question_type_id !== questionTypeId) return false;
   
   // Get the chapter ID for this question
-  const questionChapterId = question.chapterId ?? getQuestionChapterId(question.originalQuestion);
+  const questionChapterId = question.chapterId || getQuestionChapterId(question.originalQuestion);
   
   // Only include questions from the same chapter
   return questionChapterId === chapterId;
@@ -1760,7 +1760,7 @@ const findQuestionTextForNewQuestion = (newQuestion: Question): QuestionText => 
   );
   
   // If no match, use the first question text as a fallback
-  return matchingText ?? newQuestion.question_texts[0];
+  return matchingText || newQuestion.question_texts[0];
 };
 
 // Get topic ID from new question
@@ -2623,7 +2623,7 @@ const updateQuestionData = (question: DisplayQuestion, newQuestion: Question, me
   question.originalQuestion = newQuestion;
   
   // Find the correct question text based on the medium
-  const questionText = findQuestionTextForSpecificMedium(newQuestion, mediumId);
+  const questionText = findQuestionTextForMedium(newQuestion, mediumId);
   
   // Update the question display
   question.questionText = questionText.question_text;
@@ -2634,7 +2634,7 @@ const updateQuestionData = (question: DisplayQuestion, newQuestion: Question, me
 };
 
 // Find the question text for the specified medium
-const findQuestionTextForSpecificMedium = (question: Question, mediumId: number): QuestionText => {
+const findQuestionTextForMedium = (question: Question, mediumId: number): QuestionText => {
   // Try to find text matching the medium
   const text = question.question_texts.find(text => 
     text.question_text_topics && 
@@ -2643,7 +2643,7 @@ const findQuestionTextForSpecificMedium = (question: Question, mediumId: number)
   );
   
   // Return matching text or fall back to first one
-  return text ?? question.question_texts[0];
+  return text || question.question_texts[0];
 };
 
 // Update question options
@@ -3108,6 +3108,9 @@ const updateZoom = () => {
     display: none !important;
   }
   
+    display: none;
+  }
+  
   /* Print-specific option layouts */
   .options-row {
     flex-wrap: wrap;
@@ -3118,6 +3121,7 @@ const updateZoom = () => {
     flex: 0 0 24%;
     min-width: auto;
   }
+  
   .options-grid {
     flex-wrap: wrap;
     gap: 5px;
@@ -3164,7 +3168,7 @@ const updateZoom = () => {
     display: none !important; /* Hide change button in print */
   }
   
-}
+  /* Ensure section headers don't break across pages */
 /* Mobile styles for fixed bottom buttons */
 @media (max-width: 576px) {
   .container {
@@ -3288,12 +3292,29 @@ const updateZoom = () => {
     margin-bottom: 0.5rem;
   }
   
-  /* Layout selector styling for mobile */
+  /* Improve option layout selector on mobile */
   .layout-selector {
-    width: 90%;
-    max-width: 270px;
+    width: 270px;
+  }
+  
+  @media (max-width: 576px) {
+    /* Layout selector mobile positioning adjustments */
+    .layout-selector {
+      width: 90%;
+      max-width: 270px;
+    }
+    
+    .layout-cards {
+      grid-gap: 8px;
+    }
+  }
+  
+  /* Maintain option layouts on mobile but with adjusted sizes */
+  /* Row layout - preserve row but with smaller items */
+  .option-item-row {
     font-size: 0.9rem;
   }
+  
   /* Grid layout - preserve 2x2 grid */
   .options-grid {
     gap: 5px;
@@ -3320,29 +3341,29 @@ const updateZoom = () => {
     flex: 1 0 75%;
     padding-right: 0;
   }
-
+  
   .question-marks {
     flex: 1 0 25%;
     width: auto;
     padding-left: 5px;
     text-align: right;
   }
-
+  
   /* Ensure marks and change button display properly on small screens */
   .marks-row {
     justify-content: flex-end;
   }
-
+  
   .marks {
     font-size: 0.9rem;
   }
-
+  
   .shuffle-button {
     min-width: auto;
     padding: 0.2rem 0.4rem;
     font-size: 0.8rem;
   }
-
+  
   /* Title editing form on mobile */
   .edit-title-form {
     min-width: auto;
@@ -3435,9 +3456,6 @@ const updateZoom = () => {
   appearance: textfield;
 }
 
-/* Back to top button */
-#backToTop {
-  position: fixed;
   bottom: 20px;
   right: 20px;
   width: 40px;
@@ -3617,9 +3635,6 @@ const updateZoom = () => {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-/* Cancel button styling */
-.cancel-button {
   background-color: #f0f0f0;
   border: none;
   border-radius: 4px;
@@ -3726,9 +3741,8 @@ const updateZoom = () => {
   .option-item-column {
     width: 100% !important;
   }
-  
-  /* Global layout selector mobile positioning */
-  .global-layout-selector {
+}
+
     left: 50% !important;
     top: 50% !important;
     transform: translate(-50%, -50%) !important;
@@ -3948,9 +3962,6 @@ const updateZoom = () => {
     transform: translateY(0);
   }
 }
-/* A4 paper container styles */
-.a4-paper-container {
-  display: flex;
   justify-content: center;
   width: 100%;
   margin-bottom: 30px;
@@ -4014,6 +4025,13 @@ const updateZoom = () => {
     padding-bottom: 60px;
   }
   
+  .a4-paper-container {
+    max-width: 210mm; /* Limit to A4 width */
+    margin-left: auto;
+    margin-right: auto;
+    overflow-x: visible; /* No horizontal scroll needed on desktop */
+  }
+  
   .a4-paper-card {
     max-width: 100%; /* Ensure it fits within container */
     box-shadow: 0 8px 24px rgba(0,0,0,0.12); /* Enhanced shadow for desktop */
@@ -4066,4 +4084,12 @@ const updateZoom = () => {
     padding: 20mm;
   }
 }
-</style>
+
+@media print {
+  .section-header {
+    background-color: white !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+}
+</style> 

@@ -373,8 +373,8 @@ const enter = (el: Element, done: () => void) => {
   
   // Force browser to recalculate styles before animation starts
   // This forces a reflow and is necessary for the animation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const reflow = getComputedStyle(htmlEl).height;
+  // Use window getComputedStyle which is a function call with side effects
+  window.getComputedStyle(htmlEl).getPropertyValue('height');
   
   // Set target height for smooth animation
   const height = htmlEl.scrollHeight;
@@ -413,8 +413,8 @@ const beforeLeave = (el: Element) => {
   
   // Force browser to acknowledge the height
   // This forces a reflow and is necessary for the animation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const reflow = getComputedStyle(htmlEl).height;
+  // Use window getComputedStyle which is a function call with side effects
+  window.getComputedStyle(htmlEl).getPropertyValue('height');
 }
 
 const leave = (el: Element, done: () => void) => {
@@ -483,7 +483,7 @@ const fetchUserProfile = async () => {
   try {
     isLoading.value = true
     const response = await axiosInstance.get('/auth/profile')
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       // Proceed to fetch patterns once we have the profile
       await fetchPatterns()
@@ -903,6 +903,7 @@ h6 {
 /* Modern search styling */
 .search-field {
   position: relative;
+  z-index: 10;
 }
 
 .search-icon {
@@ -1358,22 +1359,10 @@ h6 {
   margin-bottom: 0;
 }
 
-/* Ensure search input stays in focus */
-.search-input:focus {
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-  border-color: #86b7fe;
-  outline: 0;
-  z-index: 100; /* Higher z-index to ensure it stays on top */
-}
-
 /* Ensure search icons stay visible */
 .search-icon, .clear-search-icon, .search-loading-icon {
   z-index: 101; /* Higher than the input focus z-index */
 }
 
-/* Ensure the search wrapper maintains its position */
-.search-field {
-  position: relative;
-  z-index: 10;
-}
+/* Ensure the search wrapper maintains its position - merged with existing .search-field */
 </style> 

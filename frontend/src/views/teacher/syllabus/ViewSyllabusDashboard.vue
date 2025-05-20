@@ -360,12 +360,7 @@ onMounted(async () => {
   try {
     // Fetch boards from API
     const response = await axiosInstance.get('/boards')
-    if (response.data && response.data.data) {
-      boards.value = response.data.data
-    } else {
-      console.error('Unexpected API response format for boards:', response.data)
-      boards.value = []
-    }
+    boards.value = response.data?.data ?? []
   } catch (error) {
     console.error('Error loading boards:', error)
     showErrorToast('Failed to load boards. Please refresh the page and try again.')

@@ -298,23 +298,28 @@ const toggleChaptersView = (index) => {
   }
 };
 
+// Filter test papers by search query
+const filterBySearchQuery = (papers, query) => {
+  if (!query.trim()) return papers;
+  
+  const lowercaseQuery = query.toLowerCase();
+  return papers.filter(paper => 
+    (paper.name?.toLowerCase().includes(lowercaseQuery) || false) ||
+    (paper.pattern?.pattern_name?.toLowerCase().includes(lowercaseQuery) || false) ||
+    (paper.school?.name?.toLowerCase().includes(lowercaseQuery) || false) ||
+    (paper.test_paper_chapters?.some(chapter => 
+      chapter.chapter?.name?.toLowerCase().includes(lowercaseQuery)
+    ) || false) ||
+    (paper.created_at?.includes(lowercaseQuery) || false)
+  );
+};
+
 // Filter and sort test papers
 const filteredTestPapers = computed(() => {
   let result = [...testPapers.value];
   
   // Apply search filter if query exists
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(paper => 
-      (paper.name?.toLowerCase().includes(query) || false) ||
-      (paper.pattern?.pattern_name?.toLowerCase().includes(query) || false) ||
-      (paper.school?.name?.toLowerCase().includes(query) || false) ||
-      (paper.test_paper_chapters?.some(chapter => 
-        chapter.chapter?.name?.toLowerCase().includes(query)
-      ) || false) ||
-      (paper.created_at?.includes(query) || false)
-    );
-  }
+  result = filterBySearchQuery(result, searchQuery.value);
   
   // Apply sorting
   result.sort((a, b) => {
@@ -438,11 +443,7 @@ const viewPDF = (pdfUrl, paper) => {
   currentPdfUrl.value = pdfUrl;
   
   // Set available mediums for the current paper
-  if (paper && paper.html_files) {
-    currentPaperMediums.value = paper.html_files.filter(file => file.presigned_url);
-  } else {
-    currentPaperMediums.value = [];
-  }
+  currentPaperMediums.value = paper?.html_files?.filter(file => file.presigned_url) || [];
   
   // Initialize modal if it doesn't exist
   if (!pdfModal) {
@@ -488,14 +489,10 @@ const fetchTestPapers = async () => {
     const profileResponse = await axiosInstance.get('/auth/profile');
     let userId, schoolId;
     
-    if (profileResponse.data && profileResponse.data.data) {
-      userId = profileResponse.data.data.id;
-      
-      // Get schoolId if available
-      if (profileResponse.data.data.schools && profileResponse.data.data.schools.length > 0) {
-        schoolId = profileResponse.data.data.schools[0].id;
-      }
-    }
+    userId = profileResponse.data?.data?.id;
+    
+    // Get schoolId if available
+    schoolId = profileResponse.data?.data?.schools?.[0]?.id;
     
     // Build the query params
     let endpoint = '/test-paper-html';

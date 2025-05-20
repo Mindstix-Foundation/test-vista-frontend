@@ -3118,6 +3118,7 @@ const updateZoom = () => {
     flex: 0 0 24%;
     min-width: auto;
   }
+  
   .options-grid {
     flex-wrap: wrap;
     gap: 5px;
@@ -3164,7 +3165,14 @@ const updateZoom = () => {
     display: none !important; /* Hide change button in print */
   }
   
+  /* Ensure section headers don't break across pages */
+  .section-header {
+    background-color: white !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
 }
+
 /* Mobile styles for fixed bottom buttons */
 @media (max-width: 576px) {
   .container {
@@ -3288,12 +3296,27 @@ const updateZoom = () => {
     margin-bottom: 0.5rem;
   }
   
-  /* Layout selector styling for mobile */
+  /* Improve option layout selector on mobile */
+  .layout-selector {
+    width: 270px;
+  }
+  
+  /* Layout selector mobile positioning adjustments */
   .layout-selector {
     width: 90%;
     max-width: 270px;
+  }
+  
+  .layout-cards {
+    grid-gap: 8px;
+  }
+  
+  /* Maintain option layouts on mobile but with adjusted sizes */
+  /* Row layout - preserve row but with smaller items */
+  .option-item-row {
     font-size: 0.9rem;
   }
+  
   /* Grid layout - preserve 2x2 grid */
   .options-grid {
     gap: 5px;
@@ -4065,5 +4088,3 @@ const updateZoom = () => {
     min-height: 297mm;
     padding: 20mm;
   }
-}
-</style>

@@ -532,7 +532,7 @@ const patternDetails = ref<Pattern | null>(null)
 const isLoading = ref(false)
 
 // Get question source from query params
-const questionSource = computed(() => route.query.questionSource as string ?? 'both')
+const questionSource = computed(() => route.query.questionSource as string || 'both')
 
 // Replace placeholder chapters with state from API
 const availableChapters = ref<AvailableChapter[]>([])
@@ -802,7 +802,15 @@ const hasZeroMarksChapters = computed(() => {
 
 // Get details from query parameters
 const patternId = route.query.patternId as string
-const boardName = computed(() => route.query.board as string ?? 'Not Selected')
+const boardName = computed(() => {
+  // If board name is in the query params, use it
+  if (route.query.board) {
+    return route.query.board as string
+  }
+  // Since board information isn't available in teaching_subjects,
+  // just use a fallback value
+  return 'Not Selected'
+})
 const mediumName = computed(() => route.query.medium as string ?? 'Not Selected')
 const standardName = computed(() => route.query.standard as string ?? 'Not Selected')
 const subjectName = computed(() => route.query.subject as string ?? 'Not Selected')
@@ -1059,7 +1067,7 @@ const fetchTestPaperAllocation = async () => {
         patternId: patternId,
         chapterIds: chapterIds.split(',').map(Number),
         mediumIds: mediumIds,
-        questionOrigin: questionSource.value ?? 'both'
+        questionOrigin: questionSource.value || 'both'
       }
     });
     
@@ -2072,7 +2080,7 @@ const prepareDistributionParams = () => {
 };
 
 // Helper function to handle successful response
-const handleSuccessResponse = (data: TestPaperAllocation) => {
+const handleSuccessResponse = (data: any) => {
   console.log('Chapter marks distribution API response:', data);
   
   // Update test paper allocation with response data
@@ -2091,13 +2099,13 @@ const handleSuccessResponse = (data: TestPaperAllocation) => {
   
   // Show warning if there are insufficient questions
   if (data.insufficientQuestions) {
-    showWarningToast(data.allocationMessage ?? 
+    showWarningToast(data.allocationMessage || 
       'Some marks could not be allocated due to insufficient questions');
   }
 };
 
 // Helper function to update chapter marks from distribution data
-const updateChapterMarksFromDistribution = (data: TestPaperAllocation) => {
+const updateChapterMarksFromDistribution = (data: any) => {
   // Update chapter marks
   if (data.chapterMarks) {
     chapters.value.forEach(chapter => {
@@ -2119,7 +2127,7 @@ const updateChapterMarksFromDistribution = (data: TestPaperAllocation) => {
 };
 
 // Helper function to handle errors
-const handleError = (error: unknown) => {
+const handleError = (error: any) => {
   console.error('Error in generate function:', error);
   showErrorToast(error instanceof Error 
     ? error.message 
@@ -2352,13 +2360,12 @@ h4 {
 /* Mobile optimized marks input group */
 .marks-input-group {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   background-color: transparent;
   width: auto;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: none;
-  /* Previously had duplicate align-items property */
 }
 
 /* Styling for the card */
@@ -2909,18 +2916,22 @@ h4 {
   font-weight: 500;
   font-size: 0.85rem;
 }
-/* Styling for marks increment/decrement buttons - merged with previous .marks-input-group */
+
+/* Styling for marks increment/decrement buttons */
+.marks-input-group {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  width: auto;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: none;
+}
 
 .marks-input-group .btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Combine styles from duplicate selector at line 2931 */
-  min-height: 36px !important;
-  max-height: 36px !important;
-  padding: 0 0.5rem !important;
-  margin: 0 !important;
-  line-height: 1 !important;
 }
 
 .marks-value {
@@ -2949,9 +2960,6 @@ h4 {
   .marks-input-group .btn {
     width: 34px;
     height: 34px;
-    min-height: 34px !important;
-    max-height: 34px !important;
-    min-width: 52px;
   }
   
   .marks-input-group .form-control {
@@ -3005,7 +3013,13 @@ h4 {
 }
 
 @media (max-width: 576px) {
+  .marks-input-group .btn-minus,
+  .marks-input-group .btn-plus,
   .marks-input-group .form-control {
+  }
+  
+  .marks-input-group .form-control {
+    height: 34px !important;
     min-height: 34px !important;
     max-height: 34px !important;
     min-width: 52px;
@@ -3174,32 +3188,14 @@ h4 {
 }
 
 @media (max-width: 576px) {
+  .marks-input-group .btn-minus,
+  .marks-input-group .btn-plus {
+    /* Properties moved to the btn selector above */
+  }
+  
   /* Optimize marks summary for small screens */
   .marks-summary .text-muted {
     font-size: 0.9rem;
-  }
-}
-
-/* Print styles - optimize for A4 printing */
-@media print {
-  .preview-container {
-    box-shadow: none;
-    padding: 0;
-  }
-  
-  .btn, .form-control, .nav-tabs {
-    display: none !important;
-  }
-  
-  body {
-    background: white;
-  }
-  
-  .container {
-    width: 100%;
-    max-width: 100%;
-    padding: 0;
-    margin: 0;
   }
 }
 

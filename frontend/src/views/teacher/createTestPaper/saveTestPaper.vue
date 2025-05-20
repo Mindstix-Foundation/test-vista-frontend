@@ -705,11 +705,12 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
         });
     });
     
-    // Create a file from the blob with medium name in the filename
-    const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name ?? 'Unknown';
+    // Create a file from the blob with a consistent naming pattern for the API
+    const sanitizedTitle = paperTitle.value.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    
     return new File(
       [pdfBlob], 
-      `test-paper-${mediumName.toLowerCase()}-${mediumId}.pdf`, 
+      `test_paper_${sanitizedTitle}_medium_${mediumId}.pdf`, 
       { type: 'application/pdf' }
     );
   } catch (error) {
@@ -720,12 +721,8 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
 
 // Function to save the test paper as PDF and call the API
 const saveTestPaperToDB = async () => {
-  if (!saveRequested.value || saveInProgress.value || saveComplete.value) {
-    console.log('Save conditions not met:', { 
-      saveRequested: saveRequested.value, 
-      saveInProgress: saveInProgress.value, 
-      saveComplete: saveComplete.value 
-    });
+  // Check save conditions
+  if (!canSaveTestPaper()) {
     return;
   }
   
@@ -737,159 +734,284 @@ const saveTestPaperToDB = async () => {
   const originalMediumId = currentMediumId.value;
   
   try {
-    // Wait for the page to fully render
-    await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 500)); // Extra delay to ensure DOM is ready
+    // Wait for rendering and get required data
+    await waitForRendering();
+    const { userId, schoolId, chapters, weightages, patternId } = await getRequiredData();
     
-    // Make sure we have the necessary data
-    const userId = route.query.userId;
-    const schoolId = route.query.schoolId;
-    const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
-    const weightages = route.query.weightages ? JSON.parse(decodeURIComponent(route.query.weightages as string)) : [];
+    // Get the print element and HTML2PDF library
+    const element = getAndValidatePrintElement();
+    const html2pdf = await loadHtml2PdfLibrary();
     
-    console.log('Parsed data for API call:', { userId, schoolId, chapters, weightages });
+    // Generate PDF files for all mediums
+    const pdfFiles = await generatePDFFilesForAllMediums(element, html2pdf);
     
-    if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
-      throw new Error('Missing required data for saving test paper');
-    }
+    // Submit data to API
+    await submitTestPaperData(userId, schoolId, chapters, weightages, patternId, pdfFiles);
     
-    // Get the pattern ID from API data or route query
-    let patternId = '1'; // Default fallback
-    if (apiData.value && apiData.value.patternId) {
-      // Get pattern ID from the loaded API data
-      patternId = apiData.value.patternId.toString();
-      console.log(`Using pattern ID ${patternId} from API data`);
-    } else if (route.query.patternId) {
-      // Get pattern ID from route query
-      patternId = route.query.patternId as string;
-      console.log(`Using pattern ID ${patternId} from route query`);
-    } else {
-      console.warn('No pattern ID found in data or route, using default: 1');
-    }
-    
-    // Get the content element
-    const element = document.getElementById('printSection');
-    if (!element) {
-      console.error('Print section element not found!');
-      console.log('Available elements with IDs:', 
-        Array.from(document.querySelectorAll('[id]')).map(el => ({ id: el.id, tagName: el.tagName }))
-      );
-      throw new Error('Print section not found');
-    }
-    console.log('Found printSection element:', element);
-    
-    // Import the library dynamically
-    console.log('Importing html2pdf library...');
-    let html2pdf;
-    try {
-      html2pdf = (await import('html2pdf.js')).default;
-      console.log('html2pdf library loaded successfully');
-    } catch (importError) {
-      console.error('Failed to import html2pdf library:', importError);
-      throw new Error('Failed to load PDF generation library');
-    }
-    
-    // Get available instruction mediums
-    // If no instruction mediums are available, default to English (ID 1)
-    const instructionMediums = availableMediums.value.length > 0 
-      ? availableMediums.value.map(medium => medium.id) 
-      : [1];
-    
-    console.log('Instruction mediums for PDF generation:', instructionMediums);
-    
-    // Generate PDF for each medium
-    const pdfFiles: File[] = [];
-    
-    // Generate PDFs for all mediums
-    for (const mediumId of instructionMediums) {
-      try {
-        const file = await generatePDFForMedium(element, mediumId, html2pdf);
-        pdfFiles.push(file);
-        console.log(`Added PDF for medium ${mediumId} to files array`);
-      } catch (error) {
-        console.error(`Error generating PDF for medium ${mediumId}:`, error);
-        throw new Error(`Failed to generate PDF for medium ${mediumId}`);
-      }
-    }
-    
-    // Restore original medium
-    await switchToMedium(originalMediumId);
-    
-    console.log(`Generated ${pdfFiles.length} PDF files for different mediums`);
-    
-    // Prepare form data
-    const formData = new FormData();
-    
-    // Add required fields
-    formData.append('name', paperTitle.value);
-    formData.append('exam_time', testDuration.value);
-    formData.append('pattern_id', patternId);
-    formData.append('test_paper_origin_type', 'both');
-    
-    // Add chapters and weightages (actual marks, not percentages)
-    chapters.forEach((chapterId: number) => {
-      formData.append('chapters', chapterId.toString());
-    });
-    
-    weightages.forEach((weightage: number) => {
-      formData.append('weightages', weightage.toString());
-    });
-    
-    // Add instruction mediums
-    instructionMediums.forEach((mediumId: number) => {
-      formData.append('instruction_mediums', mediumId.toString());
-    });
-    
-    // Add all PDF files
-    pdfFiles.forEach((file: File) => {
-      formData.append('files', file);
-    });
-    
-    console.log('FormData prepared, making API call with:', {
-      name: paperTitle.value,
-      exam_time: testDuration.value,
-      pattern_id: patternId,
-      chapters: chapters,
-      weightages: weightages,
-      instruction_mediums: instructionMediums,
-      files: pdfFiles.map(f => f.name)
-    });
-    
-    // Make the API call
-    const response = await axiosInstance.post(
-      `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-    
-    console.log('API response received:', response);
-    
-    if (response.status === 201) {
-      console.log('Test paper saved successfully:', response.data);
-      saveComplete.value = true;
-      
-      // Navigate to a confirmation or test papers list page
-      // router.push({ name: 'testPapersList' });
-    } else {
-      throw new Error(`Unexpected response status: ${response.status}`);
-    }
+    saveComplete.value = true;
   } catch (error) {
-    console.error('Error saving test paper:', error);
-    saveError.value = error instanceof Error ? error.message : 'Unknown error occurred';
+    handleSaveError(error);
   } finally {
     saveInProgress.value = false;
-    
-    // Ensure we're back on the original medium
-    if (currentMediumId.value !== originalMediumId) {
-      try {
-        await switchToMedium(originalMediumId);
-      } catch (error) {
-        console.error('Error restoring original medium:', error);
+    await restoreOriginalMedium(originalMediumId);
+  }
+};
+
+// Check if we can save the test paper
+const canSaveTestPaper = () => {
+  if (!saveRequested.value || saveInProgress.value || saveComplete.value) {
+    console.log('Save conditions not met:', { 
+      saveRequested: saveRequested.value, 
+      saveInProgress: saveInProgress.value, 
+      saveComplete: saveComplete.value 
+    });
+    return false;
+  }
+  return true;
+};
+
+// Wait for the page to fully render
+const waitForRendering = async () => {
+  await nextTick();
+  // Extra delay to ensure DOM is ready
+  await new Promise(resolve => setTimeout(resolve, 500));
+};
+
+// Get and validate all required data for saving
+const getRequiredData = async () => {
+  // Extract data from route parameters
+  const userId = route.query.userId;
+  const schoolId = route.query.schoolId;
+  
+  // Parse chapters array - ensure it's in the format the API needs
+  let chapters = [];
+  if (route.query.chapters) {
+    try {
+      const parsedChapters = JSON.parse(decodeURIComponent(route.query.chapters as string));
+      // Ensure chapters are in correct format for the API
+      chapters = Array.isArray(parsedChapters) ? parsedChapters : [];
+      // Log the actual structure for debugging
+      console.log('Parsed chapters structure:', JSON.stringify(chapters));
+    } catch (error) {
+      console.error('Error parsing chapters:', error);
+      throw new Error('Invalid chapters data format');
+    }
+  }
+  
+  // Parse weightages
+  let weightages = [];
+  if (route.query.weightages) {
+    try {
+      weightages = JSON.parse(decodeURIComponent(route.query.weightages as string));
+      // Ensure weightages are numbers
+      if (!Array.isArray(weightages) || !weightages.every(w => typeof w === 'number')) {
+        console.error('Invalid weightages format:', weightages);
+        throw new Error('Invalid weightages data format');
       }
+    } catch (error) {
+      console.error('Error parsing weightages:', error);
+      throw new Error('Invalid weightages data format');
+    }
+  }
+  
+  console.log('Parsed data for API call:', { userId, schoolId, chapters, weightages });
+  
+  // Validate required data
+  if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
+    throw new Error('Missing required data for saving test paper');
+  }
+  
+  // Get pattern ID from various sources
+  const patternId = determinePatternId();
+  
+  return { userId, schoolId, chapters, weightages, patternId };
+};
+
+// Determine pattern ID from available sources
+const determinePatternId = () => {
+  let patternId = '1'; // Default fallback
+  
+  if (apiData.value?.patternId) {
+    // Get pattern ID from the loaded API data
+    patternId = apiData.value.patternId.toString();
+    console.log(`Using pattern ID ${patternId} from API data`);
+  } else if (route.query.patternId) {
+    // Get pattern ID from route query
+    patternId = route.query.patternId as string;
+    console.log(`Using pattern ID ${patternId} from route query`);
+  } else {
+    console.warn('No pattern ID found in data or route, using default: 1');
+  }
+  
+  return patternId;
+};
+
+// Get and validate the print element
+const getAndValidatePrintElement = () => {
+  const element = document.getElementById('printSection');
+  
+  if (!element) {
+    console.error('Print section element not found!');
+    console.log('Available elements with IDs:', 
+      Array.from(document.querySelectorAll('[id]')).map(el => ({ id: el.id, tagName: el.tagName }))
+    );
+    throw new Error('Print section not found');
+  }
+  
+  console.log('Found printSection element:', element);
+  return element;
+};
+
+// Load the HTML2PDF library
+const loadHtml2PdfLibrary = async () => {
+  console.log('Importing html2pdf library...');
+  try {
+    const html2pdf = (await import('html2pdf.js')).default;
+    console.log('html2pdf library loaded successfully');
+    return html2pdf;
+  } catch (importError) {
+    console.error('Failed to import html2pdf library:', importError);
+    throw new Error('Failed to load PDF generation library');
+  }
+};
+
+// Generate PDF files for all available mediums
+const generatePDFFilesForAllMediums = async (element: HTMLElement, html2pdf: () => {
+  set: (options: {
+    margin: number;
+    filename: string;
+    image: { type: string; quality: number };
+    html2canvas: { scale: number; logging: boolean; useCORS: boolean };
+    jsPDF: { unit: string; format: string; orientation: string };
+  }) => {
+    from: (element: HTMLElement) => {
+      outputPdf: (type: string) => Promise<Blob>;
+    };
+  };
+}) => {
+  // Get available instruction mediums
+  const instructionMediums = getInstructionMediums();
+  console.log('Instruction mediums for PDF generation:', instructionMediums);
+  
+  // Generate PDF for each medium
+  const pdfFiles: File[] = [];
+  
+  for (const mediumId of instructionMediums) {
+    try {
+      const file = await generatePDFForMedium(element, mediumId, html2pdf);
+      pdfFiles.push(file);
+      console.log(`Added PDF for medium ${mediumId} to files array`);
+    } catch (error) {
+      console.error(`Error generating PDF for medium ${mediumId}:`, error);
+      throw new Error(`Failed to generate PDF for medium ${mediumId}`);
+    }
+  }
+  
+  return pdfFiles;
+};
+
+// Get the list of instruction mediums to use
+const getInstructionMediums = () => {
+  // If no instruction mediums are available, default to English (ID 1)
+  return availableMediums.value.length > 0 
+    ? availableMediums.value.map(medium => medium.id) 
+    : [1];
+};
+
+// Helper function to extract chapter ID from various formats
+const extractChapterId = (chapter: { id?: number; chapterId?: number } | number): number | null => {
+  // Check if chapter is already a simple number
+  if (typeof chapter === 'number') {
+    return chapter;
+  }
+  
+  // For object types, check for id or chapterId properties
+  if (chapter && typeof chapter === 'object') {
+    if ('id' in chapter) return chapter.id;
+    if ('chapterId' in chapter) return chapter.chapterId;
+  }
+  
+  // If we can't determine the ID, log an error and return null
+  console.error('Unable to extract ID from chapter:', chapter);
+  return null;
+};
+
+// Helper function to safely append values to FormData
+const appendToFormData = (formData: FormData, name: string, value: number | string | null | undefined) => {
+  if (value !== null && value !== undefined) {
+    formData.append(name, value.toString());
+  }
+};
+
+// Submit test paper data to the API
+const submitTestPaperData = async (
+  userId: number,
+  schoolId: number,
+  chapters: Array<{ id?: number; chapterId?: number } | number>,
+  weightages: number[],
+  patternId: string,
+  pdfFiles: File[]
+) => {
+  const formData = new FormData();
+  
+  // Add required parameters
+  formData.append('userId', userId.toString());
+  formData.append('schoolId', schoolId.toString());
+  
+  // Add test paper metadata
+  formData.append('name', paperTitle.value);
+  formData.append('exam_time', testDuration.value);
+  formData.append('pattern_id', patternId);
+  formData.append('test_paper_origin_type', 'board');
+  
+  // Extract and process chapter IDs
+  const chapterIds = chapters.map(extractChapterId).filter(Boolean);
+  console.log('Extracted chapter IDs:', chapterIds);
+  
+  // Add chapters to form data
+  chapterIds.forEach(id => appendToFormData(formData, 'chapters', id));
+  
+  // Add weightages to form data
+  weightages.forEach(weight => appendToFormData(formData, 'weightages', weight));
+  
+  // Add instruction mediums to form data
+  const mediumIds = availableMediums.value.map(medium => medium.id);
+  mediumIds.forEach(id => appendToFormData(formData, 'instruction_mediums', id));
+  
+  // Add files - make sure they're in the same order as instruction_mediums
+  pdfFiles.forEach(file => formData.append('files', file));
+
+  // Log the form data for debugging
+  console.log('Submitting test paper with the following data:', {
+    userId, schoolId, name: paperTitle.value, examTime: testDuration.value,
+    patternId, chapters: chapterIds, weightages, mediums: mediumIds,
+    files: pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type }))
+  });
+  
+  try {
+    // Call the new API endpoint
+    const response = await axiosInstance.post('/test-paper-html/create', formData);
+    console.log('API response:', response.data);
+    return response;
+  } catch (error) {
+    console.error('API error:', error);
+    throw error;
+  }
+};
+
+// Handle errors during the save process
+const handleSaveError = (error: unknown) => {
+  console.error('Error saving test paper:', error);
+  saveError.value = error instanceof Error ? error.message : 'Unknown error occurred';
+};
+
+// Restore the original medium after save attempt
+const restoreOriginalMedium = async (originalMediumId: number) => {
+  if (currentMediumId.value !== originalMediumId) {
+    try {
+      await switchToMedium(originalMediumId);
+    } catch (error) {
+      console.error('Error restoring original medium:', error);
     }
   }
 };
@@ -898,11 +1020,11 @@ const saveTestPaperToDB = async () => {
 const fetchUserProfile = async () => {
   try {
     const response = await axiosInstance.get('/auth/profile')
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       
       // Get school name from user profile
-      if (userProfile.value && userProfile.value.schools && userProfile.value.schools.length > 0) {
+      if (userProfile.value?.schools?.length > 0) {
         schoolName.value = userProfile.value.schools[0].name
       }
     } else {
@@ -981,7 +1103,7 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
 // Extract available mediums from API data
 const extractAvailableMediums = (data: ApiResponse) => {
   try {
-    if (data && data.mediums && data.mediums.length > 0) {
+    if (data?.mediums?.length > 0) {
       availableMediums.value = data.mediums.map((medium: { id: number; instruction_medium: string }) => ({
         id: medium.id,
         name: medium.instruction_medium
@@ -1006,15 +1128,43 @@ const extractAvailableMediums = (data: ApiResponse) => {
 
 // Transform API data to display format (same as in testPaperPreview.vue)
 const transformApiDataToDisplayFormat = (data: ApiResponse) => {
-  if (!data || !data.sectionAllocations) {
+  if (!data?.sectionAllocations) {
     return;
   }
 
-  const displaySections: DisplaySection[] = [];
-  let sectionNumberCounter = 1;
+  // Process sections and convert to display format
+  const displaySections = processAllSections(data.sectionAllocations);
+  
+  // Update the reactive reference with processed sections
+  testPaperSections.value = displaySections;
+};
 
+// Process all sections into display format
+const processAllSections = (sectionAllocations: ApiResponse['sectionAllocations']): DisplaySection[] => {
+  let sectionNumberCounter = 1;
+  
   // Sort sections by sequentialNumber or sectionId for consistent ordering
-  const sortedSections = [...data.sectionAllocations].sort((a, b) => {
+  const sortedSections = sortSectionsBySequence(sectionAllocations);
+  
+  // Process each section and return the array of display sections
+  return sortedSections.map(section => {
+    const displaySection = createDisplaySection(section, sectionNumberCounter);
+    
+    // Update counter if we used a counter-based section number
+    if (!section.section_number) {
+      sectionNumberCounter++;
+    }
+    
+    // Process subsections and questions
+    processSubsections(section, displaySection);
+    
+    return displaySection;
+  });
+};
+
+// Sort sections by sequentialNumber or sectionId
+const sortSectionsBySequence = (sections: ApiResponse['sectionAllocations']) => {
+  return [...sections].sort((a, b) => {
     // First try to sort by sequentialNumber if available
     if (a.sequentialNumber !== undefined && b.sequentialNumber !== undefined) {
       return a.sequentialNumber - b.sequentialNumber;
@@ -1022,102 +1172,156 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
     // Fall back to sectionId
     return a.sectionId - b.sectionId;
   });
+};
 
-  // Process each section
-  sortedSections.forEach(section => {
-    // Create formatted section number display (e.g., "1.A")
-    const sectionNum = section.section_number ?? sectionNumberCounter;
-    const subSection = section.subSection ?? '';
-    const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
-    
-    const displaySection: DisplaySection = {
-      sectionNumber: section.section_number ?? sectionNumberCounter++,
-      sectionName: section.sectionName,
-      totalMarks: section.totalMarks,
-      questions: [],
-      subSection: section.subSection,
-      sectionNumberDisplay: sectionNumberDisplay,
-      mandotory_questions: section.mandotory_questions
-    };
+// Create a display section object from API section data
+const createDisplaySection = (
+  section: ApiResponse['sectionAllocations'][0], 
+  counter: number
+): DisplaySection => {
+  // Create formatted section number display (e.g., "1.A")
+  const sectionNum = section.section_number ?? counter;
+  const subSection = section.subSection ?? '';
+  const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
+  
+  return {
+    sectionNumber: section.section_number ?? counter,
+    sectionName: section.sectionName,
+    totalMarks: section.totalMarks,
+    questions: [],
+    subSection: section.subSection,
+    sectionNumberDisplay: sectionNumberDisplay,
+    mandotory_questions: section.mandotory_questions
+  };
+};
 
-    let questionNumberCounter = 1;
-
-    // Process each subsection within a section
-    section.subsectionAllocations.forEach(subsection => {
-      // Process each chapter's questions within a subsection
-      subsection.allocatedChapters.forEach(chapter => {
-        if (chapter.question) {
-          const question = chapter.question;
-          
-          // Find the appropriate question text based on the current medium
-          let questionText: QuestionText | undefined;
-          
-          if (question.question_texts && question.question_texts.length > 0) {
-            // First try to find question text matching current medium ID
-            questionText = question.question_texts.find(text => 
-              text.question_text_topics && 
-              text.question_text_topics.length > 0 && 
-              text.question_text_topics[0].instruction_medium_id === currentMediumId.value
-            );
-            
-            // If not found, fall back to the first question text
-            if (!questionText) {
-              questionText = question.question_texts[0];
-            }
-          } else {
-            console.warn('Question has no question_texts array');
-            return; // Skip this question
-          }
-          
-          // Extract topic ID from either topic or question_text_topics
-          let topicId: number | undefined;
-          if (questionText.topic) {
-            topicId = questionText.topic.id;
-          } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-            topicId = questionText.question_text_topics[0].question_topic_id;
-          }
-          
-          // Create display question based on question type
-          const displayQuestion: DisplayQuestion = {
-            questionNumber: questionNumberCounter++,
-            questionText: questionText.question_text,
-            marks: section.marks_per_question ?? Math.ceil(section.totalMarks / section.totalQuestions),
-            questionType: question.question_type.type_name,
-            topicId: topicId,
-            chapterId: chapter.chapterId // Store chapter ID for reference
-          };
-
-          // Process MCQ options if they exist
-          if (questionText.mcq_options && questionText.mcq_options.length > 0) {
-            displayQuestion.options = questionText.mcq_options.map((option: McqOption, index: number) => {
-              return {
-                label: String.fromCharCode(65 + index), // A, B, C, D...
-                text: option.option_text,
-                isCorrect: option.is_correct
-              };
-            });
-          }
-
-          // Process match pairs if they exist
-          if (questionText.match_pairs && questionText.match_pairs.length > 0) {
-            displayQuestion.matchPairs = questionText.match_pairs.map((pair: MatchPair) => {
-              return {
-                leftText: pair.left_text,
-                rightText: pair.right_text
-              };
-            });
-          }
-
-          displaySection.questions.push(displayQuestion);
+// Process subsections and questions for a section
+const processSubsections = (
+  section: ApiResponse['sectionAllocations'][0],
+  displaySection: DisplaySection
+) => {
+  let questionNumberCounter = 1;
+  
+  // Process each subsection within a section
+  section.subsectionAllocations.forEach(subsection => {
+    // Process each chapter's questions within a subsection
+    subsection.allocatedChapters.forEach(chapter => {
+      if (chapter.question) {
+        const question = processQuestion(
+          chapter,
+          questionNumberCounter,
+          section
+        );
+        
+        if (question) {
+          displaySection.questions.push(question);
+          questionNumberCounter++;
         }
-      });
+      }
     });
-
-    displaySections.push(displaySection);
   });
+};
 
-  testPaperSections.value = displaySections;
-}
+// Process a question from chapter data
+const processQuestion = (
+  chapter: { chapterId: number; chapterName: string; question?: Question },
+  questionNumber: number,
+  section: ApiResponse['sectionAllocations'][0]
+): DisplayQuestion | null => {
+  const question = chapter.question;
+  if (!question) return null;
+  
+  // Find appropriate question text for current medium
+  const questionText = findQuestionTextForMedium(question);
+  if (!questionText) return null;
+  
+  // Extract topic ID from questionText
+  const topicId = getTopicIdFromQuestionText(questionText);
+  
+  // Create base display question
+  const displayQuestion = createBaseDisplayQuestion(
+    questionNumber,
+    questionText.question_text,
+    section,
+    question.question_type.type_name,
+    topicId,
+    chapter.chapterId
+  );
+  
+  // Add options and match pairs if they exist
+  addOptionsToQuestion(displayQuestion, questionText);
+  addMatchPairsToQuestion(displayQuestion, questionText);
+  
+  return displayQuestion;
+};
+
+// Find question text for current medium
+const findQuestionTextForMedium = (question: Question): QuestionText | null => {
+  if (!question.question_texts || question.question_texts.length === 0) {
+    console.warn('Question has no question_texts array');
+    return null;
+  }
+  
+  // First try to find question text matching current medium ID
+  const matchingText = question.question_texts.find(text => 
+    text.question_text_topics && 
+    text.question_text_topics.length > 0 && 
+    text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+  );
+  
+  // If not found, fall back to the first question text
+  return matchingText ?? question.question_texts[0];
+};
+
+// Extract topic ID from questionText
+const getTopicIdFromQuestionText = (questionText: QuestionText): number | undefined => {
+  if (questionText.topic) {
+    return questionText.topic.id;
+  } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+    return questionText.question_text_topics[0].question_topic_id;
+  }
+  return undefined;
+};
+
+// Create base display question object
+const createBaseDisplayQuestion = (
+  questionNumber: number,
+  questionText: string,
+  section: ApiResponse['sectionAllocations'][0],
+  questionType: string,
+  topicId?: number,
+  chapterId?: number
+): DisplayQuestion => {
+  return {
+    questionNumber: questionNumber,
+    questionText: questionText,
+    marks: section.marks_per_question ?? Math.ceil(section.totalMarks / section.totalQuestions),
+    questionType: questionType,
+    topicId: topicId,
+    chapterId: chapterId // Store chapter ID for reference
+  };
+};
+
+// Add options to question if they exist
+const addOptionsToQuestion = (displayQuestion: DisplayQuestion, questionText: QuestionText) => {
+  if (questionText.mcq_options && questionText.mcq_options.length > 0) {
+    displayQuestion.options = questionText.mcq_options.map((option: McqOption, index: number) => ({
+      label: String.fromCharCode(65 + index), // A, B, C, D...
+      text: option.option_text,
+      isCorrect: option.is_correct
+    }));
+  }
+};
+
+// Add match pairs to question if they exist
+const addMatchPairsToQuestion = (displayQuestion: DisplayQuestion, questionText: QuestionText) => {
+  if (questionText.match_pairs && questionText.match_pairs.length > 0) {
+    displayQuestion.matchPairs = questionText.match_pairs.map((pair: MatchPair) => ({
+      leftText: pair.left_text,
+      rightText: pair.right_text
+    }));
+  }
+};
 
 // Print page functionality
 const printPage = () => {
