@@ -348,75 +348,7 @@ const formData = ref<FormData>({
 // Set default value for sections prop
 const sections = props.sections || []
 
-// If initialData is provided, use it to initialize the form
-onMounted(async () => {
-  console.log('Component mounted, initial data:', props.initialData)
-  await fetchBoards()
-  console.log('Boards fetched:', boards.value)
-
-  if (props.initialData) {
-    console.log('Setting form data from initial data')
-    // Store standard and subject temporarily
-    const savedStandard = props.initialData.selectedStandard
-    const savedSubject = props.initialData.selectedSubject
-
-    // First set the form data without standard and subject
-    formData.value = {
-      ...props.initialData,
-      selectedStandard: null,
-      selectedSubject: null,
-    }
-
-    // Capitalize the pattern name
-    if (formData.value.patternName) {
-      formData.value.patternName = capitalizeFirstLetter(formData.value.patternName)
-    }
-
-    console.log('Form data after setting:', formData.value)
-
-    // Validate the initial data
-    if (formData.value.patternName) {
-      validationStates.value.patternName.valid = true
-      validationStates.value.patternName.touched = true
-    }
-    if (formData.value.selectedBoard) {
-      console.log('Selected board found:', formData.value.selectedBoard)
-      validationStates.value.board.valid = true
-      validationStates.value.board.touched = true
-      // Fetch the complete board data to get standards and subjects
-      console.log('Fetching board details for ID:', formData.value.selectedBoard.id)
-      await fetchBoardDetails(formData.value.selectedBoard.id)
-      console.log('Board details fetched, updated board:', formData.value.selectedBoard)
-
-      // Now restore standard and subject after board is fully loaded
-      if (savedStandard) {
-        console.log('Restoring standard:', savedStandard)
-        const standard = formData.value.selectedBoard.standards.find(
-          (s) => s.id === savedStandard.id,
-        )
-        console.log('Found standard:', standard)
-        formData.value.selectedStandard = standard || null
-        validationStates.value.standard.valid = !!standard
-        validationStates.value.standard.touched = true
-      }
-      if (savedSubject) {
-        console.log('Restoring subject:', savedSubject)
-        const subject = formData.value.selectedBoard.subjects.find((s) => s.id === savedSubject.id)
-        console.log('Found subject:', subject)
-        formData.value.selectedSubject = subject || null
-        validationStates.value.subject.valid = !!subject
-        validationStates.value.subject.touched = true
-      }
-      console.log('Final form data after initialization:', formData.value)
-    }
-    if (formData.value.totalMarks) {
-      validationStates.value.totalMarks.valid = true
-      validationStates.value.totalMarks.touched = true
-      calculateRemainingMarks()
-    }
-  }
-})
-
+// Component variables that need to be added back
 const remainingMarks = ref(0)
 const boards = ref<Board[]>([])
 const isSubmitting = ref(false)
@@ -443,11 +375,11 @@ const isFormValid = computed(() => {
 })
 
 const availableStandards = computed(() => {
-  return formData.value.selectedBoard?.standards || []
+  return formData.value.selectedBoard?.standards ?? []
 })
 
 const availableSubjects = computed(() => {
-  return formData.value.selectedBoard?.subjects || []
+  return formData.value.selectedBoard?.subjects ?? []
 })
 
 // Methods
@@ -726,6 +658,99 @@ const toRomanNumeral = (num: number): string => {
 
   return result
 }
+
+// Helper function to initialize form with initial data
+const initializeFormWithData = (initialData) => {
+  console.log('Setting form data from initial data')
+  
+  // Store standard and subject temporarily
+  const savedStandard = initialData.selectedStandard
+  const savedSubject = initialData.selectedSubject
+  
+  // First set the form data without standard and subject
+  formData.value = {
+    ...initialData,
+    selectedStandard: null,
+    selectedSubject: null,
+  }
+  
+  // Capitalize the pattern name
+  if (formData.value.patternName) {
+    formData.value.patternName = capitalizeFirstLetter(formData.value.patternName)
+    validationStates.value.patternName.valid = true
+    validationStates.value.patternName.touched = true
+  }
+  
+  return { savedStandard, savedSubject }
+}
+
+// Helper function to restore standard and subject
+const restoreStandardAndSubject = async (savedStandard, savedSubject) => {
+  console.log('Selected board found:', formData.value.selectedBoard)
+  validationStates.value.board.valid = true
+  validationStates.value.board.touched = true
+  
+  // Fetch the complete board data to get standards and subjects
+  console.log('Fetching board details for ID:', formData.value.selectedBoard.id)
+  await fetchBoardDetails(formData.value.selectedBoard.id)
+  console.log('Board details fetched, updated board:', formData.value.selectedBoard)
+  
+  // Now restore standard and subject after board is fully loaded
+  restoreStandard(savedStandard)
+  restoreSubject(savedSubject)
+  
+  console.log('Final form data after initialization:', formData.value)
+}
+
+// Helper function to restore standard
+const restoreStandard = (savedStandard) => {
+  if (!savedStandard) return
+  
+  console.log('Restoring standard:', savedStandard)
+  const standard = formData.value.selectedBoard.standards.find(
+    (s) => s.id === savedStandard.id
+  )
+  console.log('Found standard:', standard)
+  formData.value.selectedStandard = standard ?? null
+  validationStates.value.standard.valid = !!standard
+  validationStates.value.standard.touched = true
+}
+
+// Helper function to restore subject
+const restoreSubject = (savedSubject) => {
+  if (!savedSubject) return
+  
+  console.log('Restoring subject:', savedSubject)
+  const subject = formData.value.selectedBoard.subjects.find(
+    (s) => s.id === savedSubject.id
+  )
+  console.log('Found subject:', subject)
+  formData.value.selectedSubject = subject ?? null
+  validationStates.value.subject.valid = !!subject
+  validationStates.value.subject.touched = true
+}
+
+// If initialData is provided, use it to initialize the form
+onMounted(async () => {
+  console.log('Component mounted, initial data:', props.initialData)
+  await fetchBoards()
+  console.log('Boards fetched:', boards.value)
+  
+  if (props.initialData) {
+    const { savedStandard, savedSubject } = initializeFormWithData(props.initialData)
+    console.log('Form data after setting:', formData.value)
+    
+    if (formData.value.selectedBoard) {
+      await restoreStandardAndSubject(savedStandard, savedSubject)
+    }
+    
+    if (formData.value.totalMarks) {
+      validationStates.value.totalMarks.valid = true
+      validationStates.value.totalMarks.touched = true
+      calculateRemainingMarks()
+    }
+  }
+})
 </script>
 
 <style scoped>

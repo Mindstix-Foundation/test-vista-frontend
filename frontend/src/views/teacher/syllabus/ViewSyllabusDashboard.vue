@@ -178,10 +178,10 @@ const selectedStandardObj = ref<StandardItem | null>(null)
 const selectedSubjectObj = ref<SubjectItem | null>(null)
 
 // Computed values for form values
-const selectedBoard = computed(() => selectedBoardObj.value?.id?.toString() || '')
-const selectedInstructionMedium = computed(() => selectedMediumObj.value?.id?.toString() || '')
-const selectedStandard = computed(() => selectedStandardObj.value?.id?.toString() || '')
-const selectedSubject = computed(() => selectedSubjectObj.value?.subject_id?.toString() || '')
+const selectedBoard = computed(() => selectedBoardObj.value?.id?.toString() ?? '')
+const selectedInstructionMedium = computed(() => selectedMediumObj.value?.id?.toString() ?? '')
+const selectedStandard = computed(() => selectedStandardObj.value?.id?.toString() ?? '')
+const selectedSubject = computed(() => selectedSubjectObj.value?.subject_id?.toString() ?? '')
 
 // Options for dropdowns
 const boards = ref<BoardItem[]>([])
@@ -293,15 +293,15 @@ const viewSyllabus = async () => {
     const queryParams = {
       // Display names for UI
       board: encodeURIComponent(selectedBoardObj.value ? `${selectedBoardObj.value.name} (${selectedBoardObj.value.abbreviation})` : ''),
-      medium: encodeURIComponent(selectedMediumObj.value?.instruction_medium || ''),
-      standard: encodeURIComponent(selectedStandardObj.value?.name || ''),
-      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name || ''),
+      medium: encodeURIComponent(selectedMediumObj.value?.instruction_medium ?? ''),
+      standard: encodeURIComponent(selectedStandardObj.value?.name ?? ''),
+      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name ?? ''),
       
       // IDs for API calls
-      boardId: selectedBoardObj.value?.id.toString() || '',
-      mediumId: selectedMediumObj.value?.id.toString() || '',
-      standardId: selectedStandardObj.value?.id.toString() || '',
-      subjectId: selectedSubjectObj.value?.subject_id.toString() || ''
+      boardId: selectedBoardObj.value?.id.toString() ?? '',
+      mediumId: selectedMediumObj.value?.id.toString() ?? '',
+      standardId: selectedStandardObj.value?.id.toString() ?? '',
+      subjectId: selectedSubjectObj.value?.subject_id.toString() ?? ''
     }
     
     // Navigate to the detailed view page with query parameters

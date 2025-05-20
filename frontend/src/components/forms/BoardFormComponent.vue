@@ -384,7 +384,7 @@ const fetchBoardData = async (boardId: number) => {
         name: s.name,
         board_id: Number(boardId),
         sequence_number: Number(s.sequence_number) // Ensure it's a number
-      })).sort((a, b) => Number(a.sequence_number || 0) - Number(b.sequence_number || 0)),
+      })).sort((a, b) => Number(a.sequence_number ?? 0) - Number(b.sequence_number ?? 0)),
       subjects: boardData.subjects.map((s: { id: number; name: string }) => ({
         id: s.id,
         name: s.name,
@@ -398,7 +398,7 @@ const fetchBoardData = async (boardId: number) => {
       name: '',
       board_id: Number(boardId),
       sequence_number: form.value.standards.length > 0 ?
-        Math.max(...form.value.standards.map(s => Number(s.sequence_number || 0))) + 1 : 1
+        Math.max(...form.value.standards.map(s => Number(s.sequence_number ?? 0))) + 1 : 1
     })
     form.value.subjects.push({ name: '', board_id: Number(boardId) })
 
@@ -655,7 +655,7 @@ const compareItems = <T extends BaseItem>(
     if (!formItem) {
       changes.push({
         type: 'delete',
-        message: `Delete ${entityType}: ${currentItem.instruction_medium || currentItem.name || ''}`,
+        message: `Delete ${entityType}: ${currentItem.instruction_medium ?? currentItem.name ?? ''}`,
         entity: entityType,
         data: currentItem,
       })
@@ -666,7 +666,7 @@ const compareItems = <T extends BaseItem>(
   validFormItems.forEach((formItem) => {
     const currentItem = currentItems.find((item) => item.id === formItem.id)
     if (currentItem) {
-      const currentName = currentItem.instruction_medium || currentItem.name || ''
+      const currentName = currentItem.instruction_medium ?? currentItem.name ?? ''
       if (currentName !== formItem.name) {
         changes.push({
           type: 'modify',
@@ -792,6 +792,74 @@ const calculateChanges = async () => {
   )
 }
 
+// Helper function to handle address updates in edit mode
+const handleAddressUpdate = async (formattedAddress: {
+  street: string;
+  postal_code: string;
+  city_id: number;
+}): Promise<number> => {
+  if (!props.isEditMode || !props.boardId) return 0;
+  
+  const { data: boardData } = await axiosInstance.get(`/boards/${props.boardId}`);
+  const addressId = boardData.address_id;
+  
+  if (!addressId) return 0;
+  
+  console.log('Updating address with data:', formattedAddress);
+  const { data: updatedAddress } = await axiosInstance.put(
+    `/addresses/${addressId}`,
+    formattedAddress,
+  );
+  console.log('Address updated successfully:', updatedAddress);
+  return updatedAddress.id;
+}
+
+// Helper function to prepare form data for submission
+const prepareFormData = (addressId: number, formattedAddress: {
+  street: string;
+  postal_code: string;
+  city_id: number;
+}) => {
+  const boardId = props.boardId ? parseInt(props.boardId) : 0;
+  
+  // Update sequence numbers for standards
+  form.value.standards.forEach((standard, idx) => {
+    if (standard.name.trim()) {
+      standard.sequence_number = idx + 1;
+    }
+  });
+  
+  return {
+    address: formattedAddress,
+    board: {
+      name: form.value.name.trim(),
+      abbreviation: form.value.abbreviation.trim(),
+      address_id: addressId ?? 0,
+    },
+    mediums: form.value.mediums
+      .filter((m) => m.name.trim())
+      .map((m) => ({
+        name: m.name.trim(),
+        board_id: boardId,
+      })),
+    standards: form.value.standards
+      .filter((s) => s.name.trim())
+      .map((s, index) => ({
+        id: s.id,
+        name: s.name.trim(),
+        board_id: boardId,
+        sequence_number: index + 1,
+      })),
+    subjects: form.value.subjects
+      .filter((s) => s.name.trim())
+      .map((s) => ({
+        id: s.id,
+        name: s.name.trim(),
+        board_id: boardId,
+      })),
+  };
+}
+
 // Update confirmAndSubmit to handle both add and edit modes
 const confirmAndSubmit = async () => {
   try {
@@ -810,64 +878,13 @@ const confirmAndSubmit = async () => {
       city_id: parseInt(String(form.value.address.city_id)),
     }
 
-    let addressId: number | undefined
-
-    // Only handle address updates in edit mode
-    if (props.isEditMode && props.boardId) {
-      const { data: boardData } = await axiosInstance.get(`/boards/${props.boardId}`)
-      addressId = boardData.address_id
-
-      if (addressId) {
-        console.log('Updating address with data:', formattedAddress)
-        const { data: updatedAddress } = await axiosInstance.put(
-          `/addresses/${addressId}`,
-          formattedAddress,
-        )
-        console.log('Address updated successfully:', updatedAddress)
-        addressId = updatedAddress.id
-      }
-    }
-
-    // Update sequence numbers for all standards based on their current order
-    // This ensures the sequence numbers match the order after any drag and drop operations
-    form.value.standards.forEach((standard, idx) => {
-      if (standard.name.trim()) {
-        standard.sequence_number = idx + 1;
-      }
-    });
-
-    // Emit the form data with properly formatted address
-    // In add mode, address_id will be 0 and will be set by AddBoard.vue
-    emit('submit', {
-      address: formattedAddress,
-      board: {
-        name: form.value.name.trim(),
-        abbreviation: form.value.abbreviation.trim(),
-        address_id: addressId || 0,
-      },
-      mediums: form.value.mediums
-        .filter((m) => m.name.trim())
-        .map((m) => ({
-          name: m.name.trim(),
-          board_id: props.boardId ? parseInt(props.boardId) : 0,
-        })),
-      standards: form.value.standards
-        .filter((s) => s.name.trim())
-        .map((s, index) => ({
-          id: s.id,
-          name: s.name.trim(),
-          board_id: props.boardId ? parseInt(props.boardId) : 0,
-          sequence_number: index + 1, // Ensure sequence numbers match the current order
-        })),
-      subjects: form.value.subjects
-        .filter((s) => s.name.trim())
-        .map((s) => ({
-          id: s.id,
-          name: s.name.trim(),
-          board_id: props.boardId ? parseInt(props.boardId) : 0,
-        })),
-    })
-  } catch (error) {
+    // Handle address update and get addressId
+    const addressId = await handleAddressUpdate(formattedAddress);
+    
+    // Prepare and emit form data
+    emit('submit', prepareFormData(addressId, formattedAddress));
+  } 
+  catch (error) {
     console.error('Error submitting form:', error)
     alert('An error occurred while saving the board. Please try again.')
   } finally {
@@ -876,18 +893,13 @@ const confirmAndSubmit = async () => {
 }
 
 // Define emits with the correct type
-const emit = defineEmits<{
-  (
-    e: 'submit',
-    data: {
-      address: CreateAddressDto
-      board: CreateBoardDto
-      mediums: CreateInstructionMediumDto[]
-      standards: CreateStandardDto[]
-      subjects: CreateSubjectDto[]
-    },
-  ): void
-}>()
+const emit = defineEmits<(e: 'submit', data: {
+  address: CreateAddressDto
+  board: CreateBoardDto
+  mediums: CreateInstructionMediumDto[]
+  standards: CreateStandardDto[]
+  subjects: CreateSubjectDto[]
+}) => void>()
 
 const goBack = () => {
   router.push('/admin/board')

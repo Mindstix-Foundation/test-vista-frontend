@@ -146,11 +146,11 @@ const props = defineProps<{
 }>();
 
 // Set default values for optional props
-const leftItems = computed(() => props.leftItems || []);
-const rightItems = computed(() => props.rightItems || []);
-const showDebugInfo = computed(() => props.showDebugInfo !== undefined ? props.showDebugInfo : false);
-const showPreviewIndicator = computed(() => props.showPreviewIndicator !== undefined ? props.showPreviewIndicator : false);
-const textMaxLength = computed(() => props.maxTextLength || 80);
+const leftItems = computed(() => props.leftItems ?? []);
+const rightItems = computed(() => props.rightItems ?? []);
+const showDebugInfo = computed(() => props.showDebugInfo ?? false);
+const showPreviewIndicator = computed(() => props.showPreviewIndicator ?? false);
+const textMaxLength = computed(() => props.maxTextLength ?? 80);
 
 // Compute the maximum length of pairs to display
 const maxPairsLength = computed(() => Math.max(leftItems.value.length, rightItems.value.length));
@@ -253,7 +253,7 @@ function handleLeftImageError(index: number): void {
 
   // Detailed error logging
   console.error(`Failed to load left image at index ${index} for question:`, props.questionId);
-  if (props.leftImages && props.leftImages[index]) {
+  if (props.leftImages?.[index]) {
     console.error(`Left image URL that failed:`, props.leftImages[index]);
 
     // Check if URL is well-formed
@@ -288,7 +288,7 @@ function handleRightImageError(index: number): void {
 
   // Detailed error logging
   console.error(`Failed to load right image at index ${index} for question:`, props.questionId);
-  if (props.rightImages && props.rightImages[index]) {
+  if (props.rightImages?.[index]) {
     console.error(`Right image URL that failed:`, props.rightImages[index]);
 
     // Check if URL is well-formed

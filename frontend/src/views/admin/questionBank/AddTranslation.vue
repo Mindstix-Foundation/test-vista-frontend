@@ -11,11 +11,11 @@
             console.log('AddTranslation - Current query params:', currentRoute.query);
             
             const queryParams = {
-              page: currentRoute.query.returnPage,
-              sort: currentRoute.query.returnSort,
-              topic: currentRoute.query.returnTopic,
-              type: currentRoute.query.returnType,
-              search: currentRoute.query.returnSearch
+              page: currentRoute.query.returnPage ?? undefined,
+              sort: currentRoute.query.returnSort ?? undefined,
+              topic: currentRoute.query.returnTopic ?? undefined,
+              type: currentRoute.query.returnType ?? undefined,
+              search: currentRoute.query.returnSearch ?? undefined
             };
             
             console.log('AddTranslation - Navigating back with params:', queryParams);
@@ -1087,11 +1087,11 @@ function getQueryParams() {
   return {
     success: 'true',
     message: 'Translation added successfully',
-    page: currentRoute.query.returnPage || undefined,
-    sort: currentRoute.query.returnSort || undefined,
-    topic: currentRoute.query.returnTopic || undefined,
-    type: currentRoute.query.returnType || undefined,
-    search: currentRoute.query.returnSearch || undefined
+    page: currentRoute.query.returnPage ?? undefined,
+    sort: currentRoute.query.returnSort ?? undefined,
+    topic: currentRoute.query.returnTopic ?? undefined,
+    type: currentRoute.query.returnType ?? undefined,
+    search: currentRoute.query.returnSearch ?? undefined
   };
 }
 
@@ -1145,7 +1145,7 @@ async function saveTranslation() {
     const axiosError = error as AxiosErrorResponse;
     showToast(
       'Error',
-      axiosError.response?.data?.message || 'Failed to save translation',
+      axiosError.response?.data?.message ?? 'Failed to save translation',
       'error'
     );
   } finally {
@@ -1219,10 +1219,7 @@ async function fetchQuestionDetails() {
   const questionDetails = questionDetailsResponse.data;
 
   // Check if question has any question_texts with topics
-  if (!questionDetails.question_texts ||
-      !questionDetails.question_texts[0] ||
-      !questionDetails.question_texts[0].topic ||
-      !questionDetails.question_texts[0].topic.id) {
+  if (!questionDetails?.question_texts?.[0]?.topic?.id) {
     console.error('Question has no associated topic');
     toastStore.showToast({
       title: 'Error',
@@ -1272,7 +1269,7 @@ function processSelectedTranslation(selectedTranslation) {
 }
 
 function processQuestionImage(selectedTranslation) {
-  if (selectedTranslation.image_id && selectedTranslation.image) {
+  if (selectedTranslation?.image_id && selectedTranslation?.image) {
     imageLoading.value = true;
     questionImage.value = {
       id: selectedTranslation.image_id,
@@ -1331,7 +1328,7 @@ function processOptionDetails(option, index) {
   }
 
   // Set option image if available
-  if (option.image_id && option.image && option.image.presigned_url) {
+  if (option.image_id && option?.image?.presigned_url) {
     originalOptionImages.value[index] = option.image.presigned_url;
     optionImageLoading.value[index] = true;
     optionImageIds.value[index] = option.image_id;
@@ -1374,7 +1371,7 @@ function processMatchPairImages(pair, index) {
   // Handle left side image
   if (pair.left_image_id) {
     const leftImage = pair.left_image;
-    if (leftImage && leftImage.presigned_url) {
+    if (leftImage?.presigned_url) {
       originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
       pairLeftImageLoading.value[index] = true;
       pairLeftImageIds.value[index] = pair.left_image_id;
@@ -1384,7 +1381,7 @@ function processMatchPairImages(pair, index) {
   // Handle right side image
   if (pair.right_image_id) {
     const rightImage = pair.right_image;
-    if (rightImage && rightImage.presigned_url) {
+    if (rightImage?.presigned_url) {
       originalMatchPairRightImages.value[index] = rightImage.presigned_url;
       pairRightImageLoading.value[index] = true;
       pairRightImageIds.value[index] = pair.right_image_id;
@@ -1413,7 +1410,7 @@ function handleLoadError(error) {
   const axiosError = error as AxiosErrorResponse;
   toastStore.showToast({
     title: 'Error',
-    message: axiosError.response?.data?.message || 'Failed to load question data',
+    message: axiosError.response?.data?.message ?? 'Failed to load question data',
     type: 'error'
   });
 
@@ -1423,70 +1420,113 @@ function handleLoadError(error) {
 
 // New function to handle changing the selected translation
 function changeTranslation(index: number) {
-  if (index >= 0 && index < availableTranslations.value.length) {
-    selectedTranslationIndex.value = index;
-    const selectedTranslation = availableTranslations.value[index];
+  if (index < 0 || index >= availableTranslations.value.length) {
+    return;
+  }
+  
+  selectedTranslationIndex.value = index;
+  const selectedTranslation = availableTranslations.value[index];
 
-    // Update the displayed original question
-    originalQuestion.value = selectedTranslation.question_text;
+  // Update the displayed original question
+  originalQuestion.value = selectedTranslation.question_text;
 
-    // Update image if available
-    if (selectedTranslation.image_id && selectedTranslation.image) {
-      imageLoading.value = true;
-      imageError.value = false;
-      questionImage.value = {
-        id: selectedTranslation.image_id,
-        presigned_url: selectedTranslation.image.presigned_url,
-        image_url: selectedTranslation.image.image_url
-      };
-    } else {
-      questionImage.value = null;
+  // Update image if available
+  updateQuestionImage(selectedTranslation);
+  
+  // Update options for specific question types
+  updateQuestionOptions(selectedTranslation);
+
+  // Reset translated options to empty for the new translation
+  translatedOptions.value = Array(originalOptions.value.length).fill('');
+
+  // Reset preview images
+  optionImagePreviews.value = Array(originalOptions.value.length).fill(null);
+
+  // Resize textareas after update
+  resizeTextareas();
+}
+
+// Helper function to update the question image
+function updateQuestionImage(translation) {
+  if (translation?.image_id && translation?.image) {
+    imageLoading.value = true;
+    imageError.value = false;
+    questionImage.value = {
+      id: translation.image_id,
+      presigned_url: translation.image.presigned_url,
+      image_url: translation.image.image_url
+    };
+  } else {
+    questionImage.value = null;
+  }
+}
+
+// Helper function to update question options
+function updateQuestionOptions(translation) {
+  const isOptionBasedQuestion = isOptionTypeQuestion(questionType.value);
+  
+  if (isOptionBasedQuestion && translation.mcq_options) {
+    // Extract option text
+    originalOptions.value = translation.mcq_options.map((opt) => opt.option_text);
+
+    // Reset arrays for option images and correct status
+    resetOptionArrays(originalOptions.value.length);
+
+    // Process each option
+    processOptions(translation.mcq_options);
+  }
+}
+
+// Helper function to check if question type uses options
+function isOptionTypeQuestion(type) {
+  return type === 'Multiple Choice Question (MCQ)' ||
+         type === 'Odd One Out' ||
+         type === 'True or False';
+}
+
+// Helper function to reset option arrays
+function resetOptionArrays(optionsCount) {
+  originalOptionImages.value = Array(optionsCount).fill(null);
+  optionImageLoading.value = Array(optionsCount).fill(false);
+  optionImageError.value = Array(optionsCount).fill(false);
+  originalOptionIsCorrect.value = Array(optionsCount).fill(false);
+  optionImageIds.value = Array(optionsCount).fill(null);
+}
+
+// Helper function to process options
+function processOptions(options) {
+  options.forEach((option, index) => {
+    // Set correct option
+    if (option.is_correct) {
+      originalOptionIsCorrect.value[index] = true;
     }
 
-    // Update options for MCQ, Odd One Out, and True/False with option images
-    if ((questionType.value === 'Multiple Choice Question (MCQ)' ||
-         questionType.value === 'Odd One Out' ||
-         questionType.value === 'True or False') &&
-        selectedTranslation.mcq_options) {
+    // Set option image if available
+    processOptionImage(option, index);
+  });
+}
 
-      // Extract option text
-      originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
+// Helper function to process option image
+function processOptionImage(option, index) {
+  if (option.image_id && option?.image?.presigned_url) {
+    originalOptionImages.value[index] = option.image.presigned_url;
+    optionImageLoading.value[index] = true;
+    optionImageIds.value[index] = option.image_id;
+  }
+}
 
-      // Reset arrays for option images and correct status
-      originalOptionImages.value = Array(originalOptions.value.length).fill(null);
-      optionImageLoading.value = Array(originalOptions.value.length).fill(false);
-      optionImageError.value = Array(originalOptions.value.length).fill(false);
-      originalOptionIsCorrect.value = Array(originalOptions.value.length).fill(false);
-      optionImageIds.value = Array(originalOptions.value.length).fill(null);
-
-      // Loop through options to extract images and correct status
-      selectedTranslation.mcq_options.forEach((option: McqOption, index: number) => {
-        // Set correct option
-        if (option.is_correct) {
-          originalOptionIsCorrect.value[index] = true;
-        }
-
-        // Set option image if available
-        if (option.image_id && option.image && option.image.presigned_url) {
-          originalOptionImages.value[index] = option.image.presigned_url;
-          optionImageLoading.value[index] = true;
-          optionImageIds.value[index] = option.image_id;
-        }
-      });
-    }
-
-    // Reset translated options to empty for the new translation
-    translatedOptions.value = Array(originalOptions.value.length).fill('');
-
-    // Reset preview images
-    optionImagePreviews.value = Array(originalOptions.value.length).fill(null);
-
-    // Resize textareas after update
-    setTimeout(() => {
-      document.querySelectorAll('textarea').forEach(textarea => {
-        autoResize({ target: textarea } as unknown as Event);
-      });
-    }, 0);
+// Helper function to resize textareas
+function resizeTextareas() {
+  // Use a different approach than the one in initializeTextareas
+  const textareas = document.querySelectorAll('textarea');
+  if (textareas.length > 0) {
+    // Process each textarea with a small delay between them
+    textareas.forEach((textarea, index) => {
+      // Stagger the resize operations slightly
+      setTimeout(() => {
+        autoResizeElement(textarea);
+      }, index * 5); // 5ms delay between each textarea resize
+    });
   }
 }
 
@@ -1676,7 +1716,7 @@ onMounted(() => {
 
   // Check for success message in route query params (if coming back from another page)
   if (route.query.success === 'true') {
-    const message = route.query.message as string || 'Operation completed successfully';
+    const message = route.query.message ?? 'Operation completed successfully';
 
     toastStore.showToast({
       title: 'Success',

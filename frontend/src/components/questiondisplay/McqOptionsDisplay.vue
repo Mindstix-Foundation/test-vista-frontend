@@ -73,14 +73,14 @@ const props = defineProps<{
 }>();
 
 // Set default values for optional props
-const options = computed(() => props.options || []);
-const highlightCorrect = computed(() => props.highlightCorrect !== undefined ? props.highlightCorrect : true);
-const layout = computed(() => props.layout || 'grid');
-const showPreviewIndicator = computed(() => props.showPreviewIndicator !== undefined ? props.showPreviewIndicator : false);
+const options = computed(() => props.options ?? []);
+const highlightCorrect = computed(() => props.highlightCorrect ?? true);
+const layout = computed(() => props.layout ?? 'grid');
+const showPreviewIndicator = computed(() => props.showPreviewIndicator ?? false);
 
 // Set up reactive data
 const expandedSections = ref<Set<string>>(new Set());
-const optionTextMaxLength = computed(() => props.maxTextLength || 80); // Characters before truncating for options
+const optionTextMaxLength = computed(() => props.maxTextLength ?? 80); // Characters before truncating for options
 
 // Set up image loading states
 const optionImageLoading = ref<boolean[]>([]);

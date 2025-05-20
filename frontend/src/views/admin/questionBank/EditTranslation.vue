@@ -886,7 +886,7 @@ async function uploadImage(file) {
     }
   );
   
-  if (!uploadResponse.data || !uploadResponse.data.image_url) {
+  if (!uploadResponse?.data?.image_url) {
     throw new Error("Upload response is missing image_url");
   }
   
@@ -903,7 +903,7 @@ async function uploadImage(file) {
   console.log("STEP 2: Calling /images API with:", imageCreateRequest);
   const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
   
-  if (!imageResponse.data || !imageResponse.data.id) {
+  if (!imageResponse?.data?.id) {
     throw new Error("Image creation response is missing id");
   }
   
@@ -1160,7 +1160,7 @@ async function updateTranslation() {
     isFullscreenLoading.value = true;
     
     // Step 3: Process main question image
-    let mainImageId = questionImage.value?.id || null;
+    let mainImageId = questionImage.value?.id ?? null;
     try {
       mainImageId = await processMainQuestionImage(mainImageId);
     } catch {
@@ -1210,7 +1210,7 @@ async function updateTranslation() {
     const axiosError = error as AxiosErrorResponse;
     toastStore.showToast({
       title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to update translation',
+      message: axiosError.response?.data?.message ?? 'Failed to update translation',
       type: 'error'
     });
   } finally {
@@ -1242,9 +1242,7 @@ function getQuestionIdFromRoute() {
 function validateAndGetTopicId(questionDetails: Record<string, unknown>) {
   if (!questionDetails.question_texts ||
       !Array.isArray(questionDetails.question_texts) ||
-      !questionDetails.question_texts[0] ||
-      !questionDetails.question_texts[0].topic ||
-      !questionDetails.question_texts[0].topic.id) {
+      !questionDetails?.question_texts[0]?.topic?.id) {
     console.error('Question has no associated topic');
     toastStore.showToast({
       title: 'Error',
@@ -1388,7 +1386,8 @@ function processMcqOptions(referenceTranslation: QuestionTranslation, translatio
       originalOptionIsCorrect.value[index] = true;
     }
 
-    if (option.image_id && option.image && option.image.presigned_url) {
+    // Set option image if available
+    if (option.image_id && option?.image?.presigned_url) {
       originalOptionImages.value[index] = option.image.presigned_url;
       optionImageLoading.value[index] = true;
       optionImageIds.value[index] = option.image_id;
@@ -1446,7 +1445,7 @@ function processMatchPairImages(referenceTranslation: QuestionTranslation) {
   referenceTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
     // Handle left image
     if (pair.left_image_id && pair.left_image) {
-      const leftUrl = pair.left_image.presigned_url || pair.left_image.image_url;
+      const leftUrl = pair.left_image.presigned_url ?? pair.left_image.image_url;
       if (leftUrl) {
         originalMatchPairLeftImages.value[index] = leftUrl;
         pairLeftImageLoading.value[index] = true;
@@ -1456,7 +1455,7 @@ function processMatchPairImages(referenceTranslation: QuestionTranslation) {
     
     // Handle right image
     if (pair.right_image_id && pair.right_image) {
-      const rightUrl = pair.right_image.presigned_url || pair.right_image.image_url;
+      const rightUrl = pair.right_image.presigned_url ?? pair.right_image.image_url;
       if (rightUrl) {
         originalMatchPairRightImages.value[index] = rightUrl;
         pairRightImageLoading.value[index] = true;
@@ -1574,7 +1573,7 @@ async function loadQuestionData() {
     const axiosError = error as AxiosErrorResponse;
     toastStore.showToast({
       title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to load question data',
+      message: axiosError.response?.data?.message ?? 'Failed to load question data',
       type: 'error'
     });
 
@@ -1596,49 +1595,10 @@ function changeTranslation(index: number) {
     originalQuestion.value = selectedTranslation.question_text;
 
     // Update image if available
-    if (selectedTranslation.image_id && selectedTranslation.image) {
-      imageLoading.value = true;
-      imageError.value = false;
-      questionImage.value = {
-        id: selectedTranslation.image_id,
-        presigned_url: selectedTranslation.image.presigned_url,
-        image_url: selectedTranslation.image.image_url
-      };
-    } else {
-      questionImage.value = null;
-    }
+    updateQuestionImage(selectedTranslation);
 
     // Update options for MCQ, Odd One Out, and True/False with option images
-    if ((questionType.value === QUESTION_TYPES.MCQ ||
-         questionType.value === QUESTION_TYPES.ODD_ONE_OUT ||
-         questionType.value === QUESTION_TYPES.TRUE_FALSE) &&
-        selectedTranslation.mcq_options) {
-
-      // Extract option text
-      originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
-
-      // Reset arrays for option images and correct status
-      originalOptionImages.value = Array(originalOptions.value.length).fill(null);
-      optionImageLoading.value = Array(originalOptions.value.length).fill(false);
-      optionImageError.value = Array(originalOptions.value.length).fill(false);
-      originalOptionIsCorrect.value = Array(originalOptions.value.length).fill(false);
-      optionImageIds.value = Array(originalOptions.value.length).fill(null);
-
-      // Loop through options to extract images and correct status
-      selectedTranslation.mcq_options.forEach((option: McqOption, index: number) => {
-        // Set correct option
-        if (option.is_correct) {
-          originalOptionIsCorrect.value[index] = true;
-        }
-
-        // Set option image if available
-        if (option.image_id && option.image && option.image.presigned_url) {
-          originalOptionImages.value[index] = option.image.presigned_url;
-          optionImageLoading.value[index] = true;
-          optionImageIds.value[index] = option.image_id;
-        }
-      });
-    }
+    updateOptionsIfNeeded(selectedTranslation);
 
     // Resize textareas after update
     setTimeout(() => {
@@ -1647,6 +1607,71 @@ function changeTranslation(index: number) {
       });
     }, 0);
   }
+}
+
+// Helper function to update question image
+function updateQuestionImage(translation: {
+  image_id?: string | number;
+  image?: { presigned_url: string; image_url: string };
+}) {
+  if (translation.image_id && translation.image) {
+    imageLoading.value = true;
+    imageError.value = false;
+    questionImage.value = {
+      id: translation.image_id,
+      presigned_url: translation.image.presigned_url,
+      image_url: translation.image.image_url
+    };
+  } else {
+    questionImage.value = null;
+  }
+}
+
+// Helper function to update options for multiple choice questions
+function updateOptionsIfNeeded(translation: {
+  mcq_options?: McqOption[];
+}) {
+  const isMCQType = questionType.value === QUESTION_TYPES.MCQ ||
+                    questionType.value === QUESTION_TYPES.ODD_ONE_OUT ||
+                    questionType.value === QUESTION_TYPES.TRUE_FALSE;
+                    
+  if (isMCQType && translation.mcq_options) {
+    // Extract option text
+    originalOptions.value = translation.mcq_options.map((opt: McqOption) => opt.option_text);
+
+    // Reset arrays for option images and correct status
+    resetOptionArrays();
+
+    // Loop through options to extract images and correct status
+    updateOptionDetails(translation.mcq_options);
+  }
+}
+
+// Helper function to reset option arrays
+function resetOptionArrays() {
+  const optionCount = originalOptions.value.length;
+  originalOptionImages.value = Array(optionCount).fill(null);
+  optionImageLoading.value = Array(optionCount).fill(false);
+  optionImageError.value = Array(optionCount).fill(false);
+  originalOptionIsCorrect.value = Array(optionCount).fill(false);
+  optionImageIds.value = Array(optionCount).fill(null);
+}
+
+// Helper function to update option details
+function updateOptionDetails(options: McqOption[]) {
+  options.forEach((option: McqOption, index: number) => {
+    // Set correct option
+    if (option.is_correct) {
+      originalOptionIsCorrect.value[index] = true;
+    }
+
+    // Set option image if available
+    if (option.image_id && option?.image?.presigned_url) {
+      originalOptionImages.value[index] = option.image.presigned_url;
+      optionImageLoading.value[index] = true;
+      optionImageIds.value[index] = option.image_id;
+    }
+  });
 }
 
 // Function to handle option image loading
@@ -1701,14 +1726,14 @@ function handleOptionImageChange(event: Event, index: number) {
 
 // Function to clear selected option image
 function clearOptionImage(index: number) {
-  if (optionImagePreviews.value && optionImagePreviews.value[index]) {
+  if (optionImagePreviews?.value?.[index]) {
     // Release the object URL to avoid memory leaks
     URL.revokeObjectURL(optionImagePreviews.value[index] as string);
     optionImagePreviews.value[index] = null;
   }
 
   // Clear the file reference
-  if (selectedOptionFiles.value && selectedOptionFiles.value[index]) {
+  if (selectedOptionFiles?.value?.[index]) {
     selectedOptionFiles.value[index] = null;
   }
 
@@ -1894,7 +1919,7 @@ function clearPairLeftImage(index: number) {
   pairLeftImagePreviews.value = updatedPreviews;
 
   // Clear the file reference
-  if (selectedPairLeftFiles.value && selectedPairLeftFiles.value[index]) {
+  if (selectedPairLeftFiles?.value?.[index]) {
     selectedPairLeftFiles.value[index] = null;
   }
 
@@ -1912,7 +1937,7 @@ function clearPairRightImage(index: number) {
   pairRightImagePreviews.value = updatedPreviews;
 
   // Clear the file reference
-  if (selectedPairRightFiles.value && selectedPairRightFiles.value[index]) {
+  if (selectedPairRightFiles?.value?.[index]) {
     selectedPairRightFiles.value[index] = null;
   }
 

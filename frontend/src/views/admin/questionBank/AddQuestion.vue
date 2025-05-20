@@ -120,9 +120,9 @@ async function uploadImage(file: File) {
   // Create image record with returned details
   const imageCreateRequest = {
     image_url: uploadedImageDetails.image_url,
-    original_filename: uploadedImageDetails.original_filename || file.name,
-    file_size: uploadedImageDetails.file_size || file.size,
-    file_type: uploadedImageDetails.file_type || file.type,
+    original_filename: uploadedImageDetails.original_filename ?? file.name,
+    file_size: uploadedImageDetails.file_size ?? file.size,
+    file_type: uploadedImageDetails.file_type ?? file.type,
     width: uploadedImageDetails.width,
     height: uploadedImageDetails.height
   };
@@ -216,32 +216,61 @@ async function processMatchPairs(lhs: string[], rhs: string[], optionImages?: (F
   const hasOptionImages = optionImages && Array.isArray(optionImages);
   
   for (let i = 0; i < maxLength; i++) {
-    // Skip empty pairs
-    const leftText = i < lhs.length ? lhs[i].trim() : '';
-    const rightText = i < rhs.length ? rhs[i].trim() : '';
-    
-    if (leftText === '' && rightText === '') continue;
-    
-    // Create the pair object
-    const pair = createPairObject(leftText, rightText);
-    
-    // Process images if they exist
-    if (hasOptionImages) {
-      // Handle left image
-      if (i < lhs.length && optionImages[i]) {
-        pair.left_image_id = await uploadPairImage(optionImages[i] as File, 'left', i);
-      }
-      
-      // Handle right image
-      if (i < rhs.length && optionImages[i + 10]) {
-        pair.right_image_id = await uploadPairImage(optionImages[i + 10] as File, 'right', i);
-      }
+    const pair = await processSingleMatchPair(lhs, rhs, optionImages, hasOptionImages, i);
+    if (pair) {
+      matchPairs.push(pair);
     }
-    
-    matchPairs.push(pair);
   }
   
   return matchPairs;
+}
+
+// Helper to process a single match pair
+async function processSingleMatchPair(
+  lhs: string[], 
+  rhs: string[], 
+  optionImages?: (File | null)[], 
+  hasOptionImages?: boolean, 
+  index?: number
+) {
+  if (index === undefined) return null;
+  
+  // Get text values with defaults
+  const leftText = index < lhs.length ? lhs[index].trim() : '';
+  const rightText = index < rhs.length ? rhs[index].trim() : '';
+  
+  // Skip empty pairs
+  if (leftText === '' && rightText === '') return null;
+  
+  // Create the pair object
+  const pair = createPairObject(leftText, rightText);
+  
+  // Process images if applicable
+  if (hasOptionImages) {
+    await processMatchPairImages(pair, lhs, optionImages, index);
+  }
+  
+  return pair;
+}
+
+// Helper to process images for a match pair
+async function processMatchPairImages(
+  pair: { left_image_id?: number, right_image_id?: number }, 
+  lhs: string[], 
+  optionImages?: (File | null)[], 
+  index?: number
+) {
+  if (!optionImages || index === undefined) return;
+  
+  // Handle left image
+  if (index < lhs.length && optionImages[index]) {
+    pair.left_image_id = await uploadPairImage(optionImages[index] as File, 'left', index);
+  }
+  
+  // Handle right image
+  if (optionImages[index + 10]) {
+    pair.right_image_id = await uploadPairImage(optionImages[index + 10] as File, 'right', index);
+  }
 }
 
 // Create question request base
@@ -276,10 +305,10 @@ function createBaseQuestionRequest(payload: {
 // Handle special question types (Odd One Out, Correlation)
 function processSpecialQuestionTypes(request, questionTypeId: number, correctAnswer?: string) {
   if (questionTypeId === 2) { // Odd One Out
-    request.question_text_data.answer_text = correctAnswer || "See question for details";
+    request.question_text_data.answer_text = correctAnswer ?? "See question for details";
   } 
   else if (questionTypeId === 3) { // Complete the Correlation
-    request.question_text_data.answer_text = correctAnswer || "See question for correlation details";
+    request.question_text_data.answer_text = correctAnswer ?? "See question for correlation details";
   }
   
   return request;
@@ -370,7 +399,7 @@ async function handleSaveQuestion(payload: {
     const axiosError = error as AxiosErrorResponse;
     toastStore.showToast({
       title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to create question',
+      message: axiosError.response?.data?.message ?? 'Failed to create question',
       type: 'error'
     });
   }

@@ -105,6 +105,7 @@
             </div>
 
             <table class="table table-sm table-hover table-striped table-bordered" :class="{ 'table-searching': isSearchingSchool || isSearchingBoard }">
+              <caption>List of schools with their associated boards. Each school can be managed using the actions in the last column.</caption>
               <colgroup>
                 <col style="width: 10px" />
                 <col style="width: 35%" />
@@ -770,7 +771,7 @@ async function fetchSchools() {
     console.log('Schools API Response:', response.data)
 
     // Check if response has data property
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       schools.value = response.data.data
 
       // Update pagination info

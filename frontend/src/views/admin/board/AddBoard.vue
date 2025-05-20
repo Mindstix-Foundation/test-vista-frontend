@@ -59,7 +59,7 @@ interface ApiResponse {
 const handleApiError = (errorData: ApiErrorResponse | null, defaultMessage: string): string => {
   return Array.isArray(errorData?.message)
     ? errorData.message.join(', ')
-    : errorData?.message || defaultMessage
+    : errorData?.message ?? defaultMessage
 }
 
 const createEntity = async <T,>(

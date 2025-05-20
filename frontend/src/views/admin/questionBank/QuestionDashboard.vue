@@ -461,13 +461,13 @@ interface Question {
 // Define a new interface for the result object in processing functions
 interface ProcessedQuestionTypeData {
   options?: string[];
-  optionImages?: (string | null)[] | undefined;
-  correctOptionIndex?: number | undefined;
-  lhs?: (string | null)[] | undefined;
-  rhs?: (string | null)[] | undefined;
-  lhsImages?: (string | null)[] | undefined;
-  rhsImages?: (string | null)[] | undefined;
-  correctAnswer?: string | undefined;
+  optionImages?: (string | null)[];
+  correctOptionIndex?: number;
+  lhs?: (string | null)[];
+  rhs?: (string | null)[];
+  lhsImages?: (string | null)[];
+  rhsImages?: (string | null)[];
+  correctAnswer?: string;
 }
 
 // Component name (for linter)
@@ -532,8 +532,8 @@ const questionTextMaxLength = 250; // Characters before truncating
 const optionTextMaxLength = 80;  // Characters before truncating for options
 
 // Computed properties to extract IDs from selected objects
-const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id || null)
-const selectedType = computed<number | null>(() => selectedTypeObj.value?.id || null)
+const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id ?? null)
+const selectedType = computed<number | null>(() => selectedTypeObj.value?.id ?? null)
 
 // Type definitions for sort mappings and type mappings
 interface SortOption {
@@ -754,7 +754,7 @@ function openVerifyConfirmationModal(index: number) {
     : 'Are you sure you want to verify this original question in the Question Bank?';
 
   // If this is a translated question, we need to check if the original is verified
-  if (isTranslated && question.topics && question.topics.length > 0) {
+  if (isTranslated && question.topics?.length > 0) {
     const topicId = question.topics[0].id;
 
     // Show loading message while we check the original
@@ -809,7 +809,7 @@ function openVerifyConfirmationModal(index: number) {
 
         setTimeout(() => {
           // If we have verified texts, proceed with normal verify modal
-          if (response.data && response.data.question_texts && response.data.question_texts.length > 0) {
+          if (response.data?.question_texts?.length > 0) {
             showVerifyModal(message, index);
           } else {
             // If no verified texts, show error modal instead
@@ -934,72 +934,57 @@ function createConfirmationModal(options: {
 }
 
 function deleteUnverifiedQuestion(index: number) {
-  try {
-    // Get the question before removing it
-    const question = unverifiedQuestions.value[index];
+  // Get the question before removing it
+  const question = unverifiedQuestions.value[index];
 
-    // First, fetch the question data to get the question text ID
-    axiosInstance.get(`/questions/${question.id}`)
-      .then((response) => {
-        const questionData = response.data;
+  // First, fetch the question data to get the question text ID
+  axiosInstance.get(`/questions/${question.id}`)
+    .then((response) => {
+      const questionData = response.data;
 
-        // Make sure there's a question text to delete
-        if (questionData.question_texts && questionData.question_texts.length > 0) {
-          const questionTextId = questionData.question_texts[0].id;
+      // Make sure there's a question text to delete
+      if (questionData.question_texts?.length > 0) {
+        const questionTextId = questionData.question_texts[0].id;
 
-          // Delete the question text instead of the entire question
-          return axiosInstance.delete(`/question-texts/${questionTextId}`);
-        } else {
-          throw new Error('Question text not found');
-        }
-      })
-      .then(() => {
-        // Remove question from unverified questions
-        unverifiedQuestions.value.splice(index, 1);
+        // Delete the question text instead of the entire question
+        return axiosInstance.delete(`/question-texts/${questionTextId}`);
+      } else {
+        throw new Error('Question text not found');
+      }
+    })
+    .then(() => {
+      // Remove question from unverified questions
+      unverifiedQuestions.value.splice(index, 1);
 
-        // Show success toast
-        toastTitle.value = 'Success';
-        toastMessage.value = 'Question deleted successfully';
-        toastType.value = 'success';
-        showToast.value = true;
+      // Show success toast
+      toastTitle.value = 'Success';
+      toastMessage.value = 'Question deleted successfully';
+      toastType.value = 'success';
+      showToast.value = true;
 
-        // Auto hide toast after 3 seconds
-        setTimeout(() => {
-          showToast.value = false;
-        }, 3000);
+      // Auto hide toast after 3 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
 
-        // Refresh the pagination and unverified count
-        fetchQuestions();
-        fetchUnverifiedCount();
-      })
-      .catch(error => {
-        console.error('Error deleting question text:', error);
+      // Refresh the pagination and unverified count
+      fetchQuestions();
+      fetchUnverifiedCount();
+    })
+    .catch(error => {
+      console.error('Error deleting question text:', error);
 
-        // Show error toast
-        toastTitle.value = 'Error';
-        toastMessage.value = error.response?.data?.message || 'Failed to delete question';
-        toastType.value = 'error';
-        showToast.value = true;
+      // Show error toast
+      toastTitle.value = 'Error';
+      toastMessage.value = error.response?.data?.message || 'Failed to delete question';
+      toastType.value = 'error';
+      showToast.value = true;
 
-        // Auto hide toast after 5 seconds
-        setTimeout(() => {
-          showToast.value = false;
-        }, 5000);
-      });
-  } catch (error) {
-    console.error('Error in deleteUnverifiedQuestion:', error);
-
-    // Show error toast
-    toastTitle.value = 'Error';
-    toastMessage.value = 'An unexpected error occurred';
-    toastType.value = 'error';
-    showToast.value = true;
-
-    // Auto hide toast after 5 seconds
-    setTimeout(() => {
-      showToast.value = false;
-    }, 5000);
-  }
+      // Auto hide toast after 5 seconds
+      setTimeout(() => {
+        showToast.value = false;
+      }, 5000);
+    });
 }
 
 function verifyQuestion(index: number) {
@@ -1007,7 +992,7 @@ function verifyQuestion(index: number) {
   const question = unverifiedQuestions.value[index];
 
   // Check if we have all the required data
-  if (!question || !question.id || !question.topics || question.topics.length === 0 || !question.question_text_id) {
+  if (!question?.id || !question?.topics || question?.topics.length === 0 || !question?.question_text_id) {
     // Show error toast if we don't have required data
     toastTitle.value = 'Error';
     toastMessage.value = 'Cannot verify question: missing required data';
@@ -1086,7 +1071,7 @@ function deleteVerifiedQuestion(question: Question, index: number) {
       const questionData = response.data;
 
       // Make sure there's a question text to delete
-      if (questionData.question_texts && questionData.question_texts.length > 0) {
+      if (questionData.question_texts?.length > 0) {
         const questionTextId = questionData.question_texts[0].id;
 
         // Delete the question text instead of the entire question
@@ -1201,78 +1186,73 @@ function changePage(page: number) {
   fetchQuestions()
 }
 
+// Helper function to prepare query parameters
+function prepareQueryParams() {
+  // Create base parameters
+  const params: Record<string, string | number | boolean> = {
+    chapter_id: questionBankData.value.chapterId,
+    instruction_medium_id: questionBankData.value.mediumId,
+    is_verified: !showUnverified.value,
+    page: currentPage.value,
+    page_size: pageSize.value
+  };
+
+  // Add sort parameters
+  if (sortOption.value && sortMappings[sortOption.value]) {
+    params.sort_by = sortMappings[sortOption.value].sort_by;
+    params.sort_order = sortMappings[sortOption.value].sort_order;
+  }
+
+  // Add filter parameters
+  if (searchQuery.value) params.search = searchQuery.value;
+  if (selectedTopic.value) params.topic_id = selectedTopic.value;
+  if (selectedType.value) params.question_type_id = selectedType.value;
+
+  return params;
+}
+
+// Helper function to process API response
+function processQuestionsResponse(response: { data?: { data?: ApiQuestion[], meta?: { total_count?: number, total_pages?: number } } }) {
+  if (!response?.data?.data) return;
+
+  // Update pagination data
+  if (response.data.meta) {
+    totalItems.value = response.data.meta.total_count ?? 0;
+    totalPages.value = response.data.meta.total_pages ?? 1;
+  }
+
+  // Transform and store questions
+  const questions = response.data.data.map(transformApiQuestion);
+  
+  // Update the appropriate questions array
+  if (showUnverified.value) {
+    unverifiedQuestions.value = questions;
+  } else {
+    verifiedQuestions.value = questions;
+  }
+}
+
 // Update fetchQuestions to handle loading states properly
 async function fetchQuestions() {
   try {
     // Set appropriate loading state
-    if (searchQuery.value || selectedTopic.value || selectedType.value) {
-      isSearching.value = true;
-    } else {
-      isLoading.value = true;
-    }
+    isSearching.value = !!(searchQuery.value ?? selectedTopic.value ?? selectedType.value);
+    isLoading.value = !isSearching.value;
 
-    // Prepare query parameters
-    const params: Record<string, string | number | boolean> = {
-      chapter_id: questionBankData.value.chapterId,
-      instruction_medium_id: questionBankData.value.mediumId,
-      is_verified: !showUnverified.value, // true for verified, false for unverified
-      page: currentPage.value,
-      page_size: pageSize.value
-    };
-
-    // Add sort parameters
-    if (sortOption.value && sortMappings[sortOption.value]) {
-      params.sort_by = sortMappings[sortOption.value].sort_by;
-      params.sort_order = sortMappings[sortOption.value].sort_order;
-    }
-
-    // Add search parameter if provided
-    if (searchQuery.value) {
-      params.search = searchQuery.value;
-    }
-
-    // Add topic filter if selected
-    if (selectedTopic.value) {
-      params.topic_id = selectedTopic.value;
-    }
-
-    // Add question type filter if selected
-    if (selectedType.value) {
-      params.question_type_id = selectedType.value;
-    }
-
-    // Make the API call with all parameters
+    // Get query parameters and make API call
+    const params = prepareQueryParams();
     const response = await axiosInstance.get('/questions', { params })
       .catch((error) => {
         console.error('Error fetching questions:', error);
         return { data: { data: [], meta: { total_count: 0, total_pages: 0 } } };
       });
 
-    // Handle paginated response
-    if (response.data && response.data.data) {
-      // Update pagination data - updated to match new meta structure
-      if (response.data.meta) {
-        totalItems.value = response.data.meta.total_count || 0;
-        totalPages.value = response.data.meta.total_pages || 1;
-      }
-
-      // Transform API response to match our component's expected structure
-      const questions = response.data.data.map((apiQuestion: ApiQuestion) => {
-        // Get the transformed question data using smaller, focused helper functions
-        return transformApiQuestion(apiQuestion);
-      });
-
-      // Update the appropriate questions array based on verification status
-      if (showUnverified.value) {
-        unverifiedQuestions.value = questions;
-      } else {
-        verifiedQuestions.value = questions;
-      }
-    }
+    // Process the response
+    processQuestionsResponse(response);
   } catch (error) {
     console.error('Error fetching questions:', error);
   } finally {
-    // Always clear the loading states when done, regardless of success or failure
+    // Always clear the loading states when done
     isSearching.value = false;
     isLoading.value = false;
   }
@@ -1289,15 +1269,13 @@ function transformApiQuestion(apiQuestion: ApiQuestion) {
   const { imageId, imageUrl } = extractImageData(questionTextData);
   
   // Extract translation status
-  const translationStatus = questionTextData && questionTextData.translation_status
-    ? questionTextData.translation_status
-    : null;
+  const translationStatus = questionTextData?.translation_status ?? null;
   
   // Process topic information
   const questionTopics = extractTopics(questionTextData);
   
   // Initialize answer variables
-  const correctAnswer = questionTextData?.answer_text || undefined;
+  const correctAnswer = questionTextData?.answer_text ?? undefined;
   
   // Process question type specific data
   const questionTypeData = processQuestionTypeData(apiQuestion, questionTextData, correctAnswer);
@@ -1316,7 +1294,7 @@ function transformApiQuestion(apiQuestion: ApiQuestion) {
     imageUrl: imageUrl,
     question_text_id: questionTextId,
     translationStatus: translationStatus,
-    correctAnswer: questionTypeData.correctAnswer || correctAnswer
+    correctAnswer: questionTypeData.correctAnswer ?? correctAnswer
   };
 }
 
@@ -1332,7 +1310,7 @@ function extractImageData(questionTextData: ApiQuestionText | null) {
   let imageId = null;
   let imageUrl = null;
   
-  if (questionTextData && questionTextData.image_id && questionTextData.image) {
+  if (questionTextData?.image_id && questionTextData.image) {
     imageId = questionTextData.image_id;
     imageUrl = questionTextData.image.presigned_url;
     
@@ -1349,7 +1327,7 @@ function extractImageData(questionTextData: ApiQuestionText | null) {
 function extractTopics(questionTextData: ApiQuestionText | null) {
   const questionTopics: Topic[] = [];
   
-  if (questionTextData && questionTextData.topic) {
+  if (questionTextData?.topic) {
     const topicData = questionTextData.topic;
     questionTopics.push({
       id: topicData.id,
@@ -1409,7 +1387,7 @@ function processQuestionTypeData(apiQuestion: ApiQuestion, questionTextData: Api
 
 // Helper function to process Odd One Out questions
 function processOddOneOut(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
-  if (questionTextData && questionTextData.mcq_options?.length > 0) {
+  if (questionTextData?.mcq_options?.length > 0) {
     // Extract options and correct index
     result.options = questionTextData.mcq_options.map(opt => opt.option_text);
     result.correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
@@ -1423,7 +1401,7 @@ function processOddOneOut(questionTextData: ApiQuestionText | null, result: Proc
 
 // Helper function to process True/False questions
 function processTrueFalse(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
-  if (!result.correctAnswer && questionTextData && questionTextData.mcq_options?.length > 0) {
+  if (!result.correctAnswer && questionTextData?.mcq_options?.length > 0) {
     const trueOption = questionTextData.mcq_options.find(opt => 
       opt.option_text.toLowerCase() === 'true'
     );
@@ -1441,14 +1419,14 @@ function processTrueFalse(questionTextData: ApiQuestionText | null, result: Proc
 
 // Helper function to process Correlation questions
 function processCorrelation(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
-  if (questionTextData && questionTextData.match_pairs?.length > 0 && !result.correctAnswer) {
+  if (questionTextData?.match_pairs?.length > 0 && !result.correctAnswer) {
     result.correctAnswer = "See question for correlation details";
   }
 }
 
 // Helper function to process MCQ questions
 function processMCQ(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
-  if (questionTextData && questionTextData.mcq_options?.length > 0) {
+  if (questionTextData?.mcq_options?.length > 0) {
     // Extract options and correct index
     result.options = questionTextData.mcq_options.map(opt => opt.option_text);
     result.correctOptionIndex = questionTextData.mcq_options.findIndex(opt => opt.is_correct);
@@ -1459,7 +1437,7 @@ function processMCQ(questionTextData: ApiQuestionText | null, result: ProcessedQ
     
     // Process option images
     result.optionImages = questionTextData.mcq_options.map(opt =>
-      opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
+      opt?.image?.presigned_url ? opt.image.presigned_url : null
     );
     
     // Only include optionImages if at least one image exists
@@ -1471,18 +1449,18 @@ function processMCQ(questionTextData: ApiQuestionText | null, result: ProcessedQ
 
 // Helper function to process Match Pairs questions
 function processMatchPairs(questionTextData: ApiQuestionText | null, result: ProcessedQuestionTypeData) {
-  if (questionTextData && questionTextData.match_pairs?.length > 0) {
+  if (questionTextData?.match_pairs?.length > 0) {
     // Extract text content
-    result.lhs = questionTextData.match_pairs.map(pair => pair.left_text || null);
-    result.rhs = questionTextData.match_pairs.map(pair => pair.right_text || null);
+    result.lhs = questionTextData.match_pairs.map(pair => pair.left_text ?? null);
+    result.rhs = questionTextData.match_pairs.map(pair => pair.right_text ?? null);
     
     // Extract image URLs
     result.lhsImages = questionTextData.match_pairs.map(pair =>
-      pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
+      pair?.left_image?.presigned_url ? pair.left_image.presigned_url : null
     );
     
     result.rhsImages = questionTextData.match_pairs.map(pair =>
-      pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
+      pair?.right_image?.presigned_url ? pair.right_image.presigned_url : null
     );
   }
 }

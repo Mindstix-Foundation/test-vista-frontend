@@ -797,11 +797,11 @@ const handleNormalChanges = (
 const handleMediumChanges = (currentMediums: SchoolMediumResponse[], formMediums: number[]) => {
   // Handle deleted mediums
   currentMediums.forEach((medium) => {
-    const mediumId = medium.instruction_medium_id || medium.id
+    const mediumId = medium.instruction_medium_id ?? medium.id
     if (mediumId && !formMediums.includes(mediumId)) {
       // Find the medium name from availableMediums
       const mediumInfo = availableMediums.value.find((m) => m.id === mediumId)
-      const mediumName = mediumInfo?.name || 'Unknown Medium'
+      const mediumName = mediumInfo?.name ?? 'Unknown Medium'
       addChange({
         type: 'delete',
         message: `Remove medium: ${mediumName}`,
@@ -814,7 +814,7 @@ const handleMediumChanges = (currentMediums: SchoolMediumResponse[], formMediums
   // Handle added mediums
   formMediums.forEach((mediumId) => {
     const exists = currentMediums.some((m) => {
-      const existingId = m.instruction_medium_id || m.id
+      const existingId = m.instruction_medium_id ?? m.id
       return existingId === mediumId
     })
 
@@ -838,9 +838,9 @@ const handleStandardChanges = (
 ) => {
   // Handle deleted standards
   currentStandards.forEach((standard) => {
-    const standardId = standard.standard_id || standard.id
+    const standardId = standard.standard_id ?? standard.id
     if (standardId && !formStandards.includes(standardId)) {
-      const standardName = standard.standard?.name || standard.name
+      const standardName = standard.standard?.name ?? standard.name
       addChange({
         type: 'delete',
         message: `Remove standard: ${standardName}`,
@@ -853,7 +853,7 @@ const handleStandardChanges = (
   // Handle added standards
   formStandards.forEach((standardId) => {
     const exists = currentStandards.some((s) => {
-      const existingId = s.standard_id || s.id
+      const existingId = s.standard_id ?? s.id
       return existingId === standardId
     })
 
@@ -914,8 +914,8 @@ const handleBoardChangeInEdit = (
   
   // When changing boards, all current mediums and standards will be removed
   currentMediums.forEach(medium => {
-    const mediumId = medium.instruction_medium_id || medium.id
-    const mediumName = medium.instruction_medium?.name || medium.name || 'Unknown Medium'
+    const mediumId = medium.instruction_medium_id ?? medium.id
+    const mediumName = medium.instruction_medium?.name ?? medium.name ?? 'Unknown Medium'
     if (mediumId) {
       addChange({
         type: 'delete',
@@ -927,8 +927,8 @@ const handleBoardChangeInEdit = (
   })
   
   currentStandards.forEach(standard => {
-    const standardId = standard.standard_id || standard.id
-    const standardName = standard.standard?.name || standard.name || 'Unknown Standard'
+    const standardId = standard.standard_id ?? standard.id
+    const standardName = standard.standard?.name ?? standard.name ?? 'Unknown Standard'
     if (standardId) {
       addChange({
         type: 'delete',
@@ -1034,7 +1034,7 @@ const fetchBoards = async () => {
   try {
     const { data } = await axiosInstance.get('/boards')
     // Handle both paginated and non-paginated response formats
-    boards.value = data.data || data
+    boards.value = data.data ?? data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }

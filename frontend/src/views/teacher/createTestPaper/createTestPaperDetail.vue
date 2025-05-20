@@ -175,6 +175,7 @@
                   <div class="section-preview mt-0">
                     <div class="table-responsive">
                       <table class="table table-sm compact-table borderless-table ">
+                        <caption class="caption-top small text-muted">Section details table displaying questions and their respective marks allocated in the test paper pattern.</caption>
                         <thead class="table-dark rounded-table-header">
                           <tr>
                             <th class="question-column">Questions</th>
@@ -207,13 +208,14 @@
                               <td colspan="2" class="p-0">
                                 <div class="question-types-container bg-light">
                                   <table class="table table-sm mb-0 question-types-table">
+                                    <caption class="caption-top small text-muted ps-4">Question types and their respective chapters allocation in this section.</caption>
                                     <tbody>
                                       <!-- When only one type of question in the section, show individually numbered questions -->
                                       <template v-if="hasOnlyOneQuestionType(section)">
                                         <tr class="question-type-header">
                                           <td colspan="2" class="px-4 py-2 small fw-bold text-secondary">
                                             <div class="ms-4">
-                                              All {{ section.total_questions }} questions are of type: {{ section.subsection_question_types[0]?.question_type?.type_name }}
+                                              All {{ section.total_questions }} questions are of type: {{ section.subsection_question_types[0]?.question_type?.type_name ?? 'Unknown Type' }}
                                             </div>
                                           </td>
                                         </tr>
@@ -310,7 +312,7 @@
                                           
                                           <td class="px-4 py-2">
                                             <div class="ms-4 d-flex align-items-center justify-content-between flex-column flex-md-row">
-                                              <span class="mb-2 mb-md-0 question-type-name">{{ qType.seqencial_subquestion_number || '-' }}) {{ qType.question_type?.type_name || 'Unknown Type' }}</span>
+                                              <span class="mb-2 mb-md-0 question-type-name">{{ qType.seqencial_subquestion_number || '-' }}) {{ qType.question_type?.type_name ?? 'Unknown Type' }}</span>
                                               <div class="position-relative ms-md-auto">
                                                 <span class="chapter-name-text">
                                                   {{ getAllocatedChapterName(section.id, qType.seqencial_subquestion_number) }}
@@ -686,7 +688,7 @@ const updateSelectedChapter = (sectionId: number, questionIndex: number, chapter
             console.log('Got test paper allocation, updating chapter marks');
             updateChapterMarksFromAllocation();
             // Update available chapters for current view if needed
-            fetchAvailableChapters(currentQuestionTypeId.value || 0);
+            fetchAvailableChapters(currentQuestionTypeId.value ?? 0);
           } else {
             console.warn('No chapter marks found in test paper allocation');
           }
@@ -708,13 +710,13 @@ const updateSelectedChapter = (sectionId: number, questionIndex: number, chapter
     // Get the question type ID based on the question index
     if (hasOnlyOneQuestionType(section)) {
       // If there's only one type, use that type for all questions
-      questionTypeId = section.subsection_question_types[0]?.question_type_id || null;
+      questionTypeId = section.subsection_question_types[0]?.question_type_id ?? null;
     } else {
       // Otherwise, find the specific question type for this question index
       const questionType = section.subsection_question_types.find(
         qt => qt.seqencial_subquestion_number === questionIndex
       );
-      questionTypeId = questionType?.question_type_id || null;
+      questionTypeId = questionType?.question_type_id ?? null;
     }
     
     // If we found a question type ID, fetch its data
@@ -727,7 +729,7 @@ const updateSelectedChapter = (sectionId: number, questionIndex: number, chapter
 // Method to get selected chapter for a question
 const getSelectedChapter = (sectionId: number, questionIndex: number): number | null => {
   const key = `${sectionId}-${questionIndex}`;
-  return selectedChapters.value[key] || null;
+  return selectedChapters.value[key] ?? null;
 }
 
 // Fetch available chapters for a specific question type
@@ -749,18 +751,18 @@ const fetchAvailableChapters = async (questionTypeId: number) => {
     }));
     
     // Sort fallback data by marks
-    availableChapters.value.sort((a, b) => (b.marks || 0) - (a.marks || 0));
+    availableChapters.value.sort((a, b) => (b.marks ?? 0) - (a.marks ?? 0));
   }
 };
 
 // Computed property to get total marks assigned
 const totalAssignedMarks = computed(() => {
-  return chapters.value.reduce((total, chapter) => total + (chapter.marks || 0), 0)
+  return chapters.value.reduce((total, chapter) => total + (chapter.marks ?? 0), 0)
 })
 
 // Add a computed property for absolute marks
 const absoluteMarks = computed(() => {
-  return testPaperAllocation.value?.absoluteMarks || totalMarks.value || 0;
+  return testPaperAllocation.value?.absoluteMarks ?? totalMarks.value ?? 0;
 });
 
 // Update isMarksDistributionValid computed property to use absoluteMarks
@@ -785,10 +787,10 @@ const boardName = computed(() => {
   // just use a fallback value
   return 'Not Selected'
 })
-const mediumName = computed(() => route.query.medium as string || 'Not Selected')
-const standardName = computed(() => route.query.standard as string || 'Not Selected')
-const subjectName = computed(() => route.query.subject as string || 'Not Selected')
-const patternName = computed(() => route.query.patternName as string || 'Not Selected')
+const mediumName = computed(() => route.query.medium as string ?? 'Not Selected')
+const standardName = computed(() => route.query.standard as string ?? 'Not Selected')
+const subjectName = computed(() => route.query.subject as string ?? 'Not Selected')
+const patternName = computed(() => route.query.patternName as string ?? 'Not Selected')
 
 // Fetch pattern details
 const fetchPatternDetails = async () => {
@@ -878,7 +880,7 @@ const initializeChapterSelections = () => {
   }
   
   // Get pattern sections
-  const sections = patternDetails.value?.sections || [];
+  const sections = patternDetails.value?.sections ?? [];
   if (sections.length === 0) {
     console.warn('No pattern sections available to initialize selections');
     return;
@@ -1261,23 +1263,20 @@ const fetchQuestionTypeData = async (questionTypeId: number) => {
     const existingData = questionTypesData.value.find(qt => qt.type === questionTypeId);
     if (existingData) {
       // Update available chapters without making a new API call
-      availableChapters.value = existingData.chapters.map(chapter => {
-        const matchedChapter = chapters.value.find(c => c.id === chapter.id);
-        return {
-          chapterId: chapter.id,
-          chapterName: chapter.name,
-          questionCount: chapter.count,
-          marks: matchedChapter?.marks || 0,
-          percentage: matchedChapter ? calculatePercentage(matchedChapter.marks) : 0
-        };
-      });
+      availableChapters.value = existingData.chapters.map(chapter => ({
+        chapterId: chapter.id,
+        chapterName: chapter.name,
+        questionCount: chapter.count,
+        marks: matchedChapter?.marks ?? 0,
+        percentage: matchedChapter ? calculatePercentage(matchedChapter.marks) : 0
+      }));
       
       // Sort by marks then question count
       availableChapters.value.sort((a, b) => {
-        if ((b.marks || 0) !== (a.marks || 0)) {
-          return (b.marks || 0) - (a.marks || 0);
+        if ((b.marks ?? 0) !== (a.marks ?? 0)) {
+          return (b.marks ?? 0) - (a.marks ?? 0);
         }
-        return (b.questionCount || 0) - (a.questionCount || 0);
+        return (b.questionCount ?? 0) - (a.questionCount ?? 0);
       });
       
       return;
@@ -1353,7 +1352,7 @@ const incrementMarks = (chapter: ChapterWithMarks) => {
 
 // Method to check if question types are visible for a given section
 const isQuestionTypesVisible = (sectionId: number): boolean => {
-  return questionTypesVisibility.value[sectionId] || false
+  return questionTypesVisibility.value[sectionId] ?? false
 }
 
 // New computed function to check if a section has only one question type
@@ -1377,7 +1376,7 @@ const generateNumberedList = (section: PatternSection): Array<{number: number; t
   }
   
   // Get the type name from the first question (since all are same type)
-  const typeName: string = section.subsection_question_types[0]?.question_type?.type_name || 'Unknown Type';
+  const typeName: string = section.subsection_question_types[0]?.question_type?.type_name ?? 'Unknown Type';
   
   // Generate a list of questions with numbers from 1 to total_questions
   const result: Array<{number: number; typeName: string}> = [];
@@ -1399,8 +1398,8 @@ const fetchChapterMarksRanges = async () => {
     const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
     // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
+    const mediumId = route.query.mediumId ?? 
+                    userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
                     '1';
     
     // Call the API endpoint
@@ -1482,7 +1481,7 @@ const getNextValidMark = (chapter: ChapterWithMarks): number => {
   const nextMark = range.possibleMarks.find(mark => mark > chapter.marks);
   
   // If no next mark found, return the current mark
-  return nextMark !== undefined ? nextMark : chapter.marks;
+  return nextMark ?? chapter.marks;
 };
 
 // Method to get the previous valid mark for a chapter (for decrement)
@@ -1620,8 +1619,8 @@ const fetchQuestionTypesAvailability = async () => {
     const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
     // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
+    const mediumId = route.query.mediumId ?? 
+                    userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
                     '1';
     
     // Call the API endpoint
@@ -1701,11 +1700,11 @@ const selectChapterForQuestion = (questionType: number, chapterId: number, secti
 // Calculate special count for each chapter
 const getSpecialCount = (count: number, questionType: number, chapterId: number): number => {
   // Get the default special count for this question type, or use the default value
-  const typeSpecialCount = specialQuestionTypeCounts.value[questionType] || defaultSpecialCount.value;
+  const typeSpecialCount = specialQuestionTypeCounts.value[questionType] ?? defaultSpecialCount.value;
   
   // Get the used count for this chapter and question type
   const key = `${chapterId}-${questionType}`;
-  const usedCount = usedQuestions.value[key] || 0;
+  const usedCount = usedQuestions.value[key] ?? 0;
   
   // Remaining count is the default minus used
   return Math.max(0, typeSpecialCount - usedCount);
@@ -1767,9 +1766,7 @@ const initializeUsedQuestionCounts = () => {
             const questionType = section.subsection_question_types.find(
               qt => qt.seqencial_subquestion_number === i
             );
-            if (questionType?.question_type_id) {
-              questionTypeId = questionType.question_type_id;
-            }
+            questionTypeId = questionType?.question_type_id ?? null;
           }
           
           if (questionTypeId !== null) {
@@ -1784,7 +1781,7 @@ const initializeUsedQuestionCounts = () => {
             
             // Update combined chapter usage tracker
             const chapterKey = `${chapterId}`;
-            chapterUsage.set(chapterKey, (chapterUsage.get(chapterKey) || 0) + 1);
+            chapterUsage.set(chapterKey, (chapterUsage.get(chapterKey) ?? 0) + 1);
           }
         }
       }
@@ -1806,7 +1803,7 @@ const debugChapterUsage = () => {
   questionTypesAvailability.value.forEach(questionType => {
     questionType.chapters.forEach(chapter => {
       const key = `${chapter.id}-${questionType.type}`;
-      const usedCount = usedQuestions.value[key] || 0;
+      const usedCount = usedQuestions.value[key] ?? 0;
       const specialCount = getSpecialCount(chapter.count, questionType.type, chapter.id);
       
       if (!usage[questionType.name]) {
@@ -1902,8 +1899,8 @@ const generate = async () => {
     const chapterIds = chapters.value.map(chapter => chapter.id);
     
     // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
+    const mediumId = route.query.mediumId ?? 
+                    userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
                     '1';
     
     // Extract just the mark values as an array of numbers
@@ -1914,7 +1911,7 @@ const generate = async () => {
       chapterIds,
       mediumIds: [Number(mediumId)],
       requestedMarks,
-      questionOrigin: questionSource.value || 'both'
+      questionOrigin: questionSource.value ?? 'both'
     });
     
     // Call the API endpoint with the required parameters
@@ -1924,7 +1921,7 @@ const generate = async () => {
         chapterIds,
         mediumIds: [Number(mediumId)],
         requestedMarks,
-        questionOrigin: questionSource.value || 'both'
+        questionOrigin: questionSource.value ?? 'both'
       }
     });
     
@@ -2039,7 +2036,7 @@ const updateSelectedChaptersFromAllocation = () => {
   setTimeout(() => {
     console.log('Pattern card UI refresh triggered');
     // Force UI update for the pattern card sections
-    const sections = patternDetails.value?.sections || [];
+    const sections = patternDetails.value?.sections ?? [];
     sections.forEach(section => {
       if (questionTypesVisibility.value[section.id]) {
         // If section is already expanded, refresh its question types

@@ -196,12 +196,12 @@ const handleEnterKey = (index: number, currentItem: ListItem, event: KeyboardEve
       document.querySelectorAll(
         'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )
-    ) as HTMLElement[]
+    )
     
     // Get current input
     const currentInput = document.getElementById(getInputId(index))
     if (currentInput) {
-      const currentIndex = allFocusable.indexOf(currentInput as HTMLElement)
+      const currentIndex = allFocusable.indexOf(currentInput)
       // Find the next input outside this component
       if (currentIndex > -1 && currentIndex < allFocusable.length - 1) {
         const nextElement = allFocusable[currentIndex + 1]
@@ -316,39 +316,48 @@ const dragStart = (event: DragEvent, index: number) => {
   }
 }
 
+// Clear drag-over state from all item containers
+const clearDragOverState = () => {
+  document.querySelectorAll('.item-container').forEach(item => {
+    item.classList.remove('drag-over')
+  })
+}
+
+// Handle item shifting animation between source and target
+const updateItemShiftingClasses = (start: number, end: number, sourceIndex: number) => {
+  const containers = document.querySelectorAll('.item-container')
+  containers.forEach((container, idx) => {
+    const shouldShift = idx >= start && 
+                        idx <= end && 
+                        idx !== sourceIndex && 
+                        !isLastEmptyField(idx)
+    
+    container.classList.toggle('item-shifting', shouldShift)
+  })
+}
+
 const dragEnter = (event: DragEvent, index: number) => {
-  if (props.draggable && !isLastEmptyField(index)) {
-    // Only process if we're entering a different item
-    if (dragOverItemIndex.value !== index) {
-      // Clear previous drag-over state
-      document.querySelectorAll('.item-container').forEach(item => {
-        item.classList.remove('drag-over')
-      })
-      
-      dragOverItemIndex.value = index
-      const target = event.target as HTMLElement
-      const itemContainer = target.closest('.item-container')
-      
-      if (itemContainer) {
-        // Highlight the target position
-        itemContainer.classList.add('drag-over')
-        
-        // Animate all items between drag source and target
-        if (draggedItemIndex.value !== null) {
-          const start = Math.min(draggedItemIndex.value, index)
-          const end = Math.max(draggedItemIndex.value, index)
-          
-          const containers = document.querySelectorAll('.item-container')
-          containers.forEach((container, idx) => {
-            if (idx >= start && idx <= end && idx !== draggedItemIndex.value && !isLastEmptyField(idx)) {
-              container.classList.add('item-shifting')
-            } else {
-              container.classList.remove('item-shifting')
-            }
-          })
-        }
-      }
-    }
+  // Early return if conditions aren't met
+  if (!props.draggable || isLastEmptyField(index) || dragOverItemIndex.value === index) {
+    return
+  }
+
+  // Update drag-over state
+  clearDragOverState()
+  dragOverItemIndex.value = index
+  
+  const target = event.target as HTMLElement
+  const itemContainer = target.closest('.item-container')
+  if (!itemContainer) return
+  
+  // Highlight the target position
+  itemContainer.classList.add('drag-over')
+  
+  // Handle shifting animation only if we have a valid source
+  if (draggedItemIndex.value !== null) {
+    const start = Math.min(draggedItemIndex.value, index)
+    const end = Math.max(draggedItemIndex.value, index)
+    updateItemShiftingClasses(start, end, draggedItemIndex.value)
   }
 }
 

@@ -80,6 +80,73 @@ interface OperationResult {
   message?: string
 }
 
+// Define additional types to replace 'any' usage
+interface AddressData {
+  street: string
+  postal_code: string
+  city_id: number
+  state_id?: number
+  country_id?: number
+}
+
+interface SchoolDetailsData {
+  name: string
+  board_id: number
+  address_id: number
+  principal_name: string
+  email: string
+  contact_number: string
+  alternate_contact_number: string | null
+  address?: AddressData
+  mediums?: number[]
+  standards?: number[]
+}
+
+interface Medium {
+  id: number
+  instruction_medium?: string
+  name?: string
+}
+
+interface MediumMapping {
+  id: number
+  instruction_medium: {
+    id: number
+    instruction_medium?: string
+  }
+}
+
+interface Standard {
+  id: number
+  name?: string
+}
+
+interface StandardMapping {
+  id: number
+  standard: {
+    id: number
+    name?: string
+  }
+}
+
+interface School {
+  id: number
+  name: string
+  board: { id: number; name: string }
+  address: {
+    id: number
+    street: string
+    postal_code: string
+    city: { id: number; name: string; state: { id: number; country: { id: number } } }
+  }
+  principal_name: string
+  email: string
+  contact_number: string
+  alternate_contact_number: string | null
+  instruction_mediums: Medium[]
+  standards: Standard[]
+}
+
 // Define the type for the form component instance
 type SchoolFormComponentType = InstanceType<typeof SchoolFormComponent> & {
   availableMediums: { id: number; name: string }[]
@@ -176,7 +243,7 @@ onMounted(async () => {
       principal_name: school.principal_name,
       email: school.email,
       contact_number: school.contact_number,
-      alternate_contact_number: school.alternate_contact_number || '',
+      alternate_contact_number: school.alternate_contact_number ?? '',
       address: {
         street: school.address.street || '',
         postal_code: school.address.postal_code || '',
@@ -224,7 +291,7 @@ const formatErrorMessage = (error: unknown): string => {
   return error instanceof Error ? error.message : 'Unknown error occurred'
 }
 
-const updateSchoolAddress = async (addressData: any, addressId: number) => {
+const updateSchoolAddress = async (addressData: AddressData, addressId: number) => {
   try {
     console.log('Updating address with:', {
       street: addressData.street,
@@ -245,7 +312,7 @@ const updateSchoolAddress = async (addressData: any, addressId: number) => {
   }
 }
 
-const updateSchoolDetails = async (schoolData: any, id: string) => {
+const updateSchoolDetails = async (schoolData: SchoolDetailsData, id: string) => {
   try {
     console.log('Updating school details with:', schoolData)
 
@@ -256,7 +323,7 @@ const updateSchoolDetails = async (schoolData: any, id: string) => {
       principal_name: schoolData.principal_name,
       email: schoolData.email,
       contact_number: schoolData.contact_number,
-      alternate_contact_number: schoolData.alternate_contact_number || null,
+      alternate_contact_number: schoolData.alternate_contact_number ?? null,
     })
 
     addOperationResult('Update School Details', 'success')
@@ -275,18 +342,18 @@ const processMediumAddition = async (mediumId: number, schoolId: string) => {
     })
     
     const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === mediumId)
-    addOperationResult(`Add Medium: ${mediumInfo?.name || 'Unknown Medium'}`, 'success')
+    addOperationResult(`Add Medium: ${mediumInfo?.name ?? 'Unknown Medium'}`, 'success')
   } catch (error) {
     console.error(`Error adding medium ${mediumId}:`, error)
     const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === mediumId)
-    addOperationResult(`Add Medium: ${mediumInfo?.name || 'Unknown Medium'}`, 'error', formatErrorMessage(error))
+    addOperationResult(`Add Medium: ${mediumInfo?.name ?? 'Unknown Medium'}`, 'error', formatErrorMessage(error))
   }
 }
 
-const processMediumRemoval = async (medium: any, mappings: any[]) => {
+const processMediumRemoval = async (medium: Medium, mappings: MediumMapping[]) => {
   try {
     const mapping = mappings.find(
-      (m: { instruction_medium: { id: number } }) => m.instruction_medium.id === medium.id
+      (m: MediumMapping) => m.instruction_medium.id === medium.id
     )
 
     if (!mapping) {
@@ -297,25 +364,25 @@ const processMediumRemoval = async (medium: any, mappings: any[]) => {
     await axiosInstance.delete(`/school-instruction-mediums/${mapping.id}`)
     
     const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === medium.id)
-    const mediumName = mediumInfo?.name || medium.instruction_medium || 'Unknown Medium'
+    const mediumName = mediumInfo?.name ?? medium.instruction_medium ?? 'Unknown Medium'
     addOperationResult(`Remove Medium: ${mediumName}`, 'success')
   } catch (error) {
     console.error(`Error removing medium ${medium.id}:`, error)
     const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === medium.id)
-    const mediumName = mediumInfo?.name || medium.instruction_medium || 'Unknown Medium'
+    const mediumName = mediumInfo?.name ?? medium.instruction_medium ?? 'Unknown Medium'
     addOperationResult(`Remove Medium: ${mediumName}`, 'error', formatErrorMessage(error))
   }
 }
 
-const updateMediums = async (currentSchool: any, updatedMediums: number[], schoolId: string) => {
+const updateMediums = async (currentSchool: School, updatedMediums: number[], schoolId: string) => {
   try {
-    const currentMediumIds = currentSchool.instruction_mediums.map((m: { id: number }) => m.id)
+    const currentMediumIds = currentSchool.instruction_mediums.map((m: Medium) => m.id)
     console.log('Current medium IDs:', currentMediumIds)
     console.log('Updated medium IDs:', updatedMediums)
 
     const mediumsToAdd = updatedMediums.filter(id => !currentMediumIds.includes(id))
     const mediumsToRemove = currentSchool.instruction_mediums.filter(
-      (medium: { id: number }) => !updatedMediums.includes(medium.id)
+      (medium: Medium) => !updatedMediums.includes(medium.id)
     )
     
     if (mediumsToAdd.length === 0 && mediumsToRemove.length === 0) return
@@ -348,18 +415,18 @@ const processStandardAddition = async (standardId: number, schoolId: string) => 
     })
     
     const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standardId)
-    addOperationResult(`Add Standard: ${standardInfo?.name || 'Unknown Standard'}`, 'success')
+    addOperationResult(`Add Standard: ${standardInfo?.name ?? 'Unknown Standard'}`, 'success')
   } catch (error) {
     console.error(`Error adding standard ${standardId}:`, error)
     const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standardId)
-    addOperationResult(`Add Standard: ${standardInfo?.name || 'Unknown Standard'}`, 'error', formatErrorMessage(error))
+    addOperationResult(`Add Standard: ${standardInfo?.name ?? 'Unknown Standard'}`, 'error', formatErrorMessage(error))
   }
 }
 
-const processStandardRemoval = async (standard: any, mappings: any[]) => {
+const processStandardRemoval = async (standard: Standard, mappings: StandardMapping[]) => {
   try {
     const mapping = mappings.find(
-      (m: { standard: { id: number } }) => m.standard.id === standard.id
+      (m: StandardMapping) => m.standard.id === standard.id
     )
 
     if (!mapping) {
@@ -370,25 +437,25 @@ const processStandardRemoval = async (standard: any, mappings: any[]) => {
     await axiosInstance.delete(`/school-standards/${mapping.id}`)
     
     const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standard.id)
-    const standardName = standardInfo?.name || standard.name || 'Unknown Standard'
+    const standardName = standardInfo?.name ?? standard.name ?? 'Unknown Standard'
     addOperationResult(`Remove Standard: ${standardName}`, 'success')
   } catch (error) {
     console.error(`Error removing standard ${standard.id}:`, error)
     const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standard.id)
-    const standardName = standardInfo?.name || standard.name || 'Unknown Standard'
+    const standardName = standardInfo?.name ?? standard.name ?? 'Unknown Standard'
     addOperationResult(`Remove Standard: ${standardName}`, 'error', formatErrorMessage(error))
   }
 }
 
-const updateStandards = async (currentSchool: any, updatedStandards: number[], schoolId: string) => {
+const updateStandards = async (currentSchool: School, updatedStandards: number[], schoolId: string) => {
   try {
-    const currentStandardIds = currentSchool.standards.map((s: { id: number }) => s.id)
+    const currentStandardIds = currentSchool.standards.map((s: Standard) => s.id)
     console.log('Current standard IDs:', currentStandardIds)
     console.log('Updated standard IDs:', updatedStandards)
 
     const standardsToAdd = updatedStandards.filter(id => !currentStandardIds.includes(id))
     const standardsToRemove = currentSchool.standards.filter(
-      (standard: { id: number }) => !updatedStandards.includes(standard.id)
+      (standard: Standard) => !updatedStandards.includes(standard.id)
     )
     
     if (standardsToAdd.length === 0 && standardsToRemove.length === 0) return
@@ -412,7 +479,7 @@ const updateStandards = async (currentSchool: any, updatedStandards: number[], s
   }
 }
 
-const checkChanges = (currentSchool: any, updatedData: any) => {
+const checkChanges = (currentSchool: School, updatedData: SchoolDetailsData) => {
   // Check address changes
   const hasAddressChanged =
     currentSchool.address.street !== updatedData.address.street ||
@@ -426,7 +493,7 @@ const checkChanges = (currentSchool: any, updatedData: any) => {
     currentSchool.principal_name !== updatedData.principal_name ||
     currentSchool.email !== updatedData.email ||
     currentSchool.contact_number !== updatedData.contact_number ||
-    currentSchool.alternate_contact_number !== (updatedData.alternate_contact_number || null)
+    currentSchool.alternate_contact_number !== (updatedData.alternate_contact_number ?? null)
 
   return { hasAddressChanged, hasSchoolDetailsChanged }
 }

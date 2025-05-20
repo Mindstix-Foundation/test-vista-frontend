@@ -45,7 +45,7 @@ const router = useRouter()
 const route = useRoute()
 const patternStore = usePatternStore()
 
-const totalPatternMarks = computed(() => Number(route.query.remainingMarks || 0))
+const totalPatternMarks = computed(() => Number(route.query.remainingMarks ?? 0))
 const isDisabled = computed(() => totalPatternMarks.value <= 0)
 const storeOnly = computed(() => route.query.storeOnly === 'true')
 

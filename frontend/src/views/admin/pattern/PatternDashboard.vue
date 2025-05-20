@@ -244,6 +244,7 @@
               <transition name="slide-fade">
                 <div class="row mt-3 pattern-details" v-if="pattern.isExpanded">
                   <table class="table table-sm table-striped table-bordered">
+                    <caption>Pattern section details showing section names, question counts, and marks allocation</caption>
                     <tbody>
                       <tr class="table-dark">
                         <th><strong>Section Name</strong></th>
@@ -548,11 +549,11 @@ const visiblePageNumbers = computed(() => {
 
 // Computed properties for available standards and subjects
 const availableStandards = computed(() => {
-  return selectedBoard.value?.standards || []
+  return selectedBoard.value?.standards ?? []
 })
 
 const availableSubjects = computed(() => {
-  return selectedBoard.value?.subjects || []
+  return selectedBoard.value?.subjects ?? []
 })
 
 // Handle search input with debounce
@@ -936,8 +937,8 @@ const fetchBoardDetails = async (boardId: number) => {
     if (response.data) {
       // Keep the original board reference but update its properties
       if (selectedBoard.value) {
-        selectedBoard.value.standards = response.data.standards || []
-        selectedBoard.value.subjects = response.data.subjects || []
+        selectedBoard.value.standards = response.data.standards ?? []
+        selectedBoard.value.subjects = response.data.subjects ?? []
       }
     }
   } catch (error) {

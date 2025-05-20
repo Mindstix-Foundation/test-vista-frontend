@@ -68,7 +68,7 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
       principal_name: schoolData.principal_name,
       email: schoolData.email,
       contact_number: schoolData.contact_number,
-      alternate_contact_number: schoolData.alternate_contact_number || null,
+      alternate_contact_number: schoolData.alternate_contact_number ?? null,
     }
 
     try {

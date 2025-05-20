@@ -155,12 +155,12 @@ const findAndFocusNextElement = (currentId: string) => {
     document.querySelectorAll(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
-  ) as HTMLElement[]
+  )
   
   const currentInput = document.getElementById(currentId)
   if (!currentInput) return
   
-  const currentIndex = allFocusable.indexOf(currentInput as HTMLElement)
+  const currentIndex = allFocusable.indexOf(currentInput)
   const hasNextElement = currentIndex > -1 && currentIndex < allFocusable.length - 1
   
   if (hasNextElement) {

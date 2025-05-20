@@ -379,7 +379,7 @@ interface ChapterItem {
 
 // User data
 const userProfile = ref<UserProfile | null>(null)
-const schoolId = computed(() => userProfile.value?.schools?.[0]?.id || 0)
+const schoolId = computed(() => userProfile.value?.schools?.[0]?.id ?? 0)
 
 // Options for dropdowns
 const instructionMediums = ref<InstructionMediumItem[]>([])
@@ -645,13 +645,13 @@ const selectPattern = async () => {
     const queryParams = {
       // Display names for UI
       medium: encodeURIComponent(selectedMediums.value.map(m => m.name).join(',')),
-      standard: encodeURIComponent(selectedStandardObj.value?.name || ''),
-      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name || ''),
+      standard: encodeURIComponent(selectedStandardObj.value?.name ?? ''),
+      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name ?? ''),
       
       // IDs for API calls
       mediumId: selectedInstructionMedium.value,
-      standardId: selectedStandardObj.value?.id?.toString() || '',
-      subjectId: selectedSubjectObj.value?.subject_id?.toString() || '',
+      standardId: selectedStandardObj.value?.id?.toString() ?? '',
+      subjectId: selectedSubjectObj.value?.subject_id?.toString() ?? '',
       schoolId: schoolId.value.toString(),
       totalMarks: totalMarks.value.toString(),
       questionSource: questionSource.value,
@@ -779,7 +779,7 @@ const restoreMarksSelection = async (formState) => {
   
   selectedMarksObj.value = availableMarks.value.find(
     m => m.name === formState.selectedMarksObj.name
-  ) || null
+  ) ?? null
   
   if (selectedMarksObj.value) {
     totalMarks.value = parseInt(selectedMarksObj.value.name, 10)

@@ -319,7 +319,7 @@ const handleCountryChange = async (value: Country | null) => {
     // Update address data
     const updatedAddress = {
       ...address.value,
-      country_id: value?.id || 0,
+      country_id: value?.id ?? 0,
       state_id: 0,
       city_id: 0,
     }
@@ -369,7 +369,7 @@ const handleStateChange = async (value: State | null) => {
     // Update address data
     const updatedAddress = {
       ...address.value,
-      state_id: value?.id || 0,
+      state_id: value?.id ?? 0,
       city_id: 0,
     }
     emit('update:modelValue', updatedAddress)
@@ -409,7 +409,7 @@ const handleCityChange = (value: City | null) => {
   // Update address data
   const updatedAddress = {
     ...address.value,
-    city_id: value?.id || 0,
+    city_id: value?.id ?? 0,
   }
   emit('update:modelValue', updatedAddress)
   

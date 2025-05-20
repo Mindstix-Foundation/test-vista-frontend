@@ -660,8 +660,7 @@ const switchToMedium = async (mediumId: number): Promise<void> => {
 };
 
 // Function to generate PDF for a specific medium
-const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html2pdf: {
-  (): {
+const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html2pdf: () => {
     set: (options: {
       margin: number;
       filename: string;
@@ -673,9 +672,9 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
         outputPdf: (type: string) => Promise<Blob>;
       };
     };
-  };
-}): Promise<File> => {
-  console.log(`Generating PDF for medium ID: ${mediumId} (${availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown'})`);
+  }
+): Promise<File> => {
+  console.log(`Generating PDF for medium ID: ${mediumId} (${availableMediums.value.find(m => m.id === mediumId)?.name ?? 'Unknown'})`);
   
   try {
     // Switch to this medium to update the UI with correct language content
@@ -707,7 +706,7 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
     });
     
     // Create a file from the blob with medium name in the filename
-    const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
+    const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name ?? 'Unknown';
     return new File(
       [pdfBlob], 
       `test-paper-${mediumName.toLowerCase()}-${mediumId}.pdf`, 
@@ -1027,12 +1026,12 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
   // Process each section
   sortedSections.forEach(section => {
     // Create formatted section number display (e.g., "1.A")
-    const sectionNum = section.section_number || sectionNumberCounter;
-    const subSection = section.subSection || '';
+    const sectionNum = section.section_number ?? sectionNumberCounter;
+    const subSection = section.subSection ?? '';
     const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
     
     const displaySection: DisplaySection = {
-      sectionNumber: section.section_number || sectionNumberCounter++,
+      sectionNumber: section.section_number ?? sectionNumberCounter++,
       sectionName: section.sectionName,
       totalMarks: section.totalMarks,
       questions: [],
@@ -1082,7 +1081,7 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
           const displayQuestion: DisplayQuestion = {
             questionNumber: questionNumberCounter++,
             questionText: questionText.question_text,
-            marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions),
+            marks: section.marks_per_question ?? Math.ceil(section.totalMarks / section.totalQuestions),
             questionType: question.question_type.type_name,
             topicId: topicId,
             chapterId: chapter.chapterId // Store chapter ID for reference

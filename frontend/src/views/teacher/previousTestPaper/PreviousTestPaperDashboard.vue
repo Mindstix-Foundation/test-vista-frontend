@@ -162,6 +162,9 @@
                   
                   <div class="table-responsive">
                     <table class="table table-hover chapter-table">
+                      <caption class="caption-top mb-2 text-muted">
+                        This table shows the distribution of marks across different chapters in the test paper
+                      </caption>
                       <thead class="table-light">
                         <tr>
                           <th scope="col">Chapter Name</th>

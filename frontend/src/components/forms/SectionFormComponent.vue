@@ -460,7 +460,7 @@ onMounted(async () => {
       selectedQuestionTypes.value = props.initialSectionData.questionTypes.map((type) => {
         const found = questionTypes.value.find((qt) => qt.type_name === type)
         console.log(`Finding match for type ${type}:`, found)
-        return found || null
+        return found ?? null
       })
       console.log('Set selectedQuestionTypes to:', selectedQuestionTypes.value)
     }
@@ -472,9 +472,9 @@ watch(selectedQuestionType, (newValue) => {
   console.log('Watch - Selected question type changed:', newValue)
   if (formData.value.sameType) {
     console.log('Updating form data with new question type:', newValue?.type_name)
-    formData.value.questionType = newValue?.type_name || ''
+    formData.value.questionType = newValue?.type_name ?? ''
     formData.value.questionTypes = Array(Number(formData.value.totalQuestions)).fill(
-      newValue?.type_name || '',
+      newValue?.type_name ?? '',
     )
     console.log('Updated form data:', formData.value)
   }
@@ -493,10 +493,10 @@ watch(
         const currentTypes = [...formData.value.questionTypes]
         formData.value.questionTypes = Array(numValue)
           .fill('')
-          .map((_, i) => currentTypes[i] || '')
+          .map((_, i) => currentTypes[i] ?? '')
         selectedQuestionTypes.value = Array(numValue)
           .fill(null)
-          .map((_, i) => selectedQuestionTypes.value[i] || null)
+          .map((_, i) => selectedQuestionTypes.value[i] ?? null)
         // Initialize touched state for each question type
         questionTypeTouched.value = Array(numValue)
           .fill(false)
@@ -705,7 +705,7 @@ const handleIndividualQuestionTypeInput = (value: unknown, index: number) => {
   
   // Update the question type value
   const questionType = value as QuestionType | null
-  formData.value.questionTypes[index] = questionType?.type_name || ''
+  formData.value.questionTypes[index] = questionType?.type_name ?? ''
   
   // Check if all question types are valid
   const allTypesValid = formData.value.questionTypes.every((type) => type.trim() !== '')

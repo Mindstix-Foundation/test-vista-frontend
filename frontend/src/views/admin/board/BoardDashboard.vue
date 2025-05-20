@@ -79,6 +79,7 @@
             </div>
 
             <table class="table table-sm table-hover table-striped table-bordered" :class="{ 'table-searching': isSearching }">
+              <caption class="visually-hidden">List of boards with their names and management options</caption>
               <colgroup>
                 <col style="width: 10px" />
                 <col style="width: 100%" />
@@ -601,9 +602,9 @@ const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
       address_id: boardData.address_id,
       address: {
         ...boardData.address,
-        city: locationData?.city || { id: 0, state_id: 0, name: '' },
-        state: locationData?.state || { id: 0, country_id: 0, name: '' },
-        country: locationData?.country || { id: 0, name: '' },
+        city: locationData?.city ?? { id: 0, state_id: 0, name: '' },
+        state: locationData?.state ?? { id: 0, country_id: 0, name: '' },
+        country: locationData?.country ?? { id: 0, name: '' },
       },
       mediums: boardData.instruction_mediums,
       standards: boardData.standards,
@@ -619,62 +620,99 @@ const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
 
 const fetchBoards = async () => {
   try {
-    if (!searchQuery.value) {
-      isLoading.value = true
-    } else {
-      isSearching.value = true
-    }
-    error.value = null
+    setLoadingState();
+    error.value = null;
 
-    // Add pagination, sorting, and search parameters to the API request
-    const response = await axiosInstance.get('/boards', {
-      params: {
-        page: currentPage.value,
-        page_size: pageSize,
-        sort_by: sortBy.value,
-        sort_order: sortOrder.value,
-        search: searchQuery.value || undefined
-      }
-    })
-
-    console.log('API Response:', response.data)
-
-    // Check if response has data property that contains the array and pagination info
-    if (response.data && typeof response.data === 'object') {
-      if (response.data.data && Array.isArray(response.data.data)) {
-        // Handle paginated response format
-        boards.value = response.data.data
-
-        // Use the meta information from the API response
-        if (response.data.meta) {
-          totalItems.value = response.data.meta.total || 0
-          totalPages.value = response.data.meta.total_pages || 1
-        } else {
-          // Fallback if meta is missing
-          totalItems.value = boards.value.length
-          totalPages.value = Math.ceil(totalItems.value / pageSize)
-        }
-      } else if (Array.isArray(response.data)) {
-        // Handle array response format (fallback)
-        boards.value = response.data
-        totalItems.value = response.data.length
-        totalPages.value = Math.ceil(response.data.length / pageSize)
-      } else {
-        console.error('Unexpected response format:', response.data)
-        boards.value = []
-        error.value = 'Received invalid data format from server'
-      }
-    } else {
-      boards.value = []
-      error.value = 'Failed to load boards. Please try again.'
-    }
-  } catch (err) {
-    console.error('Error fetching boards:', err)
-    error.value = 'Failed to load boards. Please try again.'
+    const response = await fetchBoardsFromApi();
+    processApiResponse(response);
+  } 
+  catch (err) {
+    handleFetchError(err);
   } finally {
-    isLoading.value = false
-    isSearching.value = false
+    clearLoadingState();
   }
+}
+
+// Helper function to set the loading state based on search query
+const setLoadingState = () => {
+  if (!searchQuery.value) {
+    isLoading.value = true;
+  } else {
+    isSearching.value = true;
+  }
+}
+
+// Helper function to clear loading states
+const clearLoadingState = () => {
+  isLoading.value = false;
+  isSearching.value = false;
+}
+
+// Helper function to fetch boards from API
+const fetchBoardsFromApi = async () => {
+  return await axiosInstance.get('/boards', {
+    params: {
+      page: currentPage.value,
+      page_size: pageSize,
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value,
+      search: searchQuery.value || undefined
+    }
+  });
+}
+
+// Helper function to handle fetch errors
+const handleFetchError = (err) => {
+  console.error('Error fetching boards:', err);
+  error.value = 'Failed to load boards. Please try again.';
+  boards.value = [];
+}
+
+// Helper function to process API response data
+const processApiResponse = (response) => {
+  console.log('API Response:', response.data);
+  
+  if (!response.data || typeof response.data !== 'object') {
+    boards.value = [];
+    error.value = 'Failed to load boards. Please try again.';
+    return;
+  }
+
+  if (response.data.data && Array.isArray(response.data.data)) {
+    handlePaginatedResponse(response.data);
+  } else if (Array.isArray(response.data)) {
+    handleArrayResponse(response.data);
+  } else {
+    handleInvalidResponse(response.data);
+  }
+}
+
+// Helper function to handle paginated response format
+const handlePaginatedResponse = (data) => {
+  boards.value = data.data;
+  
+  if (data.meta) {
+    totalItems.value = data.meta.total || 0;
+    totalPages.value = data.meta.total_pages || 1;
+  } else {
+    // Fallback if meta is missing
+    totalItems.value = boards.value.length;
+    totalPages.value = Math.ceil(totalItems.value / pageSize);
+  }
+}
+
+// Helper function to handle array response format
+const handleArrayResponse = (data) => {
+  boards.value = data;
+  totalItems.value = data.length;
+  totalPages.value = Math.ceil(data.length / pageSize);
+}
+
+// Helper function to handle invalid response format
+const handleInvalidResponse = (data) => {
+  console.error('Unexpected response format:', data);
+  boards.value = [];
+  error.value = 'Received invalid data format from server';
 }
 
 // Use the boards directly since filtering is now done on the server
@@ -743,7 +781,7 @@ const updateUrlParams = () => {
 
 const getHighlightedText = (board: Board) => {
   const query = searchQuery.value
-  const abbreviation = board.abbreviation || ''
+  const abbreviation = board.abbreviation ?? ''
   if (!query) return `${board.name} (${abbreviation})`
 
   const highlightedName = highlightText(board.name, query)

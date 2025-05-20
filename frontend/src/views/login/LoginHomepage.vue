@@ -81,11 +81,8 @@ const focusPassword = () => {
 }
 
 const validateEmail = (email: string) => {
-  return String(email)
-    .toLowerCase()
-    .match(
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    )
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.exec(String(email).toLowerCase())
 }
 
 interface LoginResponse {

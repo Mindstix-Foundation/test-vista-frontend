@@ -530,10 +530,9 @@ const processStandardAdditions = async (
 
 const findMovedStandards = (
   validFormStandards: StandardFormData[],
-  updatedStandards: any[],
+  updatedStandards: ExistingItem[],
   standardIdToPositionMap: Map<number, number>,
-  standardIdToNameMap: Map<number, string>,
-  reorderDetected: boolean
+  standardIdToNameMap: Map<number, string>
 ): {id: number, name: string, fromPosition: number, toPosition: number}[] => {
   const movedStandards: {id: number, name: string, fromPosition: number, toPosition: number}[] = [];
   
@@ -554,12 +553,12 @@ const findMovedStandards = (
     
     if (standardId) {
       const desiredPosition = i + 1; // 1-based position
-      const currentPosition = standardIdToPositionMap.get(standardId) || 0;
+      const currentPosition = standardIdToPositionMap.get(standardId) ?? 0;
       
       if (currentPosition !== desiredPosition) {
         movedStandards.push({
           id: standardId,
-          name: standardIdToNameMap.get(standardId) || standard.name,
+          name: standardIdToNameMap.get(standardId) ?? standard.name,
           fromPosition: currentPosition,
           toPosition: desiredPosition
         });
@@ -572,8 +571,7 @@ const findMovedStandards = (
 
 const forceReorderStandards = (
   validFormStandards: StandardFormData[],
-  standardIdToPositionMap: Map<number, number>,
-  reorderDetected: boolean
+  standardIdToPositionMap: Map<number, number>
 ): {id: number, name: string, fromPosition: number, toPosition: number}[] => {
   const movedStandards: {id: number, name: string, fromPosition: number, toPosition: number}[] = [];
   
@@ -581,17 +579,15 @@ const forceReorderStandards = (
     const standard = validFormStandards[i];
     if (standard.id) {
       const desiredPosition = i + 1; // 1-based position
-      const currentPosition = standardIdToPositionMap.get(standard.id) || 0;
+      const currentPosition = standardIdToPositionMap.get(standard.id) ?? 0;
       
-      // Force reordering if explicitly requested
-      if (reorderDetected || currentPosition !== desiredPosition) {
-        movedStandards.push({
-          id: standard.id,
-          name: standard.name,
-          fromPosition: currentPosition,
-          toPosition: desiredPosition
-        });
-      }
+      // Force reordering for all standards
+      movedStandards.push({
+        id: standard.id,
+        name: standard.name,
+        fromPosition: currentPosition,
+        toPosition: desiredPosition
+      });
     }
   }
   
@@ -680,8 +676,7 @@ const handleStandardChanges = async (
     validFormStandards, 
     updatedStandards, 
     standardIdToPositionMap, 
-    standardIdToNameMap,
-    reorderDetected
+    standardIdToNameMap
   );
   
   console.log('Standards that need reordering:', movedStandards);
@@ -689,7 +684,7 @@ const handleStandardChanges = async (
   // Handle the case when no standards have moved but reordering was requested
   if (movedStandards.length === 0 && hasOrderChanged) {
     console.log('Order change detected but no standards need reordering. Forcing reorder.');
-    movedStandards = forceReorderStandards(validFormStandards, standardIdToPositionMap, reorderDetected);
+    movedStandards = forceReorderStandards(validFormStandards, standardIdToPositionMap);
     
     console.log('Forced standards reordering:', movedStandards);
     if (movedStandards.length === 0) {
@@ -817,143 +812,255 @@ const handleSubjectChanges = async (
   await processSubjectAdditions(toAdd, boardId);
 }
 
+// New helper functions to reduce cognitive complexity
+const getExistingItemsFromBoard = (currentBoard: BoardApiResponse, boardId: number) => {
+  // Extract instruction mediums
+  const existingMediums = currentBoard.instruction_mediums.map((m: InstructionMedium) => ({
+    id: m.id,
+    board_id: boardId,
+    instruction_medium: m.instruction_medium
+  }))
+
+  // Extract standards
+  const existingStandards = currentBoard.standards.map((s: Standard) => ({
+    id: s.id,
+    board_id: boardId,
+    name: s.name,
+    sequence_number: s.sequence_number
+  }))
+
+  // Log existing standards for comparison
+  console.log('Existing standards:', existingStandards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number })));
+
+  // Extract subjects
+  const existingSubjects = currentBoard.subjects.map((s: Subject) => ({
+    id: s.id,
+    board_id: boardId,
+    name: s.name
+  }))
+
+  return { existingMediums, existingStandards, existingSubjects }
+}
+
+const prepareStandardsForSubmission = (standards: StandardFormData[]) => {
+  // Ensure standards have proper sequence numbers based on their current order
+  standards.forEach((standard, index) => {
+    if (standard.name.trim()) {
+      standard.sequence_number = index + 1;
+    }
+  });
+  return standards;
+}
+
+const hasReorderingChangeInFormData = (changes?: Change[]): boolean => {
+  if (!changes) return false;
+  return changes.some((change: Change) =>
+    change.entity === 'standard' && change.message === 'Standards reordered'
+  );
+}
+
+const hasBoardDetailsChanged = (
+  currentBoard: BoardApiResponse, 
+  formBoard: CreateBoardDto
+): boolean => {
+  return currentBoard.name !== formBoard.name || 
+         currentBoard.abbreviation !== formBoard.abbreviation;
+}
+
+const updateBoardIfChanged = async (
+  formData: BoardFormSubmitData, 
+  boardChanged: boolean, 
+  boardId: number
+): Promise<number> => {
+  if (boardChanged) {
+    try {
+      const board = await updateBoard(formData)
+      operationResults.value.push({
+        operation: 'Updated board details',
+        status: 'success',
+      })
+      return board.id
+    } catch (error) {
+      operationResults.value.push({
+        operation: 'Update board details',
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update board',
+      })
+    }
+  }
+  return boardId
+}
+
+const detectMediumsChanged = (
+  formMediums: MediumFormData[],
+  existingMediums: ExistingItem[]
+): boolean => {
+  const formMediumNames = formMediums.map((m) => m.name.toLowerCase().trim()).sort((a: string, b: string) => a.localeCompare(b))
+  const existingMediumNames = existingMediums
+    .map((m) => m.instruction_medium?.toLowerCase().trim())
+    .sort((a: string | undefined, b: string | undefined) => (a ?? '').localeCompare(b ?? ''))
+  return JSON.stringify(formMediumNames) !== JSON.stringify(existingMediumNames)
+}
+
+const detectSubjectsChanged = (
+  formSubjects: SubjectFormData[],
+  existingSubjects: ExistingItem[]
+): boolean => {
+  const formSubjectNames = formSubjects.map((s) => s.name.toLowerCase().trim()).sort((a: string, b: string) => a.localeCompare(b))
+  const existingSubjectNames = existingSubjects.map((s) => s.name?.toLowerCase().trim()).sort((a: string | undefined, b: string | undefined) => (a ?? '').localeCompare(b ?? ''))
+  return JSON.stringify(formSubjectNames) !== JSON.stringify(existingSubjectNames)
+}
+
+const detectStandardsChanged = (
+  formStandards: StandardFormData[],
+  existingStandards: ExistingItem[],
+  hasReorderingChange: boolean
+): boolean => {
+  // Short-circuit if reordering change is detected
+  if (hasReorderingChange) return true;
+
+  // Check if standards count has changed
+  const validFormStandards = formStandards.filter(s => s.name.trim());
+  if (validFormStandards.length !== existingStandards.length) {
+    console.log('Standards changed: count mismatch');
+    return true;
+  }
+
+  // Check for any new standards without IDs
+  const hasNewStandards = validFormStandards.some(s => !s.id);
+  if (hasNewStandards) {
+    console.log('Standards changed: new standard detected');
+    return true;
+  }
+
+  // Check for changes in existing standards
+  for (const formStandard of validFormStandards) {
+    if (!formStandard.id) continue;
+    
+    const existingStandard = existingStandards.find(s => s.id === formStandard.id);
+    
+    // Check if the standard exists
+    if (!existingStandard) {
+      console.log('Standards changed: existing standard not found');
+      return true;
+    }
+
+    // Check if name has changed
+    if (existingStandard.name.toLowerCase().trim() !== formStandard.name.toLowerCase().trim()) {
+      console.log('Standards changed: name changed');
+      return true;
+    }
+
+    // Check if sequence has changed
+    if (existingStandard.sequence_number !== formStandard.sequence_number) {
+      console.log('Standards changed: sequence changed', {
+        id: formStandard.id,
+        name: formStandard.name,
+        oldSequence: existingStandard.sequence_number,
+        newSequence: formStandard.sequence_number
+      });
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const processChanges = async (
+  mediumsChanged: boolean,
+  standardsChanged: boolean,
+  subjectsChanged: boolean,
+  formData: BoardFormSubmitData,
+  existingData: { 
+    existingMediums: ExistingItem[], 
+    existingStandards: ExistingItem[], 
+    existingSubjects: ExistingItem[] 
+  },
+  boardId: number,
+  hasReorderingChange: boolean
+): Promise<void> => {
+  const changePromises = []
+  
+  if (mediumsChanged) {
+    changePromises.push(handleMediumChanges(formData.mediums, existingData.existingMediums, boardId))
+  }
+
+  if (standardsChanged) {
+    // Create a modified version of formData.standards with a flag indicating if reordering was detected
+    const standardsWithReorderFlag = formData.standards.map(s => ({
+      ...s,
+      _reorderDetected: hasReorderingChange
+    }));
+
+    changePromises.push(handleStandardChanges(
+      standardsWithReorderFlag, 
+      existingData.existingStandards, 
+      boardId
+    ))
+  }
+
+  if (subjectsChanged) {
+    changePromises.push(handleSubjectChanges(
+      formData.subjects, 
+      existingData.existingSubjects, 
+      boardId
+    ))
+  }
+
+  if (changePromises.length > 0) {
+    await Promise.all(changePromises)
+  }
+}
+
+const showResultsModal = () => {
+  const modalElement = document.getElementById('operationResultModal')
+  if (modalElement) {
+    const resultModal = new bootstrap.Modal(modalElement)
+    resultModal.show()
+  }
+}
+
 const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
   try {
     isSubmitting.value = true // Show loading spinner
     operationResults.value = [] // Reset results
 
-    // Log the received form data
     console.log('Received form data:', {
       standards: formData.standards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number })),
       changes: formData.changes
     });
 
     // Check if there's a reordering change
-    const hasReorderingChange = formData.changes ?
-      formData.changes.some((change: Change) =>
-        change.entity === 'standard' && change.message === 'Standards reordered'
-      ) : false;
-
+    const hasReorderingChange = hasReorderingChangeInFormData(formData.changes);
     if (hasReorderingChange) {
       console.log('Reordering change detected in form data');
     }
 
-    // Check if board details have changed
+    // Get current board data
     const boardResponse = await axiosInstance.get<BoardApiResponse>(`/boards/${route.params.id}`)
     const currentBoard = boardResponse.data
-    const boardChanged =
-      currentBoard.name !== formData.board.name ||
-      currentBoard.abbreviation !== formData.board.abbreviation
+    
+    // Check if board details have changed
+    const boardChanged = hasBoardDetailsChanged(currentBoard, formData.board);
 
     // Update board only if changed
     let boardId = parseInt(route.params.id as string)
-    if (boardChanged) {
-      try {
-        const board = await updateBoard(formData)
-        boardId = board.id
-        operationResults.value.push({
-          operation: 'Updated board details',
-          status: 'success',
-        })
-      } catch (error) {
-        operationResults.value.push({
-          operation: 'Update board details',
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Failed to update board',
-        })
-      }
-    }
+    boardId = await updateBoardIfChanged(formData, boardChanged, boardId);
 
     // Get existing items from the board data
-    // The API already returns all related data in the correct order
-    const existingMediums = currentBoard.instruction_mediums.map((m: InstructionMedium) => ({
-      id: m.id,
-      board_id: boardId,
-      instruction_medium: m.instruction_medium
-    }))
+    const existingData = getExistingItemsFromBoard(currentBoard, boardId);
+    
+    // Prepare standards with sequence numbers
+    prepareStandardsForSubmission(formData.standards);
 
-    const existingStandards = currentBoard.standards.map((s: Standard) => ({
-      id: s.id,
-      board_id: boardId,
-      name: s.name,
-      sequence_number: s.sequence_number
-    }))
-
-    // Log existing standards for comparison
-    console.log('Existing standards:', existingStandards.map(s => ({ id: s.id, name: s.name, sequence: s.sequence_number })));
-
-    const existingSubjects = currentBoard.subjects.map((s: Subject) => ({
-      id: s.id,
-      board_id: boardId,
-      name: s.name
-    }))
-
-    // Ensure standards have proper sequence numbers based on their current order
-    formData.standards.forEach((standard, index) => {
-      if (standard.name.trim()) {
-        standard.sequence_number = index + 1;
-      }
-    });
-
-    // Compare and only process changed items
-    const mediumsChanged = (() => {
-      const formMediumNames = formData.mediums.map((m) => m.name.toLowerCase().trim()).sort()
-      const existingMediumNames = existingMediums
-        .map((m) => m.instruction_medium?.toLowerCase().trim())
-        .sort()
-      return JSON.stringify(formMediumNames) !== JSON.stringify(existingMediumNames)
-    })()
-
-    // Force standardsChanged to true if there's a reordering change
-    const standardsChanged = hasReorderingChange || (() => {
-      // Check if standards have changed in name, order, or if any have been added/removed
-      if (formData.standards.filter(s => s.name.trim()).length !== existingStandards.length) {
-        console.log('Standards changed: count mismatch');
-        return true;
-      }
-
-      // Check for name or sequence changes
-      for (const formStandard of formData.standards) {
-        if (!formStandard.name.trim()) continue;
-
-        // If this is a new standard (no ID), then standards have changed
-        if (!formStandard.id) {
-          console.log('Standards changed: new standard detected');
-          return true;
-        }
-
-        // Find the existing standard with the same ID
-        const existingStandard = existingStandards.find(s => s.id === formStandard.id);
-        if (!existingStandard) {
-          console.log('Standards changed: existing standard not found');
-          return true;
-        }
-
-        // Check if name or sequence has changed
-        if (existingStandard.name.toLowerCase().trim() !== formStandard.name.toLowerCase().trim()) {
-          console.log('Standards changed: name changed');
-          return true;
-        }
-
-        if (existingStandard.sequence_number !== formStandard.sequence_number) {
-          console.log('Standards changed: sequence changed', {
-            id: formStandard.id,
-            name: formStandard.name,
-            oldSequence: existingStandard.sequence_number,
-            newSequence: formStandard.sequence_number
-          });
-          return true;
-        }
-      }
-
-      return false;
-    })()
-
-    const subjectsChanged = (() => {
-      const formSubjectNames = formData.subjects.map((s) => s.name.toLowerCase().trim()).sort()
-      const existingSubjectNames = existingSubjects.map((s) => s.name?.toLowerCase().trim()).sort()
-      return JSON.stringify(formSubjectNames) !== JSON.stringify(existingSubjectNames)
-    })()
+    // Detect changes in mediums, standards, and subjects
+    const mediumsChanged = detectMediumsChanged(formData.mediums, existingData.existingMediums);
+    const standardsChanged = detectStandardsChanged(
+      formData.standards, 
+      existingData.existingStandards, 
+      hasReorderingChange
+    );
+    const subjectsChanged = detectSubjectsChanged(formData.subjects, existingData.existingSubjects);
 
     console.log('Changes detected:', {
       boardChanged,
@@ -961,7 +1068,7 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       standardsChanged,
       subjectsChanged,
       hasReorderingChange
-    })
+    });
 
     // Check if there are any changes to process at all
     const hasAnyChanges = boardChanged || mediumsChanged || standardsChanged || subjectsChanged;
@@ -973,36 +1080,19 @@ const handleSubmit = async (formData: BoardFormSubmitData): Promise<void> => {
       return;
     }
 
-    // Only process items that have changed
-    const changePromises = []
-    if (mediumsChanged) {
-      changePromises.push(handleMediumChanges(formData.mediums, existingMediums, boardId))
-    }
-
-    // If standards have changed or there's a reordering change, handle standard changes
-    if (standardsChanged) {
-      // Create a modified version of formData.standards with a flag indicating if reordering was detected
-      const standardsWithReorderFlag = formData.standards.map(s => ({
-        ...s,
-        _reorderDetected: hasReorderingChange
-      }));
-
-      changePromises.push(handleStandardChanges(standardsWithReorderFlag, existingStandards, boardId))
-    }
-
-    if (subjectsChanged)
-      changePromises.push(handleSubjectChanges(formData.subjects, existingSubjects, boardId))
-
-    if (changePromises.length > 0) {
-      await Promise.all(changePromises)
-    }
+    // Process the changes
+    await processChanges(
+      mediumsChanged, 
+      standardsChanged, 
+      subjectsChanged, 
+      formData, 
+      existingData, 
+      boardId,
+      hasReorderingChange
+    );
 
     // Show results modal
-    const modalElement = document.getElementById('operationResultModal')
-    if (modalElement) {
-      const resultModal = new bootstrap.Modal(modalElement)
-      resultModal.show()
-    }
+    showResultsModal();
   } catch (error) {
     console.error('Error in handleSubmit:', error)
   } finally {

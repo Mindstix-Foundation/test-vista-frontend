@@ -271,6 +271,7 @@
             <h6 class="text-muted">Original Matching Pairs</h6>
             <div class="table-responsive">
               <table class="table table-bordered">
+                <caption>List of original matching pairs showing left and right side content</caption>
                 <thead class="table-light">
                   <tr>
                     <th scope="col">Left Side</th>

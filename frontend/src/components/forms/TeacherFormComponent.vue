@@ -24,7 +24,7 @@
             class="invalid-feedback"
             v-if="!validationStates.name.valid && validationStates.name.touched"
           >
-            {{ v$.name.$errors[0]?.$message || 'Please enter a valid name' }}
+            {{ v$.name.$errors[0]?.$message ?? 'Please enter a valid name' }}
           </div>
         </div>
       </div>
@@ -304,7 +304,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h4 class="modal-title" id="subjectSelectModalLabel">
-                Select Subjects for Standard {{ selectedStandard?.name || '' }}
+                Select Subjects for Standard {{ selectedStandard?.name ?? '' }}
               </h4>
             </div>
             <div class="modal-body">
@@ -806,7 +806,7 @@ watch(
       validationStates.boardId.valid = boardValid
 
       // Trigger vuelidate validation
-      await v$.value.$touch()
+      v$.value.$touch()
     }
   },
   { immediate: true },
@@ -902,7 +902,7 @@ const tryFixingBoardValidation = async () => {
   // Force update the model and validation state
   formData.boardId = selectedBoard.value.id
   v$.value.boardId.$model = selectedBoard.value.id
-  await v$.value.boardId.$touch()
+  v$.value.boardId.$touch()
   
   // Try validation again
   return await v$.value.$validate()
@@ -944,7 +944,7 @@ const handleValidationFailure = () => {
   // Find the first invalid field based on our preferred order
   const firstInvalidField = fieldOrder.find((field) => {
     const validationField = v$.value[field.key]
-    return validationField && validationField.$error
+    return validationField?.$error
   })
 
   // Focus the first invalid field
@@ -997,77 +997,113 @@ const calculateChanges = async () => {
   changes.value = []
 
   if (!props.initialData) {
-    // If no initial data, all current subjects are additions
-    formData.groupedSubjects?.forEach((standard) => {
-      standard.subjects.forEach((subject) => {
-        changes.value.push({
-          type: 'add',
-          message: `Added "${subject.name}" to Standard ${standard.standardName}`,
-        })
-      })
-    })
+    handleNewTeacherSubjects()
     return
   }
 
-  // Check basic information changes
-  if (formData.name !== props.initialData.name) {
+  checkBasicInfoChanges()
+  checkSchoolChange()
+  checkStandardChanges()
+}
+
+// Helper function to track new teacher subjects
+const handleNewTeacherSubjects = () => {
+  formData.groupedSubjects?.forEach((standard) => {
+    standard.subjects.forEach((subject) => {
+      changes.value.push({
+        type: 'add',
+        message: `Added "${subject.name}" to Standard ${standard.standardName}`,
+      })
+    })
+  })
+}
+
+// Helper function to check for changes in basic teacher information
+const checkBasicInfoChanges = () => {
+  // Check name change
+  if (formData.name !== props.initialData!.name) {
     changes.value.push({
       type: 'modify',
-      message: `Name: ${props.initialData.name} → ${formData.name}`,
+      message: `Name: ${props.initialData!.name} → ${formData.name}`,
     })
   }
 
-  if (formData.emailId !== props.initialData.emailId) {
+  // Check email change
+  if (formData.emailId !== props.initialData!.emailId) {
     changes.value.push({
       type: 'modify',
-      message: `Email: ${props.initialData.emailId} → ${formData.emailId}`,
+      message: `Email: ${props.initialData!.emailId} → ${formData.emailId}`,
     })
   }
 
-  if (formData.contactNumber !== props.initialData.contactNumber) {
+  // Check contact number change
+  if (formData.contactNumber !== props.initialData!.contactNumber) {
     changes.value.push({
       type: 'modify',
-      message: `Contact Number: ${props.initialData.contactNumber} → ${formData.contactNumber}`,
+      message: `Contact Number: ${props.initialData!.contactNumber} → ${formData.contactNumber}`,
     })
   }
 
-  if (formData.alternateContactNumber !== props.initialData.alternateContactNumber) {
+  // Check alternate contact number change
+  if (formData.alternateContactNumber !== props.initialData!.alternateContactNumber) {
     changes.value.push({
       type: 'modify',
-      message: `Alternate Contact: ${props.initialData.alternateContactNumber || 'None'} → ${
-        formData.alternateContactNumber || 'None'
+      message: `Alternate Contact: ${props.initialData!.alternateContactNumber ?? 'None'} → ${
+        formData.alternateContactNumber ?? 'None'
       }`,
     })
   }
 
-  if (formData.highestQualification !== props.initialData.highestQualification) {
+  // Check qualification change
+  if (formData.highestQualification !== props.initialData!.highestQualification) {
     changes.value.push({
       type: 'modify',
-      message: `Qualification: ${props.initialData.highestQualification} → ${formData.highestQualification}`,
+      message: `Qualification: ${props.initialData!.highestQualification} → ${formData.highestQualification}`,
     })
   }
+}
 
-  // Check school change
-  if (formData.schoolId !== props.initialData.schoolId) {
+// Helper function to check for school change
+const checkSchoolChange = () => {
+  if (formData.schoolId !== props.initialData!.schoolId) {
     const oldSchool = schools.value.find((s) => s.id === props.initialData?.schoolId)
     const newSchool = schools.value.find((s) => s.id === formData.schoolId)
     changes.value.push({
       type: 'modify',
-      message: `School: ${oldSchool?.name || ''} → ${newSchool?.name || ''}`,
+      message: `School: ${oldSchool?.name ?? ''} → ${newSchool?.name ?? ''}`,
     })
   }
+}
 
-  // Track removed standards (entire standard with all its subjects)
-  const initialStandards = props.initialData.groupedSubjects || []
-  const currentStandards = formData.groupedSubjects || []
+// Helper function to check for standard and subject changes
+const checkStandardChanges = () => {
+  const initialStandards = props.initialData!.groupedSubjects ?? []
+  const currentStandards = formData.groupedSubjects ?? []
 
-  // Check for completely removed standards
+  checkRemovedStandards(initialStandards, currentStandards)
+  checkNewStandards(initialStandards, currentStandards)
+  checkModifiedStandards(initialStandards, currentStandards)
+}
+
+// Define proper interfaces for standards and subjects
+interface Standard {
+  standardId: number
+  standardName: string
+  subjects: Subject[]
+}
+
+interface Subject {
+  id: number
+  name: string
+}
+
+// Helper function to check for completely removed standards
+const checkRemovedStandards = (initialStandards: Standard[], currentStandards: Standard[]) => {
   initialStandards.forEach((standard) => {
     const standardExists = currentStandards.some((s) => s.standardId === standard.standardId)
-
+    
     if (!standardExists) {
-      // Add individual removal messages for each subject in the standard
-      standard.subjects.forEach((subject) => {
+      standard.subjects.forEach((subject: Subject) => {
         changes.value.push({
           type: 'delete',
           message: `Removed "${subject.name}" from Standard ${standard.standardName}`,
@@ -1075,13 +1111,15 @@ const calculateChanges = async () => {
       })
     }
   })
+}
 
-  // Check for completely new standards
+// Helper function to check for completely new standards
+const checkNewStandards = (initialStandards: Standard[], currentStandards: Standard[]) => {
   currentStandards.forEach((standard) => {
     const standardIsNew = !initialStandards.some((s) => s.standardId === standard.standardId)
-
+    
     if (standardIsNew) {
-      standard.subjects.forEach((subject) => {
+      standard.subjects.forEach((subject: Subject) => {
         changes.value.push({
           type: 'add',
           message: `Added "${subject.name}" to Standard ${standard.standardName}`,
@@ -1089,33 +1127,45 @@ const calculateChanges = async () => {
       })
     }
   })
+}
 
-  // Check for individual subject changes within existing standards
+// Helper function to check for modified standards (added/removed subjects)
+const checkModifiedStandards = (initialStandards: Standard[], currentStandards: Standard[]) => {
   currentStandards.forEach((currentStandard) => {
     const initialStandard = initialStandards.find(
-      (s) => s.standardId === currentStandard.standardId,
+      (s) => s.standardId === currentStandard.standardId
     )
+    
     if (initialStandard) {
-      // Check for added subjects
-      currentStandard.subjects.forEach((subject) => {
-        const subjectExists = initialStandard.subjects.some((s) => s.id === subject.id)
-        if (!subjectExists) {
-          changes.value.push({
-            type: 'add',
-            message: `Added "${subject.name}" to Standard ${currentStandard.standardName}`,
-          })
-        }
-      })
+      checkAddedSubjects(currentStandard, initialStandard)
+      checkRemovedSubjects(currentStandard, initialStandard)
+    }
+  })
+}
 
-      // Check for removed subjects
-      initialStandard.subjects.forEach((subject) => {
-        const subjectStillExists = currentStandard.subjects.some((s) => s.id === subject.id)
-        if (!subjectStillExists) {
-          changes.value.push({
-            type: 'delete',
-            message: `Removed "${subject.name}" from Standard ${currentStandard.standardName}`,
-          })
-        }
+// Helper function to check for added subjects within a standard
+const checkAddedSubjects = (currentStandard: Standard, initialStandard: Standard) => {
+  currentStandard.subjects.forEach((subject: Subject) => {
+    const subjectExists = initialStandard.subjects.some((s: Subject) => s.id === subject.id)
+    
+    if (!subjectExists) {
+      changes.value.push({
+        type: 'add',
+        message: `Added "${subject.name}" to Standard ${currentStandard.standardName}`,
+      })
+    }
+  })
+}
+
+// Helper function to check for removed subjects within a standard
+const checkRemovedSubjects = (currentStandard: Standard, initialStandard: Standard) => {
+  initialStandard.subjects.forEach((subject: Subject) => {
+    const subjectStillExists = currentStandard.subjects.some((s: Subject) => s.id === subject.id)
+    
+    if (!subjectStillExists) {
+      changes.value.push({
+        type: 'delete',
+        message: `Removed "${subject.name}" from Standard ${currentStandard.standardName}`,
       })
     }
   })
@@ -1269,12 +1319,12 @@ const addSubjects = () => {
     const subject = availableSubjects.value.find((s) => s.id === subjectId)
     return {
       id: subjectId, // Use the subject ID directly
-      name: subject?.name || 'Unknown Subject',
+      name: subject?.name ?? 'Unknown Subject',
     }
   })
 
   // Remove existing standard from groupedSubjects if it exists
-  const otherStandards = (formData.groupedSubjects || []).filter(
+  const otherStandards = (formData.groupedSubjects ?? []).filter(
     (group) => group.standardId !== selectedStandard.value?.standard.id,
   )
 
@@ -1388,7 +1438,7 @@ const handleEmailInput = async (e: Event) => {
       const isAvailable = data.available === true
       
       validationStates.emailId.valid = isAvailable
-      emailErrorMessage.value = isAvailable ? '' : data.message || 'This email is already in use'
+      emailErrorMessage.value = isAvailable ? '' : data.message ?? 'This email is already in use'
     } catch {
       // Error handling for email check
       // If there's an error checking, we'll just validate the format
@@ -1439,7 +1489,7 @@ const handleEmailBlur = async () => {
     const isAvailable = data.available === true
     
     validationStates.emailId.valid = isAvailable
-    emailErrorMessage.value = isAvailable ? '' : data.message || 'This email is already in use'
+    emailErrorMessage.value = isAvailable ? '' : data.message ?? 'This email is already in use'
   } catch {
     // Error handling for email availability check
     // If there's an error checking, we'll just validate the format
@@ -1565,6 +1615,7 @@ const handleSchoolChange = async (school: { id: number; name: string } | null) =
     
     // Update validation
     v$.value.schoolId.$touch()
+    v$.value.$touch()
     return
   }
 
@@ -1583,8 +1634,8 @@ const handleSchoolChange = async (school: { id: number; name: string } | null) =
   validationStates.schoolId.valid = true
 
   // Force validation update
-  await v$.value.schoolId.$touch()
-  await v$.value.$touch()
+  v$.value.schoolId.$touch()
+  v$.value.$touch()
 
   // Fetch standards for this school
   try {
@@ -1641,6 +1692,7 @@ const handleBoardChange = async (board: { id: number; name: string } | null) => 
     
     // Update validation
     v$.value.boardId.$touch()
+    v$.value.$touch()
     return
   }
 
@@ -1666,8 +1718,8 @@ const handleBoardChange = async (board: { id: number; name: string } | null) => 
   validationStates.boardId.valid = true
 
   // Force validation update
-  await v$.value.boardId.$touch()
-  await v$.value.$touch()
+  v$.value.boardId.$touch()
+  v$.value.$touch()
 
   // Fetch schools for selected board
   await fetchSchools()

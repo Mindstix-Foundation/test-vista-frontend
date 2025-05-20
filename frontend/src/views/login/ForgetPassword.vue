@@ -58,11 +58,8 @@ const successMessage = ref('')
 const isLoading = ref(false)
 
 const validateEmail = (email: string) => {
-  return String(email)
-    .toLowerCase()
-    .match(
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    )
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.exec(String(email).toLowerCase()) !== null;
 }
 
 const handleSendResetLink = async () => {
@@ -98,7 +95,7 @@ const handleSendResetLink = async () => {
     console.error('Reset link send error:', error)
     const apiError = error as { response?: { data?: { message?: string } } }
     errorMessage.value =
-      apiError.response?.data?.message || 'Failed to send reset link. Please try again.'
+      apiError.response?.data?.message ?? 'Failed to send reset link. Please try again.'
   } finally {
     isLoading.value = false
   }

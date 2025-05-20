@@ -480,7 +480,7 @@ const selectedTypeObject = ref<Item | null>(null)
 const topicItems = computed(() => {
   return topics.value.map(topicName => {
     return {
-      id: topicMap.value.get(topicName) || 0,
+      id: topicMap.value.get(topicName) ?? 0,
       name: topicName
     } as Item
   })
@@ -489,7 +489,7 @@ const topicItems = computed(() => {
 const questionTypeItems = computed(() => {
   return questionTypes.value.map(typeName => {
     return {
-      id: questionTypeMap.value.get(typeName) || 0,
+      id: questionTypeMap.value.get(typeName) ?? 0,
       name: typeName
     } as Item
   })
@@ -780,7 +780,7 @@ async function fetchQuestionTypes() {
 async function fetchTopics() {
   try {
     // Get chapter ID from props or from questionBankData
-    const chapterId = props.chapterId || (props.questionBankData?.chapterId ?? null);
+    const chapterId = props.chapterId ?? (props.questionBankData?.chapterId ?? null);
 
     if (!chapterId) {
       setErrorTopic('Error: Chapter ID is missing. Please go back and select a chapter.');
@@ -926,7 +926,7 @@ function processQuestionTexts(questionData: QuestionResponse) {
 }
 
 function processQuestionImage(questionTextData: QuestionResponse['question_texts'][0]) {
-  if (questionTextData.image_id && questionTextData.image) {
+  if (questionTextData?.image_id && questionTextData?.image) {
     existingImageUrl.value = questionTextData.image.presigned_url
     existingImageName.value = questionTextData.image.original_filename || 'question_image'
     existingImageId.value = questionTextData.image.id
@@ -1011,7 +1011,7 @@ function processMatchPairsQuestion(questionData: QuestionResponse, questionText:
 }
 
 function processMatchPairs(questionData: QuestionResponse) {
-  if (!questionData.question_texts || !questionData.question_texts[0].match_pairs) {
+  if (!questionData.question_texts?.[0]?.match_pairs) {
     resetMatchPairs()
     return
   }
@@ -1026,7 +1026,23 @@ function processMatchPairs(questionData: QuestionResponse) {
   }
 }
 
-function setMatchPairsData(matchPairs: any[]) {
+// Define an interface for match pair item
+interface MatchPair {
+  left_text: string
+  right_text: string
+  left_image?: {
+    id: number
+    presigned_url: string
+    original_filename: string
+  }
+  right_image?: {
+    id: number
+    presigned_url: string
+    original_filename: string
+  }
+}
+
+function setMatchPairsData(matchPairs: MatchPair[]) {
   matchPairQuestion.value.lhs = matchPairs.map(pair => pair.left_text)
   matchPairQuestion.value.rhs = matchPairs.map(pair => pair.right_text)
 }
@@ -1036,14 +1052,14 @@ function resetMatchPairs() {
   matchPairQuestion.value.rhs = ['', '']
 }
 
-function processMatchPairsImages(matchPairs: any[]) {
+function processMatchPairsImages(matchPairs: MatchPair[]) {
   matchPairs.forEach((pair, index) => {
     processLeftImage(pair, index)
     processRightImage(pair, index)
   })
 }
 
-function processLeftImage(pair: any, index: number) {
+function processLeftImage(pair: MatchPair, index: number) {
   if (pair.left_image) {
     optionImageIds.value[index] = pair.left_image.id
     const optionImageContainer = document.getElementById(`lhsInput${index + 1}`)
@@ -1053,7 +1069,7 @@ function processLeftImage(pair: any, index: number) {
   }
 }
 
-function processRightImage(pair: any, index: number) {
+function processRightImage(pair: MatchPair, index: number) {
   if (pair.right_image) {
     optionImageIds.value[index + 10] = pair.right_image.id
     const optionImageContainer = document.getElementById(`rhsInput${index + 1}`)
@@ -1126,18 +1142,21 @@ function removeInput(side: 'lhs' | 'rhs', index: number) {
   }
 }
 
-function saveQuestion() {
-  // Validate required fields based on the question type
+function validateBasicFields(): boolean {
   if (selectedTopic.value === '') {
     alert('Please select a topic')
-    return
+    return false
   }
 
   if (selectedType.value === '') {
     alert('Please select a question type')
-    return
+    return false
   }
+  
+  return true
+}
 
+function validateQuestionTypeFields(): { isValid: boolean, errorMessages: string[] } {
   let isValid = true
   const errorMessages: string[] = []
 
@@ -1176,28 +1195,27 @@ function saveQuestion() {
       break
   }
 
-  if (!isValid) {
-    alert(errorMessages.join('\n'))
-    return
-  }
+  return { isValid, errorMessages }
+}
 
-  // Prepare the base payload
-  const payload: SavePayload = {
+function createBasePayload(): SavePayload {
+  return {
     questionTypeId: getQuestionTypeId(),
     topicId: getTopicId(),
     isPreviousExam: getIsPreviousExam(),
     isVerified: false,
     questionText: '',
     additionalData: {},
-    imageFile: questionImageFile.value || undefined,
+    imageFile: questionImageFile.value ?? undefined,
     optionImages: [...mcqOptionImages.value].map(img => img === undefined ? null : img) as (File | null)[],
     deleteImage: shouldDeleteImage.value,
     existingImageId: existingImageId.value,
     optionImageIds: [...optionImageIds.value],
     optionImageDeleteFlags: [...optionImageDeleteFlags.value]
   }
+}
 
-  // Add question-type specific data
+function addQuestionTypeSpecificData(payload: SavePayload): void {
   switch (selectedType.value) {
     case 'True or False':
     case 'Give Scientific Reasons':
@@ -1227,8 +1245,9 @@ function saveQuestion() {
       }
       break
   }
+}
 
-  // Emit the save or update event
+function emitSaveOrUpdate(payload: SavePayload): void {
   if (isEditMode.value) {
     emit('update', {
       questionId: props.questionId,
@@ -1246,27 +1265,33 @@ function saveQuestion() {
       optionImageDeleteFlags: payload.optionImageDeleteFlags
     })
   } else {
-    emit('save', {
-      questionTypeId: payload.questionTypeId,
-      topicId: payload.topicId,
-      isPreviousExam: payload.isPreviousExam,
-      isVerified: payload.isVerified,
-      questionText: payload.questionText,
-      additionalData: payload.additionalData,
-      imageFile: payload.imageFile,
-      optionImages: payload.optionImages,
-      deleteImage: payload.deleteImage,
-      existingImageId: payload.existingImageId,
-      optionImageIds: payload.optionImageIds,
-      optionImageDeleteFlags: payload.optionImageDeleteFlags
-    })
+    emit('save', payload)
   }
+}
+
+function saveQuestion() {
+  // Validate basic fields
+  if (!validateBasicFields()) return
+
+  // Validate question type fields
+  const { isValid, errorMessages } = validateQuestionTypeFields()
+  if (!isValid) {
+    alert(errorMessages.join('\n'))
+    return
+  }
+
+  // Create and prepare payload
+  const payload = createBasePayload()
+  addQuestionTypeSpecificData(payload)
+  
+  // Emit event
+  emitSaveOrUpdate(payload)
 }
 
 function getQuestionTypeId(): number {
   // If a type ID map is available, use it
   if (questionTypeMap.value.has(selectedType.value)) {
-    return questionTypeMap.value.get(selectedType.value) || 0
+    return questionTypeMap.value.get(selectedType.value) ?? 0
   }
 
   // Otherwise use hardcoded values
@@ -1321,7 +1346,7 @@ function getIsPreviousExam(): boolean {
 
 function getTopicId(): number {
   if (topicMap.value.has(selectedTopic.value)) {
-    return topicMap.value.get(selectedTopic.value) || 0
+    return topicMap.value.get(selectedTopic.value) ?? 0
   }
   return 0 // Default to 0 if topic is not found
 }
@@ -1519,7 +1544,7 @@ function initializeSearchableDropdownValues() {
   if (!props.useSearchableDropdown) return;
   
   if (selectedTopic.value) {
-    const topicId = topicMap.value.get(selectedTopic.value) || 0;
+    const topicId = topicMap.value.get(selectedTopic.value) ?? 0;
     selectedTopicObject.value = {
       id: topicId,
       name: selectedTopic.value
@@ -1527,7 +1552,7 @@ function initializeSearchableDropdownValues() {
   }
 
   if (selectedType.value) {
-    const typeId = questionTypeMap.value.get(selectedType.value) || 0;
+    const typeId = questionTypeMap.value.get(selectedType.value) ?? 0;
     selectedTypeObject.value = {
       id: typeId,
       name: selectedType.value

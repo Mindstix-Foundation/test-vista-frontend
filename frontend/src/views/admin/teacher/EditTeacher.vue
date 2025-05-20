@@ -297,7 +297,7 @@ const updateTeacher = async (userId: string, formData: TeacherFormData) => {
       name: formData.name,
       email_id: formData.emailId,
       contact_number: formData.contactNumber,
-      alternate_contact_number: formData.alternateContactNumber || null,
+      alternate_contact_number: formData.alternateContactNumber ?? null,
       highest_qualification: formData.highestQualification,
       status: true,
       school_id: formData.schoolId,
@@ -315,6 +315,53 @@ const updateTeacher = async (userId: string, formData: TeacherFormData) => {
     console.error('Error updating teacher:', error);
     throw error;
   }
+}
+
+// Helper function to determine operation type
+const determineOperationType = (change: { type: string; message: string }): string => {
+  const changeType = change.message.split(':')[0].trim();
+  
+  if (changeType === 'School') return 'Update School Assignment';
+  if (change.message.includes('added to')) return change.message;
+  if (change.message.includes('removed from')) return change.message;
+  return change.message;
+}
+
+// Helper function to process API error
+const handleApiError = (error: unknown): string => {
+  let errorMessage = 'Failed to update teacher';
+  
+  if (error && typeof error === 'object' && 'response' in error) {
+    const apiError = error as { response?: { data?: { message?: string } } };
+    if (apiError.response?.data?.message) {
+      errorMessage = apiError.response.data.message;
+    }
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
+  }
+  
+  return errorMessage;
+}
+
+// Helper function to process successful changes
+const processSuccessfulChanges = (changes: Array<{ type: string; message: string }>, result: unknown) => {
+  // Add a success entry for teacher update
+  operationResults.value.push({
+    operation: formatOperationMessage('Update Teacher Information', true),
+    status: 'success',
+  });
+  
+  // Add operation results for each change
+  changes.forEach(change => {
+    const operation = determineOperationType(change);
+    
+    operationResults.value.push({
+      operation: formatOperationMessage(operation, true),
+      status: 'success',
+    });
+  });
+  
+  console.log('Teacher updated successfully:', result);
 }
 
 const handleSubmit = async (data: {
@@ -342,50 +389,10 @@ const handleSubmit = async (data: {
     try {
       // Use the new consolidated API endpoint
       const result = await updateTeacher(userId, formData);
-      
-      // Add a success entry for teacher update
-      operationResults.value.push({
-        operation: formatOperationMessage('Update Teacher Information', true),
-        status: 'success',
-      });
-      
-      // Add operation results for each change
-      changes.forEach(change => {
-        const changeType = change.message.split(':')[0].trim();
-        let operation = '';
-        
-        if (changeType === 'School') {
-          operation = 'Update School Assignment';
-        } else if (change.message.includes('added to')) {
-          operation = change.message;
-        } else if (change.message.includes('removed from')) {
-          operation = change.message;
-        } else {
-          operation = change.message;
-        }
-        
-        operationResults.value.push({
-          operation: formatOperationMessage(operation, true),
-          status: 'success',
-        });
-      });
-      
-      // Show success message
-      console.log('Teacher updated successfully:', result);
+      processSuccessfulChanges(changes, result);
     } catch (error: unknown) {
       console.error('[handleSubmit] Error updating teacher:', error);
-      
-      // Handle specific error messages from the API
-      let errorMessage = 'Failed to update teacher';
-      
-      if (error && typeof error === 'object' && 'response' in error) {
-        const apiError = error as { response?: { data?: { message?: string } } };
-        if (apiError.response?.data?.message) {
-          errorMessage = apiError.response.data.message;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
+      const errorMessage = handleApiError(error);
       
       operationResults.value.push({
         operation: 'Update Teacher',
@@ -398,7 +405,6 @@ const handleSubmit = async (data: {
     if (operationResults.value.length > 0) {
       operationResultModal?.show()
     } else {
-      // If no changes were made, just navigate back
       router.push('/admin/teacher')
     }
   } catch (error) {

@@ -119,6 +119,7 @@
                   <div v-if="pattern.isExpanded" class="section-preview mt-3" :key="pattern.id">
                     <div class="table-responsive">
                       <table class="table table-sm compact-table borderless-table">
+                        <caption class="sr-only">Section details showing questions and their respective marks.</caption>
                         <thead class="table-dark rounded-table-header">
                           <tr>
                             <th class="question-column">Questions</th>
@@ -662,7 +663,7 @@ const selectTestPattern = (pattern: Pattern) => {
         patternId: pattern.id.toString(),
         patternName: pattern.pattern_name,
         board: boardNameToPass,
-        boardId: userProfile.value?.schools?.[0]?.board?.id?.toString() || boardId
+        boardId: userProfile.value?.schools?.[0]?.board?.id?.toString() ?? boardId
       }
     })
     

@@ -70,7 +70,7 @@ const handleSubmit = async (data: {
       email_id: data.formData.emailId,
       password: 'Testvista@123', // Default password
       contact_number: data.formData.contactNumber,
-      alternate_contact_number: data.formData.alternateContactNumber || undefined,
+      alternate_contact_number: data.formData.alternateContactNumber ?? undefined,
       highest_qualification: data.formData.highestQualification,
       status: true,
       school_id: data.formData.schoolId,

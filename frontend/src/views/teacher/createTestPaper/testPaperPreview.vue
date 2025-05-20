@@ -1219,12 +1219,12 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
   // Process each section
   sortedSections.forEach(section => {
     // Create formatted section number display (e.g., "1.A")
-    const sectionNum = section.section_number || sectionNumberCounter;
-    const subSection = section.subSection || '';
+    const sectionNum = section.section_number ?? sectionNumberCounter;
+    const subSection = section.subSection ?? '';
     const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
     
     const displaySection: DisplaySection = {
-      sectionNumber: section.section_number || sectionNumberCounter++,
+      sectionNumber: section.section_number ?? sectionNumberCounter++,
       sectionName: section.sectionName,
       totalMarks: section.totalMarks,
       questions: [],
@@ -1275,7 +1275,7 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
           const displayQuestion: DisplayQuestion = {
             questionNumber: questionNumberCounter++,
             questionText: questionText.question_text,
-            marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions), // Use marks_per_question if available
+            marks: section.marks_per_question ?? Math.ceil(section.totalMarks / section.totalQuestions), // Use marks_per_question if available
             questionType: question.question_type.type_name,
             originalQuestion: question,
             topicId: topicId,
@@ -2217,7 +2217,7 @@ const changeMedium = async (mediumId: number) => {
   showMediumDropdown.value = false;
   
   // Show toast notification for medium change
-  const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
+  const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name ?? 'Unknown';
   showLayoutChangeToast(`Changed to ${mediumName} medium`);
   
   try {

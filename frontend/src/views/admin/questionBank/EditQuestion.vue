@@ -72,6 +72,9 @@ interface AxiosErrorResponse {
   };
 }
 
+// Define type aliases for common union types
+type NullableId = number | null | undefined;
+
 // Define interfaces for the data structures
 interface McqOption {
   id: number;
@@ -214,9 +217,9 @@ async function uploadImage(file: File): Promise<number | null> {
 
     const imageCreateRequest = {
       image_url: uploadResponse.data.image_url,
-      original_filename: uploadResponse.data.original_filename || file.name,
-      file_size: uploadResponse.data.file_size || file.size,
-      file_type: uploadResponse.data.file_type || file.type,
+      original_filename: uploadResponse.data.original_filename ?? file.name,
+      file_size: uploadResponse.data.file_size ?? file.size,
+      file_type: uploadResponse.data.file_type ?? file.type,
       width: uploadResponse.data.width,
       height: uploadResponse.data.height
     };
@@ -252,7 +255,7 @@ async function deleteImageById(imageId: number): Promise<boolean> {
 
 async function processQuestionImage(
   deleteImageFlag: boolean | undefined, 
-  existingImageId: number | null | undefined, 
+  existingImageId: NullableId, 
   imageFile: File | undefined
 ): Promise<number | null> {
   // Handle image deletion if requested
@@ -342,7 +345,7 @@ async function createMCQOption(
   // Process option image
   option.image_id = await processOptionImage(
     optionImages?.[index],
-    existingOptions[index]?.image_id || optionImageIds?.[index],
+    existingOptions[index]?.image_id ?? optionImageIds?.[index],
     optionImageDeleteFlags?.[index]
   );
 
@@ -351,7 +354,7 @@ async function createMCQOption(
 
 async function processOptionImage(
   newImage: File | null | undefined,
-  existingImageId: number | null | undefined,
+  existingImageId: NullableId,
   shouldDelete: boolean | undefined
 ): Promise<number | null> {
   // Delete image if flag is set
@@ -367,11 +370,11 @@ async function processOptionImage(
     }
     
     // Upload new image
-    return await uploadImage(newImage as File);
+    return await uploadImage(newImage);
   }
   
   // Keep existing image ID
-  return existingImageId || null;
+  return existingImageId ?? null;
 }
 
 function buildUpdateRequest({
@@ -532,7 +535,7 @@ async function createMatchPair(
 
 async function processMatchPairSideImage(
   newImage: File | null | undefined,
-  existingImageId: number | null | undefined,
+  existingImageId: NullableId,
   shouldDelete: boolean | undefined
 ): Promise<number | null> {
   // Early return if delete flag is set or no changes needed
@@ -549,18 +552,18 @@ async function processMatchPairSideImage(
       }
       
       // Upload and return new image ID
-      const newImageId = await uploadImage(newImage as File);
+      const newImageId = await uploadImage(newImage);
       console.log(`Match pair image uploaded with ID: ${newImageId}`);
       return newImageId;
     } catch (error) {
       console.error('Error processing match pair image:', error);
       // Return existing image ID as fallback in case of upload error
-      return existingImageId || null;
+      return existingImageId ?? null;
     }
   }
   
   // No changes - keep existing image
-  return existingImageId || null;
+  return existingImageId ?? null;
 }
 
 // Handle updating the question
@@ -644,7 +647,7 @@ async function handleUpdateQuestion(payload: {
       await processMCQOptions(
         updateQuestionRequest,
         payload.additionalData,
-        existingMcqOptions.value || [],
+        existingMcqOptions.value ?? [],
         payload.optionImages,
         payload.optionImageIds,
         payload.optionImageDeleteFlags
@@ -659,7 +662,7 @@ async function handleUpdateQuestion(payload: {
       await processMatchPairs(
         updateQuestionRequest,
         payload.additionalData,
-        existingMatchPairs.value || [],
+        existingMatchPairs.value ?? [],
         payload.optionImages,
         payload.optionImageDeleteFlags
       );
@@ -688,7 +691,7 @@ async function handleUpdateQuestion(payload: {
     const axiosError = error as AxiosErrorResponse;
     toastStore.showToast({
       title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to update question',
+      message: axiosError.response?.data?.message ?? 'Failed to update question',
       type: 'error'
     });
   }
@@ -710,8 +713,7 @@ function handleCloseClick() {
 
 // Extract MCQ data from response
 function processMcqQuestionData(response: QuestionResponse) {
-  if (!response.data || 
-      !response.data.question_type || 
+  if (!response?.data?.question_type || 
       response.data.question_type.id !== 1 || 
       !response.data.question_texts || 
       response.data.question_texts.length === 0 || 
@@ -719,7 +721,7 @@ function processMcqQuestionData(response: QuestionResponse) {
     return;
   }
 
-  const options = response.data.question_texts[0].mcq_options as McqOption[];
+  const options = response.data.question_texts[0].mcq_options;
 
   // Store the existing MCQ options for later use when updating
   existingMcqOptions.value = options.map(opt => ({
@@ -743,7 +745,7 @@ function processMcqQuestionData(response: QuestionResponse) {
 
   // Process each option to extract image data
   options.forEach((option, index) => {
-    if (option.image && option.image.presigned_url) {
+    if (option?.image?.presigned_url) {
       initialOptionImages.value[index] = option.image.presigned_url;
       initialOptionImageIds.value[index] = option.image.id;
     }
@@ -757,8 +759,7 @@ function processMcqQuestionData(response: QuestionResponse) {
 
 // Extract matching pairs data from response 
 function processMatchPairsData(response: QuestionResponse) {
-  if (!response.data || 
-      !response.data.question_type || 
+  if (!response?.data?.question_type || 
       (response.data.question_type.id !== 3 && response.data.question_type.id !== 5) || 
       !response.data.question_texts || 
       response.data.question_texts.length === 0 || 

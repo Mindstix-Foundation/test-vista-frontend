@@ -93,6 +93,7 @@
             style="width: 100%"
             :class="{ 'table-searching': isSearchingTeacher || isSearchingSchool }"
           >
+            <caption>List of teachers with their associated schools and access status</caption>
             <colgroup>
               <col style="width: 20px" />
               <col style="width: 35%" />
@@ -292,7 +293,7 @@
                                 id="alternateContactNumber"
                                 readonly
                                 class="form-control-plaintext"
-                                :value="selectedTeacher.alternateContactNumber || 'Not provided'"
+                                :value="selectedTeacher.alternateContactNumber ?? 'Not provided'"
                               />
                             </div>
                           </div>
@@ -771,10 +772,10 @@ const processResponseData = (responseData: UsersListApiResponse) => {
   teachers.value = responseData.data.map((user: TeacherApiResponse) => ({
     id: user.id,
     name: user.name,
-    emailId: user.email_id || '',
-    contactNumber: user.contact_number || '',
-    alternateContactNumber: user.alternate_contact_number || '',
-    highestQualification: user.highest_qualification || '',
+    emailId: user.email_id ?? '',
+    contactNumber: user.contact_number ?? '',
+    alternateContactNumber: user.alternate_contact_number ?? '',
+    highestQualification: user.highest_qualification ?? '',
     status: user.status,
     createdAt: user.created_at,
     updatedAt: user.updated_at,
@@ -789,8 +790,8 @@ const processResponseData = (responseData: UsersListApiResponse) => {
 
 const updatePaginationInfo = (responseData: UsersListApiResponse) => {
   if (responseData.meta) {
-    totalItems.value = responseData.meta.total || 0
-    totalPages.value = responseData.meta.total_pages || 1
+    totalItems.value = responseData.meta.total ?? 0
+    totalPages.value = responseData.meta.total_pages ?? 1
 
     console.log('Pagination data from meta:', {
       totalItems: totalItems.value,
@@ -938,7 +939,7 @@ async function openViewModal(teacher: Teacher) {
       name: teacherData.name,
       emailId: teacherData.email_id,
       contactNumber: teacherData.contact_number,
-      alternateContactNumber: teacherData.alternate_contact_number || '',
+      alternateContactNumber: teacherData.alternate_contact_number ?? '',
       highestQualification: teacherData.highest_qualification,
       status: teacherData.status,
       createdAt: teacherData.created_at,
@@ -946,7 +947,7 @@ async function openViewModal(teacher: Teacher) {
       school: teacherData.schools && teacherData.schools.length > 0
         ? {
             id: teacherData.schools[0].id || 0,
-            name: teacherData.schools[0].name || ''
+            name: teacherData.schools[0].name ?? ''
           }
         : { id: 0, name: '' },
       // Map teaching assignments to teacherSubjects format for compatibility
@@ -957,8 +958,8 @@ async function openViewModal(teacher: Teacher) {
         mediumStandardSubject: {
           id: assignment.id,
           instructionMedium: {
-            id: assignment.medium?.id || 0,
-            instruction_medium: assignment.medium?.name || 'Default'
+            id: assignment.medium?.id ?? 0,
+            instruction_medium: assignment.medium?.name ?? 'Default'
           },
           standard: {
             id: assignment.standard.id,

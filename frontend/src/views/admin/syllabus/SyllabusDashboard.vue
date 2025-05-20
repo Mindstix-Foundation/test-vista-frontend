@@ -176,8 +176,8 @@ const validationStates = ref({
 
 // Data lists
 const boards = ref<Board[]>([])
-const boardMediums = computed(() => selectedBoard.value?.instruction_mediums || [])
-const boardStandards = computed(() => selectedBoard.value?.standards || [])
+const boardMediums = computed(() => selectedBoard.value?.instruction_mediums ?? [])
+const boardStandards = computed(() => selectedBoard.value?.standards ?? [])
 
 // Computed
 const isFormValid = computed(() => {
@@ -209,7 +209,7 @@ onMounted(async () => {
   try {
     const response = await axiosInstance.get('/boards')
     // Check if the response has the new format with pagination
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       // New format with pagination
       boards.value = response.data.data
     } else {
@@ -240,7 +240,7 @@ const handleBoardChange = async (board: Item | null) => {
     const response = await axiosInstance.get(`/boards/${board.id}`)
 
     // Check if the response has the new format with pagination
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       // New format with pagination - use the first item in the data array
       if (response.data.data.length > 0) {
         selectedBoard.value = response.data.data[0]
