@@ -217,7 +217,7 @@
                   <div class="mt-2">
                     <span>
                       <strong class="me-3"
-                        >Q{{ section.questionNumber }} {{ section.subQuestion }}</strong
+                        >Q{{ section.questionNumber }}{{ section.subQuestion ? ' ' + section.subQuestion : '' }}</strong
                       >
                       {{ section.sectionName }}
                     </span>

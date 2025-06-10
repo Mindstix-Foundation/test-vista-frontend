@@ -637,6 +637,25 @@
         <span class="visually-hidden">Updating translation...</span>
       </output>
     </div>
+
+    <!-- Image Upload Editor Modals -->
+    <ImageUploadEditor
+      :show="showQuestionImageModal"
+      :imageType="'question'"
+      :questionText="translatedQuestion.question"
+      :questionNumber="1"
+      @close="showQuestionImageModal = false"
+      @image-uploaded="handleQuestionImageUploaded"
+    />
+
+    <ImageUploadEditor
+      :show="showOptionImageModal"
+      :imageType="'option'"
+      :questionText="translatedQuestion.question"
+      :questionNumber="1"
+      @close="showOptionImageModal = false"
+      @image-uploaded="handleOptionImageUploaded"
+    />
   </div>
 </template>
 
@@ -645,6 +664,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
+import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -809,6 +829,11 @@ const QUESTION_TYPES = {
 // Add loading state for initial data fetch
 const isInitialLoading = ref(true)
 
+// Modal states for ImageUploadEditor
+const showQuestionImageModal = ref(false)
+const showOptionImageModal = ref(false)
+const currentOptionIndex = ref(0)
+
 // Methods
 function autoResize(event: Event) {
   const textarea = event.target as HTMLTextAreaElement
@@ -865,49 +890,33 @@ function handleImageChange(event: Event) {
   }
 }
 
-// Helper function to process image uploads
-async function uploadImage(file) {
-  console.log("Uploading file:", file.name, file.size, "bytes");
-  
-  // Create the form data with the file
+// Helper function to handle image upload
+async function uploadImage(file, customWidth?: number, customHeight?: number) {
   const formData = new FormData();
   formData.append('file', file);
+
+  // Add custom dimensions if provided
+  if (customWidth !== undefined) {
+    formData.append('width', customWidth.toString());
+  }
+  if (customHeight !== undefined) {
+    formData.append('height', customHeight.toString());
+  }
   
-  // STEP 1: Upload the image to get the URL
+  // STEP 1: Upload the image to get the complete image data
   console.log("STEP 1: Calling /images/upload API...");
-  const uploadResponse = await axiosInstance.post(
-    '/images/upload',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      timeout: 30000
-    }
-  );
+  const response = await axiosInstance.post('/images/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+    timeout: 30000
+  });
   
-  if (!uploadResponse?.data?.image_url) {
-    throw new Error("Upload response is missing image_url");
+  if (!response?.data?.id) {
+    throw new Error("Upload response is missing image id");
   }
   
-  // STEP 2: Create the image record with the URL
-  const imageCreateRequest = {
-    image_url: uploadResponse.data.image_url,
-    original_filename: file.name,
-    file_size: file.size,
-    file_type: file.type,
-    width: uploadResponse.data.width || 0,
-    height: uploadResponse.data.height || 0
-  };
-  
-  console.log("STEP 2: Calling /images API with:", imageCreateRequest);
-  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-  
-  if (!imageResponse?.data?.id) {
-    throw new Error("Image creation response is missing id");
-  }
-  
-  return imageResponse.data.id;
+  return response.data.id;
 }
 
 // Helper to process main question image
@@ -1985,6 +1994,36 @@ onMounted(() => {
     });
   }
 });
+
+// Event handlers for ImageUploadEditor
+function handleQuestionImageUploaded(uploadedImage: any) {
+  // Handle uploaded question image
+  if (uploadedImage && uploadedImage.image_url) {
+    questionImage.value = uploadedImage;
+    questionImagePreview.value = uploadedImage.image_url;
+    newImageSelected.value = true;
+    showQuestionImageModal.value = false;
+  }
+}
+
+function handleOptionImageUploaded(uploadedImage: any) {
+  // Handle uploaded option image
+  if (uploadedImage && uploadedImage.image_url && currentOptionIndex.value >= 0) {
+    // Update the option image preview
+    if (!optionImagePreviews.value) {
+      optionImagePreviews.value = [];
+    }
+    optionImagePreviews.value[currentOptionIndex.value] = uploadedImage.image_url;
+    
+    // Update the option file reference if needed
+    if (!selectedOptionFiles.value) {
+      selectedOptionFiles.value = [];
+    }
+    
+    showOptionImageModal.value = false;
+    currentOptionIndex.value = 0;
+  }
+}
 
 // Clean up any object URLs when component is unmounted
 onBeforeUnmount(() => {

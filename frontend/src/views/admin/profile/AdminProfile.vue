@@ -286,14 +286,15 @@ const showLogoutModal = () => {
 /**
  * Handle user logout
  */
-const logout = () => {
-  logoutModal.value?.hide()
-  
-  // Clear all authentication data
-  authStore.clearAuth()
-  
-  // Redirect to login page
-  router.push('/login')
+const logout = async () => {
+  try {
+    logoutModal.value?.hide()
+    await authStore.logout()
+  } catch (error) {
+    console.error('Error during logout:', error)
+    // Even if logout fails, redirect to login
+    router.push('/login')
+  }
 }
 
 /**

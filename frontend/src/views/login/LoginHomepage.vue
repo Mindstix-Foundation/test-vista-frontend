@@ -20,7 +20,7 @@
           @keyup.enter="focusPassword"
           required
         />
-        <div class="invalid-feedback">Please enter a valid email address.</div>
+        <div class="invalid-feedback">{{ VALIDATION_MESSAGES.EMAIL.INVALID }}</div>
       </div>
 
       <div class="mb-3">
@@ -60,6 +60,7 @@ import LoginNavBar from '@/components/LoginNavBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import axiosInstance from '@/config/axios'
 import type { AxiosError } from 'axios'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -106,7 +107,7 @@ const login = async () => {
   // Validate email format
   if (!validateEmail(email.value)) {
     emailError.value = true
-    errorMessage.value = 'Please enter a valid email address.'
+    errorMessage.value = VALIDATION_MESSAGES.EMAIL.INVALID
     return
   }
 

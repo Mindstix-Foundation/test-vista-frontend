@@ -63,6 +63,30 @@ export const useAuthStore = defineStore('auth', () => {
     delete axiosInstance.defaults.headers.common['Authorization']
   }
 
+  const logout = async () => {
+    try {
+      // Call the backend logout endpoint to blacklist the token
+      if (token.value) {
+        await axiosInstance.post('/auth/logout')
+      }
+    } catch (error) {
+      // Log the error but don't throw it - we still want to clear local auth
+      console.error('Error calling logout endpoint:', error)
+    } finally {
+      // Always clear local authentication data
+      clearAuth()
+      
+      // Clear any remaining data
+      localStorage.clear()
+      
+      // Reset any cookies
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      
+      // Redirect to login page
+      router.push('/login')
+    }
+  }
+
   const handleAuthExpired = () => {
     clearAuth()
     const currentPath = window.location.pathname
@@ -126,6 +150,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkingAuth,
     setAuth,
     clearAuth,
+    logout,
     checkAuth,
   }
 })

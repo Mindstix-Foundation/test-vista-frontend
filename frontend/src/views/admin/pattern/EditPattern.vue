@@ -121,7 +121,7 @@ interface Section {
   pattern_id: number
   section_number: number
   sequence_number: number
-  sub_section: string
+  sub_section: string | null
   sectionName: string
   questionType: string
   requiredQuestions: number

@@ -59,7 +59,7 @@ interface Section {
   id: number
   section_number: number
   sequence_number: number
-  sub_section: string
+  sub_section: string | null
   section_name: string
   total_questions: number
   mandotory_questions: number

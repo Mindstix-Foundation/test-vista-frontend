@@ -32,7 +32,10 @@
         :questionBankData="questionBankData"
         :chapterId="questionBankData.chapterId"
         @save="handleSaveQuestion"
+        @openQuestionImageModal="openQuestionImageModal"
+        @openOptionImageModal="openOptionImageModal"
         :useSearchableDropdown="true"
+        ref="questionFormComponent"
       />
       <div v-else class="alert alert-danger text-center">
         Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
@@ -45,6 +48,32 @@
         <span class="visually-hidden">Saving...</span>
       </output>
     </div>
+
+    <!-- Enhanced Image Upload Modals -->
+    <ImageUploadEditor
+      :isVisible="showQuestionImageModal"
+      :questionText="currentQuestionData.questionText"
+      :questionNumber="1"
+      imageType="question"
+      :questionType="currentQuestionData.questionType"
+      :options="currentQuestionData.options"
+      @close="() => showQuestionImageModal = false"
+      @cancelled="handleQuestionImageCancelled"
+      @imageUploaded="handleQuestionImageUploaded"
+    />
+
+    <ImageUploadEditor
+      :isVisible="showOptionImageModal"
+      :questionText="currentQuestionData.questionText"
+      :questionNumber="1"
+      imageType="option"
+      :questionType="currentQuestionData.questionType"
+      :options="currentQuestionData.options"
+      :optionIndex="currentOptionIndex"
+      @close="() => showOptionImageModal = false"
+      @cancelled="handleOptionImageCancelled"
+      @imageUploaded="handleOptionImageUploaded"
+    />
   </div>
 </template>
 
@@ -54,6 +83,8 @@ import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
 import { useToastStore } from '@/store/toast'
+import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
+import imageService from '@/services/imageService'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -73,6 +104,21 @@ const router = useRouter()
 const toastStore = useToastStore()
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const questionFormComponent = ref<any>(null)
+
+// Add new state for image upload modals
+const showQuestionImageModal = ref(false)
+const showOptionImageModal = ref(false)
+const currentOptionIndex = ref<number>(-1)
+const currentQuestionData = ref<{
+  questionText: string
+  questionType: string
+  options?: string[]
+}>({
+  questionText: '',
+  questionType: '',
+  options: []
+})
 
 // Data from localStorage
 const questionBankData = ref({
@@ -98,63 +144,44 @@ function validateChapterId() {
 }
 
 // Helper functions for image upload and processing
-async function uploadImage(file: File) {
-  // Create FormData for file upload
-  const formData = new FormData();
-  formData.append('file', file);
-
-  // Upload the image
-  const uploadResponse = await axiosInstance.post(
-    '/images/upload',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    }
-  );
-
-  // Extract image details from upload response
-  const uploadedImageDetails = uploadResponse.data;
-
-  // Create image record with returned details
-  const imageCreateRequest = {
-    image_url: uploadedImageDetails.image_url,
-    original_filename: uploadedImageDetails.original_filename ?? file.name,
-    file_size: uploadedImageDetails.file_size ?? file.size,
-    file_type: uploadedImageDetails.file_type ?? file.type,
-    width: uploadedImageDetails.width,
-    height: uploadedImageDetails.height
-  };
-
-  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-  return imageResponse.data.id;
-}
+const uploadImage = async (imageFile, customWidth?: number, customHeight?: number) => {
+  try {
+    // Use the imageService which now supports custom dimensions
+    const response = await imageService.uploadImage(imageFile, customWidth, customHeight);
+    return response.id;
+  } catch (error) {
+    console.error('Failed to upload image:', error);
+    throw error;
+  }
+};
 
 // Process main question image
-async function processMainQuestionImage(imageFile: File) {
-  try {
-    return await uploadImage(imageFile);
-  } catch (error: unknown) {
-    console.error('Error uploading image:', error);
-    
-    // Check for specific image validation errors
-    const axiosError = error as AxiosErrorResponse;
-    if (axiosError.response?.data?.message) {
-      // Show error toast using toast store
-      toastStore.showToast({
-        title: 'Image Upload Error',
-        message: axiosError.response.data.message,
-        type: 'error'
-      });
-      
-      // Rethrow to signal a critical error
-      throw error;
+const processMainQuestionImage = async (imageFile, customWidth?: number, customHeight?: number) => {
+  if (imageFile) {
+    try {
+      // Upload image with optional custom dimensions
+      const imageId = await uploadImage(imageFile, customWidth, customHeight);
+      return imageId;
+    } catch (error) {
+      console.error('Error processing main question image:', error);
+      if (error.response?.data?.statusCode === 413) {
+        toastStore.showToast({
+          title: 'Image file size is too large',
+          message: 'Please select a smaller image.',
+          type: 'warning'
+        });
+      } else if (error.response?.data?.statusCode === 400) {
+        toastStore.showToast({
+          title: 'Invalid image format',
+          message: 'Please select a valid image file.',
+          type: 'warning'
+        });
+      }
+      return null; // Return null to continue without image
     }
-    // For other errors, return null to continue without image
-    return null;
   }
-}
+  return null;
+};
 
 // Process MCQ options
 async function processMCQOptions(options: string[], correctOptionIndex: number | undefined, optionImages?: (File | null)[]) {
@@ -403,6 +430,61 @@ async function handleSaveQuestion(payload: {
       type: 'error'
     });
   }
+}
+
+// Add methods for ImageUploadEditor
+function openQuestionImageModal(data: { questionText: string; questionType: string; options?: string[] }) {
+  currentQuestionData.value = data
+  showQuestionImageModal.value = true
+}
+
+function openOptionImageModal(data: { questionText: string; questionType: string; options?: string[]; optionIndex: number }) {
+  currentQuestionData.value = data
+  currentOptionIndex.value = data.optionIndex
+  showOptionImageModal.value = true
+}
+
+function handleQuestionImageUploaded(imageData: any) {
+  // Handle uploaded question image
+  console.log('Question image uploaded:', imageData);
+  showQuestionImageModal.value = false;
+  
+  // Pass the uploaded image file to the QuestionFormComponent
+  if (questionFormComponent.value && imageData.file) {
+    // Call a method on the QuestionFormComponent to set the image
+    questionFormComponent.value.setUploadedQuestionImage(imageData.file, imageData.id);
+  }
+}
+
+function handleOptionImageUploaded(imageData: any) {
+  // Handle uploaded option image
+  console.log('Option image uploaded for index:', currentOptionIndex.value, imageData);
+  showOptionImageModal.value = false;
+  
+  // Pass the uploaded image file to the QuestionFormComponent
+  if (questionFormComponent.value && imageData.file && currentOptionIndex.value >= 0) {
+    // Call a method on the QuestionFormComponent to set the option image
+    questionFormComponent.value.setUploadedOptionImage(imageData.file, currentOptionIndex.value, imageData.id);
+  }
+}
+
+function handleQuestionImageCancelled() {
+  // Handle cancelled question image
+  console.log('Question image cancelled')
+  showQuestionImageModal.value = false
+  
+  // Emit a custom event that the QuestionFormComponent can listen to
+  window.dispatchEvent(new CustomEvent('clearQuestionImage'))
+}
+
+function handleOptionImageCancelled() {
+  console.log('Option image upload cancelled');
+  showOptionImageModal.value = false;
+  // Emit custom event with optionIndex
+  const event = new CustomEvent('clearOptionImage', { 
+    detail: { optionIndex: currentOptionIndex.value } 
+  });
+  window.dispatchEvent(event);
 }
 
 // Lifecycle hooks

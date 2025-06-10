@@ -375,10 +375,11 @@ const goToChangePassword = () => {
 const logout = async () => {
   try {
     logoutModal.value?.hide()
-    authStore.clearAuth()
-    await router.push('/login')
+    await authStore.logout()
   } catch (error) {
     console.error('Error during logout:', error)
+    // Even if logout fails, redirect to login
+    await router.push('/login')
   }
 }
 

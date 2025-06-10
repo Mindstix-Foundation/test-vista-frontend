@@ -556,54 +556,24 @@ const visiblePageNumbers = computed(() => {
   return pages
 })
 
-async function fetchLocationData(cityId: number) {
-  try {
-    // First get the city to get state_id
-    const cityResponse = await axiosInstance.get(`/cities/${cityId}`)
-    const city = cityResponse.data
-
-    // Get state data using state_id from city
-    const stateResponse = await axiosInstance.get(`/states/${city.state_id}`)
-    const state = stateResponse.data
-
-    // Get country data using country_id from state
-    const countryResponse = await axiosInstance.get(`/countries/${state.country_id}`)
-    const country = countryResponse.data
-
-    return {
-      city: { id: city.id, state_id: city.state_id, name: city.name },
-      state: { id: state.id, country_id: state.country_id, name: state.name },
-      country: { id: country.id, name: country.name },
-    }
-  } catch (error) {
-    console.error('Error fetching location data:', error)
-    return null
-  }
-}
-
 const fetchBoardDetails = async (boardId: number): Promise<BoardDetails> => {
   try {
     console.log('Fetching board details for ID:', boardId)
-    const response = await axiosInstance.get(`/boards/${boardId}`)
+    const response = await axiosInstance.get(`/board-management/${boardId}`)
     const boardData = response.data
     console.log('Board data received:', boardData)
 
-    // Fetch location data if address exists
-    const locationData = boardData.address?.city_id
-      ? await fetchLocationData(boardData.address.city_id)
-      : null
-
     // Transform the data to match our interface
     const boardDetails: BoardDetails = {
-      id: boardData.id,
-      name: boardData.name,
-      abbreviation: boardData.abbreviation,
-      address_id: boardData.address_id,
+      id: boardData.board.id,
+      name: boardData.board.name,
+      abbreviation: boardData.board.abbreviation,
+      address_id: boardData.board.address_id,
       address: {
         ...boardData.address,
-        city: locationData?.city ?? { id: 0, state_id: 0, name: '' },
-        state: locationData?.state ?? { id: 0, country_id: 0, name: '' },
-        country: locationData?.country ?? { id: 0, name: '' },
+        city: boardData.address.city,
+        state: boardData.address.city.state,
+        country: boardData.address.city.state.country,
       },
       mediums: boardData.instruction_mediums,
       standards: boardData.standards,
@@ -869,8 +839,8 @@ const deleteBoard = async () => {
       return
     }
 
-    // Proceed with board deletion
-    await axiosInstance.delete(`/boards/${selectedBoard.value.id}`)
+    // ✅ Use the board-management delete endpoint for consistency
+    await axiosInstance.delete(`/board-management/${selectedBoard.value.id}`)
 
     // Update the local boards list
     boards.value = boards.value.filter((board: Board) => board.id !== selectedBoard.value?.id)

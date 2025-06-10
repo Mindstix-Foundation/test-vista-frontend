@@ -49,8 +49,8 @@
             <div class="invalid-feedback">
               {{
                 isDuplicate(item.name, index)
-                  ? `This ${itemLabelPrefix.toLowerCase()} already exists`
-                  : `At least one ${itemLabelPrefix.toLowerCase()} is required`
+                  ? `This ${itemLabelPrefix.toLowerCase()} ${VALIDATION_MESSAGES.LIST.DUPLICATE}`
+                  : `At least one ${itemLabelPrefix.toLowerCase()} ${VALIDATION_MESSAGES.LIST.AT_LEAST_ONE_REQUIRED}`
               }}
             </div>
           </div>
@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Define the item interface
 interface ListItem {

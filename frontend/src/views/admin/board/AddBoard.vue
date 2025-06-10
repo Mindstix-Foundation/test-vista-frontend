@@ -18,6 +18,8 @@ import type {
   CreateInstructionMediumDto,
   CreateStandardDto,
   CreateSubjectDto,
+  CreateBoardManagementDto,
+  BoardManagementResponse,
 } from '@/models/Board'
 
 const router = useRouter()
@@ -51,133 +53,62 @@ interface ApiErrorResponse {
   message?: string | string[]
 }
 
-interface ApiResponse {
-  id: number
-  [key: string]: number | string | boolean | null
-}
-
 const handleApiError = (errorData: ApiErrorResponse | null, defaultMessage: string): string => {
   return Array.isArray(errorData?.message)
     ? errorData.message.join(', ')
     : errorData?.message ?? defaultMessage
 }
 
-const createEntity = async <T,>(
-  endpoint: string,
-  data: T,
-  errorMessage: string,
-): Promise<ApiResponse> => {
+const handleBoardSubmit = async (formData: any) => {
+  isSubmitting.value = true;
+  
   try {
-    const { data: responseData } = await axiosInstance.post(endpoint, data)
-    return responseData
-  } catch (error) {
-    const errorData =
-      error instanceof Error
-        ? null
-        : ((error as { response?: { data: ApiErrorResponse } })?.response?.data ?? null)
-    throw new Error(handleApiError(errorData, errorMessage))
-  }
-}
+    // Prepare data for the consolidated board-management endpoint
+    const boardManagementData = {
+      address: {
+        street: formData.address.street,
+        postal_code: formData.address.postal_code,
+        city_id: formData.address.city_id
+      },
+      board: {
+        name: formData.board.name,
+        abbreviation: formData.board.abbreviation
+      },
+      instructionMediums: (formData.mediums || []).map((medium: any) => ({
+        name: medium.name
+      })),
+      standards: (formData.standards || []).map((standard: any) => ({
+        name: standard.name
+      })),
+      subjects: (formData.subjects || []).map((subject: any) => ({
+        name: subject.name
+      }))
+    };
 
-const createRelatedEntities = async <T extends { board_id?: number; sequence_number?: number }>(
-  entities: T[],
-  endpoint: string,
-  boardId: number,
-  entityName: string,
-): Promise<void> => {
-  // For standards, ensure sequence numbers are set based on their order in the list
-  if (endpoint === '/standards') {
-    // Assign sequence numbers based on the order in the array
-    entities.forEach((entity, index) => {
-      entity.board_id = boardId;
-      entity.sequence_number = index + 1; // 1-based sequence numbers
-    });
-
-    // Create standards in sequence to maintain order
-    for (const entity of entities) {
-      await createEntity(endpoint, entity, `Failed to create ${entityName}`);
+    // Make single API call to consolidated endpoint
+    const response = await axiosInstance.post('/board-management', boardManagementData);
+    
+    toastStore.showToast('Board created successfully!', 'success');
+    router.push('/admin/board');
+    
+  } catch (error: any) {
+    console.error('Error creating board:', error);
+    
+    if (error.response?.data?.message) {
+      if (Array.isArray(error.response.data.message)) {
+        error.response.data.message.forEach((msg: string) => {
+          toastStore.showToast(msg, 'error');
+        });
+      } else {
+        toastStore.showToast(error.response.data.message, 'error');
+      }
+    } else {
+      toastStore.showToast('Failed to create board. Please try again.', 'error');
     }
-  } else {
-    // For other entities, use the original implementation
-    for (const entity of entities) {
-      entity.board_id = boardId;
-      await createEntity(endpoint, entity, `Failed to create ${entityName}`);
-    }
-  }
-}
-
-const handleBoardSubmit = async (formData: {
-  address: CreateAddressDto
-  board: CreateBoardDto
-  mediums: CreateInstructionMediumDto[]
-  standards: CreateStandardDto[]
-  subjects: CreateSubjectDto[]
-}) => {
-  try {
-    isSubmitting.value = true
-
-    // Create address and get its ID
-    const addressData = await createEntity<CreateAddressDto>(
-      '/addresses',
-      formData.address,
-      'Failed to create address',
-    )
-
-    // Create board with address
-    formData.board.address_id = addressData.id
-    const boardData = await createEntity<CreateBoardDto>(
-      '/boards',
-      formData.board,
-      'Failed to create board',
-    )
-
-    // Create related entities
-    // Process standards separately to ensure sequence
-    await createRelatedEntities<CreateStandardDto>(
-      formData.standards,
-      '/standards',
-      boardData.id,
-      'standard',
-    );
-
-    // Process other entities in parallel
-    await Promise.all([
-      createRelatedEntities<CreateInstructionMediumDto>(
-        formData.mediums,
-        '/instruction-mediums',
-        boardData.id,
-        'instruction medium',
-      ),
-      createRelatedEntities<CreateSubjectDto>(
-        formData.subjects,
-        '/subjects',
-        boardData.id,
-        'subject',
-      ),
-    ])
-
-    // Navigate immediately
-    await router.push('/admin/board')
-
-    // Show success toast after navigation
-    toastStore.showToast({
-      title: 'Success',
-      message: 'Board created successfully!',
-      type: 'success',
-    })
-  } catch (error) {
-    console.error('Error creating board:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to create board. Please try again.'
-    toastStore.showToast({
-      title: 'Error',
-      message: errorMessage,
-      type: 'error',
-    })
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

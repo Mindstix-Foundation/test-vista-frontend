@@ -311,9 +311,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import axiosInstance from '@/config/axios'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import type { DisplayQuestion, DisplaySection, McqOption, MatchPair, QuestionText } from '@/types/types';
+// Add explicit imports for PDF generation libraries with type annotations
+import html2pdf from 'html2pdf.js';
+import axiosInstance from '@/config/axios';
+// These will be dynamically imported when needed
+// import html2canvas from 'html2canvas';
+// import { jsPDF } from 'jspdf';
 
 // Define component name (for linter)
 defineOptions({
@@ -682,39 +688,315 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
     
     // Wait for the UI to fully update
     await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 300)); // Extra delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay for more reliable rendering
+    
+    // Apply print-specific styling before generating PDF
+    document.body.classList.add('printing-test-paper');
+    
+    // Find and modify elements to match print styling
+    const a4PaperCard = element.querySelector('.a4-paper-card') as HTMLElement;
+    if (a4PaperCard) {
+      // Save original styles to restore later
+      const originalStyles = {
+        border: a4PaperCard.style.border,
+        boxShadow: a4PaperCard.style.boxShadow,
+        padding: a4PaperCard.style.padding,
+        transform: a4PaperCard.style.transform
+      };
+      
+      // Apply print-specific styling
+      a4PaperCard.style.border = 'none';
+      a4PaperCard.style.boxShadow = 'none';
+      a4PaperCard.style.padding = '20mm'; // Use consistent padding as in print media query
+      a4PaperCard.style.transform = 'none';
+    }
+    
+    // Hide elements that should be hidden in print
+    const elementsToHide = element.querySelectorAll('.no-print, .view-mode-toggle-container, .zoom-control-container');
+    const hiddenElements: Array<{element: HTMLElement, display: string}> = [];
+    
+    elementsToHide.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      // Save original display style
+      hiddenElements.push({
+        element: htmlEl,
+        display: htmlEl.style.display
+      });
+      // Hide the element
+      htmlEl.style.display = 'none';
+    });
     
     // Generate PDF with the updated content
     const pdfBlob = await new Promise<Blob>((resolve, reject) => {
       const opt = {
-        margin: 10,
+        margin: 0, // Remove margins as we're already handling padding in the element
         filename: `test-paper-medium-${mediumId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: true, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { 
+          scale: 4, // Increased scale for higher resolution
+          logging: true, 
+          useCORS: true, // Allow cross-origin images
+          backgroundColor: '#FFFFFF',
+          letterRendering: true, // Improve text rendering
+          removeContainer: false, // Keep the container to maintain layout
+          dpi: 300, // Higher DPI for better quality
+          onclone: (clonedDoc) => {
+            // Apply additional print styles to the cloned document
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              body { font-family: 'Times New Roman', Times, serif; }
+              * { font-family: inherit !important; }
+              .a4-paper-card { padding: 20mm !important; }
+              
+              /* Ensure all text has good contrast */
+              p, span, div, h1, h2, h3, h4, h5, h6, li {
+                color: #000000 !important;
+                font-size: 12pt !important;
+                line-height: 1.5 !important;
+                text-rendering: geometricPrecision !important;
+              }
+              
+              /* Optimize fonts for PDF */
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+            
+            // Process text nodes to improve quality
+            const textElements = clonedDoc.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+            textElements.forEach(el => {
+              // Add data attribute to ensure text is recognized properly
+              el.setAttribute('data-html2canvas-render-text', 'true');
+              el.setAttribute('data-html2canvas-render-node', 'true');
+            });
+          }
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: false, // Disable compression for better text quality
+          putOnlyUsedFonts: true, // Only embed used fonts
+          floatPrecision: 16, // Higher precision for better text positioning
+        },
+        fontFaces: [
+          // Add standard fonts to ensure they're embedded
+          { family: 'Times New Roman', weight: 'normal' },
+          { family: 'Times New Roman', weight: 'bold' },
+          { family: 'Arial', weight: 'normal' },
+          { family: 'Arial', weight: 'bold' }
+        ],
+        enableLinks: true, // Enable hyperlinks in the PDF
       };
       
-      html2pdf().set(opt).from(element).outputPdf('blob')
-        .then((blob: Blob) => {
-          console.log(`PDF for medium ${mediumId} generated successfully, blob size:`, blob.size);
+      // Apply special text handling to improve quality
+      const specialPageRendering = async (html2canvas, jsPDF) => {
+        try {
+          // Create a new jsPDF document with text rendering options
+          const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: false, // Disable compression for better text quality
+            putOnlyUsedFonts: true,
+            floatPrecision: 16,
+            textRenderingMode: 'fill',
+            hotfixes: ['px_scaling'], // Apply hotfixes for better text rendering
+          });
+
+          // Get content and dimensions
+          const contentElement = element.cloneNode(true) as HTMLElement;
+          const width = element.offsetWidth;
+          const height = element.offsetHeight;
+
+          // Save original styles
+          const originalDisplay = contentElement.style.display;
+          const originalPosition = contentElement.style.position;
+          const originalWidth = contentElement.style.width;
+          const originalHeight = contentElement.style.height;
+          
+          // Apply special text handling
+          const textElements = contentElement.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+          textElements.forEach(el => {
+            (el as HTMLElement).dataset.textContent = el.textContent || '';
+          });
+
+          // Create the canvas at high resolution for clear rendering
+          const canvas = await html2canvas(element, {
+            scale: 4, // Higher scale for better quality
+            useCORS: true,
+            logging: true,
+            letterRendering: true,
+            backgroundColor: '#FFFFFF',
+            allowTaint: true
+          });
+
+          // Try a different approach: Use PDF.js text extraction capabilities
+          // First add the image as background
+          const imgData = canvas.toDataURL('image/jpeg', 1.0);
+          const pdfWidth = 210; // A4 width in mm
+          const pdfHeight = 297; // A4 height in mm
+          const imgWidth = pdfWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          // Add the high-quality image as background
+          doc.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+          
+          // Now add a hidden text layer over the image for searchable text
+          doc.setTextColor(0, 0, 0, 0); // Transparent text (still selectable)
+          doc.setFontSize(12);
+          
+          // Extract text and position from elements
+          textElements.forEach(el => {
+            try {
+              const rect = (el as HTMLElement).getBoundingClientRect();
+              const elementText = (el as HTMLElement).dataset.textContent || '';
+              if (elementText && elementText.trim()) {
+                // Convert coordinates to PDF space
+                const pdfX = (rect.left / width) * pdfWidth;
+                const pdfY = (rect.top / height) * pdfHeight;
+                
+                // Add invisible but selectable text
+                doc.text(elementText, pdfX, pdfY, { 
+                  renderingMode: 'invisible',
+                  baseline: 'top'
+                });
+              }
+            } catch (err) {
+              console.log('Error processing text element:', err);
+            }
+          });
+          
+          // Generate PDF with selectable text
+          const blob = doc.output('blob');
+          
+          // Restore original styles
+          contentElement.style.display = originalDisplay;
+          contentElement.style.position = originalPosition;
+          contentElement.style.width = originalWidth;
+          contentElement.style.height = originalHeight;
+          
           resolve(blob);
-        })
-        .catch((error: Error) => {
-          console.error(`Error generating PDF for medium ${mediumId}:`, error);
-          reject(error);
+        } catch (error) {
+          console.error('Error in specialized PDF rendering:', error);
+          // Fall back to standard method if special handling fails
+          html2pdf().set(opt)
+            .from(element)
+            .outputPdf('blob')
+            .then((blob: Blob) => {
+              console.log(`PDF for medium ${mediumId} generated successfully, blob size:`, blob.size);
+              if (blob.size === 0) {
+                console.error(`Generated PDF has zero size for medium ${mediumId}`);
+                reject(new Error(`Generated PDF has zero size for medium ${mediumId}`));
+                return;
+              }
+              resolve(blob);
+            })
+            .catch((error: Error) => {
+              console.error(`Error generating PDF for medium ${mediumId}:`, error);
+              reject(error);
+            });
+        }
+      };
+      
+      // Import additional libraries for special handling
+      import('html2canvas').then(html2canvasModule => {
+        const html2canvas = html2canvasModule.default;
+        import('jspdf').then(jsPDFModule => {
+          const jsPDF = jsPDFModule.default;
+          specialPageRendering(html2canvas, jsPDF);
+        }).catch(error => {
+          console.error('Error importing jsPDF:', error);
+          // Fall back to standard method
+          html2pdf().set(opt)
+            .from(element)
+            .outputPdf('blob')
+            .then((blob: Blob) => {
+              console.log(`PDF for medium ${mediumId} generated successfully (jsPDF fallback), blob size:`, blob.size);
+              if (blob.size === 0) {
+                console.error(`Generated PDF has zero size for medium ${mediumId}`);
+                reject(new Error(`Generated PDF has zero size for medium ${mediumId}`));
+                return;
+              }
+              resolve(blob);
+            })
+            .catch((error: Error) => {
+              console.error(`Error generating PDF for medium ${mediumId}:`, error);
+              reject(error);
+            });
         });
+      }).catch(error => {
+        console.error('Error importing html2canvas:', error);
+        // Fall back to standard method
+        html2pdf().set(opt)
+          .from(element)
+          .outputPdf('blob')
+          .then((blob: Blob) => {
+            console.log(`PDF for medium ${mediumId} generated successfully (html2canvas fallback), blob size:`, blob.size);
+            if (blob.size === 0) {
+              console.error(`Generated PDF has zero size for medium ${mediumId}`);
+              reject(new Error(`Generated PDF has zero size for medium ${mediumId}`));
+              return;
+            }
+            resolve(blob);
+          })
+          .catch((error: Error) => {
+            console.error(`Error generating PDF for medium ${mediumId}:`, error);
+            reject(error);
+          });
+      });
+    });
+    
+    // Restore original styles
+    if (a4PaperCard) {
+      a4PaperCard.style.border = '';
+      a4PaperCard.style.boxShadow = '';
+      a4PaperCard.style.padding = '';
+      a4PaperCard.style.transform = '';
+    }
+    
+    // Restore display for hidden elements
+    hiddenElements.forEach(item => {
+      item.element.style.display = item.display;
+    });
+    
+    // Remove print class from body
+    document.body.classList.remove('printing-test-paper');
+    
+    // Log PDF blob details for debugging
+    console.log(`PDF blob for medium ${mediumId}:`, {
+      type: pdfBlob.type,
+      size: pdfBlob.size,
+      lastModified: new Date().toISOString()
     });
     
     // Create a file from the blob with a consistent naming pattern for the API
     const sanitizedTitle = paperTitle.value.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    const fileName = `test_paper_${sanitizedTitle}_medium_${mediumId}.pdf`;
     
-    return new File(
+    // Create File object with explicit MIME type
+    const pdfFile = new File(
       [pdfBlob], 
-      `test_paper_${sanitizedTitle}_medium_${mediumId}.pdf`, 
+      fileName, 
       { type: 'application/pdf' }
     );
+    
+    // Verify file was created properly
+    console.log(`Created File object for medium ${mediumId}:`, {
+      name: pdfFile.name,
+      type: pdfFile.type,
+      size: pdfFile.size
+    });
+    
+    return pdfFile;
   } catch (error) {
     console.error(`Failed to generate PDF for medium ${mediumId}:`, error);
+    // Ensure print class is removed from body even if an error occurs
+    document.body.classList.remove('printing-test-paper');
     throw error;
   }
 };
@@ -740,10 +1022,32 @@ const saveTestPaperToDB = async () => {
     
     // Get the print element and HTML2PDF library
     const element = getAndValidatePrintElement();
+    console.log('Print element found:', element.id, 'Content length:', element.innerHTML.length);
+    
+    // Make sure element is visible and has content
+    if (element.innerHTML.length < 100) {
+      throw new Error('Print element has insufficient content to generate PDF');
+    }
+    
     const html2pdf = await loadHtml2PdfLibrary();
+    console.log('HTML2PDF library loaded successfully');
     
     // Generate PDF files for all mediums
     const pdfFiles = await generatePDFFilesForAllMediums(element, html2pdf);
+    
+    // Verify files were created and have data
+    if (!pdfFiles || pdfFiles.length === 0) {
+      throw new Error('No PDF files were generated');
+    }
+    
+    console.log(`Generated ${pdfFiles.length} PDF files:`, pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    
+    // Verify each file has valid data
+    const invalidFiles = pdfFiles.filter(file => !file || file.size === 0);
+    if (invalidFiles.length > 0) {
+      console.error('Some PDF files are invalid:', invalidFiles.map(f => f ? f.name : 'undefined'));
+      throw new Error(`${invalidFiles.length} PDF files are invalid or empty`);
+    }
     
     // Submit data to API
     await submitTestPaperData(userId, schoolId, chapters, weightages, patternId, pdfFiles);
@@ -894,18 +1198,111 @@ const generatePDFFilesForAllMediums = async (element: HTMLElement, html2pdf: () 
   const instructionMediums = getInstructionMediums();
   console.log('Instruction mediums for PDF generation:', instructionMediums);
   
+  if (instructionMediums.length === 0) {
+    console.warn('No instruction mediums found, using default medium (1)');
+    instructionMediums.push(1); // Ensure we have at least one medium
+  }
+  
   // Generate PDF for each medium
   const pdfFiles: File[] = [];
   
+  // First try generating a test PDF to see if html2pdf is working
+  try {
+    console.log('Testing PDF generation with current medium...');
+    const testOptions = {
+      margin: 0,
+      filename: 'test.pdf',
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { 
+        scale: 4, 
+        logging: true, 
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        letterRendering: true,
+        dpi: 300,
+        removeContainer: false,
+        onclone: (clonedDoc) => {
+          // Apply additional text handling styles
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            * { font-family: 'Times New Roman', Times, serif !important; }
+            p, span, div, h1, h2, h3, h4, h5, h6, li, td, th {
+              font-family: inherit !important;
+              color: #000000 !important;
+              font-size: 12pt !important;
+              line-height: 1.5 !important;
+              text-rendering: geometricPrecision !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+          
+          // Mark all text elements for special handling
+          const textElements = clonedDoc.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+          textElements.forEach(el => {
+            el.setAttribute('data-html2canvas-render-text', 'true');
+            el.setAttribute('data-html2canvas-render-node', 'true');
+            el.setAttribute('data-html2canvas-selectable-text', 'true');
+          });
+        }
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compress: false,
+        putOnlyUsedFonts: true,
+        floatPrecision: 16,
+        hotfixes: ['px_scaling'], // Improve text rendering
+      },
+      enableLinks: true,
+      useAdvancedTextHandling: true, // Custom flag for our implementation
+    };
+    
+    const testBlob = await html2pdf()
+      .set(testOptions)
+      .from(element)
+      .outputPdf('blob');
+    
+    console.log('Test PDF generation successful, blob size:', testBlob.size);
+    
+    if (testBlob.size === 0) {
+      throw new Error('Test PDF has zero size, check HTML content and rendering');
+    }
+  } catch (error) {
+    console.error('Test PDF generation failed:', error);
+    throw new Error(`PDF generation test failed: ${error.message}`);
+  }
+  
+  // Now generate PDFs for each medium
   for (const mediumId of instructionMediums) {
     try {
+      console.log(`Generating PDF for medium ${mediumId}...`);
       const file = await generatePDFForMedium(element, mediumId, html2pdf);
+      
+      if (!file || file.size === 0) {
+        console.error(`Generated PDF for medium ${mediumId} is invalid or empty`);
+        throw new Error(`Invalid PDF for medium ${mediumId}`);
+      }
+      
       pdfFiles.push(file);
-      console.log(`Added PDF for medium ${mediumId} to files array`);
+      console.log(`Added PDF for medium ${mediumId} to files array, size: ${file.size} bytes`);
     } catch (error) {
       console.error(`Error generating PDF for medium ${mediumId}:`, error);
-      throw new Error(`Failed to generate PDF for medium ${mediumId}`);
+      
+      // If this is the only medium or the first one, rethrow the error
+      if (instructionMediums.length === 1 || mediumId === instructionMediums[0]) {
+        throw new Error(`Failed to generate PDF for medium ${mediumId}: ${error.message}`);
+      }
+      
+      // Otherwise continue with other mediums
+      console.warn(`Skipping medium ${mediumId} due to error, continuing with others`);
     }
+  }
+  
+  // Verify we have at least one valid PDF
+  if (pdfFiles.length === 0) {
+    throw new Error('Failed to generate any valid PDF files');
   }
   
   return pdfFiles;
@@ -913,10 +1310,28 @@ const generatePDFFilesForAllMediums = async (element: HTMLElement, html2pdf: () 
 
 // Get the list of instruction mediums to use
 const getInstructionMediums = () => {
+  console.log('Available mediums:', availableMediums.value);
+  
   // If no instruction mediums are available, default to English (ID 1)
-  return availableMediums.value.length > 0 
-    ? availableMediums.value.map(medium => medium.id) 
-    : [1];
+  if (!availableMediums.value || availableMediums.value.length === 0) {
+    console.warn('No available mediums found, using default English medium (ID 1)');
+    return [1];
+  }
+  
+  // Get all medium IDs
+  const mediumIds = availableMediums.value.map(medium => medium.id);
+  
+  // Filter out any invalid or zero IDs
+  const validMediumIds = mediumIds.filter(id => id && id > 0);
+  
+  // If we have valid IDs, return them, otherwise return default
+  if (validMediumIds.length > 0) {
+    console.log('Using valid medium IDs:', validMediumIds);
+    return validMediumIds;
+  }
+  
+  console.warn('No valid medium IDs found, using default English medium (ID 1)');
+  return [1]; // Default to English medium (ID 1)
 };
 
 // Helper function to flatten deeply nested arrays
@@ -1009,6 +1424,20 @@ const submitTestPaperData = async (
     throw new Error('No valid chapter IDs found after processing');
   }
   
+  // Add chapters to form data - individually with the same key for array
+  chapterIds.forEach(id => {
+    if (id !== null && id !== undefined) {
+      formData.append('chapters[]', id.toString());
+    }
+  });
+  
+  // Add weightages to form data - individually with the same key for array
+  processedWeightages.forEach(weight => {
+    if (weight !== null && weight !== undefined) {
+      formData.append('weightages[]', weight.toString());
+    }
+  });
+  
   // Add chapters as JSON string (the DTO will parse it)
   formData.append('chapters', JSON.stringify(chapterIds));
   
@@ -1019,15 +1448,47 @@ const submitTestPaperData = async (
   const mediumIds = availableMediums.value.map(medium => medium.id);
   formData.append('instruction_mediums', JSON.stringify(mediumIds));
   
+  // Add instruction mediums individually for array handling
+  mediumIds.forEach(id => {
+    if (id !== null && id !== undefined) {
+      formData.append('instruction_mediums[]', id.toString());
+    }
+  });
+  
   // Validate that we have files for each medium
   if (pdfFiles.length !== mediumIds.length) {
     throw new Error(`Mismatch between PDF files (${pdfFiles.length}) and instruction mediums (${mediumIds.length})`);
   }
   
+  // Verify we have files
+  if (!pdfFiles || pdfFiles.length === 0) {
+    throw new Error('No PDF files available to submit');
+  }
+  
   // Add files - make sure they're in the same order as instruction_mediums
-  pdfFiles.forEach(file => formData.append('files', file));
+  console.log('Adding files to form data:', pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
+  pdfFiles.forEach(file => {
+    if (file && file.size > 0) {
+      // Explicitly log each file being added
+      console.log(`Adding file to FormData: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      formData.append('files', file);
+    } else {
+      console.error('Skipping invalid file:', file);
+    }
+  });
+  
+  // Log form data entries
+  console.log('FormData entries:');
+  for (const pair of formData.entries()) {
+    // For files, just log the name and size, not the full binary data
+    if (pair[1] instanceof File) {
+      console.log(`${pair[0]}: File(${(pair[1] as File).name}, ${(pair[1] as File).size} bytes)`);
+    } else {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+  }
 
-  // Log the form data for debugging
+  // Log the summary of what we're submitting
   console.log('Submitting test paper with the following data:', {
     userId, schoolId, name: paperTitle.value, examTime: testDuration.value,
     patternId, chapters: chapterIds, weightages: processedWeightages, mediums: mediumIds,
@@ -1036,19 +1497,24 @@ const submitTestPaperData = async (
   
   try {
     // Call the API endpoint with userId and schoolId as query parameters
-    const response = await axiosInstance.post(
-      `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`, 
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+    const url = `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`;
+    const response = await axiosInstance.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
       }
-    );
+    });
     console.log('API response:', response.data);
     return response;
   } catch (error) {
     console.error('API error:', error);
+    // Log more detailed error information
+    if (error.response) {
+      console.error('Error response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    }
     throw error;
   }
 };
@@ -1378,26 +1844,146 @@ const addMatchPairsToQuestion = (displayQuestion: DisplayQuestion, questionText:
 };
 
 // Print page functionality
-const printPage = () => {
-  // Add temporary class to the document body
-  document.body.classList.add('printing-test-paper');
-  
-  // Hide the app header or navigation before printing
-  const appHeader = document.querySelector('header');
-  const appNav = document.querySelector('nav');
-  
-  if (appHeader) appHeader.classList.add('no-print-important');
-  if (appNav) appNav.classList.add('no-print-important');
-  
-  // Trigger print
-  window.print();
-  
-  // Remove temporary class after printing dialog closes
-  setTimeout(() => {
-    document.body.classList.remove('printing-test-paper');
-    if (appHeader) appHeader.classList.remove('no-print-important');
-    if (appNav) appNav.classList.remove('no-print-important');
-  }, 1000);
+const printPage = async () => {
+  try {
+    // Show loading indicator
+    document.body.classList.add('printing-test-paper');
+    
+    // Get the print element
+    const element = document.getElementById('printSection');
+    if (!element) {
+      console.error('Print section not found');
+      return;
+    }
+    
+    // Hide the app header or navigation before printing
+    const appHeader = document.querySelector('header');
+    const appNav = document.querySelector('nav');
+    
+    if (appHeader) appHeader.classList.add('no-print-important');
+    if (appNav) appNav.classList.add('no-print-important');
+    
+    // Apply styling to ensure proper print appearance
+    const a4PaperCard = element.querySelector('.a4-paper-card') as HTMLElement;
+    if (a4PaperCard) {
+      a4PaperCard.style.border = 'none';
+      a4PaperCard.style.boxShadow = 'none';
+      a4PaperCard.style.padding = '20mm';
+      a4PaperCard.style.transform = 'none';
+    }
+    
+    // Hide elements that should be hidden in print
+    const elementsToHide = document.querySelectorAll('.no-print');
+    elementsToHide.forEach((el) => {
+      (el as HTMLElement).style.display = 'none';
+    });
+    
+    // Try to create a better PDF using jsPDF and html2canvas
+    try {
+      // Import the libraries dynamically
+      const html2canvasModule = await import('html2canvas');
+      const html2canvas = html2canvasModule.default;
+      const jsPDFModule = await import('jspdf');
+      const { jsPDF } = jsPDFModule;
+      
+      // Create a new jsPDF document
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: false,
+        putOnlyUsedFonts: true,
+        floatPrecision: 16
+      });
+      
+      // Create a high-quality canvas
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        letterRendering: true,
+        backgroundColor: '#FFFFFF'
+      });
+      
+      // Add the image to the PDF
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      doc.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, imgWidth, imgHeight);
+      
+      // Add text layer for selectability (simplified version)
+      const textElements = element.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+      doc.setTextColor(0, 0, 0, 0); // Transparent text (still selectable)
+      doc.setFontSize(12);
+      
+      // Extract and position text elements
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+      textElements.forEach(el => {
+        try {
+          const rect = (el as HTMLElement).getBoundingClientRect();
+          const elementText = (el as HTMLElement).textContent?.trim() || '';
+          
+          if (elementText) {
+            // Convert coordinates to PDF space
+            const pdfX = (rect.left / width) * imgWidth;
+            const pdfY = (rect.top / height) * imgHeight;
+            
+            // Add invisible but selectable text
+            if (pdfX >= 0 && pdfY >= 0 && pdfX < imgWidth && pdfY < imgHeight) {
+              doc.text(elementText, pdfX, pdfY, { 
+                renderingMode: 'invisible',
+                baseline: 'top'
+              });
+            }
+          }
+        } catch (err) {
+          console.log('Error processing text element:', err);
+        }
+      });
+      
+      // Open the PDF in a new window for printing
+      const pdfDataUri = doc.output('datauristring');
+      const printWindow = window.open(pdfDataUri);
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      } else {
+        // If popup blocked, fall back to standard print
+        window.print();
+      }
+    } catch (error) {
+      console.error('Error generating PDF for print:', error);
+      // Fall back to standard print method
+      window.print();
+    }
+    
+    // Restore styles after printing
+    setTimeout(() => {
+      document.body.classList.remove('printing-test-paper');
+      
+      if (appHeader) appHeader.classList.remove('no-print-important');
+      if (appNav) appNav.classList.remove('no-print-important');
+      
+      if (a4PaperCard) {
+        a4PaperCard.style.border = '';
+        a4PaperCard.style.boxShadow = '';
+        a4PaperCard.style.padding = '';
+        a4PaperCard.style.transform = '';
+      }
+      
+      elementsToHide.forEach((el) => {
+        (el as HTMLElement).style.display = '';
+      });
+    }, 1000);
+  } catch (error) {
+    console.error('Error in print process:', error);
+    // Fall back to standard print method as last resort
+    window.print();
+  }
 }
 
 // Go back button handler

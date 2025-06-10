@@ -70,7 +70,15 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="inputGroupFile01" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-primary d-flex align-items-center"
+                  @click="$emit('openQuestionImageModal', { questionText: descriptiveQuestion.question, questionType: selectedType })"
+                >
+                  <i class="bi bi-image me-2"></i>
+                  Upload with A4 Preview
+                </button>
+                <input type="file" class="form-control" id="inputGroupFile01" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
                 <button
                   v-if="questionImageFile !== null"
                   type="button"
@@ -116,7 +124,15 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="mcqImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-primary d-flex align-items-center"
+                  @click="$emit('openQuestionImageModal', { questionText: mcqQuestion.question, questionType: selectedType, options: mcqQuestion.options })"
+                >
+                  <i class="bi bi-image me-2"></i>
+                  Upload with A4 Preview
+                </button>
+                <input type="file" class="form-control" id="mcqImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
                 <button
                   v-if="questionImageFile !== null"
                   type="button"
@@ -141,7 +157,15 @@
                   </div>
                   <div id="optionAImagePreview" class="mb-2"></div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="optionAImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 0)" accept=".jpg,.jpeg,.webp">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-secondary d-flex align-items-center"
+                      @click="$emit('openOptionImageModal', { questionText: mcqQuestion.question, questionType: selectedType, options: mcqQuestion.options, optionIndex: 0 })"
+                    >
+                      <i class="bi bi-image me-2"></i>
+                      Upload Option A
+                    </button>
+                    <input type="file" class="form-control" id="optionAImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 0)" accept=".jpg,.jpeg,.webp" style="display: none;">
                     <button
                       v-if="mcqOptionImages[0]"
                       type="button"
@@ -161,7 +185,15 @@
                   </div>
                   <div id="optionBImagePreview" class="mb-2"></div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="optionBImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 1)" accept=".jpg,.jpeg,.webp">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-secondary d-flex align-items-center"
+                      @click="$emit('openOptionImageModal', { questionText: mcqQuestion.question, questionType: selectedType, options: mcqQuestion.options, optionIndex: 1 })"
+                    >
+                      <i class="bi bi-image me-2"></i>
+                      Upload Option B
+                    </button>
+                    <input type="file" class="form-control" id="optionBImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 1)" accept=".jpg,.jpeg,.webp" style="display: none;">
                     <button
                       v-if="mcqOptionImages[1]"
                       type="button"
@@ -181,7 +213,15 @@
                   </div>
                   <div id="optionCImagePreview" class="mb-2"></div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="optionCImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 2)" accept=".jpg,.jpeg,.webp">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-secondary d-flex align-items-center"
+                      @click="$emit('openOptionImageModal', { questionText: mcqQuestion.question, questionType: selectedType, options: mcqQuestion.options, optionIndex: 2 })"
+                    >
+                      <i class="bi bi-image me-2"></i>
+                      Upload Option C
+                    </button>
+                    <input type="file" class="form-control" id="optionCImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 2)" accept=".jpg,.jpeg,.webp" style="display: none;">
                     <button
                       v-if="mcqOptionImages[2]"
                       type="button"
@@ -201,7 +241,15 @@
                   </div>
                   <div id="optionDImagePreview" class="mb-2"></div>
                   <div class="input-group input-group-sm mb-3">
-                    <input type="file" class="form-control" id="optionDImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 3)" accept=".jpg,.jpeg,.webp">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-secondary d-flex align-items-center"
+                      @click="$emit('openOptionImageModal', { questionText: mcqQuestion.question, questionType: selectedType, options: mcqQuestion.options, optionIndex: 3 })"
+                    >
+                      <i class="bi bi-image me-2"></i>
+                      Upload Option D
+                    </button>
+                    <input type="file" class="form-control" id="optionDImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 3)" accept=".jpg,.jpeg,.webp" style="display: none;">
                     <button
                       v-if="mcqOptionImages[3]"
                       type="button"
@@ -258,7 +306,15 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="fillInTheBlankImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-primary d-flex align-items-center"
+                  @click="$emit('openQuestionImageModal', { questionText: fillBlankQuestion.question, questionType: selectedType })"
+                >
+                  <i class="bi bi-image me-2"></i>
+                  Upload with A4 Preview
+                </button>
+                <input type="file" class="form-control" id="fillInTheBlankImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
                 <button
                   v-if="questionImageFile !== null"
                   type="button"
@@ -308,7 +364,15 @@
                 </div>
               </div>
               <div class="input-group input-group-sm mb-3">
-                <input type="file" class="form-control" id="matchPairsImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-primary d-flex align-items-center"
+                  @click="$emit('openQuestionImageModal', { questionText: matchPairQuestion.question, questionType: selectedType })"
+                >
+                  <i class="bi bi-image me-2"></i>
+                  Upload with A4 Preview
+                </button>
+                <input type="file" class="form-control" id="matchPairsImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
                 <button
                   v-if="questionImageFile !== null"
                   type="button"
@@ -333,7 +397,15 @@
                     <input type="text" v-model="matchPairQuestion.lhs[matchPairQuestion.lhs.indexOf(item)]" class="form-control" placeholder="LHS" required>
                     <button type="button" class="btn btn-custom" @click="removeInput('lhs', matchPairQuestion.lhs.indexOf(item))" :disabled="matchPairQuestion.lhs.filter(item => item !== null).length <= 1">Remove</button>
                     <div class="input-group input-group-sm mt-1 mb-3">
-                      <input type="file" class="form-control" :id="'lhsImageFile'+matchPairQuestion.lhs.indexOf(item)" @change="(e) => handleQuestionImageUpload(e, 'option', matchPairQuestion.lhs.indexOf(item))" accept=".jpg,.jpeg,.webp">
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-secondary d-flex align-items-center"
+                        @click="$emit('openOptionImageModal', { questionText: matchPairQuestion.question, questionType: selectedType, options: [...matchPairQuestion.lhs, ...matchPairQuestion.rhs], optionIndex: index })"
+                      >
+                        <i class="bi bi-image me-2"></i>
+                        Upload Option
+                      </button>
+                      <input type="file" class="form-control" :id="'lhsImageFile'+matchPairQuestion.lhs.indexOf(item)" @change="(e) => handleQuestionImageUpload(e, 'option', matchPairQuestion.lhs.indexOf(item))" accept=".jpg,.jpeg,.webp" style="display: none;">
                       <button
                         v-if="mcqOptionImages[matchPairQuestion.lhs.indexOf(item)]"
                         type="button"
@@ -357,12 +429,20 @@
                     <input type="text" v-model="matchPairQuestion.rhs[matchPairQuestion.rhs.indexOf(item)]" class="form-control" placeholder="RHS" required>
                     <button type="button" class="btn btn-custom" @click="removeInput('rhs', matchPairQuestion.rhs.indexOf(item))" :disabled="matchPairQuestion.rhs.filter(item => item !== null).length <= 1">Remove</button>
                     <div class="input-group input-group-sm mt-1 mb-3">
-                      <input type="file" class="form-control" :id="'rhsImageFile'+matchPairQuestion.rhs.indexOf(item)" @change="(e) => handleQuestionImageUpload(e, 'option', matchPairQuestion.rhs.indexOf(item) + 10)" accept=".jpg,.jpeg,.webp">
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-secondary d-flex align-items-center"
+                        @click="$emit('openOptionImageModal', { questionText: matchPairQuestion.question, questionType: selectedType, options: [...matchPairQuestion.lhs, ...matchPairQuestion.rhs], optionIndex: index + matchPairQuestion.lhs.length })"
+                      >
+                        <i class="bi bi-image me-2"></i>
+                        Upload Option
+                      </button>
+                      <input type="file" class="form-control" :id="'rhsImageFile'+matchPairQuestion.rhs.indexOf(item)" @change="(e) => handleQuestionImageUpload(e, 'option', matchPairQuestion.rhs.indexOf(item) + matchPairQuestion.lhs.length)" accept=".jpg,.jpeg,.webp" style="display: none;">
                       <button
-                        v-if="mcqOptionImages[matchPairQuestion.rhs.indexOf(item) + 10]"
+                        v-if="mcqOptionImages[matchPairQuestion.rhs.indexOf(item) + matchPairQuestion.lhs.length]"
                         type="button"
                         class="btn btn-danger btn-sm"
-                        @click="(e) => removeUploadedImage(e, 'option', matchPairQuestion.rhs.indexOf(item) + 10)"
+                        @click="(e) => removeUploadedImage(e, 'option', matchPairQuestion.rhs.indexOf(item) + matchPairQuestion.lhs.length)"
                         title="Remove uploaded image"
                       >
                         <i class="bi bi-trash"></i> Remove
@@ -391,7 +471,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import axiosInstance from '@/config/axios'
 import SearchableDropdown, { type Item } from '@/components/common/SearchableDropdown.vue'
 
@@ -461,6 +541,19 @@ const emit = defineEmits<{
     optionImageIds?: (number | null)[]
     optionImageDeleteFlags?: boolean[]
   }): void
+  (e: 'openQuestionImageModal', data: {
+    questionText: string
+    questionType: string
+    options?: string[]
+  }): void
+  (e: 'openOptionImageModal', data: {
+    questionText: string
+    questionType: string
+    options?: string[]
+    optionIndex: number
+  }): void
+  (e: 'questionImageCancelled'): void
+  (e: 'optionImageCancelled', optionIndex: number): void
 }>()
 
 // Provide default values for props
@@ -718,12 +811,6 @@ const getLabelText = computed(() => {
     default:
       return 'Question';
   }
-});
-
-// Expose computed properties
-defineExpose({
-  getPlaceholderText,
-  getLabelText
 });
 
 // Methods
@@ -1071,10 +1158,10 @@ function processLeftImage(pair: MatchPair, index: number) {
 
 function processRightImage(pair: MatchPair, index: number) {
   if (pair.right_image) {
-    optionImageIds.value[index + 10] = pair.right_image.id
+    optionImageIds.value[index + matchPairQuestion.value.lhs.length] = pair.right_image.id
     const optionImageContainer = document.getElementById(`rhsInput${index + 1}`)
     if (optionImageContainer) {
-      createImagePreview(optionImageContainer, pair.right_image.presigned_url, index + 10)
+      createImagePreview(optionImageContainer, pair.right_image.presigned_url, index + matchPairQuestion.value.lhs.length)
     }
   }
 }
@@ -1135,8 +1222,8 @@ function removeInput(side: 'lhs' | 'rhs', index: number) {
     if (nonNullItems.length > 1) {
       matchPairQuestion.value.rhs.splice(index, 1);
       // Remove corresponding image if exists
-      if (optionImageIds.value[index + 10]) {
-        optionImageDeleteFlags.value[index + 10] = true;
+      if (optionImageIds.value[index + matchPairQuestion.value.lhs.length]) {
+        optionImageDeleteFlags.value[index + matchPairQuestion.value.lhs.length] = true;
       }
     }
   }
@@ -1398,16 +1485,46 @@ function setQuestionImage(file: File) {
   shouldDeleteImage.value = false; // Reset deletion flag since we're adding a new image
 }
 
+// New methods to handle images uploaded through ImageUploadEditor modal
+function setUploadedQuestionImage(file: File, imageId: number) {
+  console.log('Setting uploaded question image:', file.name, 'with ID:', imageId);
+  questionImageFile.value = file;
+  shouldDeleteImage.value = false;
+  imageUploadError.value = null;
+}
+
+function setUploadedOptionImage(file: File, optionIndex: number, imageId: number) {
+  console.log('Setting uploaded option image:', file.name, 'for index:', optionIndex, 'with ID:', imageId);
+  const newOptionImages = [...mcqOptionImages.value];
+  newOptionImages[optionIndex] = file;
+  mcqOptionImages.value = newOptionImages;
+}
+
 function setOptionImage(file: File, index: number) {
   const newOptionImages = [...mcqOptionImages.value];
   newOptionImages[index] = file;
   mcqOptionImages.value = newOptionImages;
 }
 
-function clearOptionImage(index: number) {
-  const newOptionImages = [...mcqOptionImages.value];
-  newOptionImages[index] = null;
-  mcqOptionImages.value = newOptionImages;
+function clearOptionImage(optionIndex: number) {
+  const newOptionImages = [...mcqOptionImages.value]
+  newOptionImages[optionIndex] = null
+  mcqOptionImages.value = newOptionImages
+  
+  // Find and clear the specific option file input
+  const optionLabels = ['A', 'B', 'C', 'D']
+  if (optionIndex < optionLabels.length) {
+    const optionFileInput = document.getElementById(`option${optionLabels[optionIndex]}ImageFile`) as HTMLInputElement
+    if (optionFileInput) {
+      optionFileInput.value = ''
+    }
+  }
+  
+  // For match pairs, clear the appropriate input
+  const lhsInput = document.getElementById(`lhsImageFile${optionIndex}`) as HTMLInputElement
+  const rhsInput = document.getElementById(`rhsImageFile${optionIndex}`) as HTMLInputElement
+  if (lhsInput) lhsInput.value = ''
+  if (rhsInput) rhsInput.value = ''
 }
 
 // Main image upload handler with reduced complexity
@@ -1662,7 +1779,43 @@ onMounted(() => {
   }
 
   initializeTextareas();
+  
+  // Add event listeners for image cancellation
+  window.addEventListener('clearQuestionImage', clearQuestionImage);
+  window.addEventListener('clearOptionImage', handleClearOptionImage);
 });
+
+// Add onUnmounted to clean up event listeners
+onUnmounted(() => {
+  window.removeEventListener('clearQuestionImage', clearQuestionImage);
+  window.removeEventListener('clearOptionImage', handleClearOptionImage);
+});
+
+// Functions to handle cancellation of image uploads
+function clearQuestionImage() {
+  questionImageFile.value = null
+  imageUploadError.value = null
+  // Find and clear the file input
+  const questionFileInputs = document.querySelectorAll('input[type="file"][accept*="image"]')
+  questionFileInputs.forEach(input => {
+    if (input.id.includes('question') || input.id.includes('mcq') || input.id.includes('fillInTheBlank') || input.id.includes('matchPairs')) {
+      (input as HTMLInputElement).value = ''
+    }
+  })
+}
+
+function handleClearOptionImage(event: any) {
+  const optionIndex = event.detail?.optionIndex
+  if (typeof optionIndex === 'number') {
+    clearOptionImage(optionIndex)
+  }
+}
+
+// Expose methods for parent component to call
+defineExpose({
+  setUploadedQuestionImage,
+  setUploadedOptionImage
+})
 </script>
 
 <style scoped>

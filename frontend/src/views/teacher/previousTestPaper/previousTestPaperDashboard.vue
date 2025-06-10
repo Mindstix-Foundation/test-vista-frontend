@@ -75,9 +75,8 @@
                 <div class="row">
                   <!-- Paper Details -->
                   <div class="col-md-8">
-                    <h5 class="card-title mb-3 paper-title" @click="navigateToTestPaperDetails(paper.id)">
+                    <h5 class="card-title mb-3">
                       {{ paper.name }}
-                      <i class="bi bi-link-45deg paper-link-icon"></i>
                     </h5>
                     
                     <div class="row mb-3">
@@ -143,10 +142,10 @@
                   </a>
                   <button 
                     class="btn btn-outline-danger ms-auto delete-btn" 
-                    @click="confirmDeleteTestPaper(paper)"
+                    disabled
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Delete test paper"
+                    title="Delete functionality coming soon"
                   >
                     <i class="bi bi-trash"></i> Delete
                   </button>
@@ -162,9 +161,7 @@
                   
                   <div class="table-responsive">
                     <table class="table table-hover chapter-table">
-                      <caption class="caption-top mb-2 text-muted">
-                        This table shows the distribution of marks across different chapters in the test paper
-                      </caption>
+                     
                       <thead class="table-light">
                         <tr>
                           <th scope="col">Chapter Name</th>
@@ -190,85 +187,6 @@
               <i class="bi bi-file-earmark-x display-1 text-muted"></i>
               <p class="mt-3 text-muted">No test papers found. Try adjusting your search.</p>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PDF Viewer Modal -->
-    <div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-labelledby="pdfViewerModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="pdfViewerModalLabel">Test Paper PDF</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body p-0">
-            <div v-if="currentPaperMediums.length > 0" class="medium-selector-bar p-2 bg-light">
-              <div class="d-flex align-items-center">
-                <span class="me-2"><i class="bi bi-translate me-1"></i>Switch Medium:</span>
-                <div class="medium-selector-buttons">
-                  <button 
-                    v-for="mediumFile in currentPaperMediums" 
-                    :key="mediumFile.id"
-                    class="btn medium-btn mx-1" 
-                    :class="{'btn-dark': currentPdfUrl === mediumFile.presigned_url, 'btn-outline-dark': currentPdfUrl !== mediumFile.presigned_url}"
-                    @click="switchMedium(mediumFile.presigned_url)"
-                  >
-                    {{ getMediumName(mediumFile) }}
-                  </button>
-                </div>
-              </div>
-            </div>
-            <iframe v-if="currentPdfUrl" :src="currentPdfUrl" class="pdf-iframe" title="Test Paper PDF"></iframe>
-            <div v-else class="text-center p-5">
-              <p>No PDF available for this test paper.</p>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <a v-if="currentPdfUrl" :href="currentPdfUrl" target="_blank" class="btn btn-dark">Open in New Tab</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deleteConfirmModalLabel">
-              <i class="bi bi-exclamation-triangle text-warning me-2"></i>
-              Confirm Delete
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-3">Are you sure you want to delete this test paper?</p>
-            <div v-if="paperToDelete" class="alert alert-light">
-              <strong>{{ paperToDelete.name }}</strong><br>
-              <small class="text-muted">
-                Pattern: {{ paperToDelete.pattern?.pattern_name || 'N/A' }} | 
-                Created: {{ formatDate(paperToDelete.created_at) }}
-              </small>
-            </div>
-            <p class="text-danger mb-0">
-              <i class="bi bi-exclamation-circle me-1"></i>
-              <strong>This action cannot be undone.</strong>
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button 
-              type="button" 
-              class="btn btn-danger" 
-              @click="deleteTestPaper"
-              :disabled="isDeleting"
-            >
-              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              {{ isDeleting ? 'Deleting...' : 'Delete Test Paper' }}
-            </button>
           </div>
         </div>
       </div>
@@ -313,26 +231,11 @@ const sortOption = ref('date-desc'); // Default sort: newest first
 // Loading state
 const isLoading = ref(false);
 
-// PDF Viewer Modal state
-const currentPdfUrl = ref('');
-const currentPaperMediums = ref([]);
-let pdfModal = null;
-
-// Delete Modal state
-const paperToDelete = ref(null);
-const isDeleting = ref(false);
-let deleteModal = null;
-
 // Test papers data - will be populated from API
 const testPapers = ref([]);
 
 // Track expanded paper cards
 const expandedPapers = ref([]);
-
-// Navigate to test paper details page
-const navigateToTestPaperDetails = (paperId: number) => {
-  router.push(`/teacher/testPaper/view/${paperId}`);
-};
 
 // Toggle chapter view for a paper
 const toggleChaptersView = (index) => {
@@ -479,85 +382,15 @@ const switchMedium = (pdfUrl) => {
   currentPdfUrl.value = pdfUrl;
 };
 
-// Open PDF Viewer modal
+// Open PDF Viewer page instead of modal
 const viewPDF = (pdfUrl, paper) => {
-  if (!pdfUrl) {
+  if (!hasPDF(paper)) {
     showErrorToast('Error', 'No PDF available for this test paper.');
     return;
   }
   
-  currentPdfUrl.value = pdfUrl;
-  
-  // Set available mediums for the current paper
-  currentPaperMediums.value = paper?.html_files?.filter(file => file.presigned_url) || [];
-  
-  // Initialize modal if it doesn't exist
-  if (!pdfModal) {
-    const modalElement = document.getElementById('pdfViewerModal');
-    if (modalElement) {
-      pdfModal = new Modal(modalElement);
-    }
-  }
-  
-  if (pdfModal) {
-    pdfModal.show();
-  }
-};
-
-// Confirm delete test paper
-const confirmDeleteTestPaper = (paper) => {
-  paperToDelete.value = paper;
-  
-  // Initialize delete modal if it doesn't exist
-  if (!deleteModal) {
-    const modalElement = document.getElementById('deleteConfirmModal');
-    if (modalElement) {
-      deleteModal = new Modal(modalElement);
-    }
-  }
-  
-  if (deleteModal) {
-    deleteModal.show();
-  }
-};
-
-// Delete test paper
-const deleteTestPaper = async () => {
-  if (!paperToDelete.value) return;
-  
-  try {
-    isDeleting.value = true;
-    
-    // Make API call to delete the test paper
-    await axiosInstance.delete(`/test-paper-html/${paperToDelete.value.id}`);
-    
-    // Remove the deleted paper from the local array
-    const index = testPapers.value.findIndex(paper => paper.id === paperToDelete.value.id);
-    if (index !== -1) {
-      testPapers.value.splice(index, 1);
-    }
-    
-    // Close the modal
-    if (deleteModal) {
-      deleteModal.hide();
-    }
-    
-    // Show success toast
-    showSuccessToast('Success', 'Test paper deleted successfully.');
-    
-    // Reset state
-    paperToDelete.value = null;
-    
-  } catch (error) {
-    console.error('Error deleting test paper:', error);
-    
-    // Show error message
-    const errorMessage = error.response?.data?.message || 'Failed to delete test paper. Please try again.';
-    showErrorToast('Error', errorMessage);
-    
-  } finally {
-    isDeleting.value = false;
-  }
+  // Navigate to the PDF viewer page with the paper ID
+  router.push(`/teacher/test-paper-pdf/${paper.id}`);
 };
 
 // Search test papers (debounced in real implementation)
@@ -575,13 +408,6 @@ const showErrorToast = (title: string, message: string) => {
   toastTitle.value = title;
   toastMessage.value = message;
   toastType.value = 'danger';
-  showToast.value = true;
-};
-
-const showSuccessToast = (title: string, message: string) => {
-  toastTitle.value = title;
-  toastMessage.value = message;
-  toastType.value = 'success';
   showToast.value = true;
 };
 
@@ -727,26 +553,7 @@ input[type="text"] {
 }
 
 /* Paper title with link styling */
-.paper-title {
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  transition: color 0.2s ease;
-}
-
-.paper-title:hover {
-  color: #0d6efd;
-}
-
-.paper-link-icon {
-  opacity: 0;
-  margin-left: 0.5rem;
-  transition: opacity 0.2s ease;
-}
-
-.paper-title:hover .paper-link-icon {
-  opacity: 1;
-}
+/* Removed paper-title styles as they're no longer needed */
 
 .paper-info-item {
   margin-bottom: 0.75rem;
@@ -793,12 +600,6 @@ input[type="text"] {
   padding: 0.5rem 1rem;
   border-radius: 4px;
   background-color: #f8f9fa;
-  transition: all 0.2s ease;
-}
-
-.view-chapters-link:hover {
-  color: #0d6efd;
-  background-color: #e9ecef;
 }
 
 .view-chapters-link i {
@@ -903,12 +704,31 @@ input[type="text"] {
 .medium-btn {
   font-size: 0.85rem;
   padding: 0.25rem 0.5rem;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .medium-selector-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+}
+
+.medium-btn-group {
+  display: flex;
+}
+
+.medium-delete-btn {
+  padding: 0.25rem 0.5rem;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 0;
+  font-size: 0.85rem;
+}
+
+.medium-delete-btn:hover:not(:disabled) {
+  background-color: #dc3545;
+  color: white;
 }
 
 .delete-btn {

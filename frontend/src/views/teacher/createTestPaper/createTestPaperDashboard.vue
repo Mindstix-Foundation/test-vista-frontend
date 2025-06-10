@@ -257,6 +257,7 @@ import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Define component name (for linter)
 defineOptions({
@@ -617,7 +618,7 @@ const handleSubjectChange = async () => {
 // Update the selectPattern function
 const selectPattern = async () => {
   if (!isFormValid.value) {
-    showErrorToast('Please fill all required fields')
+    showErrorToast(VALIDATION_MESSAGES.FORM.FILL_ALL_REQUIRED)
     return
   }
   

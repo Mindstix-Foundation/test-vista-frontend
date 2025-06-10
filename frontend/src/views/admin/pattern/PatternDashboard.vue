@@ -429,7 +429,7 @@ interface Pattern {
     id: number
     pattern_id: number
     seqencial_section_number: number
-    sub_section: string
+    sub_section: string | null
     section_name: string
     total_questions: number
     mandotory_questions: number
@@ -438,6 +438,20 @@ interface Pattern {
     updated_at: string
   }>
   isExpanded?: boolean
+}
+
+interface Section {
+  id: number
+  pattern_id: number
+  section_number: number
+  sequence_number: number
+  section_name: string
+  sub_section: string | null
+  total_questions: number
+  mandotory_questions: number
+  marks_per_question: number
+  created_at: string
+  updated_at: string
 }
 
 // Data

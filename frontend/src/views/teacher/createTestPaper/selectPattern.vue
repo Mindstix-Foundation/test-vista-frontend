@@ -249,7 +249,7 @@ interface Pattern {
     pattern_id: number;
     sequence_number: number;
     section_number: number;
-    sub_section: string;
+    sub_section: string | null;
     section_name: string;
     total_questions: number;
     mandotory_questions: number;

@@ -105,14 +105,21 @@
         <div class="row mb-3 d-md-none">
           <div class="col-12 d-flex justify-content-center">
             <div class="view-mode-toggle-container">
-              <div class="form-check form-switch form-check-inline">
-                <input class="form-check-input" type="checkbox" id="viewModeToggle" v-model="mobileViewMode">
-                <label class="form-check-label" for="viewModeToggle">
-                  <span v-if="mobileViewMode"><i class="bi bi-phone me-1"></i> Mobile View</span>
-                  <span v-else><i class="bi bi-file-earmark-text me-1"></i> A4 Preview</span>
-                </label>
+              <div class="view-mode-selector">
+                <button 
+                  :class="['view-mode-btn', mobileViewMode ? 'active' : '']" 
+                  @click="mobileViewMode = true"
+                >
+                  <i class="bi bi-phone me-1"></i> Mobile View
+                </button>
+                <button 
+                  :class="['view-mode-btn', !mobileViewMode ? 'active' : '']" 
+                  @click="mobileViewMode = false"
+                >
+                  <i class="bi bi-file-earmark-text me-1"></i> A4 Preview
+                </button>
               </div>
-              <!-- New zoom slider for A4 view on mobile -->
+              <!-- Zoom slider for A4 view on mobile -->
               <div v-if="!mobileViewMode" class="zoom-control-container mt-2">
                 <div class="zoom-label d-flex align-items-center justify-content-center">
                   <i class="bi bi-zoom-out me-2"></i>
@@ -414,13 +421,6 @@
       <!-- Back to top button -->
       <div id="backToTop" class="d-flex" @click="scrollToTop" style="display: none !important;">
         <i class="bi bi-arrow-up"></i>
-      </div>
-      
-      <!-- Simple toast notification for layout changes -->
-      <div id="layoutToast" class="layout-toast" :class="{ 'show-toast': showLayoutToast }">
-        <div class="layout-toast-content">
-          <i class="bi bi-check-circle me-2"></i> {{ layoutToastMessage }}
-        </div>
       </div>
       
       <!-- Fixed back button for mobile only -->
@@ -2237,17 +2237,6 @@ const handleGlobalLayoutClickOutside = (event: MouseEvent) => {
   }
 }
 
-// Show layout change toast notification
-const showLayoutChangeToast = (message: string) => {
-  layoutToastMessage.value = message;
-  showLayoutToast.value = true;
-  
-  // Auto-hide after 3 seconds
-  setTimeout(() => {
-    showLayoutToast.value = false;
-  }, 3000);
-}
-
 // Apply global layout to all MCQ questions
 const applyGlobalLayout = (layout: string) => {
   // Set the selected global layout
@@ -2269,17 +2258,6 @@ const applyGlobalLayout = (layout: string) => {
   // Save the updated layouts to localStorage
   saveOptionLayoutsToLocalStorage()
   
-  // Show feedback
-  const layoutNames = {
-    'row': 'Single Row',
-    'grid': '2x2 Grid',
-    'column': 'Single Column'
-  };
-  
-  // Show feedback with toast notification
-  const message = `Applied ${layoutNames[layout as keyof typeof layoutNames]} layout to ${mcqCount} questions`;
-  showLayoutChangeToast(message);
-  
   // Close the selector
   hideGlobalLayoutOptions();
 }
@@ -2289,10 +2267,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
   document.removeEventListener('click', handleGlobalLayoutClickOutside);
 });
-
-// Toast notification for layout changes
-const showLayoutToast = ref(false)
-const layoutToastMessage = ref('')
 
 // Hide layout selectors when scrolling
 const handleLayoutSelectorsOnScroll = () => {
@@ -2467,10 +2441,6 @@ const changeMedium = async (mediumId: number) => {
   currentMediumId.value = mediumId;
   showMediumDropdown.value = false;
   
-  // Show toast notification for medium change
-  const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name ?? 'Unknown';
-  showLayoutChangeToast(`Changed to ${mediumName} medium`);
-  
   try {
     // For questions that have been individually changed, we need to check if they have
     // the correct language version and potentially fetch new ones
@@ -2534,7 +2504,6 @@ const changeMedium = async (mediumId: number) => {
     console.error('Error changing medium:', error);
     // In case of error, revert to previous medium
     currentMediumId.value = previousMediumId;
-    showLayoutChangeToast('Failed to change medium. Please try again.');
   }
 };
 
@@ -2672,7 +2641,7 @@ const updateQuestionMatchPairs = (question: DisplayQuestion, questionText: Quest
 };
 
 // Add mobileViewMode state
-const mobileViewMode = ref(false);
+const mobileViewMode = ref(true);
 
 // Add zoom level state and computed style for A4 paper
 const zoomLevel = ref(100);
@@ -2694,7 +2663,7 @@ const a4PaperStyle = computed(() => {
 const updateZoom = () => {
   // Update localStorage to remember user's preference
   localStorage.setItem('a4ZoomLevel', zoomLevel.value.toString());
-};
+}
 </script>
 
 <style scoped>
@@ -3634,33 +3603,6 @@ const updateZoom = () => {
   background-color: #e0e0e0;
 }
 
-/* Toast notification styles */
-.layout-toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #28a745;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  display: none;
-  z-index: 1000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.layout-toast.show-toast {
-  display: block;
-}
-
-.layout-toast-content {
-  display: flex;
-  align-items: center;
-}
-
-.layout-toast i {
-  margin-right: 10px;
-}
-
 /* Mobile action buttons at bottom */
 .mobile-action-buttons {
   position: fixed;
@@ -4026,44 +3968,66 @@ const updateZoom = () => {
   flex-direction: column;
   align-items: center;
   margin-bottom: 15px;
-  background-color: rgba(255,255,255,0.9);
-  padding: 5px 15px;
-  border-radius: 20px;
+  background-color: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 300px;
 }
 
-.form-check-input {
-  margin-right: 10px;
+.view-mode-selector {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+}
+
+.view-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-mode-btn:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+
+.view-mode-btn.active {
+  background-color: #212529;
+  color: white;
+  border-color: #212529;
+  font-weight: 500;
+}
+
+.zoom-control-container {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.zoom-value {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 5px;
 }
 
 .scroll-hint {
   font-size: 0.8rem;
   color: #6c757d;
-  margin-top: 5px;
+  margin-top: 8px;
   text-align: center;
-}
-
-/* Print styles for A4 paper */
-@media print {
-  .a4-paper-card {
-    width: 210mm;
-    height: 297mm;
-    padding: 0;
-    box-shadow: none;
-    border: none;
-    margin: 0;
-  }
-  
-  /* Hide view mode toggle when printing */
-  .view-mode-toggle-container {
-    display: none !important;
-  }
-  
-  /* Always use A4 preview mode when printing */
-  .mobile-view .a4-paper-card {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 20mm;
-  }
 }
 </style>

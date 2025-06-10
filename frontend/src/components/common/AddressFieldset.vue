@@ -182,6 +182,7 @@ const cities = ref<City[]>([])
 const selectedCountry = ref<Country | null>(null)
 const selectedState = ref<State | null>(null)
 const selectedCity = ref<City | null>(null)
+const isInitialized = ref(false)
 
 // Computed property for the address
 const address = computed(() => props.modelValue)
@@ -193,6 +194,9 @@ onMounted(async () => {
   
   // Wait a small delay to ensure countries are loaded properly
   await new Promise(resolve => setTimeout(resolve, 100))
+  
+  // ✅ Mark as initialized after countries are loaded
+  isInitialized.value = true
   
   // If address already has data, initialize selections
   if (address.value.country_id && address.value.state_id && address.value.city_id) {
@@ -244,9 +248,17 @@ const fetchAndSetCountry = async () => {
   
   selectedCountry.value = country
   
-  // Fetch states for this country
-  const statesResponse = await axiosInstance.get(`/states?countryId=${address.value.country_id}`)
-  states.value = statesResponse.data
+  // ✅ Improved caching: Only fetch states if we don't have any OR if they're for a different country
+  const hasStatesForThisCountry = states.value.length > 0 && 
+    states.value.some(s => s.country_id === address.value.country_id)
+  
+  if (!hasStatesForThisCountry) {
+    console.log(`📡 Fetching states for country ${address.value.country_id}`)
+    const statesResponse = await axiosInstance.get(`/states?countryId=${address.value.country_id}`)
+    states.value = statesResponse.data
+  } else {
+    console.log(`✅ Using cached states for country ${address.value.country_id}`)
+  }
   
   // Short delay to ensure states are processed
   await new Promise(resolve => setTimeout(resolve, 100))
@@ -259,9 +271,17 @@ const fetchAndSetState = async () => {
   
   selectedState.value = state
   
-  // Fetch cities for this state
-  const citiesResponse = await axiosInstance.get(`/cities?stateId=${address.value.state_id}`)
-  cities.value = citiesResponse.data
+  // ✅ Improved caching: Only fetch cities if we don't have any OR if they're for a different state
+  const hasCitiesForThisState = cities.value.length > 0 && 
+    cities.value.some(c => c.state_id === address.value.state_id)
+  
+  if (!hasCitiesForThisState) {
+    console.log(`📡 Fetching cities for state ${address.value.state_id}`)
+    const citiesResponse = await axiosInstance.get(`/cities?stateId=${address.value.state_id}`)
+    cities.value = citiesResponse.data
+  } else {
+    console.log(`✅ Using cached cities for state ${address.value.state_id}`)
+  }
   
   // Short delay to ensure cities are processed
   await new Promise(resolve => setTimeout(resolve, 100))
@@ -307,6 +327,8 @@ const updateValidationStates = () => {
 // Country change
 const handleCountryChange = async (value: Country | null) => {
   try {
+    console.log('🌍 User changed country:', value?.name)
+    
     // Update selected country
     selectedCountry.value = value
     
@@ -346,8 +368,9 @@ const handleCountryChange = async (value: Country | null) => {
     // Emit country change
     emit('country-change', value)
     
-    // Fetch states for this country
+    // ✅ Fetch states for this country (user-triggered, so always fetch fresh data)
     if (value?.id) {
+      console.log(`📡 User-triggered: Fetching states for country ${value.id}`)
       const response = await axiosInstance.get(`/states?countryId=${value.id}`)
       states.value = response.data
     }
@@ -359,6 +382,8 @@ const handleCountryChange = async (value: Country | null) => {
 // State change
 const handleStateChange = async (value: State | null) => {
   try {
+    console.log('🏛️ User changed state:', value?.name)
+    
     // Update selected state
     selectedState.value = value
     
@@ -391,8 +416,9 @@ const handleStateChange = async (value: State | null) => {
     // Emit state change
     emit('state-change', value)
     
-    // Fetch cities for this state
+    // ✅ Fetch cities for this state (user-triggered, so always fetch fresh data)
     if (value?.id) {
+      console.log(`📡 User-triggered: Fetching cities for state ${value.id}`)
       const response = await axiosInstance.get(`/cities?stateId=${value.id}`)
       cities.value = response.data
     }
@@ -469,71 +495,28 @@ const handlePostalCodeInput = () => {
   emit('update:validationStates', updatedValidation)
 }
 
-// Watch for country changes from parent
+// Watch for address changes from parent - consolidated watcher
 watch(
   () => address.value,
   async (newAddress) => {
-    // If we have all location IDs but no selections, re-initialize
+    // ✅ Only proceed if component is initialized and countries are loaded
+    if (!isInitialized.value || countries.value.length === 0) {
+      return
+    }
+    
+    // ✅ Only re-initialize if we have all location IDs but missing selections
+    // AND this isn't the initial load (which is handled by onMounted)
     if (
       newAddress.country_id && 
       newAddress.state_id && 
       newAddress.city_id && 
       (!selectedCountry.value || !selectedState.value || !selectedCity.value)
     ) {
+      console.log('🔄 Re-initializing address data from watcher')
       await fetchInitialData()
     }
   },
-  { deep: true, immediate: true }
-)
-
-// Watch for country changes from parent
-watch(
-  () => address.value.country_id,
-  async (newValue, oldValue) => {
-    if (newValue !== oldValue && newValue) {
-      // Find the country in our list
-      const country = countries.value.find(c => c.id === newValue)
-      if (country && !selectedCountry.value) {
-        selectedCountry.value = country
-        
-        // Fetch states for this country
-        const response = await axiosInstance.get(`/states?countryId=${newValue}`)
-        states.value = response.data
-      }
-    }
-  }
-)
-
-// Watch for state changes from parent
-watch(
-  () => address.value.state_id,
-  async (newValue, oldValue) => {
-    if (newValue !== oldValue && newValue) {
-      // Find the state in our list
-      const state = states.value.find(s => s.id === newValue)
-      if (state && !selectedState.value) {
-        selectedState.value = state
-        
-        // Fetch cities for this state
-        const response = await axiosInstance.get(`/cities?stateId=${newValue}`)
-        cities.value = response.data
-      }
-    }
-  }
-)
-
-// Watch for city changes from parent
-watch(
-  () => address.value.city_id,
-  (newValue, oldValue) => {
-    if (newValue !== oldValue && newValue) {
-      // Find the city in our list
-      const city = cities.value.find(c => c.id === newValue)
-      if (city && !selectedCity.value) {
-        selectedCity.value = city
-      }
-    }
-  }
+  { deep: true, immediate: false } // ✅ Changed to immediate: false to prevent duplicate calls
 )
 </script>
 

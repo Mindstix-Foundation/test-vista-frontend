@@ -4,124 +4,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>TEST VISTA - Comprehensive Exam System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet"> <!-- Use styles.css from commonPart -->
     <style>
-        /* Styling for the main content */
-        .main-heading {
-            text-align: center;
-            margin: 50px 0 20px 0;
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .main-heading h1 {
-            font-size: 2.5rem;
-            /* Bigger font size for the first line */
-            font-weight: bold;
-            color: #2C3E50;
-        }
-
-        .main-heading h2 {
-            font-size: 1.2rem;
-            /* Smaller font size for the second line */
-            font-weight: normal;
-            color: #7F8C8D;
-        }
-
-        /* Styling for the "Who We Are" section */
-        .who-we-are {
-            margin: 40px auto;
-            padding: 30px;
-            /* More padding for better spacing */
-            border: 1px solid #DDD;
-            border-radius: 10px;
-            background-color: #f9f9f9;
-            /* Softer background color */
-            max-width: 800px;
-            font-family: "Helvetica Neue", Arial, sans-serif;
-            color: #34495E;
-            line-height: 1.8;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            /* Subtle shadow for depth */
-        }
-
-        .who-we-are h4 {
-            text-align: center;
-            font-size: 1.6rem;
-            /* Slightly larger for emphasis */
-            margin-bottom: 20px;
-            font-weight: bold;
-            color: #2C3E50;
-        }
-
-        .who-we-are p {
-            text-align: justify;
-            /* Justify text for cleaner alignment */
-            margin-bottom: 15px;
-            /* Spacing between paragraphs */
-            font-size: 1rem;
-            /* Standard readable size */
-        }
-         /* Header styling */
-         .header {
-            background-color: #000000;
-            height: 90px; /* Consistent height */
+        .main-container {
+            min-height: 100vh;
             display: flex;
-            color: rgb(255, 255, 255);
-            align-items: center; /* Center content vertically */
-            justify-content: space-between; /* Space between title and login button */
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Add shadow for similar look */
-            padding: 0 20px; /* Add padding for spacing */
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        .header h2 {
-            margin: 0;
-            font-size: 1.5rem; /* Set appropriate size */
-            font-weight: bold; /* Remove bold */
+
+        .welcome-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #6c757d;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .prototype-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .prototype-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .prototype-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .prototype-card.admin {
+            border-color: #dc3545;
+        }
+
+        .prototype-card.admin:hover {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .prototype-card.teacher {
+            border-color: #28a745;
+        }
+
+        .prototype-card.teacher:hover {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .prototype-card.student {
+            border-color: #007bff;
+        }
+
+        .prototype-card.student:hover {
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            color: white;
+        }
+
+        .prototype-card.login {
+            border-color: #6f42c1;
+        }
+
+        .prototype-card.login:hover {
+            background: linear-gradient(135deg, #6f42c1, #e83e8c);
+            color: white;
+        }
+
+        .prototype-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .prototype-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .prototype-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        .features-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .feature-icon {
+            color: #dc3545;
+            font-size: 1.5rem;
+        }
+
+        .feature-text {
+            flex: 1;
+            text-align: left;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .prototype-grid {
+                grid-template-columns: 1fr;
+            }
             
+            .welcome-card {
+                padding: 30px 20px;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- Header -->
-    <header class="header  ">
-        <h2 >TEST VISTA</h2>
-        <button class="btn btn-primary" onclick="redirectToLogin()">Login</button>
-    </header>
-   
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Organization Heading -->
-        <div class="main-heading">
-            <h1>Mindstix Foundation Trust</h1>
-            <h2>Technology Provider For A Social Change</h2>
-        </div>
+    <div class="main-container">
+        <div class="welcome-card">
+            <div class="logo">TEST VISTA</div>
+            <div class="subtitle">Comprehensive Exam Management System</div>
+            <p class="lead">Welcome to the complete hollow prototype showcasing all system components</p>
 
-        <!-- Who We Are Section -->
-        <div class="who-we-are">
-            <h4>Who We Are</h4>
-            <p>
-                Mindstix Foundation Trust is a Pan-India Trust based in Mumbai, Maharashtra. Primarily, we work for the
-                economically constrained populace of the country for the upliftment of the society by digital means.
-                We strive for social transformation and aim to serve the community with the goal of transformation
-                through digital intervention.
-            </p>
-            <p>
-                We believe that social transformation can be done on the anvil of technological growth and development.
-                We leverage all our activities through the use of existing technology and find ways to upgrade the same
-                with time.
-                We believe that education and technology are two prime fundamental rights that every citizen deserves to
-                have.
-            </p>
+            <div class="prototype-grid">
+                <a href="login_Prototype/login.html" class="prototype-card login">
+                    <i class="bi bi-box-arrow-in-right prototype-icon"></i>
+                    <div class="prototype-title">Login System</div>
+                    <div class="prototype-description">
+                        Secure authentication portal for all user types with role-based access control
+                    </div>
+                </a>
+
+                <a href="Student_prototype/commonPart/home.html" class="prototype-card student">
+                    <i class="bi bi-person-graduation prototype-icon"></i>
+                    <div class="prototype-title">Student Portal</div>
+                    <div class="prototype-description">
+                        Complete student interface with exam taking, practice tests, and result viewing
+                    </div>
+                </a>
+
+                <a href="Teacher_Prototype/index.html" class="prototype-card teacher">
+                    <i class="bi bi-person-workspace prototype-icon"></i>
+                    <div class="prototype-title">Teacher Dashboard</div>
+                    <div class="prototype-description">
+                        Teacher interface for creating tests, managing questions, and viewing student performance
+                    </div>
+                </a>
+
+                <a href="Admin_prototype/index.html" class="prototype-card admin">
+                    <i class="bi bi-gear-wide-connected prototype-icon"></i>
+                    <div class="prototype-title">Admin Panel</div>
+                    <div class="prototype-description">
+                        Administrative control panel for system management, user administration, and oversight
+                    </div>
+                </a>
+            </div>
+
+            <div class="features-section">
+                <h4 class="mb-4">System Features</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <i class="bi bi-shield-check feature-icon"></i>
+                            <div class="feature-text">
+                                <div class="feature-title">Secure Exam Environment</div>
+                                <div class="feature-desc">Fullscreen mode, anti-cheating measures, and secure authentication</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-graph-up feature-icon"></i>
+                            <div class="feature-text">
+                                <div class="feature-title">Performance Analytics</div>
+                                <div class="feature-desc">Detailed reports, progress tracking, and performance insights</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-clock-history feature-icon"></i>
+                            <div class="feature-text">
+                                <div class="feature-title">Time Management</div>
+                                <div class="feature-desc">Timer controls, time warnings, and automatic submission</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <i class="bi bi-bookmark-star feature-icon"></i>
+                            <div class="feature-text">
+                                <div class="feature-title">Question Management</div>
+                                <div class="feature-desc">Mark for review, color-coded status, and easy navigation</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-device-tablet feature-icon"></i>
+                            <div class="feature-text">
+                                <div class="feature-title">Responsive Design</div>
+                                <div class="feature-desc">Works seamlessly across desktop, tablet, and mobile devices</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-people feature-icon"></i>
+                            <div class="feature-text">
+                                <div class="feature-title">Multi-User Support</div>
+                                <div class="feature-desc">Separate interfaces for students, teachers, and administrators</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    This is a comprehensive hollow prototype demonstrating the complete TEST VISTA exam system functionality
+                </small>
+            </div>
         </div>
     </div>
-    <script>
-        function redirectToLogin() {
-        // Redirect to login.html
-        window.location.href = "login_Prototype/login.html";
-    }
-    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

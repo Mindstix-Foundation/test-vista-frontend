@@ -122,10 +122,23 @@
             const users = {
                 'admin@gmail.com': 'admin',
                 'teacher@gmail.com': 'teacher',
-                'adminuser@gmail.com': 'adminuser'
+                'adminuser@gmail.com': 'adminuser',
+                'student@gmail.com': 'student',
+                'john.doe@gmail.com': 'student123',
+                'jane.smith@gmail.com': 'student456'
             };
 
             if (users[email] && users[email] === password) {
+                // Store user info for student dashboard
+                if (email === 'student@gmail.com' || email === 'john.doe@gmail.com' || email === 'jane.smith@gmail.com') {
+                    const studentNames = {
+                        'student@gmail.com': 'Student User',
+                        'john.doe@gmail.com': 'John Doe',
+                        'jane.smith@gmail.com': 'Jane Smith'
+                    };
+                    localStorage.setItem('studentName', studentNames[email]);
+                }
+
                 // Redirect based on the email
                 if (email === 'admin@gmail.com') {
                     window.location.href = "../Admin_prototype/index.html"; // Admin page
@@ -133,6 +146,8 @@
                     window.location.href = "../Teacher_Prototype/index.html"; // Teacher page
                 } else if (email === 'adminuser@gmail.com') {
                     window.location.href = "#"; // Page for both
+                } else if (email === 'student@gmail.com' || email === 'john.doe@gmail.com' || email === 'jane.smith@gmail.com') {
+                    window.location.href = "../Student_prototype/commonPart/home.html"; // Student page
                 }
             } else {
                 // Show error message below login

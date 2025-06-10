@@ -120,6 +120,11 @@ const routes: RouteRecordRaw[] = [
         name: 'translationPending',
         component: () => import('../views/admin/questionBank/TranslationPending.vue'),
       },
+      {
+        path: 'image-upload-demo',
+        name: 'imageUploadDemo',
+        component: () => import('@/views/admin/questionBank/ImageUploadDemo.vue'),
+      },
     ],
   },
   // Form routes without navbar
@@ -255,7 +260,12 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'previous-test-paper',
         name: 'previousTestPaper',
-        component: () => import('@/views/teacher/previousTestPaper/PreviousTestPaperDashboard.vue'),
+        component: () => import('@/views/teacher/previousTestPaper/previousTestPaperDashboard.vue'),
+      },
+      {
+        path: 'test-paper-pdf/:id',
+        name: 'testPaperPdf',
+        component: () => import('@/views/teacher/previousTestPaper/testPaperPdfViewer.vue'),
       },
       {
         path: 'create-test-paper-detail',

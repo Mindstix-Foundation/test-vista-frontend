@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 const props = withDefaults(
   defineProps<{
@@ -85,7 +86,7 @@ const props = withDefaults(
     placeholder: '',
     required: false,
     disabled: false,
-    errorMessage: 'This field is required',
+    errorMessage: VALIDATION_MESSAGES.FIELD.REQUIRED,
     isValid: false,
     isTouched: false,
     autocomplete: 'off',

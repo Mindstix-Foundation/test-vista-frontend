@@ -175,7 +175,6 @@
                   <div class="section-preview mt-0">
                     <div class="table-responsive">
                       <table class="table table-sm compact-table borderless-table ">
-                        <caption class="caption-top small text-muted">Section details table displaying questions and their respective marks allocated in the test paper pattern.</caption>
                         <thead class="table-dark rounded-table-header">
                           <tr>
                             <th class="question-column">Questions</th>
@@ -208,7 +207,6 @@
                               <td colspan="2" class="p-0">
                                 <div class="question-types-container bg-light">
                                   <table class="table table-sm mb-0 question-types-table">
-                                    <caption class="caption-top small text-muted ps-4">Question types and their respective chapters allocation in this section.</caption>
                                     <thead>
                                       <tr>
                                         <th scope="col" class="px-4 py-2">Question Details</th>
@@ -481,7 +479,7 @@ interface PatternSection {
   pattern_id: number;
   sequence_number: number;
   section_number: number;
-  sub_section: string;
+  sub_section: string | null;
   section_name: string;
   total_questions: number;
   mandotory_questions: number;

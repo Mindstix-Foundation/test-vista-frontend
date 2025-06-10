@@ -1460,6 +1460,7 @@ function highlightText(text: string, search: string): string {
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   border-color: #86b7fe;
   outline: 0;
+  z-index: 100; /* Higher z-index to ensure it stays on top */
 }
 
 .clear-search-icon {
@@ -1539,14 +1540,6 @@ function highlightText(text: string, search: string): string {
   transform: translateY(-50%);
   color: #6c757d;
   animation: spin 1s linear infinite;
-}
-
-/* Ensure search input stays in focus */
-.search-input:focus {
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-  border-color: #86b7fe;
-  outline: 0;
-  z-index: 100; /* Higher z-index to ensure it stays on top */
 }
 
 /* Ensure search icons stay visible */

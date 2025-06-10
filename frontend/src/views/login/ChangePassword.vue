@@ -106,6 +106,7 @@ import LoginNavBar from '@/components/LoginNavBar.vue'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import axiosInstance from '@/config/axios'
 import { useAuthStore } from '@/stores/auth'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -159,20 +160,20 @@ const changePassword = async () => {
 
   // Validate current password
   if (!currentPassword.value) {
-    errorMessage.value = 'Current password is required.'
+    errorMessage.value = VALIDATION_MESSAGES.PASSWORD.CURRENT_REQUIRED
     currentPasswordInput.value?.focus()
     return
   }
 
   // Validate password
   if (!isPasswordValid.value) {
-    errorMessage.value = 'Password does not meet complexity requirements.'
+    errorMessage.value = VALIDATION_MESSAGES.PASSWORD.COMPLEXITY
     return
   }
 
   // Check if passwords match
   if (!doPasswordsMatch.value) {
-    errorMessage.value = 'Passwords do not match.'
+    errorMessage.value = VALIDATION_MESSAGES.PASSWORD.MISMATCH
     return
   }
 
@@ -215,7 +216,7 @@ const changePassword = async () => {
         (apiError.response?.status === 400 &&
          apiError.response?.data?.message?.includes('incorrect'))) {
       // This is a current password error
-      errorMessage.value = 'Current password is incorrect. Please try again.'
+      errorMessage.value = VALIDATION_MESSAGES.PASSWORD.INCORRECT
       // Clear the password field
       currentPassword.value = ''
       // Focus on the current password field

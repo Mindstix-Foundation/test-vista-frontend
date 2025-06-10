@@ -718,6 +718,25 @@
         <span class="visually-hidden">Saving translation...</span>
       </output>
     </div>
+
+    <!-- Enhanced Image Upload Modals -->
+    <ImageUploadEditor
+      v-if="showQuestionImageModal"
+      :questionText="originalQuestion"
+      :questionNumber="1"
+      imageType="question"
+      @close="closeQuestionImageModal"
+      @upload="handleQuestionImageUploaded"
+    />
+
+    <ImageUploadEditor
+      v-if="showOptionImageModal"
+      :questionText="originalQuestion"
+      :questionNumber="1"
+      imageType="option"
+      @close="closeOptionImageModal"
+      @upload="handleOptionImageUploaded"
+    />
   </div>
 </template>
 
@@ -726,6 +745,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
+import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -869,6 +889,11 @@ const optionImagePreviews = ref<(string | null)[]>([])
 const originalOptionIsCorrect = ref<boolean[]>([])
 const optionImageIds = ref<(number | null)[]>([]) // To store original image IDs
 
+// Add new state for image upload modals
+const showQuestionImageModal = ref(false)
+const showOptionImageModal = ref(false)
+const currentOptionIndex = ref<number>(-1)
+
 // Methods
 function autoResize(event: Event) {
   const textarea = event.target as HTMLTextAreaElement
@@ -923,41 +948,76 @@ function handleImageChange(event: Event) {
   }
 }
 
-// Helper function to create a toast notification
-function showToast(title, message, type) {
-  toastStore.showToast({
-    title,
-    message,
-    type
-  });
+// Add new methods for ImageUploadEditor
+function openQuestionImageModal() {
+  showQuestionImageModal.value = true;
+}
+
+function closeQuestionImageModal() {
+  showQuestionImageModal.value = false;
+}
+
+function handleQuestionImageUploaded(imageData: any) {
+  // Handle the uploaded question image
+  newImageSelected.value = true;
+  // Store the image file for later upload during save
+  const questionImageInput = document.getElementById('inputGroupFile01') as HTMLInputElement;
+  if (questionImageInput && imageData.file) {
+    // Create a new FileList with the uploaded file
+    const dt = new DataTransfer();
+    dt.items.add(imageData.file);
+    questionImageInput.files = dt.files;
+  }
+  closeQuestionImageModal();
+}
+
+function openOptionImageModal(optionIndex: number) {
+  currentOptionIndex.value = optionIndex;
+  showOptionImageModal.value = true;
+}
+
+function closeOptionImageModal() {
+  showOptionImageModal.value = false;
+  currentOptionIndex.value = -1;
+}
+
+function handleOptionImageUploaded(imageData: any) {
+  // Handle the uploaded option image
+  if (currentOptionIndex.value >= 0) {
+    const optionImageInput = document.getElementById(`optionImage${currentOptionIndex.value + 1}`) as HTMLInputElement;
+    if (optionImageInput && imageData.file) {
+      // Create a new FileList with the uploaded file
+      const dt = new DataTransfer();
+      dt.items.add(imageData.file);
+      optionImageInput.files = dt.files;
+      
+      // Trigger the existing change handler
+      handleOptionImageChange({ target: optionImageInput } as Event, currentOptionIndex.value);
+    }
+  }
+  closeOptionImageModal();
 }
 
 // Helper function to handle image upload
-async function uploadImage(file) {
+async function uploadImage(file, customWidth?: number, customHeight?: number) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const uploadResponse = await axiosInstance.post(
-    '/images/upload',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+  // Add custom dimensions if provided
+  if (customWidth !== undefined) {
+    formData.append('width', customWidth.toString());
+  }
+  if (customHeight !== undefined) {
+    formData.append('height', customHeight.toString());
+  }
+
+  const response = await axiosInstance.post('/images/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
     }
-  );
+  });
 
-  const imageCreateRequest = {
-    image_url: uploadResponse.data.image_url,
-    original_filename: uploadResponse.data.original_filename || file.name,
-    file_size: uploadResponse.data.file_size || file.size,
-    file_type: uploadResponse.data.file_type || file.type,
-    width: uploadResponse.data.width,
-    height: uploadResponse.data.height
-  };
-
-  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-  return imageResponse.data.id;
+  return response.data.id;
 }
 
 // Helper function to handle image processing logic
@@ -1068,7 +1128,6 @@ async function processMatchPairs(translationRequest) {
   }
 }
 
-// Helper function to handle fill in the blanks
 function processFillInTheBlanks(translationRequest) {
   if (questionType.value !== 'Fill in the Blanks') {
     return;
@@ -1285,7 +1344,7 @@ function processQuestionOptions(selectedTranslation) {
                    questionType.value === 'True or False';
                    
   if (isMcqType && selectedTranslation.mcq_options) {
-    processMcqOptions(selectedTranslation);
+    loadMcqOptions(selectedTranslation);
   }
   
   const isMatchPairsType = (questionType.value === 'Match the Pairs' || 
@@ -1294,11 +1353,11 @@ function processQuestionOptions(selectedTranslation) {
                           selectedTranslation.match_pairs.length > 0;
                           
   if (isMatchPairsType) {
-    processMatchPairs(selectedTranslation);
+    loadMatchPairs(selectedTranslation);
   }
 }
 
-function processMcqOptions(selectedTranslation) {
+function loadMcqOptions(selectedTranslation) {
   originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
   // Initialize translated options array with the same length
   translatedOptions.value = Array(originalOptions.value.length).fill('');
@@ -1332,60 +1391,6 @@ function processOptionDetails(option, index) {
     originalOptionImages.value[index] = option.image.presigned_url;
     optionImageLoading.value[index] = true;
     optionImageIds.value[index] = option.image_id;
-  }
-}
-
-function processMatchPairs(selectedTranslation) {
-  originalMatchPairs.value = selectedTranslation.match_pairs.map(
-    (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
-  );
-
-  // Initialize translatedMatchPairs with empty strings for each pair
-  translatedMatchPairs.value = Array(originalMatchPairs.value.length)
-    .fill(0)
-    .map(() => ({ left_text: '', right_text: '' }));
-    
-  // Initialize arrays for match pair images
-  initializeMatchPairArrays(originalMatchPairs.value.length);
-  
-  // Process each match pair
-  selectedTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
-    processMatchPairImages(pair, index);
-  });
-}
-
-function initializeMatchPairArrays(length) {
-  originalMatchPairLeftImages.value = Array(length).fill(null);
-  originalMatchPairRightImages.value = Array(length).fill(null);
-  pairLeftImageLoading.value = Array(length).fill(false);
-  pairLeftImageError.value = Array(length).fill(false);
-  pairRightImageLoading.value = Array(length).fill(false);
-  pairRightImageError.value = Array(length).fill(false);
-  pairLeftImagePreviews.value = Array(length).fill(null);
-  pairRightImagePreviews.value = Array(length).fill(null);
-  pairLeftImageIds.value = Array(length).fill(null);
-  pairRightImageIds.value = Array(length).fill(null);
-}
-
-function processMatchPairImages(pair, index) {
-  // Handle left side image
-  if (pair.left_image_id) {
-    const leftImage = pair.left_image;
-    if (leftImage?.presigned_url) {
-      originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
-      pairLeftImageLoading.value[index] = true;
-      pairLeftImageIds.value[index] = pair.left_image_id;
-    }
-  }
-  
-  // Handle right side image
-  if (pair.right_image_id) {
-    const rightImage = pair.right_image;
-    if (rightImage?.presigned_url) {
-      originalMatchPairRightImages.value[index] = rightImage.presigned_url;
-      pairRightImageLoading.value[index] = true;
-      pairRightImageIds.value[index] = pair.right_image_id;
-    }
   }
 }
 
@@ -1694,6 +1699,61 @@ function clearOptionImage(index: number): void {
   const optionImageInput = document.getElementById(`optionImage${index + 1}`) as HTMLInputElement;
   if (optionImageInput) {
     optionImageInput.value = '';
+  }
+}
+
+// Helper function to load match pairs from selected translation
+async function loadMatchPairs(selectedTranslation) {
+  originalMatchPairs.value = selectedTranslation.match_pairs.map(
+    (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
+  );
+
+  // Initialize translatedMatchPairs with empty strings for each pair
+  translatedMatchPairs.value = Array(originalMatchPairs.value.length)
+    .fill(0)
+    .map(() => ({ left_text: '', right_text: '' }));
+    
+  // Initialize arrays for match pair images
+  initializeMatchPairArrays(originalMatchPairs.value.length);
+  
+  // Process each match pair
+  selectedTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
+    processMatchPairImages(pair, index);
+  });
+}
+
+function initializeMatchPairArrays(length) {
+  originalMatchPairLeftImages.value = Array(length).fill(null);
+  originalMatchPairRightImages.value = Array(length).fill(null);
+  pairLeftImageLoading.value = Array(length).fill(false);
+  pairLeftImageError.value = Array(length).fill(false);
+  pairRightImageLoading.value = Array(length).fill(false);
+  pairRightImageError.value = Array(length).fill(false);
+  pairLeftImagePreviews.value = Array(length).fill(null);
+  pairRightImagePreviews.value = Array(length).fill(null);
+  pairLeftImageIds.value = Array(length).fill(null);
+  pairRightImageIds.value = Array(length).fill(null);
+}
+
+function processMatchPairImages(pair, index) {
+  // Handle left side image
+  if (pair.left_image_id) {
+    const leftImage = pair.left_image;
+    if (leftImage?.presigned_url) {
+      originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
+      pairLeftImageLoading.value[index] = true;
+      pairLeftImageIds.value[index] = pair.left_image_id;
+    }
+  }
+  
+  // Handle right side image
+  if (pair.right_image_id) {
+    const rightImage = pair.right_image;
+    if (rightImage?.presigned_url) {
+      originalMatchPairRightImages.value[index] = rightImage.presigned_url;
+      pairRightImageLoading.value[index] = true;
+      pairRightImageIds.value[index] = pair.right_image_id;
+    }
   }
 }
 

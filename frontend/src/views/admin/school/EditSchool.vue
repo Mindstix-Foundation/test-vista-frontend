@@ -504,36 +504,35 @@ const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
     isSubmitting.value = true
     operationResults.value = []
 
-    // Get current school data to compare changes
-    const { data: currentSchool } = await axiosInstance.get(`/schools/${schoolId.value}`)
+    // Use the new unified upsert API endpoint
+    const upsertPayload = {
+      id: parseInt(schoolId.value), // Include the school ID for update operation
+      name: updatedData.name,
+      board_id: updatedData.board_id,
+      address: {
+        street: updatedData.address.street,
+        postal_code: updatedData.address.postal_code,
+        city_id: updatedData.address.city_id,
+      },
+      principal_name: updatedData.principal_name,
+      email: updatedData.email,
+      contact_number: updatedData.contact_number,
+      alternate_contact_number: updatedData.alternate_contact_number ?? null,
+      instruction_medium_ids: updatedData.mediums,
+      standard_ids: updatedData.standards,
+    }
+
+    const { data: updatedSchool } = await axiosInstance.post('/schools/upsert', upsertPayload)
+    console.log('School updated successfully:', updatedSchool)
+
+    const toastStore = useToastStore()
+    toastStore.showToast({
+      type: 'success',
+      title: 'Success',
+      message: `School "${updatedData.name}" has been updated successfully.`,
+    })
     
-    // Check what has changed
-    const { hasAddressChanged, hasSchoolDetailsChanged } = checkChanges(currentSchool, updatedData)
-    console.log('Changes detected:', { hasAddressChanged, hasSchoolDetailsChanged })
-
-    // Update each component if changed
-    if (hasAddressChanged) {
-      await updateSchoolAddress(updatedData.address, updatedData.address_id)
-    }
-
-    if (hasSchoolDetailsChanged) {
-      await updateSchoolDetails(updatedData, schoolId.value)
-    }
-
-    // Update mediums and standards in parallel
-    await Promise.all([
-      updateMediums(currentSchool, updatedData.mediums, schoolId.value),
-      updateStandards(currentSchool, updatedData.standards, schoolId.value)
-    ])
-
-    // Show results or navigate back
-    if (operationResults.value.length > 0) {
-      console.log('Showing operation results modal with:', operationResults.value)
-      operationResultModal?.show()
-    } else {
-      console.log('No changes detected, navigating back')
-      router.push('/admin/school')
-    }
+    router.push('/admin/school')
   } catch (error) {
     console.error('Error updating school:', error)
     const toastStore = useToastStore()

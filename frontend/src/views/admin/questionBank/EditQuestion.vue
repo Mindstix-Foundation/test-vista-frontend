@@ -40,6 +40,9 @@
         :initialOptionImageIds="initialOptionImageIds"
         :useSearchableDropdown="true"
         @update="handleUpdateQuestion"
+        @openQuestionImageModal="openQuestionImageModal"
+        @openOptionImageModal="openOptionImageModal"
+        ref="questionFormComponent"
       />
     </div>
 
@@ -52,6 +55,32 @@
         <span class="visually-hidden">Saving...</span>
       </output>
     </div>
+
+    <!-- Enhanced Image Upload Modals -->
+    <ImageUploadEditor
+      :isVisible="showQuestionImageModal"
+      :questionText="currentQuestionData.questionText"
+      :questionNumber="1"
+      imageType="question"
+      :questionType="currentQuestionData.questionType"
+      :options="currentQuestionData.options"
+      @close="() => showQuestionImageModal = false"
+      @cancelled="handleQuestionImageCancelled"
+      @imageUploaded="handleQuestionImageUploaded"
+    />
+
+    <ImageUploadEditor
+      :isVisible="showOptionImageModal"
+      :questionText="currentQuestionData.questionText"
+      :questionNumber="1"
+      imageType="option"
+      :questionType="currentQuestionData.questionType"
+      :options="currentQuestionData.options"
+      :optionIndex="currentOptionIndex"
+      @close="() => showOptionImageModal = false"
+      @cancelled="handleOptionImageCancelled"
+      @imageUploaded="handleOptionImageUploaded"
+    />
   </div>
 </template>
 
@@ -61,6 +90,8 @@ import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
 import { useToastStore } from '@/store/toast'
+import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
+import imageService from '@/services/imageService'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -178,6 +209,21 @@ const initialCorrectOption = ref<number>(-1)
 const initialOptionImages = ref<string[]>([])
 const initialOptionImageIds = ref<(number | null)[]>([])
 
+// Add new state for image upload modals
+const showQuestionImageModal = ref(false)
+const showOptionImageModal = ref(false)
+const currentOptionIndex = ref<number>(-1)
+const questionFormComponent = ref<any>(null)
+const currentQuestionData = ref<{
+  questionText: string
+  questionType: string
+  options?: string[]
+}>({
+  questionText: '',
+  questionType: '',
+  options: []
+})
+
 // Data from localStorage
 const questionBankData = ref({
   boardId: '',
@@ -200,32 +246,11 @@ const existingMcqOptions = ref<ExistingMCQOption[]>([])
 const existingMatchPairs = ref<MatchPairData[]>([])
 
 // Add helper functions for image handling
-async function uploadImage(file: File): Promise<number | null> {
+async function uploadImage(file: File, customWidth?: number, customHeight?: number): Promise<number | null> {
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const uploadResponse = await axiosInstance.post(
-      '/images/upload',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-
-    const imageCreateRequest = {
-      image_url: uploadResponse.data.image_url,
-      original_filename: uploadResponse.data.original_filename ?? file.name,
-      file_size: uploadResponse.data.file_size ?? file.size,
-      file_type: uploadResponse.data.file_type ?? file.type,
-      width: uploadResponse.data.width,
-      height: uploadResponse.data.height
-    };
-
-    const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-    return imageResponse.data.id;
+    // Use the imageService which now supports custom dimensions
+    const response = await imageService.uploadImage(file, customWidth, customHeight);
+    return response.id;
   } catch (error: unknown) {
     console.error('Error uploading image:', error);
     const axiosError = error as AxiosErrorResponse;
@@ -258,28 +283,41 @@ async function processQuestionImage(
   existingImageId: NullableId, 
   imageFile: File | undefined
 ): Promise<number | null> {
+  console.log('=== DEBUG: processQuestionImage ===');
+  console.log('deleteImageFlag:', deleteImageFlag);
+  console.log('existingImageId:', existingImageId);
+  console.log('imageFile:', imageFile);
+  
   // Handle image deletion if requested
   if (deleteImageFlag && existingImageId) {
+    console.log('Deleting existing image:', existingImageId);
     await deleteImageById(existingImageId);
     return null;
   } 
   
   // Handle image replacement
   if (imageFile) {
+    console.log('Processing new image file:', imageFile.name);
     // Delete old image if exists
     if (existingImageId) {
+      console.log('Deleting old image before upload:', existingImageId);
       await deleteImageById(existingImageId);
     }
     
     // Upload new image
-    return await uploadImage(imageFile);
+    console.log('Uploading new image...');
+    const newImageId = await uploadImage(imageFile);
+    console.log('New image uploaded with ID:', newImageId);
+    return newImageId;
   } 
   
   // Keep existing image
   if (existingImageId) {
+    console.log('Keeping existing image:', existingImageId);
     return existingImageId;
   }
   
+  console.log('No image to process, returning null');
   return null;
 }
 
@@ -585,6 +623,11 @@ async function handleUpdateQuestion(payload: {
     // Show loading overlay
     isSubmitting.value = true;
 
+    console.log('=== DEBUG: handleUpdateQuestion payload ===');
+    console.log('imageFile:', payload.imageFile);
+    console.log('deleteImage:', payload.deleteImage);
+    console.log('existingImageId:', payload.existingImageId);
+
     // Validate question ID
     if (!payload.questionId) {
       toastStore.showToast({
@@ -617,14 +660,23 @@ async function handleUpdateQuestion(payload: {
     }
 
     // Process main question image
+    console.log('=== DEBUG: Before processQuestionImage ===');
+    console.log('deleteImage:', payload.deleteImage);
+    console.log('existingImageId:', payload.existingImageId);
+    console.log('imageFile:', payload.imageFile);
+    
     const imageId = await processQuestionImage(
       payload.deleteImage, 
       payload.existingImageId, 
       payload.imageFile
     );
     
+    console.log('=== DEBUG: After processQuestionImage ===');
+    console.log('imageId result:', imageId);
+    
     if (imageId === null && payload.imageFile) {
       // Critical error in image upload
+      console.error('Critical error: imageId is null but imageFile was provided');
       isSubmitting.value = false;
       return;
     }
@@ -639,6 +691,9 @@ async function handleUpdateQuestion(payload: {
       questionTypeId: payload.questionTypeId,
       additionalData: payload.additionalData
     });
+
+    console.log('=== DEBUG: Final update request ===');
+    console.log('updateQuestionRequest:', JSON.stringify(updateQuestionRequest, null, 2));
 
     // Process MCQ options if applicable
     if (payload.additionalData.options && 
@@ -667,6 +722,10 @@ async function handleUpdateQuestion(payload: {
         payload.optionImageDeleteFlags
       );
     }
+
+    console.log('=== DEBUG: Final request being sent ===');
+    console.log('PUT /questions/edit/' + payload.questionId);
+    console.log('Request body:', JSON.stringify(updateQuestionRequest, null, 2));
 
     // Make a single API call to update the question and all related data
     await axiosInstance.put(`/questions/edit/${payload.questionId}`, updateQuestionRequest);
@@ -826,6 +885,61 @@ onMounted(async () => {
     router.push({ name: 'questionDashboard' });
   }
 });
+
+// Add methods for ImageUploadEditor
+function openQuestionImageModal(data: { questionText: string; questionType: string; options?: string[] }) {
+  currentQuestionData.value = data
+  showQuestionImageModal.value = true
+}
+
+function openOptionImageModal(data: { questionText: string; questionType: string; options?: string[]; optionIndex: number }) {
+  currentQuestionData.value = data
+  currentOptionIndex.value = data.optionIndex
+  showOptionImageModal.value = true
+}
+
+function handleQuestionImageUploaded(imageData: any) {
+  // Handle uploaded question image
+  console.log('Question image uploaded:', imageData);
+  showQuestionImageModal.value = false;
+  
+  // Pass the uploaded image file to the QuestionFormComponent
+  if (questionFormComponent.value && imageData.file) {
+    // Call a method on the QuestionFormComponent to set the image
+    questionFormComponent.value.setUploadedQuestionImage(imageData.file, imageData.id);
+  }
+}
+
+function handleOptionImageUploaded(imageData: any) {
+  // Handle uploaded option image
+  console.log('Option image uploaded for index:', currentOptionIndex.value, imageData);
+  showOptionImageModal.value = false;
+  
+  // Pass the uploaded image file to the QuestionFormComponent
+  if (questionFormComponent.value && imageData.file && currentOptionIndex.value >= 0) {
+    // Call a method on the QuestionFormComponent to set the option image
+    questionFormComponent.value.setUploadedOptionImage(imageData.file, currentOptionIndex.value, imageData.id);
+  }
+}
+
+function handleQuestionImageCancelled() {
+  // Handle cancelled question image
+  console.log('Question image cancelled')
+  showQuestionImageModal.value = false
+  
+  // Emit a custom event that the QuestionFormComponent can listen to
+  window.dispatchEvent(new CustomEvent('clearQuestionImage'))
+}
+
+function handleOptionImageCancelled() {
+  console.log('Option image upload cancelled');
+  showOptionImageModal.value = false;
+  // Emit custom event with optionIndex
+  const event = new CustomEvent('clearOptionImage', { 
+    detail: { optionIndex: currentOptionIndex.value } 
+  });
+  window.dispatchEvent(event);
+}
 </script>
 
 <style scoped>

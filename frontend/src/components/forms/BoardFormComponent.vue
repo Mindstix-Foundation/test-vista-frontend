@@ -351,26 +351,55 @@ const fetchLocationDetails = async (
   }
 }
 
+const fetchCurrentBoardData = async (boardId: number) => {
+  // ✅ Use single board-management endpoint instead of 3 separate API calls
+  const { data: boardData } = await axiosInstance.get(`/board-management/${boardId}`)
+  
+  return {
+    mediums: boardData.instruction_mediums,
+    standards: boardData.standards,
+    subjects: boardData.subjects,
+    board: boardData.board,
+    address: boardData.address
+  }
+}
+
 const fetchBoardData = async (boardId: number) => {
   try {
     isLoading.value = true
     console.log('Fetching board data for ID:', boardId)
 
-    const { data: boardData } = await axiosInstance.get(`/boards/${boardId}`)
+    // ✅ Use the optimized board-management endpoint instead of /boards/{id}
+    const { data: boardData } = await axiosInstance.get(`/board-management/${boardId}`)
     console.log('Board data received:', boardData)
+
+    // ✅ Emit the board data to parent component (EditBoard.vue)
+    emit('boardDataLoaded', boardData)
+
+    // ✅ Transform board-management response structure
+    const transformedData = {
+      id: boardData.board.id,
+      name: boardData.board.name,
+      abbreviation: boardData.board.abbreviation,
+      address_id: boardData.board.address_id,
+      address: boardData.address,
+      instruction_mediums: boardData.instruction_mediums,
+      standards: boardData.standards,
+      subjects: boardData.subjects,
+    }
 
     // Update form with board data, ensuring proper type conversion
     form.value = {
-      name: boardData.name,
-      abbreviation: boardData.abbreviation,
+      name: transformedData.name,
+      abbreviation: transformedData.abbreviation,
       address: {
-        street: boardData.address?.street || '',
-        postal_code: boardData.address?.postal_code || '',
-        city_id: boardData.address?.city_id ? Number(boardData.address.city_id) : 0,
-        state_id: boardData.address?.city?.state_id ? Number(boardData.address.city.state_id) : 0,
-        country_id: boardData.address?.city?.state?.country_id ? Number(boardData.address.city.state.country_id) : 0,
+        street: transformedData.address?.street || '',
+        postal_code: transformedData.address?.postal_code || '',
+        city_id: transformedData.address?.city_id ? Number(transformedData.address.city_id) : 0,
+        state_id: transformedData.address?.city?.state_id ? Number(transformedData.address.city.state_id) : 0,
+        country_id: transformedData.address?.city?.state?.country_id ? Number(transformedData.address.city.state.country_id) : 0,
       },
-      mediums: boardData.instruction_mediums.map(
+      mediums: transformedData.instruction_mediums.map(
         (m: { id: number; instruction_medium: string }) => ({
           id: m.id,
           name: m.instruction_medium,
@@ -378,13 +407,13 @@ const fetchBoardData = async (boardId: number) => {
         }),
       ),
       // Use standards already sorted by sequence_number from API
-      standards: boardData.standards.map((s: { id: number; name: string; sequence_number: number }) => ({
+      standards: transformedData.standards.map((s: { id: number; name: string; sequence_number: number }) => ({
         id: s.id,
         name: s.name,
         board_id: Number(boardId),
         sequence_number: Number(s.sequence_number) // Ensure it's a number
       })).sort((a, b) => Number(a.sequence_number ?? 0) - Number(b.sequence_number ?? 0)),
-      subjects: boardData.subjects.map((s: { id: number; name: string }) => ({
+      subjects: transformedData.subjects.map((s: { id: number; name: string }) => ({
         id: s.id,
         name: s.name,
         board_id: Number(boardId),
@@ -557,27 +586,37 @@ const handleSubmit = async () => {
   }
 }
 
-const fetchCurrentBoardData = async (boardId: number) => {
-  const [{ data: mediums }, { data: standards }, { data: subjects }] = await Promise.all([
-    axiosInstance.get(`/instruction-mediums/board/${boardId}`),
-    axiosInstance.get(`/standards/board/${boardId}`),
-    axiosInstance.get(`/subjects/board/${boardId}`),
-  ])
-  return { mediums, standards, subjects }
-}
-
 const compareLocationIds = async (
   currentId: number,
   newId: number,
   type: 'city' | 'state' | 'country',
+  locationData?: any // ✅ Pass location data from board-management response
 ): Promise<string | null> => {
   if (currentId === newId) return null
   if (type !== 'city' && (!currentId || !newId)) return null
 
-  const [oldName, newName] = await Promise.all([
-    fetchLocationDetails(currentId, type),
-    fetchLocationDetails(newId, type),
-  ])
+  // ✅ Use location data from board-management response when available
+  let oldName = ''
+  let newName = ''
+  
+  if (locationData) {
+    // Extract names from nested location data
+    if (type === 'city') {
+      oldName = locationData.city?.name || ''
+    } else if (type === 'state') {
+      oldName = locationData.city?.state?.name || ''
+    } else if (type === 'country') {
+      oldName = locationData.city?.state?.country?.name || ''
+    }
+  }
+  
+  // If we don't have the old name from location data, fetch it
+  if (!oldName) {
+    oldName = await fetchLocationDetails(currentId, type)
+  }
+  
+  // Always fetch new name since user is changing it
+  newName = await fetchLocationDetails(newId, type)
 
   return `${type.charAt(0).toUpperCase() + type.slice(1)}: ${oldName} → ${newName}`
 }
@@ -595,10 +634,11 @@ const compareAddressChanges = async (
     changes.push(`Postal Code: ${currentAddress.postal_code} → ${formAddress.postal_code}`)
   }
 
+  // ✅ Pass currentAddress as location data to reduce API calls
   const locationChanges = await Promise.all([
-    compareLocationIds(currentAddress.city_id, formAddress.city_id, 'city'),
-    compareLocationIds(currentAddress.state_id, formAddress.state_id, 'state'),
-    compareLocationIds(currentAddress.country_id, formAddress.country_id, 'country'),
+    compareLocationIds(currentAddress.city_id, formAddress.city_id, 'city', currentAddress),
+    compareLocationIds(currentAddress.state_id, formAddress.state_id, 'state', currentAddress),
+    compareLocationIds(currentAddress.country_id, formAddress.country_id, 'country', currentAddress),
   ])
 
   return [...changes, ...locationChanges.filter((change): change is string => change !== null)]
@@ -708,19 +748,15 @@ const calculateChanges = async () => {
 
   const boardId = parseInt(props.boardId)
 
-  // Get current data
-  const { mediums, standards, subjects } = await fetchCurrentBoardData(boardId)
-  const { data: currentBoard } = await axiosInstance.get(`/boards/${boardId}`)
+  // ✅ Get all current data with single API call instead of multiple calls
+  const { mediums, standards, subjects, board: currentBoard, address: currentAddress } = await fetchCurrentBoardData(boardId)
 
   // Compare basic board info
   const boardChanges = compareBasicBoardInfo(currentBoard, form.value, boardId)
   changes.value.push(...boardChanges)
 
-  // Compare address if it exists
-  if (currentBoard.address_id) {
-    const { data: currentAddress } = await axiosInstance.get(
-      `/addresses/${currentBoard.address_id}`,
-    )
+  // ✅ Compare address using data from single API call (no separate /addresses call needed)
+  if (currentAddress) {
     const addressChanges = await compareAddressChanges(currentAddress, form.value.address)
 
     if (addressChanges.length > 0) {
@@ -729,7 +765,7 @@ const calculateChanges = async () => {
         message: 'Board address details modified:\n' + addressChanges.join('\n'),
         entity: 'board',
         data: {
-          old: { id: currentBoard.address_id, name: 'Previous Address' },
+          old: { id: currentAddress.id, name: 'Previous Address' },
           new: { name: 'New Address' },
         },
       })
@@ -746,18 +782,18 @@ const calculateChanges = async () => {
     // Get only standards that exist in both current and form
     const commonStandardIds = typedStandards
       .filter(current => validFormStandards.some(form => form.id === current.id))
-          .map(item => item.id)
+      .map(item => item.id)
 
     if (commonStandardIds.length > 1) {
       // Get the order of these standards in the form
       const formOrder = validFormStandards
         .filter(item => commonStandardIds.includes(item.id as number))
-          .map(item => item.id)
+        .map(item => item.id)
 
       // Get the order of these standards in the current data
       const currentOrder = typedStandards
         .filter(item => commonStandardIds.includes(item.id))
-          .map(item => item.id)
+        .map(item => item.id)
 
       // Check if the order has changed
       const orderChanged = !arraysHaveSameOrder(currentOrder, formOrder)
@@ -783,7 +819,7 @@ const calculateChanges = async () => {
     })
   }
 
-  // Compare related items
+  // ✅ Compare related items using data from single API call
   changes.value.push(
     ...compareItems(mediums, form.value.mediums, 'medium'),
     ...compareItems(standards, form.value.standards, 'standard'),
@@ -799,18 +835,16 @@ const handleAddressUpdate = async (formattedAddress: {
 }): Promise<number> => {
   if (!props.isEditMode || !props.boardId) return 0;
   
-  const { data: boardData } = await axiosInstance.get(`/boards/${props.boardId}`);
-  const addressId = boardData.address_id;
+  // ✅ Use board-management endpoint instead of /boards/{id}
+  const { data: boardData } = await axiosInstance.get(`/board-management/${props.boardId}`);
+  const addressId = boardData.board.address_id;
   
   if (!addressId) return 0;
   
-  console.log('Updating address with data:', formattedAddress);
-  const { data: updatedAddress } = await axiosInstance.put(
-    `/addresses/${addressId}`,
-    formattedAddress,
-  );
-  console.log('Address updated successfully:', updatedAddress);
-  return updatedAddress.id;
+  // ✅ NO LONGER MAKING SEPARATE ADDRESS API CALL
+  // The board-management endpoint will handle the address update
+  console.log('Address will be updated via board-management endpoint:', formattedAddress);
+  return addressId; // Return existing address ID
 }
 
 // Helper function to prepare form data for submission
@@ -877,10 +911,10 @@ const confirmAndSubmit = async () => {
       city_id: parseInt(String(form.value.address.city_id)),
     }
 
-    // Handle address update and get addressId
+    // Get the existing address ID (no separate update needed)
     const addressId = await handleAddressUpdate(formattedAddress);
     
-    // Prepare and emit form data
+    // Prepare and emit form data - the board-management endpoint will handle all updates
     emit('submit', prepareFormData(addressId, formattedAddress));
   } 
   catch (error) {
@@ -892,13 +926,16 @@ const confirmAndSubmit = async () => {
 }
 
 // Define emits with the correct type
-const emit = defineEmits<(e: 'submit', data: {
-  address: CreateAddressDto
-  board: CreateBoardDto
-  mediums: CreateInstructionMediumDto[]
-  standards: CreateStandardDto[]
-  subjects: CreateSubjectDto[]
-}) => void>()
+const emit = defineEmits<{
+  (e: 'submit', data: {
+    address: CreateAddressDto
+    board: CreateBoardDto
+    mediums: CreateInstructionMediumDto[]
+    standards: CreateStandardDto[]
+    subjects: CreateSubjectDto[]
+  }): void
+  (e: 'boardDataLoaded', data: any): void // ✅ New emit for board data
+}>()
 
 const goBack = () => {
   router.push('/admin/board')
