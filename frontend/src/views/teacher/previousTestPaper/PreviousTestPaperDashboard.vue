@@ -143,10 +143,10 @@
                   </a>
                   <button 
                     class="btn btn-outline-danger ms-auto delete-btn" 
-                    disabled
+                    @click="confirmDeleteTestPaper(paper)"
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Delete functionality coming soon"
+                    title="Delete test paper"
                   >
                     <i class="bi bi-trash"></i> Delete
                   </button>
@@ -233,6 +233,47 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteConfirmModalLabel">
+              <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+              Confirm Delete
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-3">Are you sure you want to delete this test paper?</p>
+            <div v-if="paperToDelete" class="alert alert-light">
+              <strong>{{ paperToDelete.name }}</strong><br>
+              <small class="text-muted">
+                Pattern: {{ paperToDelete.pattern?.pattern_name || 'N/A' }} | 
+                Created: {{ formatDate(paperToDelete.created_at) }}
+              </small>
+            </div>
+            <p class="text-danger mb-0">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              <strong>This action cannot be undone.</strong>
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button 
+              type="button" 
+              class="btn btn-danger" 
+              @click="deleteTestPaper"
+              :disabled="isDeleting"
+            >
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              {{ isDeleting ? 'Deleting...' : 'Delete Test Paper' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification for status messages -->
     <ToastNotification
       :show="showToast"
@@ -276,6 +317,11 @@ const isLoading = ref(false);
 const currentPdfUrl = ref('');
 const currentPaperMediums = ref([]);
 let pdfModal = null;
+
+// Delete Modal state
+const paperToDelete = ref(null);
+const isDeleting = ref(false);
+let deleteModal = null;
 
 // Test papers data - will be populated from API
 const testPapers = ref([]);
@@ -458,6 +504,62 @@ const viewPDF = (pdfUrl, paper) => {
   }
 };
 
+// Confirm delete test paper
+const confirmDeleteTestPaper = (paper) => {
+  paperToDelete.value = paper;
+  
+  // Initialize delete modal if it doesn't exist
+  if (!deleteModal) {
+    const modalElement = document.getElementById('deleteConfirmModal');
+    if (modalElement) {
+      deleteModal = new Modal(modalElement);
+    }
+  }
+  
+  if (deleteModal) {
+    deleteModal.show();
+  }
+};
+
+// Delete test paper
+const deleteTestPaper = async () => {
+  if (!paperToDelete.value) return;
+  
+  try {
+    isDeleting.value = true;
+    
+    // Make API call to delete the test paper
+    await axiosInstance.delete(`/test-paper-html/${paperToDelete.value.id}`);
+    
+    // Remove the deleted paper from the local array
+    const index = testPapers.value.findIndex(paper => paper.id === paperToDelete.value.id);
+    if (index !== -1) {
+      testPapers.value.splice(index, 1);
+    }
+    
+    // Close the modal
+    if (deleteModal) {
+      deleteModal.hide();
+    }
+    
+    // Show success toast
+    showSuccessToast('Success', 'Test paper deleted successfully.');
+    
+    // Reset state
+    paperToDelete.value = null;
+    
+  } catch (error) {
+    console.error('Error deleting test paper:', error);
+    
+    // Show error message
+    const errorMessage = error.response?.data?.message || 'Failed to delete test paper. Please try again.';
+    showErrorToast('Error', errorMessage);
+    
+  } finally {
+    isDeleting.value = false;
+  }
+};
+
 // Search test papers (debounced in real implementation)
 const searchTestPapers = () => {
   // The computed property handles filtering
@@ -473,6 +575,13 @@ const showErrorToast = (title: string, message: string) => {
   toastTitle.value = title;
   toastMessage.value = message;
   toastType.value = 'danger';
+  showToast.value = true;
+};
+
+const showSuccessToast = (title: string, message: string) => {
+  toastTitle.value = title;
+  toastMessage.value = message;
+  toastType.value = 'success';
   showToast.value = true;
 };
 

@@ -433,8 +433,7 @@
               <button
                 type="button"
                 class="btn btn-dark"
-                @click="router.push(`/admin/board/${selectedBoard?.id}/edit`)"
-                data-bs-dismiss="modal"
+                @click="navigateToEdit"
               >
                 Edit
               </button>
@@ -1008,6 +1007,16 @@ const handleSortChange = () => {
   currentPage.value = 1 // Reset to first page when changing sort
   fetchBoards()
   updateUrlParams()
+}
+
+const navigateToEdit = () => {
+  // Close the board info modal first
+  cleanupModals()
+
+  // Navigate to edit page with the board ID as a query parameter
+  router.push({
+    path: `/admin/board/${selectedBoard.value?.id}/edit`,
+  })
 }
 </script>
 

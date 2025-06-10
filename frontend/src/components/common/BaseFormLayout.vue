@@ -17,7 +17,7 @@
     <div id="form-container" class="row justify-content-center">
       <form 
         @submit.prevent="onSubmit" 
-        @keydown.enter.prevent="handleEnterKey"
+        @keydown.enter="handleEnterKey"
         novalidate
       >
         <div class="row g-3 justify-content-center">
@@ -63,11 +63,22 @@ const onClose = () => {
 }
 
 const handleEnterKey = (event: KeyboardEvent) => {
-  // Only prevent default if the Enter key was pressed directly on the form
-  // (not bubbled up from a properly handled input)
-  if (event.target === event.currentTarget) {
-    event.preventDefault()
+  const target = event.target as HTMLElement
+  
+  // If Enter is pressed on the submit button, allow it to proceed
+  if (target.type === 'submit') {
+    return // Let the button handle the submit
   }
+  
+  // If Enter is pressed on any input or textarea, prevent form submission
+  // to allow individual components to handle Enter key navigation
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+    event.preventDefault()
+    return
+  }
+  
+  // For any other element, prevent default to avoid unwanted submissions
+  event.preventDefault()
 }
 </script>
 

@@ -7,7 +7,7 @@
       <div class="row justify-content-center align-items-center my-1">
         <div class="col col-12 col-sm-5">
           <p class="text-muted text-start fs-5 m-0">
-            <span class="col-12 col-md-auto">{{ selectedBoard?.name }} |</span>
+            <span class="col-12 col-md-auto">{{ selectedBoard?.name }} | </span>
             <span class="col-12 col-md-auto"> {{ selectedMedium?.instruction_medium }}</span>
           </p>
           <h3 class="fw-bolder text-start text-dark m-0">Standard {{ selectedStandard?.name }}</h3>

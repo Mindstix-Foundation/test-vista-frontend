@@ -2098,6 +2098,14 @@ const handleSuccessResponse = (data: TestPaperAllocation) => {
 
 // Helper function to update chapter marks from distribution data
 const updateChapterMarksFromDistribution = (data: TestPaperAllocation) => {
+  // Only set the flag if it's not already set by another function
+  const shouldManageFlag = !pendingAllocationUpdate.value;
+  
+  if (shouldManageFlag) {
+    // Temporarily set flag to prevent the chapters watcher from triggering allocation API
+    pendingAllocationUpdate.value = true;
+  }
+  
   // Update chapter marks
   if (data.chapterMarks) {
     chapters.value.forEach(chapter => {
@@ -2115,6 +2123,14 @@ const updateChapterMarksFromDistribution = (data: TestPaperAllocation) => {
   // Update question selections based on the new allocation
   if (data.sectionAllocations) {
     updateSelectedChaptersFromAllocation();
+  }
+  
+  // Only reset the flag if we set it in this function
+  if (shouldManageFlag) {
+    // Reset the pending flag after a short delay to allow other operations
+    setTimeout(() => {
+      pendingAllocationUpdate.value = false;
+    }, 100);
   }
 };
 
@@ -2155,8 +2171,7 @@ const updateSelectedChaptersFromAllocation = () => {
   
   console.log('Updating selected chapters from allocation');
   
-  // Temporarily set flag to prevent watch handler from triggering API calls
-  pendingAllocationUpdate.value = true;
+  // Note: pendingAllocationUpdate flag is managed by the calling function
   
   // Process each section from the allocation
   testPaperAllocation.value.sectionAllocations.forEach((section: SectionAllocation) => {
@@ -2171,6 +2186,7 @@ const updateSelectedChaptersFromAllocation = () => {
             const key = `${section.sectionId}-${questionIndex}`;
             
             // Update the selected chapter for this section and question
+            // DIRECTLY update selectedChapters without triggering updateSelectedChapter
             selectedChapters.value[key] = allocation.chapterId;
             console.log(`Updated section ${section.sectionId}, question ${questionIndex} to chapter ${allocation.chapterId} (${allocation.chapterName})`);
           });
@@ -2181,9 +2197,6 @@ const updateSelectedChaptersFromAllocation = () => {
   
   // Update used questions count
   updateUsedQuestionsCount();
-  
-  // Reset the pending flag
-  pendingAllocationUpdate.value = false;
   
   // Trigger UI refresh for the pattern card
   setTimeout(() => {

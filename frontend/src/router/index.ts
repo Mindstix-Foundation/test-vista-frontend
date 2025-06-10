@@ -291,30 +291,64 @@ router.afterEach(() => {
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  const isAuthenticated = await authStore.checkAuth()
-  const userRole = authStore.userRole
-
-  // Check if route requires authentication
-  if (to.meta.requiresAuth) {
-    if (!isAuthenticated) {
-      // Not authenticated, redirect to login
-      next({ name: 'login', query: { redirect: to.fullPath } })
-      return
-    }
-
-    // Check role requirements
-    if (to.meta.roles && userRole && !to.meta.roles.includes(userRole)) {
-      // User's role is not authorized
-      next({ name: 'login' })
-      return
-    }
-  } else if (isAuthenticated && publicRoutes.includes(to.path)) {
-    // If user is authenticated and tries to access public routes like login
-    next({ path: '/admin/board' })
+  
+  // Prevent infinite loops by checking if we're already navigating to the same route
+  if (to.path === from.path && to.query === from.query) {
+    next()
     return
   }
+  
+  // Add a flag to prevent multiple simultaneous auth checks
+  if ((window as any).authCheckInProgress) {
+    next()
+    return
+  }
+  
+  try {
+    (window as any).authCheckInProgress = true
+    const isAuthenticated = await authStore.checkAuth()
+    const userRole = authStore.userRole
 
-  next()
+    // Check if route requires authentication
+    if (to.meta.requiresAuth) {
+      if (!isAuthenticated) {
+        // Not authenticated, redirect to login
+        next({ name: 'login', query: { redirect: to.fullPath } })
+        return
+      }
+
+      // Check role requirements
+      if (to.meta.roles && userRole && !to.meta.roles.includes(userRole)) {
+        // User's role is not authorized
+        next({ name: 'login' })
+        return
+      }
+    } else if (isAuthenticated && publicRoutes.includes(to.path)) {
+      // If user is authenticated and tries to access public routes like login
+      // Check user role and redirect appropriately
+      if (userRole === 'ADMIN') {
+        next({ path: '/admin/board' })
+      } else if (userRole === 'TEACHER') {
+        next({ path: '/teacher/home' })
+      } else {
+        next({ path: '/admin/board' })
+      }
+      return
+    }
+
+    next()
+  } catch (error) {
+    console.error('Navigation guard error:', error)
+    // Clear auth on error and redirect to login
+    authStore.clearAuth()
+    if (to.path !== '/login') {
+      next({ name: 'login' })
+    } else {
+      next()
+    }
+  } finally {
+    (window as any).authCheckInProgress = false
+  }
 })
 
 export default router

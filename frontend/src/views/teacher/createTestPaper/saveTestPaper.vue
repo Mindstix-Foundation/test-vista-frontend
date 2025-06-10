@@ -803,11 +803,12 @@ const getRequiredData = async () => {
   if (route.query.weightages) {
     try {
       weightages = JSON.parse(decodeURIComponent(route.query.weightages as string));
-      // Ensure weightages are numbers
-      if (!Array.isArray(weightages) || !weightages.every(w => typeof w === 'number')) {
-        console.error('Invalid weightages format:', weightages);
+      // Ensure weightages is an array (can be nested)
+      if (!Array.isArray(weightages)) {
+        console.error('Invalid weightages format - not an array:', weightages);
         throw new Error('Invalid weightages data format');
       }
+      console.log('Parsed weightages structure:', JSON.stringify(weightages));
     } catch (error) {
       console.error('Error parsing weightages:', error);
       throw new Error('Invalid weightages data format');
@@ -816,7 +817,7 @@ const getRequiredData = async () => {
   
   console.log('Parsed data for API call:', { userId, schoolId, chapters, weightages });
   
-  // Validate required data
+  // Validate required data (we'll validate the flattened arrays later)
   if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
     throw new Error('Missing required data for saving test paper');
   }
@@ -918,11 +919,33 @@ const getInstructionMediums = () => {
     : [1];
 };
 
+// Helper function to flatten deeply nested arrays
+const flattenArray = (arr: any[]): any[] => {
+  const result: any[] = [];
+  
+  const flatten = (item: any) => {
+    if (Array.isArray(item)) {
+      item.forEach(flatten);
+    } else {
+      result.push(item);
+    }
+  };
+  
+  flatten(arr);
+  return result;
+};
+
 // Helper function to extract chapter ID from various formats
-const extractChapterId = (chapter: { id?: number; chapterId?: number } | number): number | null => {
+const extractChapterId = (chapter: { id?: number; chapterId?: number } | number | string): number | null => {
   // Check if chapter is already a simple number
   if (typeof chapter === 'number') {
     return chapter;
+  }
+  
+  // Check if chapter is a string that can be converted to number
+  if (typeof chapter === 'string') {
+    const parsed = parseInt(chapter, 10);
+    return isNaN(parsed) ? null : parsed;
   }
   
   // For object types, check for id or chapterId properties
@@ -954,10 +977,6 @@ const submitTestPaperData = async (
 ) => {
   const formData = new FormData();
   
-  // Add required parameters
-  formData.append('userId', userId.toString());
-  formData.append('schoolId', schoolId.toString());
-  
   // Add test paper metadata
   formData.append('name', paperTitle.value);
   formData.append('exam_time', testDuration.value);
@@ -965,18 +984,45 @@ const submitTestPaperData = async (
   formData.append('test_paper_origin_type', 'board');
   
   // Extract and process chapter IDs
-  const chapterIds = chapters.map(extractChapterId).filter(Boolean);
+  console.log('Raw chapters data:', chapters);
+  console.log('Raw weightages data:', weightages);
+  
+  // Flatten the nested arrays first
+  const flattenedChapters = flattenArray(chapters);
+  const flattenedWeightages = flattenArray(weightages);
+  
+  console.log('Flattened chapters:', flattenedChapters);
+  console.log('Flattened weightages:', flattenedWeightages);
+  
+  const chapterIds = flattenedChapters.map(extractChapterId).filter(Boolean);
+  const processedWeightages = flattenedWeightages.map(w => typeof w === 'string' ? parseInt(w, 10) : w).filter(w => !isNaN(w));
+  
   console.log('Extracted chapter IDs:', chapterIds);
+  console.log('Processed weightages:', processedWeightages);
   
-  // Add chapters to form data
-  chapterIds.forEach(id => appendToFormData(formData, 'chapters', id));
+  // Validate that we have the same number of chapters and weightages
+  if (chapterIds.length !== processedWeightages.length) {
+    throw new Error(`Mismatch between chapters (${chapterIds.length}) and weightages (${processedWeightages.length})`);
+  }
   
-  // Add weightages to form data
-  weightages.forEach(weight => appendToFormData(formData, 'weightages', weight));
+  if (chapterIds.length === 0) {
+    throw new Error('No valid chapter IDs found after processing');
+  }
   
-  // Add instruction mediums to form data
+  // Add chapters as JSON string (the DTO will parse it)
+  formData.append('chapters', JSON.stringify(chapterIds));
+  
+  // Add weightages as JSON string (the DTO will parse it)
+  formData.append('weightages', JSON.stringify(processedWeightages));
+  
+  // Add instruction mediums as JSON string
   const mediumIds = availableMediums.value.map(medium => medium.id);
-  mediumIds.forEach(id => appendToFormData(formData, 'instruction_mediums', id));
+  formData.append('instruction_mediums', JSON.stringify(mediumIds));
+  
+  // Validate that we have files for each medium
+  if (pdfFiles.length !== mediumIds.length) {
+    throw new Error(`Mismatch between PDF files (${pdfFiles.length}) and instruction mediums (${mediumIds.length})`);
+  }
   
   // Add files - make sure they're in the same order as instruction_mediums
   pdfFiles.forEach(file => formData.append('files', file));
@@ -984,13 +1030,21 @@ const submitTestPaperData = async (
   // Log the form data for debugging
   console.log('Submitting test paper with the following data:', {
     userId, schoolId, name: paperTitle.value, examTime: testDuration.value,
-    patternId, chapters: chapterIds, weightages, mediums: mediumIds,
+    patternId, chapters: chapterIds, weightages: processedWeightages, mediums: mediumIds,
     files: pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type }))
   });
   
   try {
-    // Call the new API endpoint
-    const response = await axiosInstance.post('/test-paper-html/create', formData);
+    // Call the API endpoint with userId and schoolId as query parameters
+    const response = await axiosInstance.post(
+      `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`, 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     console.log('API response:', response.data);
     return response;
   } catch (error) {

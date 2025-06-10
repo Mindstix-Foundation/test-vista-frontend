@@ -11,7 +11,7 @@
       @focus="handleClick"
       @click="handleClick"
       @blur="handleBlur"
-      autocomplete="off"
+      autocomplete="new-password"
       autocorrect="off"
       autocapitalize="off"
       spellcheck="false"
@@ -21,6 +21,14 @@
       aria-autocomplete="none"
       data-ms-editor="false"
       data-address-field="no"
+      data-1p-ignore="true"
+      data-bwignore="true"
+      data-dashlane-ignore="true"
+      role="combobox"
+      aria-expanded="false"
+      aria-haspopup="listbox"
+      readonly
+      onfocus="this.removeAttribute('readonly')"
       required
       :disabled="disabled"
       @keydown="handleKeydown"
@@ -29,6 +37,7 @@
       class="dropdown-menu"
       :class="{ show: showDropdown }"
       style="position: absolute; width: 100%; z-index: 1000"
+      role="listbox"
     >
       <!-- Show "No data available" message when there are no items -->
       <div v-if="processedItems.length === 0" class="dropdown-item no-data-item">
@@ -46,7 +55,10 @@
         class="dropdown-item"
         :class="{ active: index === selectedIndex }"
         @click="selectItem(item)"
+        @mousedown.prevent
         type="button"
+        role="option"
+        :aria-selected="index === selectedIndex"
       >
         <slot name="item" :item="item">
           {{ getItemLabel(item) }}
@@ -229,22 +241,59 @@ const handleInput = () => {
   showDropdown.value = true
   selectedIndex.value = -1
   emit('update:modelValue', null)
+  
+  // Update aria-expanded attribute
+  nextTick(() => {
+    const input = dropdownRef.value?.querySelector('input')
+    if (input) {
+      input.setAttribute('aria-expanded', 'true')
+    }
+    
+    // Reset scroll position when filtering
+    const dropdownMenu = dropdownRef.value?.querySelector('.dropdown-menu')
+    if (dropdownMenu) {
+      dropdownMenu.scrollTop = 0
+    }
+  })
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
-  if (!showDropdown.value) return
+  // Always prevent default for arrow keys and enter to avoid browser interference
+  if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key)) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  if (!showDropdown.value && event.key !== 'Enter') return
 
   switch (event.key) {
     case 'ArrowDown':
-      event.preventDefault()
-      selectedIndex.value = Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)
+      if (!showDropdown.value) {
+        showDropdown.value = true
+        selectedIndex.value = filteredItems.value.length > 0 ? 0 : -1
+      } else {
+        selectedIndex.value = Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)
+      }
+      scrollToSelectedItem()
       break
     case 'ArrowUp':
-      event.preventDefault()
-      selectedIndex.value = Math.max(selectedIndex.value - 1, -1)
+      if (!showDropdown.value) {
+        showDropdown.value = true
+        selectedIndex.value = filteredItems.value.length > 0 ? filteredItems.value.length - 1 : -1
+      } else {
+        selectedIndex.value = Math.max(selectedIndex.value - 1, -1)
+      }
+      scrollToSelectedItem()
       break
     case 'Enter':
-      event.preventDefault()
+      if (!showDropdown.value) {
+        showDropdown.value = true
+        if (filteredItems.value.length > 0) {
+          selectedIndex.value = 0
+        }
+        return
+      }
+      
       if (selectedIndex.value >= 0 && filteredItems.value[selectedIndex.value]) {
         // If an item is selected in the dropdown, select that item
         selectItem(filteredItems.value[selectedIndex.value])
@@ -254,10 +303,45 @@ const handleKeydown = (event: KeyboardEvent) => {
       }
       break
     case 'Escape':
-      event.preventDefault()
       showDropdown.value = false
+      selectedIndex.value = -1
       break
   }
+}
+
+// Function to scroll the selected item into view
+const scrollToSelectedItem = () => {
+  nextTick(() => {
+    // Add a small delay to ensure DOM is fully updated
+    setTimeout(() => {
+      if (selectedIndex.value >= 0 && dropdownRef.value) {
+        const dropdownMenu = dropdownRef.value.querySelector('.dropdown-menu')
+        
+        if (dropdownMenu) {
+          // Get all dropdown items (buttons only, not the no-data divs)
+          const dropdownItems = dropdownMenu.querySelectorAll('button.dropdown-item')
+          const selectedItem = dropdownItems[selectedIndex.value] as HTMLElement
+          
+          if (selectedItem) {
+            // Calculate if we need to scroll
+            const itemHeight = selectedItem.offsetHeight
+            const menuScrollTop = dropdownMenu.scrollTop
+            const menuHeight = dropdownMenu.clientHeight
+            const itemOffsetTop = selectedItem.offsetTop
+            
+            // Check if item is below visible area
+            if (itemOffsetTop + itemHeight > menuScrollTop + menuHeight) {
+              dropdownMenu.scrollTop = itemOffsetTop + itemHeight - menuHeight
+            }
+            // Check if item is above visible area
+            else if (itemOffsetTop < menuScrollTop) {
+              dropdownMenu.scrollTop = itemOffsetTop
+            }
+          }
+        }
+      }
+    }, 10) // Small delay to ensure DOM is updated
+  })
 }
 
 const selectItem = (item: Item) => {
@@ -266,6 +350,14 @@ const selectItem = (item: Item) => {
   searchText.value = getItemLabel(item)
   showDropdown.value = false
   selectedIndex.value = -1
+
+  // Update aria-expanded attribute
+  nextTick(() => {
+    const input = dropdownRef.value?.querySelector('input')
+    if (input) {
+      input.setAttribute('aria-expanded', 'false')
+    }
+  })
 
   // Move focus to next field
   nextTick(() => {
@@ -306,6 +398,9 @@ const handleClickOutside = (event: MouseEvent) => {
     const input = dropdownRef.value.querySelector('input')
     if (input !== target) {
       showDropdown.value = false
+      selectedIndex.value = -1
+      // Update aria-expanded attribute
+      input?.setAttribute('aria-expanded', 'false')
     }
   }
 }
@@ -317,6 +412,10 @@ const handleBlur = (event: FocusEvent) => {
     const relatedTarget = event.relatedTarget as HTMLElement
     if (!dropdownRef.value?.contains(relatedTarget)) {
       showDropdown.value = false
+      selectedIndex.value = -1
+      // Update aria-expanded attribute
+      const input = dropdownRef.value?.querySelector('input')
+      input?.setAttribute('aria-expanded', 'false')
     }
   }, 200)
 }
@@ -347,6 +446,19 @@ const clearAutofillData = () => {
       // Then restore the original value
       setTimeout(() => {
         input.value = originalValue
+        
+        // Additional measures to prevent autofill
+        input.setAttribute('autocomplete', 'new-password')
+        input.setAttribute('data-form-type', 'other')
+        input.setAttribute('data-lpignore', 'true')
+        input.setAttribute('data-1p-ignore', 'true')
+        input.setAttribute('data-bwignore', 'true')
+        input.setAttribute('data-dashlane-ignore', 'true')
+        input.setAttribute('aria-autocomplete', 'none')
+        
+        // Disable browser address suggestions
+        input.setAttribute('data-address-field', 'no')
+        input.setAttribute('data-ms-editor', 'false')
       }, 1)
     }
   }
@@ -367,7 +479,16 @@ const handleClick = () => {
   showDropdown.value = true
   if (!searchText.value.trim() && filteredItems.value.length > 0) {
     selectedIndex.value = 0 // Pre-select the first item
+    scrollToSelectedItem() // Ensure first item is visible
   }
+  
+  // Update aria-expanded attribute
+  nextTick(() => {
+    const input = dropdownRef.value?.querySelector('input')
+    if (input) {
+      input.setAttribute('aria-expanded', showDropdown.value.toString())
+    }
+  })
 }
 </script>
 
@@ -381,6 +502,27 @@ const handleClick = () => {
   background-color: white;
   border: 1px solid rgba(0, 0, 0, 0.15);
   padding: 0.5rem 0;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #6c757d transparent;
+}
+
+/* Custom scrollbar for webkit browsers */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background-color: #6c757d;
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background-color: #495057;
 }
 
 .dropdown-item {
@@ -428,6 +570,29 @@ input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px white inset !important;
   -webkit-text-fill-color: #212529 !important;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Prevent browser address suggestions */
+input[data-address-field="no"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Disable browser autofill dropdown */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  height: 0;
+  width: 0;
+  margin: 0;
+}
+
+/* Ensure our dropdown appears above browser suggestions */
+.dropdown-menu.show {
+  z-index: 9999 !important;
 }
 
 /* Add validation styling */

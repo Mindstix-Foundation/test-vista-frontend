@@ -4,7 +4,6 @@
     :is-submitting="isSubmitting"
     @submit="handleSubmit"
     @close="goBack"
-    @keydown.enter.prevent
   >
     <!-- Board Details Section -->
     <div class="col-12 col-sm-10 col-md-8 mb-3">

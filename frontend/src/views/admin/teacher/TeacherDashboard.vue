@@ -1542,13 +1542,12 @@ function highlightText(text: string, search: string): string {
 }
 
 /* Ensure search input stays in focus */
-/* The following .search-input:focus block is a duplicate and will be removed.
 .search-input:focus {
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   border-color: #86b7fe;
   outline: 0;
   z-index: 100; /* Higher z-index to ensure it stays on top */
-} */
+}
 
 /* Ensure search icons stay visible */
 .search-icon, .clear-search-icon, .search-loading-icon {
