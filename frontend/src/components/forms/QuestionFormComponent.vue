@@ -60,6 +60,7 @@
                 :placeholder="getPlaceholderText"
                 @input="autoResize" required></textarea>
               <label for="question" class="form-label">{{ getLabelText }}</label>
+              <!-- Question Image Upload Section for Descriptive -->
               <div v-if="existingImageUrl && !shouldDeleteImage" class="image-preview mb-2">
                 <img :src="existingImageUrl" alt="Existing Question" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
                 <div class="d-flex justify-content-between align-items-center">
@@ -69,8 +70,21 @@
                   </button>
                 </div>
               </div>
+              
+              <!-- Show uploaded image from store if exists -->
+              <div v-else-if="imageUploadStore.getQuestionImage()" class="uploaded-image-preview mb-2">
+                <img :src="imageUploadStore.getQuestionImage()?.url" alt="Uploaded Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Uploaded: {{ imageUploadStore.getQuestionImage()?.file.name }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeUploadedQuestionImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
+              
               <div class="input-group input-group-sm mb-3">
                 <button 
+                  v-if="!imageUploadStore.getQuestionImage() && !existingImageUrl"
                   type="button" 
                   class="btn btn-outline-primary d-flex align-items-center"
                   @click="$emit('openQuestionImageModal', { questionText: descriptiveQuestion.question, questionType: selectedType })"
@@ -79,15 +93,6 @@
                   Upload with A4 Preview
                 </button>
                 <input type="file" class="form-control" id="inputGroupFile01" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
-                <button
-                  v-if="questionImageFile !== null"
-                  type="button"
-                  class="btn btn-danger btn-sm"
-                  @click="(e) => removeUploadedImage(e, 'question')"
-                  title="Remove uploaded image"
-                >
-                  <i class="bi bi-trash"></i> Remove
-                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -123,8 +128,18 @@
                   </button>
                 </div>
               </div>
+              <div v-else-if="imageUploadStore.getQuestionImage()" class="uploaded-image-preview mb-2">
+                <img :src="imageUploadStore.getQuestionImage()?.url" alt="Uploaded Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Uploaded: {{ imageUploadStore.getQuestionImage()?.file.name }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeUploadedQuestionImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-3">
                 <button 
+                  v-if="!imageUploadStore.getQuestionImage() && !existingImageUrl"
                   type="button" 
                   class="btn btn-outline-primary d-flex align-items-center"
                   @click="$emit('openQuestionImageModal', { questionText: mcqQuestion.question, questionType: selectedType, options: mcqQuestion.options })"
@@ -133,15 +148,6 @@
                   Upload with A4 Preview
                 </button>
                 <input type="file" class="form-control" id="mcqImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
-                <button
-                  v-if="questionImageFile !== null"
-                  type="button"
-                  class="btn btn-danger btn-sm"
-                  @click="(e) => removeUploadedImage(e, 'question')"
-                  title="Remove uploaded image"
-                >
-                  <i class="bi bi-trash"></i> Remove
-                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -166,15 +172,6 @@
                       Upload Option A
                     </button>
                     <input type="file" class="form-control" id="optionAImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 0)" accept=".jpg,.jpeg,.webp" style="display: none;">
-                    <button
-                      v-if="mcqOptionImages[0]"
-                      type="button"
-                      class="btn btn-danger btn-sm"
-                      @click="(e) => removeUploadedImage(e, 'option', 0)"
-                      title="Remove uploaded image"
-                    >
-                      <i class="bi bi-trash"></i> Remove
-                    </button>
                   </div>
                 </div>
 
@@ -194,15 +191,6 @@
                       Upload Option B
                     </button>
                     <input type="file" class="form-control" id="optionBImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 1)" accept=".jpg,.jpeg,.webp" style="display: none;">
-                    <button
-                      v-if="mcqOptionImages[1]"
-                      type="button"
-                      class="btn btn-danger btn-sm"
-                      @click="(e) => removeUploadedImage(e, 'option', 1)"
-                      title="Remove uploaded image"
-                    >
-                      <i class="bi bi-trash"></i> Remove
-                    </button>
                   </div>
                 </div>
 
@@ -222,15 +210,6 @@
                       Upload Option C
                     </button>
                     <input type="file" class="form-control" id="optionCImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 2)" accept=".jpg,.jpeg,.webp" style="display: none;">
-                    <button
-                      v-if="mcqOptionImages[2]"
-                      type="button"
-                      class="btn btn-danger btn-sm"
-                      @click="(e) => removeUploadedImage(e, 'option', 2)"
-                      title="Remove uploaded image"
-                    >
-                      <i class="bi bi-trash"></i> Remove
-                    </button>
                   </div>
                 </div>
 
@@ -250,15 +229,6 @@
                       Upload Option D
                     </button>
                     <input type="file" class="form-control" id="optionDImageFile" @change="(e) => handleQuestionImageUpload(e, 'option', 3)" accept=".jpg,.jpeg,.webp" style="display: none;">
-                    <button
-                      v-if="mcqOptionImages[3]"
-                      type="button"
-                      class="btn btn-danger btn-sm"
-                      @click="(e) => removeUploadedImage(e, 'option', 3)"
-                      title="Remove uploaded image"
-                    >
-                      <i class="bi bi-trash"></i> Remove
-                    </button>
                   </div>
                 </div>
               </div>
@@ -305,8 +275,18 @@
                   </button>
                 </div>
               </div>
+              <div v-else-if="imageUploadStore.getQuestionImage()" class="uploaded-image-preview mb-2">
+                <img :src="imageUploadStore.getQuestionImage()?.url" alt="Uploaded Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Uploaded: {{ imageUploadStore.getQuestionImage()?.file.name }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeUploadedQuestionImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-3">
                 <button 
+                  v-if="!imageUploadStore.getQuestionImage() && !existingImageUrl"
                   type="button" 
                   class="btn btn-outline-primary d-flex align-items-center"
                   @click="$emit('openQuestionImageModal', { questionText: fillBlankQuestion.question, questionType: selectedType })"
@@ -315,15 +295,6 @@
                   Upload with A4 Preview
                 </button>
                 <input type="file" class="form-control" id="fillInTheBlankImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
-                <button
-                  v-if="questionImageFile !== null"
-                  type="button"
-                  class="btn btn-danger btn-sm"
-                  @click="(e) => removeUploadedImage(e, 'question')"
-                  title="Remove uploaded image"
-                >
-                  <i class="bi bi-trash"></i> Remove
-                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -363,8 +334,18 @@
                   </button>
                 </div>
               </div>
+              <div v-else-if="imageUploadStore.getQuestionImage()" class="uploaded-image-preview mb-2">
+                <img :src="imageUploadStore.getQuestionImage()?.url" alt="Uploaded Question Image" class="img-fluid mb-2" style="max-height: 200px; border-radius: 5px;"/>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-muted mb-0"><small>Uploaded: {{ imageUploadStore.getQuestionImage()?.file.name }}</small></p>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeUploadedQuestionImage">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="input-group input-group-sm mb-3">
                 <button 
+                  v-if="!imageUploadStore.getQuestionImage() && !existingImageUrl"
                   type="button" 
                   class="btn btn-outline-primary d-flex align-items-center"
                   @click="$emit('openQuestionImageModal', { questionText: matchPairQuestion.question, questionType: selectedType })"
@@ -373,15 +354,6 @@
                   Upload with A4 Preview
                 </button>
                 <input type="file" class="form-control" id="matchPairsImageFile" @change="(e) => handleQuestionImageUpload(e, 'question')" accept=".jpg,.jpeg,.webp" style="display: none;">
-                <button
-                  v-if="questionImageFile !== null"
-                  type="button"
-                  class="btn btn-danger btn-sm"
-                  @click="(e) => removeUploadedImage(e, 'question')"
-                  title="Remove uploaded image"
-                >
-                  <i class="bi bi-trash"></i> Remove
-                </button>
               </div>
               <div v-if="imageUploadError" class="alert alert-danger py-1">
                 {{ imageUploadError }}
@@ -406,15 +378,6 @@
                         Upload Option
                       </button>
                       <input type="file" class="form-control" :id="'lhsImageFile'+matchPairQuestion.lhs.indexOf(item)" @change="(e) => handleQuestionImageUpload(e, 'option', matchPairQuestion.lhs.indexOf(item))" accept=".jpg,.jpeg,.webp" style="display: none;">
-                      <button
-                        v-if="mcqOptionImages[matchPairQuestion.lhs.indexOf(item)]"
-                        type="button"
-                        class="btn btn-danger btn-sm"
-                        @click="(e) => removeUploadedImage(e, 'option', matchPairQuestion.lhs.indexOf(item))"
-                        title="Remove uploaded image"
-                      >
-                        <i class="bi bi-trash"></i> Remove
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -438,15 +401,6 @@
                         Upload Option
                       </button>
                       <input type="file" class="form-control" :id="'rhsImageFile'+matchPairQuestion.rhs.indexOf(item)" @change="(e) => handleQuestionImageUpload(e, 'option', matchPairQuestion.rhs.indexOf(item) + matchPairQuestion.lhs.length)" accept=".jpg,.jpeg,.webp" style="display: none;">
-                      <button
-                        v-if="mcqOptionImages[matchPairQuestion.rhs.indexOf(item) + matchPairQuestion.lhs.length]"
-                        type="button"
-                        class="btn btn-danger btn-sm"
-                        @click="(e) => removeUploadedImage(e, 'option', matchPairQuestion.rhs.indexOf(item) + matchPairQuestion.lhs.length)"
-                        title="Remove uploaded image"
-                      >
-                        <i class="bi bi-trash"></i> Remove
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -471,9 +425,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import axiosInstance from '@/config/axios'
 import SearchableDropdown, { type Item } from '@/components/common/SearchableDropdown.vue'
+import { useImageUploadStore } from '@/stores/imageUpload'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{
   isEditMode?: boolean
@@ -555,6 +511,10 @@ const emit = defineEmits<{
   (e: 'questionImageCancelled'): void
   (e: 'optionImageCancelled', optionIndex: number): void
 }>()
+
+const router = useRouter()
+const isSubmitting = ref(false)
+const imageUploadStore = useImageUploadStore()
 
 // Provide default values for props
 const isEditMode = ref(props.isEditMode || false)
@@ -1486,18 +1446,38 @@ function setQuestionImage(file: File) {
 }
 
 // New methods to handle images uploaded through ImageUploadEditor modal
-function setUploadedQuestionImage(file: File, imageId: number) {
+function setUploadedQuestionImage(file: File, imageId: string, imageUrl: string) {
   console.log('Setting uploaded question image:', file.name, 'with ID:', imageId);
-  questionImageFile.value = file;
+  
+  // Explicitly clear the old system to prevent dual UI
+  questionImageFile.value = null;
+  existingImageUrl.value = null;
+  existingImageName.value = null;
+  
+  // Reset flags
   shouldDeleteImage.value = false;
   imageUploadError.value = null;
+  
+  // The Pinia store will handle the new uploaded images
 }
 
-function setUploadedOptionImage(file: File, optionIndex: number, imageId: number) {
+function setUploadedOptionImage(file: File, optionIndex: number, imageId: string, imageUrl: string) {
   console.log('Setting uploaded option image:', file.name, 'for index:', optionIndex, 'with ID:', imageId);
   const newOptionImages = [...mcqOptionImages.value];
   newOptionImages[optionIndex] = file;
   mcqOptionImages.value = newOptionImages;
+  
+  // Create preview for the option image
+  nextTick(() => {
+    const optionLabels = ['A', 'B', 'C', 'D'];
+    if (optionIndex < optionLabels.length) {
+      const previewContainer = document.getElementById(`option${optionLabels[optionIndex]}ImagePreview`);
+      if (previewContainer) {
+        previewContainer.innerHTML = ''; // Clear existing content
+        createImagePreview(previewContainer, imageUrl, optionIndex);
+      }
+    }
+  });
 }
 
 function setOptionImage(file: File, index: number) {
@@ -1617,6 +1597,15 @@ function removeExistingImage() {
   // Keep the existingImageId value for sending the delete request
 }
 
+// Function to handle removing uploaded question image from store
+function removeUploadedQuestionImage() {
+  imageUploadStore.removeQuestionImage();
+  // Don't clear questionImageFile, existingImageUrl, or existingImageName here
+  // These should only be used for existing images from the database
+  // Only clear the error state
+  imageUploadError.value = null;
+}
+
 // Add this helper function for creating image previews
 function createImagePreview(container: HTMLElement, imageUrl: string, index: number) {
   const previewDiv = document.createElement('div');
@@ -1639,13 +1628,26 @@ function createImagePreview(container: HTMLElement, imageUrl: string, index: num
   removeBtn.onclick = (e) => {
     e.preventDefault();
     previewDiv.remove();
-    optionImageDeleteFlags.value[index] = true;
+    // Remove from store
+    imageUploadStore.removeOptionImage(index);
+    // Clear from component state
+    clearOptionImage(index);
   };
 
   infoContainer.appendChild(removeBtn);
   previewDiv.appendChild(img);
   previewDiv.appendChild(infoContainer);
   container.appendChild(previewDiv);
+}
+
+function handleClearOptionImageEvent(event: Event) {
+  const customEvent = event as CustomEvent
+  const optionIndex = customEvent.detail?.optionIndex
+  if (typeof optionIndex === 'number') {
+    clearOptionImage(optionIndex)
+    // Also clear from store
+    imageUploadStore.removeOptionImage(optionIndex)
+  }
 }
 
 // New helper functions to reduce complexity in onMounted
@@ -1690,7 +1692,7 @@ function initializeMcqOptions() {
   }
 }
 
-function setupOptionImagePreview(optionIndex) {
+function setupOptionImagePreview(optionIndex: number) {
   if (!props.initialOptionImages?.[optionIndex]) return;
   
   // Store the image IDs for later use
@@ -1709,7 +1711,7 @@ function setupOptionImagePreview(optionIndex) {
   createOptionImagePreview(optionImageContainer, props.initialOptionImages[optionIndex], optionIndex);
 }
 
-function createOptionImagePreview(container, imageUrl, optionIndex) {
+function createOptionImagePreview(container: HTMLElement, imageUrl: string, optionIndex: number) {
   const imagePreview = document.createElement('div');
   imagePreview.className = 'image-preview mb-2';
 
@@ -1782,19 +1784,24 @@ onMounted(() => {
   
   // Add event listeners for image cancellation
   window.addEventListener('clearQuestionImage', clearQuestionImage);
-  window.addEventListener('clearOptionImage', handleClearOptionImage);
+  window.addEventListener('clearOptionImage', handleClearOptionImageEvent);
 });
 
 // Add onUnmounted to clean up event listeners
 onUnmounted(() => {
   window.removeEventListener('clearQuestionImage', clearQuestionImage);
-  window.removeEventListener('clearOptionImage', handleClearOptionImage);
+  window.removeEventListener('clearOptionImage', handleClearOptionImageEvent);
 });
 
 // Functions to handle cancellation of image uploads
 function clearQuestionImage() {
   questionImageFile.value = null
   imageUploadError.value = null
+  // Clear from store
+  imageUploadStore.removeQuestionImage()
+  // Clear existing image preview
+  existingImageUrl.value = null
+  existingImageName.value = null
   // Find and clear the file input
   const questionFileInputs = document.querySelectorAll('input[type="file"][accept*="image"]')
   questionFileInputs.forEach(input => {
@@ -1802,13 +1809,6 @@ function clearQuestionImage() {
       (input as HTMLInputElement).value = ''
     }
   })
-}
-
-function handleClearOptionImage(event: any) {
-  const optionIndex = event.detail?.optionIndex
-  if (typeof optionIndex === 'number') {
-    clearOptionImage(optionIndex)
-  }
 }
 
 // Expose methods for parent component to call

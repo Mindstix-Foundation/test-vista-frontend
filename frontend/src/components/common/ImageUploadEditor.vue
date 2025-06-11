@@ -41,7 +41,7 @@
               <div class="size-slider-container">
                 <input 
                   type="range" 
-                  min="50" 
+                  min="10" 
                   max="100" 
                   :value="imageScale" 
                   @input="onScaleChange"
@@ -49,8 +49,8 @@
                   class="size-slider"
                 />
                 <div class="slider-labels">
+                  <span>10%</span>
                   <span>50%</span>
-                  <span>75%</span>
                   <span>100%</span>
                 </div>
               </div>
@@ -175,7 +175,7 @@
           :disabled="isUploading"
         >
           <span v-if="isUploading" class="spinner-border spinner-border-sm me-2"></span>
-          {{ isUploading ? 'Uploading...' : 'Save & Upload' }}
+          {{ isUploading ? 'Processing...' : 'Save Image' }}
         </button>
       </div>
     </div>
@@ -186,7 +186,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import Cropper from 'cropperjs'
 import '@/assets/cropper.css'
-import imageService, { type ImageUploadResponse } from '../../services/imageService'
+import { useImageUploadStore } from '@/stores/imageUpload'
 
 // Props
 interface Props {
@@ -216,7 +216,7 @@ const emit = defineEmits<{
   close: []
   cancelled: []
   imageUploaded: [imageData: {
-    id: number
+    id: string
     file: File
     url: string
     metadata: {
@@ -304,7 +304,7 @@ const canIncreaseSize = computed(() => {
 })
 
 const canDecreaseSize = computed(() => {
-  return imageScale.value > 50 // Minimum 50%
+  return imageScale.value > 10 // Minimum 10%
 })
 
 const imageStyle = computed(() => ({
@@ -341,10 +341,17 @@ const handleDrop = (event: DragEvent) => {
 }
 
 const processFile = (file: File) => {
-  // Use the service validation
-  const validation = imageService.validateImageFile(file)
-  if (!validation.isValid) {
-    emit('error', validation.error || 'Invalid file')
+  // Local file validation (moved from imageService)
+  const maxSize = 5 * 1024 * 1024 // 5MB
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  
+  if (!allowedTypes.includes(file.type)) {
+    emit('error', 'Invalid file type. Please select a PNG, JPG, JPEG, or WebP image.')
+    return
+  }
+  
+  if (file.size > maxSize) {
+    emit('error', 'File size too large. Please select an image smaller than 5MB.')
     return
   }
 
@@ -478,34 +485,49 @@ const saveImage = async () => {
       })
     }
 
-    // Upload to backend with user-selected dimensions
-    const uploadResponse: ImageUploadResponse = await imageService.uploadImage(
-      finalFile, 
-      actualPrintWidth.value, 
-      actualPrintHeight.value
-    )
+    // Generate temporary ID for local storage
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-    // Emit the uploaded image data with the user-selected dimensions
+    // Create blob URL for preview
+    const blobUrl = URL.createObjectURL(finalFile)
+
+    // Emit the image data with user-selected dimensions (no AWS upload)
     emit('imageUploaded', {
-      id: uploadResponse.id,
+      id: tempId,
       file: finalFile,
-      url: uploadResponse.image_url,
+      url: blobUrl,
       metadata: {
         width: actualPrintWidth.value,  // Use user-selected width
         height: actualPrintHeight.value, // Use user-selected height
-        size: uploadResponse.file_size,
-        type: uploadResponse.file_type
+        size: finalFile.size,
+        type: finalFile.type
       }
     })
 
-    closeModal()
+    closeModalSuccess() // Use success close instead of regular close
   } catch (error) {
-    console.error('Error uploading image:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Error uploading image. Please try again.'
+    console.error('Error processing image:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Error processing image. Please try again.'
     emit('error', errorMessage)
   } finally {
     isUploading.value = false
   }
+}
+
+const closeModalSuccess = () => {
+  // Clear selected image when modal is closed after successful save
+  selectedImage.value = null
+  imagePreview.value = ''
+  cropMode.value = false
+  destroyCropper()
+  
+  // Reset file input
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+  
+  // Only emit close event for successful completion (no cancelled event)
+  emit('close')
 }
 
 const closeModal = () => {
@@ -542,7 +564,7 @@ const increaseImageSize = () => {
 const decreaseImageSize = () => {
   if (!canDecreaseSize.value) return
   
-  imageScale.value = Math.max(imageScale.value - 10, 50)
+  imageScale.value = Math.max(imageScale.value - 10, 10)
 }
 
 const applyCrop = async () => {

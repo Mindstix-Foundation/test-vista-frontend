@@ -906,7 +906,7 @@ function handleQuestionImageUploaded(imageData: any) {
   // Pass the uploaded image file to the QuestionFormComponent
   if (questionFormComponent.value && imageData.file) {
     // Call a method on the QuestionFormComponent to set the image
-    questionFormComponent.value.setUploadedQuestionImage(imageData.file, imageData.id);
+    questionFormComponent.value.setUploadedQuestionImage(imageData.file, imageData.id, imageData.url);
   }
 }
 
@@ -918,7 +918,7 @@ function handleOptionImageUploaded(imageData: any) {
   // Pass the uploaded image file to the QuestionFormComponent
   if (questionFormComponent.value && imageData.file && currentOptionIndex.value >= 0) {
     // Call a method on the QuestionFormComponent to set the option image
-    questionFormComponent.value.setUploadedOptionImage(imageData.file, currentOptionIndex.value, imageData.id);
+    questionFormComponent.value.setUploadedOptionImage(imageData.file, currentOptionIndex.value, imageData.id, imageData.url);
   }
 }
 

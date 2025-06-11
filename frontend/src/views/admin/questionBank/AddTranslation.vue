@@ -311,7 +311,7 @@
                       </div>
                       
                       <!-- Image Upload Section -->
-                      <!-- Only enable image upload if there's an original image for this option -->
+                      <!-- Only show image upload if there's an original image for this option -->
                       <div v-if="originalOptionImages && originalOptionImages[index]" class="mb-2">
                         <div class="input-group input-group-sm">
                           <input type="file" class="form-control" :id="'optionImage' + (index + 1)" accept="image/*" @change="e => handleOptionImageChange(e, index)">
@@ -326,16 +326,6 @@
                           <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearOptionImage(index)">
                             <i class="bi bi-x"></i>
                           </button>
-                        </div>
-                      </div>
-                      <!-- Disabled image upload with explanation if original has no image -->
-                      <div v-else class="mb-2">
-                        <div class="input-group input-group-sm">
-                          <input type="file" class="form-control" disabled title="Original option does not have an image. You can only upload images for options that have images in the original question.">
-                          <span class="input-group-text text-muted small">
-                            <i class="bi bi-info-circle me-1"></i>
-                            No original image
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -399,20 +389,12 @@
                     </label>
                   </div>
 
-                  <!-- Only enable image upload if the original question has an image -->
+                  <!-- Only show image upload if the original question has an image -->
                   <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                     <span class="input-group-text text-muted small">
                       <i class="bi bi-info-circle me-1"></i>
                       Original has image
-                    </span>
-                  </div>
-                  <!-- Disabled image upload with explanation if original has no image -->
-                  <div class="input-group input-group-sm mb-3" v-else>
-                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
-                    <span class="input-group-text text-muted small">
-                      <i class="bi bi-info-circle me-1"></i>
-                      No original image
                     </span>
                   </div>
                   <div class="col text-end">
@@ -478,20 +460,12 @@
                     </label>
                   </div>
                   
-                  <!-- Only enable image upload if the original question has an image -->
+                  <!-- Only show image upload if the original question has an image -->
                   <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                     <span class="input-group-text text-muted small">
                       <i class="bi bi-info-circle me-1"></i>
                       Original has image
-                    </span>
-                  </div>
-                  <!-- Disabled image upload with explanation if original has no image -->
-                  <div class="input-group input-group-sm mb-3" v-else>
-                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
-                    <span class="input-group-text text-muted small">
-                      <i class="bi bi-info-circle me-1"></i>
-                      No original image
                     </span>
                   </div>
                 </div>

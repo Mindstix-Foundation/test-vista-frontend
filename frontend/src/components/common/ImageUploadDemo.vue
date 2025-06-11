@@ -87,7 +87,7 @@
               </li>
               <li class="list-group-item">
                 <i class="bi bi-sliders text-success"></i>
-                <strong>Intuitive Slider:</strong> Easy size adjustment with percentage display
+                <strong>Flexible Size Range:</strong> Adjust image size from 10% to 100% with intuitive slider
               </li>
               <li class="list-group-item">
                 <i class="bi bi-aspect-ratio text-info"></i>
@@ -98,12 +98,12 @@
           <div class="col-md-6">
             <ul class="list-group list-group-flush">
               <li class="list-group-item">
-                <i class="bi bi-rulers text-warning"></i>
-                <strong>Smart Sizing:</strong> Auto-fit within layout constraints
+                <i class="bi bi-cloud-arrow-up text-warning"></i>
+                <strong>Local Storage First:</strong> Images stored locally until question is saved
               </li>
               <li class="list-group-item">
                 <i class="bi bi-printer text-secondary"></i>
-                <strong>Print Preview:</strong> See actual print dimensions
+                <strong>Custom Dimensions:</strong> User-adjusted sizes preserved for final upload
               </li>
               <li class="list-group-item">
                 <i class="bi bi-phone text-dark"></i>
@@ -131,6 +131,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import ImageUploadEditor from './ImageUploadEditor.vue'
+import { useImageUploadStore } from '@/stores/imageUpload'
 
 // Demo state
 const showImageEditor = ref(false)
@@ -140,6 +141,9 @@ const imageType = ref<'question' | 'option'>('question')
 const uploadedImage = ref<any>(null)
 const successMessage = ref('')
 const errorMessage = ref('')
+
+// Use the image upload store
+const imageUploadStore = useImageUploadStore()
 
 // Methods
 const openImageEditor = () => {
@@ -152,13 +156,22 @@ const closeImageEditor = () => {
 
 const handleImageUploaded = (imageData: any) => {
   uploadedImage.value = imageData
-  successMessage.value = `${imageType.value === 'question' ? 'Question' : 'Option'} image uploaded successfully!`
+  
+  // Store in Pinia store based on image type
+  if (imageType.value === 'question') {
+    imageUploadStore.setQuestionImage(imageData.file, imageData.metadata)
+  } else {
+    // For demo, use option index 0
+    imageUploadStore.setOptionImage(0, imageData.file, imageData.metadata)
+  }
+  
+  successMessage.value = `${imageType.value === 'question' ? 'Question' : 'Option'} image stored locally! It will be uploaded when you save the question.`
   errorMessage.value = ''
   
-  // Clear success message after 3 seconds
+  // Clear success message after 5 seconds
   setTimeout(() => {
     successMessage.value = ''
-  }, 3000)
+  }, 5000)
 }
 
 const handleError = (error: string) => {
@@ -167,9 +180,21 @@ const handleError = (error: string) => {
 }
 
 const clearImage = () => {
+  if (uploadedImage.value) {
+    // Revoke blob URL to prevent memory leaks
+    URL.revokeObjectURL(uploadedImage.value.url)
+  }
+  
   uploadedImage.value = null
   successMessage.value = ''
   errorMessage.value = ''
+  
+  // Clear from store
+  if (imageType.value === 'question') {
+    imageUploadStore.removeQuestionImage()
+  } else {
+    imageUploadStore.removeOptionImage(0)
+  }
 }
 
 const formatFileSize = (bytes: number): string => {
