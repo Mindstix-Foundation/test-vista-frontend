@@ -29,7 +29,7 @@ export const VALIDATION_MESSAGES = {
   PASSWORD: {
     REQUIRED: 'Password is required',
     CURRENT_REQUIRED: 'Current password is required',
-    COMPLEXITY: 'Password does not meet complexity requirements',
+    COMPLEXITY: 'Password must contain at least 8 characters with uppercase, lowercase, number and special character (@$!%*?&)',
     MISMATCH: 'Passwords do not match',
     INCORRECT: 'Current password is incorrect. Please try again'
   },
@@ -53,6 +53,11 @@ export const VALIDATION_MESSAGES = {
   STANDARD: {
     REQUIRED: 'Please select at least one standard'
   },
+  STUDENT: {
+    ID_REQUIRED: 'Student ID is required',
+    ID_INVALID: 'Please enter a valid student ID',
+    SELECT_STANDARD_FIRST: 'Please select a standard first'
+  },
   TEACHER_SUBJECTS: {
     REQUIRED: 'Please select at least one standard with subjects'
   },
@@ -66,6 +71,36 @@ export const VALIDATION_MESSAGES = {
     MARKS_PER_QUESTION: 'Please enter marks per question',
     MARKS_GREATER_THAN_ZERO: 'Marks per question must be greater than 0'
   }
+}
+
+// Title case function to format names properly
+export const toTitleCase = (str: string): string => {
+  if (!str) return ''
+  
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+// Name validation function
+export const validateName = (name: string): boolean => {
+  if (!name) return false
+  
+  const trimmedName = name.trim()
+  
+  // Must be at least 3 characters and only contain letters and spaces
+  return trimmedName.length >= 3 && /^[a-zA-Z\s]+$/.test(trimmedName)
+}
+
+// Password validation function (matches resetPassword.html pattern)
+export const validatePassword = (password: string): boolean => {
+  if (!password) return false
+  
+  // Must contain at least 8 characters with uppercase, lowercase, number and special character
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+  return passwordRegex.test(password)
 }
 
 // Contact number validation function

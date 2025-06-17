@@ -46,6 +46,9 @@
       <button class="btn btn-link text-decoration-none w-100" @click="forgotPassword">
         Forgot Password?
       </button>
+      <button class="btn btn-outline-primary w-100 mt-2" @click="studentRegistration">
+        Student Registration
+      </button>
 
       <!-- Error message below login -->
       <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
@@ -142,6 +145,10 @@ const login = async () => {
 
 const forgotPassword = () => {
   router.push({ name: 'forgotPassword' })
+}
+
+const studentRegistration = () => {
+  router.push({ name: 'studentRegistration' })
 }
 </script>
 
