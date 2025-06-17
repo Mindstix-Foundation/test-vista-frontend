@@ -285,6 +285,48 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // Student routes
+  {
+    path: '/student',
+    component: () => import('@/layouts/StudentLayout.vue'),
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+    children: [
+      {
+        path: '',
+        redirect: { name: 'studentHome' },
+      },
+      {
+        path: 'home',
+        name: 'studentHome',
+        component: () => import('@/views/student/home/StudentHome.vue'),
+      },
+      {
+        path: 'exam',
+        name: 'studentExam',
+        component: () => import('@/views/student/exam/StudentExam.vue'),
+      },
+      {
+        path: 'results',
+        name: 'studentResults',
+        component: () => import('@/views/student/results/StudentResults.vue'),
+      },
+      {
+        path: 'profile',
+        name: 'studentProfile',
+        component: () => import('@/views/student/profile/StudentProfile.vue'),
+      },
+      {
+        path: 'practice',
+        name: 'studentPractice',
+        component: () => import('@/views/student/practice/StudentPractice.vue'),
+      },
+      {
+        path: 'test-series',
+        name: 'studentTestSeries',
+        component: () => import('@/views/student/test-series/StudentTestSeries.vue'),
+      },
+    ],
+  },
 ]
 
 const router = createRouter({
@@ -340,6 +382,8 @@ router.beforeEach(async (to, from, next) => {
         next({ path: '/admin/board' })
       } else if (userRole === 'TEACHER') {
         next({ path: '/teacher/home' })
+      } else if (userRole === 'STUDENT') {
+        next({ path: '/student/home' })
       } else {
         next({ path: '/admin/board' })
       }

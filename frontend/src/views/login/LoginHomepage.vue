@@ -127,6 +127,8 @@ const login = async () => {
       router.push('/admin/board')
     } else if (data.user.roles.includes('TEACHER')) {
       router.push('/teacher/profile')
+    } else if (data.user.roles.includes('STUDENT')) {
+      router.push('/student/home')
     }
   } catch (error) {
     console.error('Login error:', error)
