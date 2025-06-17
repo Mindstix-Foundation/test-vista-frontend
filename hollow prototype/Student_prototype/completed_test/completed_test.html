@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completed Tests - TEST VISTA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        #navResult{
+            font-weight: bolder;
+            text-decoration: underline;
+            text-decoration-color: white;
+        }
+        @media (max-width: 768px) {
+            #navResult{
+                font-weight: bolder;
+                font-size: 1.1rem !important;
+                text-decoration: none !important;
+            }
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid #dee2e6;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .test-card.excellent {
+            border-left-color: #28a745;
+        }
+        
+        .test-card.good {
+            border-left-color: #17a2b8;
+        }
+        
+        .test-card.average {
+            border-left-color: #ffc107;
+        }
+        
+        .test-card.poor {
+            border-left-color: #dc3545;
+        }
+        
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            position: relative;
+        }
+        
+        .progress-excellent {
+            background: conic-gradient(#28a745 0deg, #28a745 var(--progress), #e9ecef var(--progress), #e9ecef 360deg);
+        }
+        
+        .progress-good {
+            background: conic-gradient(#17a2b8 0deg, #17a2b8 var(--progress), #e9ecef var(--progress), #e9ecef 360deg);
+        }
+        
+        .progress-average {
+            background: conic-gradient(#ffc107 0deg, #ffc107 var(--progress), #e9ecef var(--progress), #e9ecef 360deg);
+        }
+        
+        .progress-poor {
+            background: conic-gradient(#dc3545 0deg, #dc3545 var(--progress), #e9ecef var(--progress), #e9ecef 360deg);
+        }
+        
+        .progress-inner {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        
+        .test-details {
+            flex: 1;
+        }
+        
+        .test-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .test-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .test-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+        
+        .performance-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-excellent {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .badge-good {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-average {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-poor {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .view-report-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .view-report-btn:hover {
+            background: linear-gradient(45deg, #5a6fd8, #6a4190);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .stats-overview {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        
+        .overview-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .overview-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .overview-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        
+        .overall-progress-container {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .progress-chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        #progressChart {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .progress-legend {
+            font-size: 0.8rem;
+        }
+        
+        .stats-grid-container {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+        }
+        
+        .trend-up {
+            color: #28a745;
+        }
+        
+        .trend-down {
+            color: #dc3545;
+        }
+        
+        .trend-stable {
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-clipboard-data"></i> Completed Tests</h2>
+                    <p class="mb-0">Review your test performance and detailed reports</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <h4 class="mb-3"><i class="bi bi-graph-up"></i> Performance Overview</h4>
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="overall-progress-container">
+                        <h5 class="mb-3 text-center">Overall Progress</h5>
+                        <div class="progress-chart-container">
+                            <canvas id="progressChart" width="400" height="280"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="stats-grid-container">
+                        <div class="overview-grid">
+                            <div class="overview-item">
+                                <div class="overview-number text-success" id="avgScore">85%</div>
+                                <div class="overview-label">Average Score</div>
+                            </div>
+                            <div class="overview-item">
+                                <div class="overview-number text-primary" id="testsAttempted">6</div>
+                                <div class="overview-label">Tests Attempted</div>
+                            </div>
+                            <div class="overview-item">
+                                <div class="overview-number text-info" id="avgTimeSpent">1h 28m</div>
+                                <div class="overview-label">Avg Time Spent</div>
+                            </div>
+                            <div class="overview-item">
+                                <div class="overview-number text-warning" id="bestScore">90%</div>
+                                <div class="overview-label">Best Score</div>
+                            </div>
+                            <div class="overview-item">
+                                <div class="overview-number text-secondary" id="avgQuestionsAttempted">92%</div>
+                                <div class="overview-label">Avg Questions Attempted</div>
+            </div>
+                            <div class="overview-item">
+                                <div class="overview-number text-primary" id="latestScore">90%</div>
+                                <div class="overview-label">Latest Score</div>
+            </div>
+            </div>
+            </div>
+        </div>
+            </div>
+        </div>
+
+        <!-- Completed Tests List -->
+        <div class="row">
+            <div class="col-12">
+                <h4 class="mb-3"><i class="bi bi-list-check"></i> Your Test History</h4>
+                <div id="completedTestsList">
+                    <!-- Tests will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript files -->
+    <script src="../commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+
+        // Sample completed tests data
+        const completedTests = [
+            {
+                id: 'math-test-001',
+                title: 'Mathematics Test',
+                subject: 'Mathematics',
+                date: '2024-12-20',
+                duration: '60 minutes',
+                allocatedTime: 3600, // 60 minutes in seconds
+                totalQuestions: 50,
+                correctAnswers: 45,
+                totalMarks: 100,
+                obtainedMarks: 90,
+                percentage: 90,
+                timeTaken: 3420, // seconds (57 minutes)
+                type: 'assigned'
+            },
+            {
+                id: 'science-practice-001',
+                title: 'Science Practice Test',
+                subject: 'Science',
+                date: '2024-12-18',
+                duration: '45 minutes',
+                allocatedTime: 2700, // 45 minutes in seconds
+                totalQuestions: 40,
+                correctAnswers: 32,
+                totalMarks: 80,
+                obtainedMarks: 64,
+                percentage: 80,
+                timeTaken: 2580, // seconds (43 minutes)
+                type: 'practice'
+            },
+            {
+                id: 'english-test-001',
+                title: 'English Test',
+                subject: 'English',
+                date: '2024-12-15',
+                duration: '50 minutes',
+                allocatedTime: 3000, // 50 minutes in seconds
+                totalQuestions: 45,
+                correctAnswers: 38,
+                totalMarks: 90,
+                obtainedMarks: 76,
+                percentage: 84,
+                timeTaken: 2940, // seconds (49 minutes)
+                type: 'assigned'
+            },
+            {
+                id: 'history-practice-001',
+                title: 'History Practice Test',
+                subject: 'History',
+                date: '2024-12-12',
+                duration: '40 minutes',
+                allocatedTime: 2400, // 40 minutes in seconds
+                totalQuestions: 35,
+                correctAnswers: 28,
+                totalMarks: 70,
+                obtainedMarks: 56,
+                percentage: 80,
+                timeTaken: 2280, // seconds (38 minutes)
+                type: 'practice'
+            },
+            {
+                id: 'physics-test-001',
+                title: 'Physics Test',
+                subject: 'Physics',
+                date: '2024-12-10',
+                duration: '55 minutes',
+                allocatedTime: 3300, // 55 minutes in seconds
+                totalQuestions: 48,
+                correctAnswers: 35,
+                totalMarks: 96,
+                obtainedMarks: 70,
+                percentage: 73,
+                timeTaken: 3180, // seconds (53 minutes)
+                type: 'assigned'
+            },
+            {
+                id: 'chemistry-practice-001',
+                title: 'Chemistry Practice Test',
+                subject: 'Chemistry',
+                date: '2024-12-08',
+                duration: '65 minutes',
+                allocatedTime: 3900, // 65 minutes in seconds
+                totalQuestions: 52,
+                correctAnswers: 41,
+                totalMarks: 104,
+                obtainedMarks: 82,
+                percentage: 79,
+                timeTaken: 3720, // seconds (62 minutes)
+                type: 'practice'
+            }
+        ];
+
+        function getPerformanceLevel(percentage) {
+            if (percentage >= 90) return 'excellent';
+            if (percentage >= 80) return 'good';
+            if (percentage >= 70) return 'average';
+            return 'poor';
+        }
+
+        function getPerformanceText(percentage) {
+            if (percentage >= 90) return 'Excellent';
+            if (percentage >= 80) return 'Good';
+            if (percentage >= 70) return 'Average';
+            return 'Needs Improvement';
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m ${secs}s`;
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function updateOverviewStats() {
+            const totalTests = completedTests.length;
+            const avgScore = Math.round(completedTests.reduce((sum, test) => sum + test.percentage, 0) / totalTests);
+            const bestScore = Math.max(...completedTests.map(test => test.percentage));
+            
+            // Calculate average time spent as percentage of allocated time
+            const avgTimeSpentPercentage = Math.round(
+                completedTests.reduce((sum, test) => {
+                    const timeUtilizationPercentage = (test.timeTaken / test.allocatedTime) * 100;
+                    return sum + timeUtilizationPercentage;
+                }, 0) / totalTests
+            );
+            
+            // Calculate average questions attempted percentage
+            const avgQuestionsAttempted = Math.round(
+                completedTests.reduce((sum, test) => {
+                    const attemptedPercentage = ((test.correctAnswers + (test.totalQuestions - test.correctAnswers)) / test.totalQuestions) * 100;
+                    return sum + attemptedPercentage;
+                }, 0) / totalTests
+            );
+            
+            // Get latest score
+            const sortedTests = [...completedTests].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const latestScore = sortedTests[sortedTests.length - 1].percentage;
+            
+            // Update the display
+            document.getElementById('avgScore').textContent = avgScore + '%';
+            document.getElementById('testsAttempted').textContent = totalTests;
+            document.getElementById('avgTimeSpent').textContent = avgTimeSpentPercentage + '%';
+            document.getElementById('bestScore').textContent = bestScore + '%';
+            document.getElementById('avgQuestionsAttempted').textContent = avgQuestionsAttempted + '%';
+            document.getElementById('latestScore').textContent = latestScore + '%';
+            
+            // Create progress chart
+            createProgressChart();
+        }
+
+        function createProgressChart() {
+            const canvas = document.getElementById('progressChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Sort tests by date
+            const sortedTests = [...completedTests].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Chart dimensions
+            const padding = 40;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            
+            // Data points
+            const dataPoints = sortedTests.map((test, index) => ({
+                x: padding + (index * chartWidth) / (sortedTests.length - 1),
+                y: padding + chartHeight - (test.percentage * chartHeight) / 100,
+                percentage: test.percentage,
+                testNumber: index + 1
+            }));
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 1;
+            
+            // Horizontal grid lines (percentage marks)
+            for (let i = 0; i <= 10; i++) {
+                const y = padding + (i * chartHeight) / 10;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
+            }
+            
+            // Vertical grid lines (test marks)
+            for (let i = 0; i < sortedTests.length; i++) {
+                const x = padding + (i * chartWidth) / (sortedTests.length - 1);
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, padding + chartHeight);
+                ctx.stroke();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + chartHeight);
+            ctx.lineTo(padding + chartWidth, padding + chartHeight);
+            ctx.stroke();
+            
+            // Draw Y-axis labels (percentages)
+            ctx.fillStyle = '#666';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 10; i++) {
+                const y = padding + (i * chartHeight) / 10;
+                const percentage = 100 - (i * 10);
+                ctx.fillText(percentage + '%', padding - 5, y + 3);
+            }
+            
+            // Draw X-axis labels (test numbers)
+            ctx.textAlign = 'center';
+            dataPoints.forEach((point, index) => {
+                ctx.fillText('T' + (index + 1), point.x, padding + chartHeight + 15);
+            });
+            
+            // Draw the line
+            if (dataPoints.length > 1) {
+                ctx.strokeStyle = '#007bff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(dataPoints[0].x, dataPoints[0].y);
+                for (let i = 1; i < dataPoints.length; i++) {
+                    ctx.lineTo(dataPoints[i].x, dataPoints[i].y);
+                }
+                ctx.stroke();
+            }
+            
+            // Draw data points
+            dataPoints.forEach((point, index) => {
+                // Determine color based on performance
+                let color = '#28a745'; // excellent
+                if (point.percentage < 90 && point.percentage >= 80) {
+                    color = '#17a2b8'; // good
+                } else if (point.percentage < 80 && point.percentage >= 70) {
+                    color = '#ffc107'; // average
+                } else if (point.percentage < 70) {
+                    color = '#dc3545'; // poor
+                }
+                
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Add percentage label on hover area
+                ctx.fillStyle = '#333';
+                ctx.font = '9px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(point.percentage + '%', point.x, point.y - 8);
+            });
+        }
+
+        function displayCompletedTests() {
+            const container = document.getElementById('completedTestsList');
+            container.innerHTML = '';
+
+            completedTests.forEach(test => {
+                const performanceLevel = getPerformanceLevel(test.percentage);
+                const performanceText = getPerformanceText(test.percentage);
+                const progressDegrees = (test.percentage / 100) * 360;
+
+                const testCard = document.createElement('div');
+                testCard.className = `test-card ${performanceLevel}`;
+                
+                testCard.innerHTML = `
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="progress-circle progress-${performanceLevel}" style="--progress: ${progressDegrees}deg;">
+                            <div class="progress-inner">
+                                ${test.percentage}%
+                            </div>
+                        </div>
+                        
+                        <div class="test-details">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="test-title">${test.title}</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="performance-badge badge-${performanceLevel}">${performanceText}</span>
+                                    <span class="badge bg-secondary">${test.type === 'practice' ? 'Practice' : 'Assigned'}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="test-meta">
+                                <i class="bi bi-calendar"></i> ${formatDate(test.date)} • 
+                                <i class="bi bi-clock"></i> ${test.duration} • 
+                                <i class="bi bi-book"></i> ${test.subject}
+                            </div>
+                            
+                            <div class="test-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">${test.obtainedMarks}/${test.totalMarks}</div>
+                                    <div class="stat-label">Marks</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${test.correctAnswers}/${test.totalQuestions}</div>
+                                    <div class="stat-label">Correct</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${formatTime(test.timeTaken)}</div>
+                                    <div class="stat-label">Time Taken</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${Math.round((test.correctAnswers / test.totalQuestions) * 100)}%</div>
+                                    <div class="stat-label">Accuracy</div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-muted small">
+                                    <i class="bi bi-info-circle"></i> 
+                                    ${test.totalQuestions - test.correctAnswers} incorrect answers
+                                </div>
+                                <button class="btn view-report-btn" onclick="viewDetailedReport('${test.id}')">
+                                    <i class="bi bi-file-text"></i> View Detailed Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(testCard);
+            });
+        }
+
+        function viewDetailedReport(testId) {
+            // Find the test data
+            const test = completedTests.find(t => t.id === testId);
+            if (test) {
+                // Store test data in localStorage for the detailed report page
+                localStorage.setItem('examResult', JSON.stringify({
+                    title: test.title,
+                    subject: test.subject,
+                    totalQuestions: test.totalQuestions,
+                    correctAnswers: test.correctAnswers,
+                    totalMarks: test.totalMarks,
+                    obtainedMarks: test.obtainedMarks,
+                    percentage: test.percentage,
+                    timeTaken: test.timeTaken,
+                    date: test.date
+                }));
+                
+                // Navigate to detailed report page
+                window.location.href = `../exam_pages/detailed_report.html?test=${testId}`;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateOverviewStats();
+            displayCompletedTests();
+        });
+    </script>
+</body>
+
+</html> 

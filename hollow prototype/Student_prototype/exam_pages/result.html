@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Result - TEST VISTA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .result-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .score-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .performance-card {
+            transition: transform 0.3s ease;
+        }
+        .performance-card:hover {
+            transform: translateY(-5px);
+        }
+        .subject-performance {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .excellent { background-color: #d4edda; border-left: 5px solid #28a745; }
+        .good { background-color: #d1ecf1; border-left: 5px solid #17a2b8; }
+        .average { background-color: #fff3cd; border-left: 5px solid #ffc107; }
+        .poor { background-color: #f8d7da; border-left: 5px solid #dc3545; }
+    </style>
+</head>
+
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="container mt-4 mb-5">
+        <div class="result-container">
+            <!-- Congratulations Header -->
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-success">
+                    <i class="bi bi-trophy-fill"></i> Exam Completed!
+                </h2>
+                <p class="text-muted">Here are your results</p>
+            </div>
+
+            <!-- Score Card -->
+            <div class="score-card">
+                <div class="score-circle" id="scoreCircle">
+                    85%
+                </div>
+                <h3 class="mb-2" id="examTitle">Mathematics Practice Exam</h3>
+                <p class="mb-3" id="scoreText">Excellent Performance!</p>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-2">
+                        <i class="bi bi-check-circle-fill d-block mb-1"></i>
+                        <strong id="correctAnswers">21/25</strong>
+                        <small class="d-block">Correct</small>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <i class="bi bi-x-circle-fill d-block mb-1"></i>
+                        <strong id="wrongAnswers">4/25</strong>
+                        <small class="d-block">Wrong</small>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <i class="bi bi-clock-fill d-block mb-1"></i>
+                        <strong id="timeTaken">38 min</strong>
+                        <small class="d-block">Time Taken</small>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <i class="bi bi-award-fill d-block mb-1"></i>
+                        <strong id="totalMarks">85/100</strong>
+                        <small class="d-block">Marks</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <button class="btn btn-outline-primary btn-lg me-3" onclick="viewDetailedReport()">
+                    <i class="bi bi-file-text"></i> Detailed Report
+                </button>
+                <button class="btn btn-success btn-lg me-3" onclick="retakeExam()">
+                    <i class="bi bi-arrow-clockwise"></i> Retake Exam
+                </button>
+                <button class="btn btn-primary btn-lg" onclick="goToHome()">
+                    <i class="bi bi-house"></i> Back to Home
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript files -->
+    <script src="../commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar -->
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+
+        // Get URL parameters and exam results
+        const urlParams = new URLSearchParams(window.location.search);
+        const subject = urlParams.get('subject');
+        const series = urlParams.get('series');
+        const type = urlParams.get('type');
+        
+        // Get exam results from localStorage
+        const examResult = JSON.parse(localStorage.getItem('examResult') || '{}');
+        const score = examResult.percentage || urlParams.get('score') || '85';
+
+        // Update result info based on parameters
+        document.addEventListener('DOMContentLoaded', function() {
+            updateResultInfo();
+            animateScore();
+        });
+
+        function updateResultInfo() {
+            const titleElement = document.getElementById('examTitle');
+            const correctAnswersElement = document.getElementById('correctAnswers');
+            const wrongAnswersElement = document.getElementById('wrongAnswers');
+            const timeTakenElement = document.getElementById('timeTaken');
+            const totalMarksElement = document.getElementById('totalMarks');
+            
+            // Update title
+            if (examResult.title) {
+                titleElement.textContent = examResult.title;
+            } else if (subject) {
+                titleElement.textContent = `${subject.charAt(0).toUpperCase() + subject.slice(1)} Practice Exam`;
+            } else if (series) {
+                titleElement.textContent = `${series.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Test`;
+            }
+
+            // Update exam statistics if available
+            if (examResult.correctAnswers !== undefined) {
+                correctAnswersElement.textContent = `${examResult.correctAnswers}/${examResult.totalQuestions}`;
+                wrongAnswersElement.textContent = `${examResult.totalQuestions - examResult.correctAnswers}/${examResult.totalQuestions}`;
+                totalMarksElement.textContent = `${examResult.obtainedMarks}/${examResult.totalMarks}`;
+                
+                // Format time taken
+                if (examResult.timeTaken) {
+                    const minutes = Math.floor(examResult.timeTaken / 60);
+                    const seconds = examResult.timeTaken % 60;
+                    timeTakenElement.textContent = `${minutes}m ${seconds}s`;
+                }
+            }
+
+            // Update score-based elements
+            updateScoreElements(parseInt(score));
+        }
+
+        function updateScoreElements(score) {
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreText = document.getElementById('scoreText');
+            
+            scoreCircle.textContent = score + '%';
+            
+            if (score >= 90) {
+                scoreText.textContent = 'Outstanding Performance!';
+                scoreCircle.style.background = 'rgba(40, 167, 69, 0.3)';
+            } else if (score >= 80) {
+                scoreText.textContent = 'Excellent Performance!';
+                scoreCircle.style.background = 'rgba(23, 162, 184, 0.3)';
+            } else if (score >= 70) {
+                scoreText.textContent = 'Good Performance!';
+                scoreCircle.style.background = 'rgba(255, 193, 7, 0.3)';
+            } else if (score >= 60) {
+                scoreText.textContent = 'Average Performance';
+                scoreCircle.style.background = 'rgba(255, 193, 7, 0.3)';
+            } else {
+                scoreText.textContent = 'Needs Improvement';
+                scoreCircle.style.background = 'rgba(220, 53, 69, 0.3)';
+            }
+        }
+
+        function animateScore() {
+            const scoreCircle = document.getElementById('scoreCircle');
+            let currentScore = 0;
+            const targetScore = parseInt(score);
+            const increment = targetScore / 50;
+            
+            const timer = setInterval(() => {
+                currentScore += increment;
+                if (currentScore >= targetScore) {
+                    currentScore = targetScore;
+                    clearInterval(timer);
+                }
+                scoreCircle.textContent = Math.round(currentScore) + '%';
+            }, 30);
+        }
+
+        function viewDetailedReport() {
+            const params = new URLSearchParams(window.location.search);
+            window.location.href = `../exam_pages/detailed_report.html?${params.toString()}`;
+        }
+
+        function retakeExam() {
+            if (confirm('Are you sure you want to retake this exam? Your current score will be replaced.')) {
+                // Clear the stored result
+                localStorage.removeItem('examResult');
+                
+                // Navigate back to instructions
+                const params = new URLSearchParams();
+                if (subject) params.append('subject', subject);
+                if (series) params.append('series', series);
+                if (type) params.append('type', type);
+                
+                window.location.href = `./instructions.html?${params.toString()}`;
+            }
+        }
+
+        function goToHome() {
+            window.location.href = '../test_exam/test_exam.html';
+        }
+    </script>
+</body>
+
+</html> 
