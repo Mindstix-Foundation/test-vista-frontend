@@ -409,8 +409,8 @@ const selectedTopicObj = ref<{ id: number; name: string } | null>(null)
 const selectedTypeObj = ref<{ id: number; type_name: string } | null>(null)
 
 // Computed properties to extract IDs from selected objects
-const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id || null)
-const selectedType = computed<number | null>(() => selectedTypeObj.value?.id || null)
+const selectedTopic = computed<number | null>(() => selectedTopicObj.value?.id ?? null)
+const selectedType = computed<number | null>(() => selectedTypeObj.value?.id ?? null)
 
 // Add pagination and sorting state
 const currentPage = ref(1)
@@ -673,9 +673,9 @@ async function fetchQuestions() {
       is_verified: true,
       page: currentPage.value,
       page_size: pageSize.value,
-      search: searchQuery.value || undefined,
-      topic_id: selectedTopic.value || undefined,
-      question_type_id: selectedType.value || undefined
+      search: searchQuery.value ?? undefined,
+      topic_id: selectedTopic.value ?? undefined,
+      question_type_id: selectedType.value ?? undefined
     };
 
     if (sortOption.value && sortMappings[sortOption.value]) {
@@ -802,7 +802,7 @@ function extractImageData(questionTextData: ApiQuestionText | null) {
   let imageId = null;
   let imageUrl = null;
 
-  if (questionTextData && questionTextData.image_id && questionTextData.image) {
+  if (questionTextData?.image_id && questionTextData?.image) {
     imageId = questionTextData.image_id;
     imageUrl = questionTextData.image.presigned_url;
 
@@ -816,9 +816,7 @@ function extractImageData(questionTextData: ApiQuestionText | null) {
 }
 
 function extractTranslationStatus(questionTextData: ApiQuestionText | null) {
-  return questionTextData && questionTextData.translation_status
-    ? questionTextData.translation_status
-    : null;
+  return questionTextData?.translation_status ?? null;
 }
 
 function extractTopics(apiQuestion: ApiQuestion) {
@@ -935,7 +933,7 @@ function processMCQ(questionTextData: ApiQuestionText | null) {
 
     // Process option images
     const optionImagesArray = questionTextData.mcq_options.map((opt: ApiMcqOption) =>
-      opt.image && opt.image.presigned_url ? opt.image.presigned_url : null
+      opt?.image?.presigned_url ?? null
     );
 
     // Filter out null values and set optionImages only if at least one non-null image exists
@@ -961,11 +959,11 @@ function processMatchPairs(questionTextData: ApiQuestionText | null) {
 
     // Extract image URLs for left and right sides
     result.lhsImages = questionTextData.match_pairs.map((pair: ApiMatchPair) =>
-      pair.left_image && pair.left_image.presigned_url ? pair.left_image.presigned_url : null
+      pair?.left_image?.presigned_url ?? null
     );
 
     result.rhsImages = questionTextData.match_pairs.map((pair: ApiMatchPair) =>
-      pair.right_image && pair.right_image.presigned_url ? pair.right_image.presigned_url : null
+      pair?.right_image?.presigned_url ?? null
     );
   }
 

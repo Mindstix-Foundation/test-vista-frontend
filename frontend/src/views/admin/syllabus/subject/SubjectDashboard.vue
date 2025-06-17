@@ -370,15 +370,11 @@ const fetchData = async () => {
 const initializeSortable = () => {
   // First, destroy any existing sortable instances
   const mainList = document.getElementById('sortable-list') as SortableElement
-  if (mainList && mainList._sortable) {
-    mainList._sortable.destroy()
-  }
+  mainList?._sortable?.destroy()
   
   document.querySelectorAll('.sortable-list').forEach((list) => {
     const sortableList = list as SortableListElement
-    if (sortableList._sortable) {
-      sortableList._sortable.destroy()
-    }
+    sortableList._sortable?.destroy()
   })
   
   // Initialize main chapter list sortable
@@ -386,7 +382,9 @@ const initializeSortable = () => {
     const chapterSortable = new Sortable(mainList, {
       animation: 150,
       handle: '.bi-grip-vertical',
-      onEnd: handleChapterReorder,
+      onEnd: (evt) => {
+        void handleChapterReorder(evt); // Using void operator to ignore the promise
+      },
     })
     
     // Store sortable instance reference on the DOM element
@@ -399,7 +397,9 @@ const initializeSortable = () => {
     const topicSortable = new Sortable(list as HTMLElement, {
       animation: 150,
       handle: '.bi-grip-vertical',
-      onEnd: handleTopicReorder,
+      onEnd: (evt) => {
+        void handleTopicReorder(evt); // Using void operator to ignore the promise
+      },
     })
     
     // Store sortable instance reference on the DOM element
@@ -467,7 +467,7 @@ const deleteChapter = async () => {
     // Restore the expanded states
     chapters.value = chapters.value.map((chapter) => ({
       ...chapter,
-      isExpanded: expandedStates.get(chapter.id) || false,
+      isExpanded: expandedStates.get(chapter.id) ?? false,
     }))
 
     toastStore.showToast({
@@ -508,7 +508,7 @@ const handleChapterReorder = async ({ item, newIndex }: Sortable.SortableEvent) 
     // Restore the expanded states
     chapters.value = chapters.value.map((chapter) => ({
       ...chapter,
-      isExpanded: expandedStates.get(chapter.id) || false,
+      isExpanded: expandedStates.get(chapter.id) ?? false,
     }))
 
     toastStore.showToast({
@@ -531,7 +531,7 @@ const handleTopicReorder = async ({ item, newIndex }: Sortable.SortableEvent) =>
     if (typeof newIndex === 'undefined') return
 
     // Get the parent chapter element and IDs
-    const chapterElement = (item as HTMLElement).closest('.collapse')
+    const chapterElement = item.closest('.collapse')
     if (!chapterElement) return
 
     const chapterId = Number(chapterElement.id.replace('chapter-', ''))
@@ -557,7 +557,7 @@ const handleTopicReorder = async ({ item, newIndex }: Sortable.SortableEvent) =>
     // Restore the expanded states
     chapters.value = chapters.value.map((chapter) => ({
       ...chapter,
-      isExpanded: expandedStates.get(chapter.id) || false,
+      isExpanded: expandedStates.get(chapter.id) ?? false,
     }))
 
     toastStore.showToast({

@@ -51,63 +51,32 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
   try {
     isSubmitting.value = true // Show loading spinner
 
-    // Step 1: Create the address first
-    const { data: createdAddress } = await axiosInstance.post('/addresses', {
-      street: schoolData.address.street,
-      postal_code: schoolData.address.postal_code,
-      city_id: schoolData.address.city_id,
-    })
-
-    console.log('Address created successfully:', createdAddress)
-
-    // Step 2: Create the school with the new address ID
-    const schoolPayload = {
+    // Use the new unified upsert API endpoint
+    const upsertPayload = {
       name: schoolData.name,
       board_id: schoolData.board_id,
-      address_id: createdAddress.id,
+      address: {
+        street: schoolData.address.street,
+        postal_code: schoolData.address.postal_code,
+        city_id: schoolData.address.city_id,
+      },
       principal_name: schoolData.principal_name,
       email: schoolData.email,
       contact_number: schoolData.contact_number,
-      alternate_contact_number: schoolData.alternate_contact_number || null,
+      alternate_contact_number: schoolData.alternate_contact_number ?? null,
+      instruction_medium_ids: schoolData.mediums,
+      standard_ids: schoolData.standards,
     }
 
-    try {
-      const { data: createdSchool } = await axiosInstance.post('/schools', schoolPayload)
-      console.log('School created successfully:', createdSchool)
+    const { data: createdSchool } = await axiosInstance.post('/schools/upsert', upsertPayload)
+    console.log('School created successfully:', createdSchool)
 
-      // Step 3: Create school-instruction-medium mappings
-      const mediumPromises = schoolData.mediums.map(async (mediumId) => {
-        const response = await axiosInstance.post('/school-instruction-mediums', {
-          school_id: createdSchool.id,
-          instruction_medium_id: mediumId,
-        })
-        return response.data
-      })
-
-      // Step 4: Create school-standard mappings
-      const standardPromises = schoolData.standards.map(async (standardId) => {
-        const response = await axiosInstance.post('/school-standards', {
-          school_id: createdSchool.id,
-          standard_id: standardId,
-        })
-        return response.data
-      })
-
-      // Wait for all mappings to be created
-      await Promise.all([...mediumPromises, ...standardPromises])
-      console.log('School mappings created successfully')
-
-      toastStore.showToast({
-        title: 'Success',
-        message: `School "${schoolData.name}" has been created successfully.`,
-        type: 'success',
-      })
-      router.push('/admin/school')
-    } catch (error) {
-      // If school creation fails, delete the created address to avoid orphaned addresses
-      await axiosInstance.delete(`/addresses/${createdAddress.id}`)
-      throw error
-    }
+    toastStore.showToast({
+      title: 'Success',
+      message: `School "${schoolData.name}" has been created successfully.`,
+      type: 'success',
+    })
+    router.push('/admin/school')
   } catch (error) {
     console.error('Error creating school:', error)
     toastStore.showToast({

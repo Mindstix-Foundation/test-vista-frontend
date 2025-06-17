@@ -311,9 +311,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import axiosInstance from '@/config/axios'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import type { DisplayQuestion, DisplaySection, McqOption, MatchPair, QuestionText } from '@/types/types';
+// Add explicit imports for PDF generation libraries with type annotations
+import html2pdf from 'html2pdf.js';
+import axiosInstance from '@/config/axios';
+// These will be dynamically imported when needed
+// import html2canvas from 'html2canvas';
+// import { jsPDF } from 'jspdf';
 
 // Define component name (for linter)
 defineOptions({
@@ -660,8 +666,7 @@ const switchToMedium = async (mediumId: number): Promise<void> => {
 };
 
 // Function to generate PDF for a specific medium
-const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html2pdf: {
-  (): {
+const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html2pdf: () => {
     set: (options: {
       margin: number;
       filename: string;
@@ -673,9 +678,9 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
         outputPdf: (type: string) => Promise<Blob>;
       };
     };
-  };
-}): Promise<File> => {
-  console.log(`Generating PDF for medium ID: ${mediumId} (${availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown'})`);
+  }
+): Promise<File> => {
+  console.log(`Generating PDF for medium ID: ${mediumId} (${availableMediums.value.find(m => m.id === mediumId)?.name ?? 'Unknown'})`);
   
   try {
     // Switch to this medium to update the UI with correct language content
@@ -683,50 +688,323 @@ const generatePDFForMedium = async (element: HTMLElement, mediumId: number, html
     
     // Wait for the UI to fully update
     await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 300)); // Extra delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay for more reliable rendering
+    
+    // Apply print-specific styling before generating PDF
+    document.body.classList.add('printing-test-paper');
+    
+    // Find and modify elements to match print styling
+    const a4PaperCard = element.querySelector('.a4-paper-card') as HTMLElement;
+    if (a4PaperCard) {
+      // Save original styles to restore later
+      const originalStyles = {
+        border: a4PaperCard.style.border,
+        boxShadow: a4PaperCard.style.boxShadow,
+        padding: a4PaperCard.style.padding,
+        transform: a4PaperCard.style.transform
+      };
+      
+      // Apply print-specific styling
+      a4PaperCard.style.border = 'none';
+      a4PaperCard.style.boxShadow = 'none';
+      a4PaperCard.style.padding = '20mm'; // Use consistent padding as in print media query
+      a4PaperCard.style.transform = 'none';
+    }
+    
+    // Hide elements that should be hidden in print
+    const elementsToHide = element.querySelectorAll('.no-print, .view-mode-toggle-container, .zoom-control-container');
+    const hiddenElements: Array<{element: HTMLElement, display: string}> = [];
+    
+    elementsToHide.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      // Save original display style
+      hiddenElements.push({
+        element: htmlEl,
+        display: htmlEl.style.display
+      });
+      // Hide the element
+      htmlEl.style.display = 'none';
+    });
     
     // Generate PDF with the updated content
     const pdfBlob = await new Promise<Blob>((resolve, reject) => {
       const opt = {
-        margin: 10,
+        margin: 0, // Remove margins as we're already handling padding in the element
         filename: `test-paper-medium-${mediumId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: true, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { 
+          scale: 4, // Increased scale for higher resolution
+          logging: true, 
+          useCORS: true, // Allow cross-origin images
+          backgroundColor: '#FFFFFF',
+          letterRendering: true, // Improve text rendering
+          removeContainer: false, // Keep the container to maintain layout
+          dpi: 300, // Higher DPI for better quality
+          onclone: (clonedDoc) => {
+            // Apply additional print styles to the cloned document
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              body { font-family: 'Times New Roman', Times, serif; }
+              * { font-family: inherit !important; }
+              .a4-paper-card { padding: 20mm !important; }
+              
+              /* Ensure all text has good contrast */
+              p, span, div, h1, h2, h3, h4, h5, h6, li {
+                color: #000000 !important;
+                font-size: 12pt !important;
+                line-height: 1.5 !important;
+                text-rendering: geometricPrecision !important;
+              }
+              
+              /* Optimize fonts for PDF */
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+            
+            // Process text nodes to improve quality
+            const textElements = clonedDoc.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+            textElements.forEach(el => {
+              // Add data attribute to ensure text is recognized properly
+              el.setAttribute('data-html2canvas-render-text', 'true');
+              el.setAttribute('data-html2canvas-render-node', 'true');
+            });
+          }
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: false, // Disable compression for better text quality
+          putOnlyUsedFonts: true, // Only embed used fonts
+          floatPrecision: 16, // Higher precision for better text positioning
+        },
+        fontFaces: [
+          // Add standard fonts to ensure they're embedded
+          { family: 'Times New Roman', weight: 'normal' },
+          { family: 'Times New Roman', weight: 'bold' },
+          { family: 'Arial', weight: 'normal' },
+          { family: 'Arial', weight: 'bold' }
+        ],
+        enableLinks: true, // Enable hyperlinks in the PDF
       };
       
-      html2pdf().set(opt).from(element).outputPdf('blob')
-        .then((blob: Blob) => {
-          console.log(`PDF for medium ${mediumId} generated successfully, blob size:`, blob.size);
+      // Apply special text handling to improve quality
+      const specialPageRendering = async (html2canvas, jsPDF) => {
+        try {
+          // Create a new jsPDF document with text rendering options
+          const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: false, // Disable compression for better text quality
+            putOnlyUsedFonts: true,
+            floatPrecision: 16,
+            textRenderingMode: 'fill',
+            hotfixes: ['px_scaling'], // Apply hotfixes for better text rendering
+          });
+
+          // Get content and dimensions
+          const contentElement = element.cloneNode(true) as HTMLElement;
+          const width = element.offsetWidth;
+          const height = element.offsetHeight;
+
+          // Save original styles
+          const originalDisplay = contentElement.style.display;
+          const originalPosition = contentElement.style.position;
+          const originalWidth = contentElement.style.width;
+          const originalHeight = contentElement.style.height;
+          
+          // Apply special text handling
+          const textElements = contentElement.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+          textElements.forEach(el => {
+            (el as HTMLElement).dataset.textContent = el.textContent || '';
+          });
+
+          // Create the canvas at high resolution for clear rendering
+          const canvas = await html2canvas(element, {
+            scale: 4, // Higher scale for better quality
+            useCORS: true,
+            logging: true,
+            letterRendering: true,
+            backgroundColor: '#FFFFFF',
+            allowTaint: true
+          });
+
+          // Try a different approach: Use PDF.js text extraction capabilities
+          // First add the image as background
+          const imgData = canvas.toDataURL('image/jpeg', 1.0);
+          const pdfWidth = 210; // A4 width in mm
+          const pdfHeight = 297; // A4 height in mm
+          const imgWidth = pdfWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          // Add the high-quality image as background
+          doc.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+          
+          // Now add a hidden text layer over the image for searchable text
+          doc.setTextColor(0, 0, 0, 0); // Transparent text (still selectable)
+          doc.setFontSize(12);
+          
+          // Extract text and position from elements
+          textElements.forEach(el => {
+            try {
+              const rect = (el as HTMLElement).getBoundingClientRect();
+              const elementText = (el as HTMLElement).dataset.textContent || '';
+              if (elementText && elementText.trim()) {
+                // Convert coordinates to PDF space
+                const pdfX = (rect.left / width) * pdfWidth;
+                const pdfY = (rect.top / height) * pdfHeight;
+                
+                // Add invisible but selectable text
+                doc.text(elementText, pdfX, pdfY, { 
+                  renderingMode: 'invisible',
+                  baseline: 'top'
+                });
+              }
+            } catch (err) {
+              console.log('Error processing text element:', err);
+            }
+          });
+          
+          // Generate PDF with selectable text
+          const blob = doc.output('blob');
+          
+          // Restore original styles
+          contentElement.style.display = originalDisplay;
+          contentElement.style.position = originalPosition;
+          contentElement.style.width = originalWidth;
+          contentElement.style.height = originalHeight;
+          
           resolve(blob);
-        })
-        .catch((error: Error) => {
-          console.error(`Error generating PDF for medium ${mediumId}:`, error);
-          reject(error);
+        } catch (error) {
+          console.error('Error in specialized PDF rendering:', error);
+          // Fall back to standard method if special handling fails
+          html2pdf().set(opt)
+            .from(element)
+            .outputPdf('blob')
+            .then((blob: Blob) => {
+              console.log(`PDF for medium ${mediumId} generated successfully, blob size:`, blob.size);
+              if (blob.size === 0) {
+                console.error(`Generated PDF has zero size for medium ${mediumId}`);
+                reject(new Error(`Generated PDF has zero size for medium ${mediumId}`));
+                return;
+              }
+              resolve(blob);
+            })
+            .catch((error: Error) => {
+              console.error(`Error generating PDF for medium ${mediumId}:`, error);
+              reject(error);
+            });
+        }
+      };
+      
+      // Import additional libraries for special handling
+      import('html2canvas').then(html2canvasModule => {
+        const html2canvas = html2canvasModule.default;
+        import('jspdf').then(jsPDFModule => {
+          const jsPDF = jsPDFModule.default;
+          specialPageRendering(html2canvas, jsPDF);
+        }).catch(error => {
+          console.error('Error importing jsPDF:', error);
+          // Fall back to standard method
+          html2pdf().set(opt)
+            .from(element)
+            .outputPdf('blob')
+            .then((blob: Blob) => {
+              console.log(`PDF for medium ${mediumId} generated successfully (jsPDF fallback), blob size:`, blob.size);
+              if (blob.size === 0) {
+                console.error(`Generated PDF has zero size for medium ${mediumId}`);
+                reject(new Error(`Generated PDF has zero size for medium ${mediumId}`));
+                return;
+              }
+              resolve(blob);
+            })
+            .catch((error: Error) => {
+              console.error(`Error generating PDF for medium ${mediumId}:`, error);
+              reject(error);
+            });
         });
+      }).catch(error => {
+        console.error('Error importing html2canvas:', error);
+        // Fall back to standard method
+        html2pdf().set(opt)
+          .from(element)
+          .outputPdf('blob')
+          .then((blob: Blob) => {
+            console.log(`PDF for medium ${mediumId} generated successfully (html2canvas fallback), blob size:`, blob.size);
+            if (blob.size === 0) {
+              console.error(`Generated PDF has zero size for medium ${mediumId}`);
+              reject(new Error(`Generated PDF has zero size for medium ${mediumId}`));
+              return;
+            }
+            resolve(blob);
+          })
+          .catch((error: Error) => {
+            console.error(`Error generating PDF for medium ${mediumId}:`, error);
+            reject(error);
+          });
+      });
     });
     
-    // Create a file from the blob with medium name in the filename
-    const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
-    return new File(
+    // Restore original styles
+    if (a4PaperCard) {
+      a4PaperCard.style.border = '';
+      a4PaperCard.style.boxShadow = '';
+      a4PaperCard.style.padding = '';
+      a4PaperCard.style.transform = '';
+    }
+    
+    // Restore display for hidden elements
+    hiddenElements.forEach(item => {
+      item.element.style.display = item.display;
+    });
+    
+    // Remove print class from body
+    document.body.classList.remove('printing-test-paper');
+    
+    // Log PDF blob details for debugging
+    console.log(`PDF blob for medium ${mediumId}:`, {
+      type: pdfBlob.type,
+      size: pdfBlob.size,
+      lastModified: new Date().toISOString()
+    });
+    
+    // Create a file from the blob with a consistent naming pattern for the API
+    const sanitizedTitle = paperTitle.value.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    const fileName = `test_paper_${sanitizedTitle}_medium_${mediumId}.pdf`;
+    
+    // Create File object with explicit MIME type
+    const pdfFile = new File(
       [pdfBlob], 
-      `test-paper-${mediumName.toLowerCase()}-${mediumId}.pdf`, 
+      fileName, 
       { type: 'application/pdf' }
     );
+    
+    // Verify file was created properly
+    console.log(`Created File object for medium ${mediumId}:`, {
+      name: pdfFile.name,
+      type: pdfFile.type,
+      size: pdfFile.size
+    });
+    
+    return pdfFile;
   } catch (error) {
     console.error(`Failed to generate PDF for medium ${mediumId}:`, error);
+    // Ensure print class is removed from body even if an error occurs
+    document.body.classList.remove('printing-test-paper');
     throw error;
   }
 };
 
 // Function to save the test paper as PDF and call the API
 const saveTestPaperToDB = async () => {
-  if (!saveRequested.value || saveInProgress.value || saveComplete.value) {
-    console.log('Save conditions not met:', { 
-      saveRequested: saveRequested.value, 
-      saveInProgress: saveInProgress.value, 
-      saveComplete: saveComplete.value 
-    });
+  // Check save conditions
+  if (!canSaveTestPaper()) {
     return;
   }
   
@@ -738,159 +1016,522 @@ const saveTestPaperToDB = async () => {
   const originalMediumId = currentMediumId.value;
   
   try {
-    // Wait for the page to fully render
-    await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 500)); // Extra delay to ensure DOM is ready
+    // Wait for rendering and get required data
+    await waitForRendering();
+    const { userId, schoolId, chapters, weightages, patternId } = await getRequiredData();
     
-    // Make sure we have the necessary data
-    const userId = route.query.userId;
-    const schoolId = route.query.schoolId;
-    const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
-    const weightages = route.query.weightages ? JSON.parse(decodeURIComponent(route.query.weightages as string)) : [];
+    // Get the print element and HTML2PDF library
+    const element = getAndValidatePrintElement();
+    console.log('Print element found:', element.id, 'Content length:', element.innerHTML.length);
     
-    console.log('Parsed data for API call:', { userId, schoolId, chapters, weightages });
-    
-    if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
-      throw new Error('Missing required data for saving test paper');
+    // Make sure element is visible and has content
+    if (element.innerHTML.length < 100) {
+      throw new Error('Print element has insufficient content to generate PDF');
     }
     
-    // Get the pattern ID from API data or route query
-    let patternId = '1'; // Default fallback
-    if (apiData.value && apiData.value.patternId) {
-      // Get pattern ID from the loaded API data
-      patternId = apiData.value.patternId.toString();
-      console.log(`Using pattern ID ${patternId} from API data`);
-    } else if (route.query.patternId) {
-      // Get pattern ID from route query
-      patternId = route.query.patternId as string;
-      console.log(`Using pattern ID ${patternId} from route query`);
-    } else {
-      console.warn('No pattern ID found in data or route, using default: 1');
+    const html2pdf = await loadHtml2PdfLibrary();
+    console.log('HTML2PDF library loaded successfully');
+    
+    // Generate PDF files for all mediums
+    const pdfFiles = await generatePDFFilesForAllMediums(element, html2pdf);
+    
+    // Verify files were created and have data
+    if (!pdfFiles || pdfFiles.length === 0) {
+      throw new Error('No PDF files were generated');
     }
     
-    // Get the content element
-    const element = document.getElementById('printSection');
-    if (!element) {
-      console.error('Print section element not found!');
-      console.log('Available elements with IDs:', 
-        Array.from(document.querySelectorAll('[id]')).map(el => ({ id: el.id, tagName: el.tagName }))
-      );
-      throw new Error('Print section not found');
-    }
-    console.log('Found printSection element:', element);
+    console.log(`Generated ${pdfFiles.length} PDF files:`, pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
     
-    // Import the library dynamically
-    console.log('Importing html2pdf library...');
-    let html2pdf;
-    try {
-      html2pdf = (await import('html2pdf.js')).default;
-      console.log('html2pdf library loaded successfully');
-    } catch (importError) {
-      console.error('Failed to import html2pdf library:', importError);
-      throw new Error('Failed to load PDF generation library');
+    // Verify each file has valid data
+    const invalidFiles = pdfFiles.filter(file => !file || file.size === 0);
+    if (invalidFiles.length > 0) {
+      console.error('Some PDF files are invalid:', invalidFiles.map(f => f ? f.name : 'undefined'));
+      throw new Error(`${invalidFiles.length} PDF files are invalid or empty`);
     }
     
-    // Get available instruction mediums
-    // If no instruction mediums are available, default to English (ID 1)
-    const instructionMediums = availableMediums.value.length > 0 
-      ? availableMediums.value.map(medium => medium.id) 
-      : [1];
+    // Submit data to API
+    await submitTestPaperData(userId, schoolId, chapters, weightages, patternId, pdfFiles);
     
-    console.log('Instruction mediums for PDF generation:', instructionMediums);
-    
-    // Generate PDF for each medium
-    const pdfFiles: File[] = [];
-    
-    // Generate PDFs for all mediums
-    for (const mediumId of instructionMediums) {
-      try {
-        const file = await generatePDFForMedium(element, mediumId, html2pdf);
-        pdfFiles.push(file);
-        console.log(`Added PDF for medium ${mediumId} to files array`);
-      } catch (error) {
-        console.error(`Error generating PDF for medium ${mediumId}:`, error);
-        throw new Error(`Failed to generate PDF for medium ${mediumId}`);
-      }
-    }
-    
-    // Restore original medium
-    await switchToMedium(originalMediumId);
-    
-    console.log(`Generated ${pdfFiles.length} PDF files for different mediums`);
-    
-    // Prepare form data
-    const formData = new FormData();
-    
-    // Add required fields
-    formData.append('name', paperTitle.value);
-    formData.append('exam_time', testDuration.value);
-    formData.append('pattern_id', patternId);
-    formData.append('test_paper_origin_type', 'both');
-    
-    // Add chapters and weightages (actual marks, not percentages)
-    chapters.forEach((chapterId: number) => {
-      formData.append('chapters', chapterId.toString());
-    });
-    
-    weightages.forEach((weightage: number) => {
-      formData.append('weightages', weightage.toString());
-    });
-    
-    // Add instruction mediums
-    instructionMediums.forEach((mediumId: number) => {
-      formData.append('instruction_mediums', mediumId.toString());
-    });
-    
-    // Add all PDF files
-    pdfFiles.forEach((file: File) => {
-      formData.append('files', file);
-    });
-    
-    console.log('FormData prepared, making API call with:', {
-      name: paperTitle.value,
-      exam_time: testDuration.value,
-      pattern_id: patternId,
-      chapters: chapters,
-      weightages: weightages,
-      instruction_mediums: instructionMediums,
-      files: pdfFiles.map(f => f.name)
-    });
-    
-    // Make the API call
-    const response = await axiosInstance.post(
-      `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-    
-    console.log('API response received:', response);
-    
-    if (response.status === 201) {
-      console.log('Test paper saved successfully:', response.data);
-      saveComplete.value = true;
-      
-      // Navigate to a confirmation or test papers list page
-      // router.push({ name: 'testPapersList' });
-    } else {
-      throw new Error(`Unexpected response status: ${response.status}`);
-    }
+    saveComplete.value = true;
   } catch (error) {
-    console.error('Error saving test paper:', error);
-    saveError.value = error instanceof Error ? error.message : 'Unknown error occurred';
+    handleSaveError(error);
   } finally {
     saveInProgress.value = false;
-    
-    // Ensure we're back on the original medium
-    if (currentMediumId.value !== originalMediumId) {
-      try {
-        await switchToMedium(originalMediumId);
-      } catch (error) {
-        console.error('Error restoring original medium:', error);
+    await restoreOriginalMedium(originalMediumId);
+  }
+};
+
+// Check if we can save the test paper
+const canSaveTestPaper = () => {
+  if (!saveRequested.value || saveInProgress.value || saveComplete.value) {
+    console.log('Save conditions not met:', { 
+      saveRequested: saveRequested.value, 
+      saveInProgress: saveInProgress.value, 
+      saveComplete: saveComplete.value 
+    });
+    return false;
+  }
+  return true;
+};
+
+// Wait for the page to fully render
+const waitForRendering = async () => {
+  await nextTick();
+  // Extra delay to ensure DOM is ready
+  await new Promise(resolve => setTimeout(resolve, 500));
+};
+
+// Get and validate all required data for saving
+const getRequiredData = async () => {
+  // Extract data from route parameters
+  const userId = route.query.userId;
+  const schoolId = route.query.schoolId;
+  
+  // Parse chapters array - ensure it's in the format the API needs
+  let chapters = [];
+  if (route.query.chapters) {
+    try {
+      const parsedChapters = JSON.parse(decodeURIComponent(route.query.chapters as string));
+      // Ensure chapters are in correct format for the API
+      chapters = Array.isArray(parsedChapters) ? parsedChapters : [];
+      // Log the actual structure for debugging
+      console.log('Parsed chapters structure:', JSON.stringify(chapters));
+    } catch (error) {
+      console.error('Error parsing chapters:', error);
+      throw new Error('Invalid chapters data format');
+    }
+  }
+  
+  // Parse weightages
+  let weightages = [];
+  if (route.query.weightages) {
+    try {
+      weightages = JSON.parse(decodeURIComponent(route.query.weightages as string));
+      // Ensure weightages is an array (can be nested)
+      if (!Array.isArray(weightages)) {
+        console.error('Invalid weightages format - not an array:', weightages);
+        throw new Error('Invalid weightages data format');
       }
+      console.log('Parsed weightages structure:', JSON.stringify(weightages));
+    } catch (error) {
+      console.error('Error parsing weightages:', error);
+      throw new Error('Invalid weightages data format');
+    }
+  }
+  
+  console.log('Parsed data for API call:', { userId, schoolId, chapters, weightages });
+  
+  // Validate required data (we'll validate the flattened arrays later)
+  if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
+    throw new Error('Missing required data for saving test paper');
+  }
+  
+  // Get pattern ID from various sources
+  const patternId = determinePatternId();
+  
+  return { userId, schoolId, chapters, weightages, patternId };
+};
+
+// Determine pattern ID from available sources
+const determinePatternId = () => {
+  let patternId = '1'; // Default fallback
+  
+  if (apiData.value?.patternId) {
+    // Get pattern ID from the loaded API data
+    patternId = apiData.value.patternId.toString();
+    console.log(`Using pattern ID ${patternId} from API data`);
+  } else if (route.query.patternId) {
+    // Get pattern ID from route query
+    patternId = route.query.patternId as string;
+    console.log(`Using pattern ID ${patternId} from route query`);
+  } else {
+    console.warn('No pattern ID found in data or route, using default: 1');
+  }
+  
+  return patternId;
+};
+
+// Get and validate the print element
+const getAndValidatePrintElement = () => {
+  const element = document.getElementById('printSection');
+  
+  if (!element) {
+    console.error('Print section element not found!');
+    console.log('Available elements with IDs:', 
+      Array.from(document.querySelectorAll('[id]')).map(el => ({ id: el.id, tagName: el.tagName }))
+    );
+    throw new Error('Print section not found');
+  }
+  
+  console.log('Found printSection element:', element);
+  return element;
+};
+
+// Load the HTML2PDF library
+const loadHtml2PdfLibrary = async () => {
+  console.log('Importing html2pdf library...');
+  try {
+    const html2pdf = (await import('html2pdf.js')).default;
+    console.log('html2pdf library loaded successfully');
+    return html2pdf;
+  } catch (importError) {
+    console.error('Failed to import html2pdf library:', importError);
+    throw new Error('Failed to load PDF generation library');
+  }
+};
+
+// Generate PDF files for all available mediums
+const generatePDFFilesForAllMediums = async (element: HTMLElement, html2pdf: () => {
+  set: (options: {
+    margin: number;
+    filename: string;
+    image: { type: string; quality: number };
+    html2canvas: { scale: number; logging: boolean; useCORS: boolean };
+    jsPDF: { unit: string; format: string; orientation: string };
+  }) => {
+    from: (element: HTMLElement) => {
+      outputPdf: (type: string) => Promise<Blob>;
+    };
+  };
+}) => {
+  // Get available instruction mediums
+  const instructionMediums = getInstructionMediums();
+  console.log('Instruction mediums for PDF generation:', instructionMediums);
+  
+  if (instructionMediums.length === 0) {
+    console.warn('No instruction mediums found, using default medium (1)');
+    instructionMediums.push(1); // Ensure we have at least one medium
+  }
+  
+  // Generate PDF for each medium
+  const pdfFiles: File[] = [];
+  
+  // First try generating a test PDF to see if html2pdf is working
+  try {
+    console.log('Testing PDF generation with current medium...');
+    const testOptions = {
+      margin: 0,
+      filename: 'test.pdf',
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { 
+        scale: 4, 
+        logging: true, 
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        letterRendering: true,
+        dpi: 300,
+        removeContainer: false,
+        onclone: (clonedDoc) => {
+          // Apply additional text handling styles
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            * { font-family: 'Times New Roman', Times, serif !important; }
+            p, span, div, h1, h2, h3, h4, h5, h6, li, td, th {
+              font-family: inherit !important;
+              color: #000000 !important;
+              font-size: 12pt !important;
+              line-height: 1.5 !important;
+              text-rendering: geometricPrecision !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+          
+          // Mark all text elements for special handling
+          const textElements = clonedDoc.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+          textElements.forEach(el => {
+            el.setAttribute('data-html2canvas-render-text', 'true');
+            el.setAttribute('data-html2canvas-render-node', 'true');
+            el.setAttribute('data-html2canvas-selectable-text', 'true');
+          });
+        }
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compress: false,
+        putOnlyUsedFonts: true,
+        floatPrecision: 16,
+        hotfixes: ['px_scaling'], // Improve text rendering
+      },
+      enableLinks: true,
+      useAdvancedTextHandling: true, // Custom flag for our implementation
+    };
+    
+    const testBlob = await html2pdf()
+      .set(testOptions)
+      .from(element)
+      .outputPdf('blob');
+    
+    console.log('Test PDF generation successful, blob size:', testBlob.size);
+    
+    if (testBlob.size === 0) {
+      throw new Error('Test PDF has zero size, check HTML content and rendering');
+    }
+  } catch (error) {
+    console.error('Test PDF generation failed:', error);
+    throw new Error(`PDF generation test failed: ${error.message}`);
+  }
+  
+  // Now generate PDFs for each medium
+  for (const mediumId of instructionMediums) {
+    try {
+      console.log(`Generating PDF for medium ${mediumId}...`);
+      const file = await generatePDFForMedium(element, mediumId, html2pdf);
+      
+      if (!file || file.size === 0) {
+        console.error(`Generated PDF for medium ${mediumId} is invalid or empty`);
+        throw new Error(`Invalid PDF for medium ${mediumId}`);
+      }
+      
+      pdfFiles.push(file);
+      console.log(`Added PDF for medium ${mediumId} to files array, size: ${file.size} bytes`);
+    } catch (error) {
+      console.error(`Error generating PDF for medium ${mediumId}:`, error);
+      
+      // If this is the only medium or the first one, rethrow the error
+      if (instructionMediums.length === 1 || mediumId === instructionMediums[0]) {
+        throw new Error(`Failed to generate PDF for medium ${mediumId}: ${error.message}`);
+      }
+      
+      // Otherwise continue with other mediums
+      console.warn(`Skipping medium ${mediumId} due to error, continuing with others`);
+    }
+  }
+  
+  // Verify we have at least one valid PDF
+  if (pdfFiles.length === 0) {
+    throw new Error('Failed to generate any valid PDF files');
+  }
+  
+  return pdfFiles;
+};
+
+// Get the list of instruction mediums to use
+const getInstructionMediums = () => {
+  console.log('Available mediums:', availableMediums.value);
+  
+  // If no instruction mediums are available, default to English (ID 1)
+  if (!availableMediums.value || availableMediums.value.length === 0) {
+    console.warn('No available mediums found, using default English medium (ID 1)');
+    return [1];
+  }
+  
+  // Get all medium IDs
+  const mediumIds = availableMediums.value.map(medium => medium.id);
+  
+  // Filter out any invalid or zero IDs
+  const validMediumIds = mediumIds.filter(id => id && id > 0);
+  
+  // If we have valid IDs, return them, otherwise return default
+  if (validMediumIds.length > 0) {
+    console.log('Using valid medium IDs:', validMediumIds);
+    return validMediumIds;
+  }
+  
+  console.warn('No valid medium IDs found, using default English medium (ID 1)');
+  return [1]; // Default to English medium (ID 1)
+};
+
+// Helper function to flatten deeply nested arrays
+const flattenArray = (arr: any[]): any[] => {
+  const result: any[] = [];
+  
+  const flatten = (item: any) => {
+    if (Array.isArray(item)) {
+      item.forEach(flatten);
+    } else {
+      result.push(item);
+    }
+  };
+  
+  flatten(arr);
+  return result;
+};
+
+// Helper function to extract chapter ID from various formats
+const extractChapterId = (chapter: { id?: number; chapterId?: number } | number | string): number | null => {
+  // Check if chapter is already a simple number
+  if (typeof chapter === 'number') {
+    return chapter;
+  }
+  
+  // Check if chapter is a string that can be converted to number
+  if (typeof chapter === 'string') {
+    const parsed = parseInt(chapter, 10);
+    return isNaN(parsed) ? null : parsed;
+  }
+  
+  // For object types, check for id or chapterId properties
+  if (chapter && typeof chapter === 'object') {
+    if ('id' in chapter) return chapter.id;
+    if ('chapterId' in chapter) return chapter.chapterId;
+  }
+  
+  // If we can't determine the ID, log an error and return null
+  console.error('Unable to extract ID from chapter:', chapter);
+  return null;
+};
+
+// Helper function to safely append values to FormData
+const appendToFormData = (formData: FormData, name: string, value: number | string | null | undefined) => {
+  if (value !== null && value !== undefined) {
+    formData.append(name, value.toString());
+  }
+};
+
+// Submit test paper data to the API
+const submitTestPaperData = async (
+  userId: number,
+  schoolId: number,
+  chapters: Array<{ id?: number; chapterId?: number } | number>,
+  weightages: number[],
+  patternId: string,
+  pdfFiles: File[]
+) => {
+  const formData = new FormData();
+  
+  // Add test paper metadata
+  formData.append('name', paperTitle.value);
+  formData.append('exam_time', testDuration.value);
+  formData.append('pattern_id', patternId);
+  formData.append('test_paper_origin_type', 'board');
+  
+  // Extract and process chapter IDs
+  console.log('Raw chapters data:', chapters);
+  console.log('Raw weightages data:', weightages);
+  
+  // Flatten the nested arrays first
+  const flattenedChapters = flattenArray(chapters);
+  const flattenedWeightages = flattenArray(weightages);
+  
+  console.log('Flattened chapters:', flattenedChapters);
+  console.log('Flattened weightages:', flattenedWeightages);
+  
+  const chapterIds = flattenedChapters.map(extractChapterId).filter(Boolean);
+  const processedWeightages = flattenedWeightages.map(w => typeof w === 'string' ? parseInt(w, 10) : w).filter(w => !isNaN(w));
+  
+  console.log('Extracted chapter IDs:', chapterIds);
+  console.log('Processed weightages:', processedWeightages);
+  
+  // Validate that we have the same number of chapters and weightages
+  if (chapterIds.length !== processedWeightages.length) {
+    throw new Error(`Mismatch between chapters (${chapterIds.length}) and weightages (${processedWeightages.length})`);
+  }
+  
+  if (chapterIds.length === 0) {
+    throw new Error('No valid chapter IDs found after processing');
+  }
+  
+  // Add chapters to form data - individually with the same key for array
+  chapterIds.forEach(id => {
+    if (id !== null && id !== undefined) {
+      formData.append('chapters[]', id.toString());
+    }
+  });
+  
+  // Add weightages to form data - individually with the same key for array
+  processedWeightages.forEach(weight => {
+    if (weight !== null && weight !== undefined) {
+      formData.append('weightages[]', weight.toString());
+    }
+  });
+  
+  // Add chapters as JSON string (the DTO will parse it)
+  formData.append('chapters', JSON.stringify(chapterIds));
+  
+  // Add weightages as JSON string (the DTO will parse it)
+  formData.append('weightages', JSON.stringify(processedWeightages));
+  
+  // Add instruction mediums as JSON string
+  const mediumIds = availableMediums.value.map(medium => medium.id);
+  formData.append('instruction_mediums', JSON.stringify(mediumIds));
+  
+  // Add instruction mediums individually for array handling
+  mediumIds.forEach(id => {
+    if (id !== null && id !== undefined) {
+      formData.append('instruction_mediums[]', id.toString());
+    }
+  });
+  
+  // Validate that we have files for each medium
+  if (pdfFiles.length !== mediumIds.length) {
+    throw new Error(`Mismatch between PDF files (${pdfFiles.length}) and instruction mediums (${mediumIds.length})`);
+  }
+  
+  // Verify we have files
+  if (!pdfFiles || pdfFiles.length === 0) {
+    throw new Error('No PDF files available to submit');
+  }
+  
+  // Add files - make sure they're in the same order as instruction_mediums
+  console.log('Adding files to form data:', pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
+  pdfFiles.forEach(file => {
+    if (file && file.size > 0) {
+      // Explicitly log each file being added
+      console.log(`Adding file to FormData: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      formData.append('files', file);
+    } else {
+      console.error('Skipping invalid file:', file);
+    }
+  });
+  
+  // Log form data entries
+  console.log('FormData entries:');
+  for (const pair of formData.entries()) {
+    // For files, just log the name and size, not the full binary data
+    if (pair[1] instanceof File) {
+      console.log(`${pair[0]}: File(${(pair[1] as File).name}, ${(pair[1] as File).size} bytes)`);
+    } else {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+  }
+
+  // Log the summary of what we're submitting
+  console.log('Submitting test paper with the following data:', {
+    userId, schoolId, name: paperTitle.value, examTime: testDuration.value,
+    patternId, chapters: chapterIds, weightages: processedWeightages, mediums: mediumIds,
+    files: pdfFiles.map(f => ({ name: f.name, size: f.size, type: f.type }))
+  });
+  
+  try {
+    // Call the API endpoint with userId and schoolId as query parameters
+    const url = `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`;
+    const response = await axiosInstance.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    console.log('API response:', response.data);
+    return response;
+  } catch (error) {
+    console.error('API error:', error);
+    // Log more detailed error information
+    if (error.response) {
+      console.error('Error response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    }
+    throw error;
+  }
+};
+
+// Handle errors during the save process
+const handleSaveError = (error: unknown) => {
+  console.error('Error saving test paper:', error);
+  saveError.value = error instanceof Error ? error.message : 'Unknown error occurred';
+};
+
+// Restore the original medium after save attempt
+const restoreOriginalMedium = async (originalMediumId: number) => {
+  if (currentMediumId.value !== originalMediumId) {
+    try {
+      await switchToMedium(originalMediumId);
+    } catch (error) {
+      console.error('Error restoring original medium:', error);
     }
   }
 };
@@ -899,11 +1540,11 @@ const saveTestPaperToDB = async () => {
 const fetchUserProfile = async () => {
   try {
     const response = await axiosInstance.get('/auth/profile')
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       
       // Get school name from user profile
-      if (userProfile.value && userProfile.value.schools && userProfile.value.schools.length > 0) {
+      if (userProfile.value?.schools?.length > 0) {
         schoolName.value = userProfile.value.schools[0].name
       }
     } else {
@@ -982,7 +1623,7 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
 // Extract available mediums from API data
 const extractAvailableMediums = (data: ApiResponse) => {
   try {
-    if (data && data.mediums && data.mediums.length > 0) {
+    if (data?.mediums?.length > 0) {
       availableMediums.value = data.mediums.map((medium: { id: number; instruction_medium: string }) => ({
         id: medium.id,
         name: medium.instruction_medium
@@ -1007,15 +1648,43 @@ const extractAvailableMediums = (data: ApiResponse) => {
 
 // Transform API data to display format (same as in testPaperPreview.vue)
 const transformApiDataToDisplayFormat = (data: ApiResponse) => {
-  if (!data || !data.sectionAllocations) {
+  if (!data?.sectionAllocations) {
     return;
   }
 
-  const displaySections: DisplaySection[] = [];
-  let sectionNumberCounter = 1;
+  // Process sections and convert to display format
+  const displaySections = processAllSections(data.sectionAllocations);
+  
+  // Update the reactive reference with processed sections
+  testPaperSections.value = displaySections;
+};
 
+// Process all sections into display format
+const processAllSections = (sectionAllocations: ApiResponse['sectionAllocations']): DisplaySection[] => {
+  let sectionNumberCounter = 1;
+  
   // Sort sections by sequentialNumber or sectionId for consistent ordering
-  const sortedSections = [...data.sectionAllocations].sort((a, b) => {
+  const sortedSections = sortSectionsBySequence(sectionAllocations);
+  
+  // Process each section and return the array of display sections
+  return sortedSections.map(section => {
+    const displaySection = createDisplaySection(section, sectionNumberCounter);
+    
+    // Update counter if we used a counter-based section number
+    if (!section.section_number) {
+      sectionNumberCounter++;
+    }
+    
+    // Process subsections and questions
+    processSubsections(section, displaySection);
+    
+    return displaySection;
+  });
+};
+
+// Sort sections by sequentialNumber or sectionId
+const sortSectionsBySequence = (sections: ApiResponse['sectionAllocations']) => {
+  return [...sections].sort((a, b) => {
     // First try to sort by sequentialNumber if available
     if (a.sequentialNumber !== undefined && b.sequentialNumber !== undefined) {
       return a.sequentialNumber - b.sequentialNumber;
@@ -1023,124 +1692,298 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
     // Fall back to sectionId
     return a.sectionId - b.sectionId;
   });
+};
 
-  // Process each section
-  sortedSections.forEach(section => {
-    // Create formatted section number display (e.g., "1.A")
-    const sectionNum = section.section_number || sectionNumberCounter;
-    const subSection = section.subSection || '';
-    const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
-    
-    const displaySection: DisplaySection = {
-      sectionNumber: section.section_number || sectionNumberCounter++,
-      sectionName: section.sectionName,
-      totalMarks: section.totalMarks,
-      questions: [],
-      subSection: section.subSection,
-      sectionNumberDisplay: sectionNumberDisplay,
-      mandotory_questions: section.mandotory_questions
-    };
+// Create a display section object from API section data
+const createDisplaySection = (
+  section: ApiResponse['sectionAllocations'][0], 
+  counter: number
+): DisplaySection => {
+  // Create formatted section number display (e.g., "1.A")
+  const sectionNum = section.section_number ?? counter;
+  const subSection = section.subSection ?? '';
+  const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
+  
+  return {
+    sectionNumber: section.section_number ?? counter,
+    sectionName: section.sectionName,
+    totalMarks: section.totalMarks,
+    questions: [],
+    subSection: section.subSection,
+    sectionNumberDisplay: sectionNumberDisplay,
+    mandotory_questions: section.mandotory_questions
+  };
+};
 
-    let questionNumberCounter = 1;
-
-    // Process each subsection within a section
-    section.subsectionAllocations.forEach(subsection => {
-      // Process each chapter's questions within a subsection
-      subsection.allocatedChapters.forEach(chapter => {
-        if (chapter.question) {
-          const question = chapter.question;
-          
-          // Find the appropriate question text based on the current medium
-          let questionText: QuestionText | undefined;
-          
-          if (question.question_texts && question.question_texts.length > 0) {
-            // First try to find question text matching current medium ID
-            questionText = question.question_texts.find(text => 
-              text.question_text_topics && 
-              text.question_text_topics.length > 0 && 
-              text.question_text_topics[0].instruction_medium_id === currentMediumId.value
-            );
-            
-            // If not found, fall back to the first question text
-            if (!questionText) {
-              questionText = question.question_texts[0];
-            }
-          } else {
-            console.warn('Question has no question_texts array');
-            return; // Skip this question
-          }
-          
-          // Extract topic ID from either topic or question_text_topics
-          let topicId: number | undefined;
-          if (questionText.topic) {
-            topicId = questionText.topic.id;
-          } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-            topicId = questionText.question_text_topics[0].question_topic_id;
-          }
-          
-          // Create display question based on question type
-          const displayQuestion: DisplayQuestion = {
-            questionNumber: questionNumberCounter++,
-            questionText: questionText.question_text,
-            marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions),
-            questionType: question.question_type.type_name,
-            topicId: topicId,
-            chapterId: chapter.chapterId // Store chapter ID for reference
-          };
-
-          // Process MCQ options if they exist
-          if (questionText.mcq_options && questionText.mcq_options.length > 0) {
-            displayQuestion.options = questionText.mcq_options.map((option: McqOption, index: number) => {
-              return {
-                label: String.fromCharCode(65 + index), // A, B, C, D...
-                text: option.option_text,
-                isCorrect: option.is_correct
-              };
-            });
-          }
-
-          // Process match pairs if they exist
-          if (questionText.match_pairs && questionText.match_pairs.length > 0) {
-            displayQuestion.matchPairs = questionText.match_pairs.map((pair: MatchPair) => {
-              return {
-                leftText: pair.left_text,
-                rightText: pair.right_text
-              };
-            });
-          }
-
-          displaySection.questions.push(displayQuestion);
+// Process subsections and questions for a section
+const processSubsections = (
+  section: ApiResponse['sectionAllocations'][0],
+  displaySection: DisplaySection
+) => {
+  let questionNumberCounter = 1;
+  
+  // Process each subsection within a section
+  section.subsectionAllocations.forEach(subsection => {
+    // Process each chapter's questions within a subsection
+    subsection.allocatedChapters.forEach(chapter => {
+      if (chapter.question) {
+        const question = processQuestion(
+          chapter,
+          questionNumberCounter,
+          section
+        );
+        
+        if (question) {
+          displaySection.questions.push(question);
+          questionNumberCounter++;
         }
-      });
+      }
     });
-
-    displaySections.push(displaySection);
   });
+};
 
-  testPaperSections.value = displaySections;
-}
+// Process a question from chapter data
+const processQuestion = (
+  chapter: { chapterId: number; chapterName: string; question?: Question },
+  questionNumber: number,
+  section: ApiResponse['sectionAllocations'][0]
+): DisplayQuestion | null => {
+  const question = chapter.question;
+  if (!question) return null;
+  
+  // Find appropriate question text for current medium
+  const questionText = findQuestionTextForMedium(question);
+  if (!questionText) return null;
+  
+  // Extract topic ID from questionText
+  const topicId = getTopicIdFromQuestionText(questionText);
+  
+  // Create base display question
+  const displayQuestion = createBaseDisplayQuestion(
+    questionNumber,
+    questionText.question_text,
+    section,
+    question.question_type.type_name,
+    topicId,
+    chapter.chapterId
+  );
+  
+  // Add options and match pairs if they exist
+  addOptionsToQuestion(displayQuestion, questionText);
+  addMatchPairsToQuestion(displayQuestion, questionText);
+  
+  return displayQuestion;
+};
+
+// Find question text for current medium
+const findQuestionTextForMedium = (question: Question): QuestionText | null => {
+  if (!question.question_texts || question.question_texts.length === 0) {
+    console.warn('Question has no question_texts array');
+    return null;
+  }
+  
+  // First try to find question text matching current medium ID
+  const matchingText = question.question_texts.find(text => 
+    text.question_text_topics && 
+    text.question_text_topics.length > 0 && 
+    text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+  );
+  
+  // If not found, fall back to the first question text
+  return matchingText ?? question.question_texts[0];
+};
+
+// Extract topic ID from questionText
+const getTopicIdFromQuestionText = (questionText: QuestionText): number | undefined => {
+  if (questionText.topic) {
+    return questionText.topic.id;
+  } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+    return questionText.question_text_topics[0].question_topic_id;
+  }
+  return undefined;
+};
+
+// Create base display question object
+const createBaseDisplayQuestion = (
+  questionNumber: number,
+  questionText: string,
+  section: ApiResponse['sectionAllocations'][0],
+  questionType: string,
+  topicId?: number,
+  chapterId?: number
+): DisplayQuestion => {
+  return {
+    questionNumber: questionNumber,
+    questionText: questionText,
+    marks: section.marks_per_question ?? Math.ceil(section.totalMarks / section.totalQuestions),
+    questionType: questionType,
+    topicId: topicId,
+    chapterId: chapterId // Store chapter ID for reference
+  };
+};
+
+// Add options to question if they exist
+const addOptionsToQuestion = (displayQuestion: DisplayQuestion, questionText: QuestionText) => {
+  if (questionText.mcq_options && questionText.mcq_options.length > 0) {
+    displayQuestion.options = questionText.mcq_options.map((option: McqOption, index: number) => ({
+      label: String.fromCharCode(65 + index), // A, B, C, D...
+      text: option.option_text,
+      isCorrect: option.is_correct
+    }));
+  }
+};
+
+// Add match pairs to question if they exist
+const addMatchPairsToQuestion = (displayQuestion: DisplayQuestion, questionText: QuestionText) => {
+  if (questionText.match_pairs && questionText.match_pairs.length > 0) {
+    displayQuestion.matchPairs = questionText.match_pairs.map((pair: MatchPair) => ({
+      leftText: pair.left_text,
+      rightText: pair.right_text
+    }));
+  }
+};
 
 // Print page functionality
-const printPage = () => {
-  // Add temporary class to the document body
-  document.body.classList.add('printing-test-paper');
-  
-  // Hide the app header or navigation before printing
-  const appHeader = document.querySelector('header');
-  const appNav = document.querySelector('nav');
-  
-  if (appHeader) appHeader.classList.add('no-print-important');
-  if (appNav) appNav.classList.add('no-print-important');
-  
-  // Trigger print
-  window.print();
-  
-  // Remove temporary class after printing dialog closes
-  setTimeout(() => {
-    document.body.classList.remove('printing-test-paper');
-    if (appHeader) appHeader.classList.remove('no-print-important');
-    if (appNav) appNav.classList.remove('no-print-important');
-  }, 1000);
+const printPage = async () => {
+  try {
+    // Show loading indicator
+    document.body.classList.add('printing-test-paper');
+    
+    // Get the print element
+    const element = document.getElementById('printSection');
+    if (!element) {
+      console.error('Print section not found');
+      return;
+    }
+    
+    // Hide the app header or navigation before printing
+    const appHeader = document.querySelector('header');
+    const appNav = document.querySelector('nav');
+    
+    if (appHeader) appHeader.classList.add('no-print-important');
+    if (appNav) appNav.classList.add('no-print-important');
+    
+    // Apply styling to ensure proper print appearance
+    const a4PaperCard = element.querySelector('.a4-paper-card') as HTMLElement;
+    if (a4PaperCard) {
+      a4PaperCard.style.border = 'none';
+      a4PaperCard.style.boxShadow = 'none';
+      a4PaperCard.style.padding = '20mm';
+      a4PaperCard.style.transform = 'none';
+    }
+    
+    // Hide elements that should be hidden in print
+    const elementsToHide = document.querySelectorAll('.no-print');
+    elementsToHide.forEach((el) => {
+      (el as HTMLElement).style.display = 'none';
+    });
+    
+    // Try to create a better PDF using jsPDF and html2canvas
+    try {
+      // Import the libraries dynamically
+      const html2canvasModule = await import('html2canvas');
+      const html2canvas = html2canvasModule.default;
+      const jsPDFModule = await import('jspdf');
+      const { jsPDF } = jsPDFModule;
+      
+      // Create a new jsPDF document
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: false,
+        putOnlyUsedFonts: true,
+        floatPrecision: 16
+      });
+      
+      // Create a high-quality canvas
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        letterRendering: true,
+        backgroundColor: '#FFFFFF'
+      });
+      
+      // Add the image to the PDF
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      doc.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, imgWidth, imgHeight);
+      
+      // Add text layer for selectability (simplified version)
+      const textElements = element.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
+      doc.setTextColor(0, 0, 0, 0); // Transparent text (still selectable)
+      doc.setFontSize(12);
+      
+      // Extract and position text elements
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+      textElements.forEach(el => {
+        try {
+          const rect = (el as HTMLElement).getBoundingClientRect();
+          const elementText = (el as HTMLElement).textContent?.trim() || '';
+          
+          if (elementText) {
+            // Convert coordinates to PDF space
+            const pdfX = (rect.left / width) * imgWidth;
+            const pdfY = (rect.top / height) * imgHeight;
+            
+            // Add invisible but selectable text
+            if (pdfX >= 0 && pdfY >= 0 && pdfX < imgWidth && pdfY < imgHeight) {
+              doc.text(elementText, pdfX, pdfY, { 
+                renderingMode: 'invisible',
+                baseline: 'top'
+              });
+            }
+          }
+        } catch (err) {
+          console.log('Error processing text element:', err);
+        }
+      });
+      
+      // Open the PDF in a new window for printing
+      const pdfDataUri = doc.output('datauristring');
+      const printWindow = window.open(pdfDataUri);
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      } else {
+        // If popup blocked, fall back to standard print
+        window.print();
+      }
+    } catch (error) {
+      console.error('Error generating PDF for print:', error);
+      // Fall back to standard print method
+      window.print();
+    }
+    
+    // Restore styles after printing
+    setTimeout(() => {
+      document.body.classList.remove('printing-test-paper');
+      
+      if (appHeader) appHeader.classList.remove('no-print-important');
+      if (appNav) appNav.classList.remove('no-print-important');
+      
+      if (a4PaperCard) {
+        a4PaperCard.style.border = '';
+        a4PaperCard.style.boxShadow = '';
+        a4PaperCard.style.padding = '';
+        a4PaperCard.style.transform = '';
+      }
+      
+      elementsToHide.forEach((el) => {
+        (el as HTMLElement).style.display = '';
+      });
+    }, 1000);
+  } catch (error) {
+    console.error('Error in print process:', error);
+    // Fall back to standard print method as last resort
+    window.print();
+  }
 }
 
 // Go back button handler

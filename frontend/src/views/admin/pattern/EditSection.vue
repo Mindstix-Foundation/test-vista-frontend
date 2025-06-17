@@ -27,7 +27,7 @@
       <SectionFormComponent
         @submit="handleSubmit"
         :total-pattern-marks="totalPatternMarks"
-        :remaining-marks="Number($route.query.remainingMarks || 0)"
+        :remaining-marks="Number($route.query.remainingMarks ?? 0)"
         :initial-section-data="currentSection || undefined"
       />
     </div>
@@ -59,7 +59,7 @@ interface Section {
   id: number
   section_number: number
   sequence_number: number
-  sub_section: string
+  sub_section: string | null
   section_name: string
   total_questions: number
   mandotory_questions: number
@@ -79,13 +79,13 @@ const sectionId = computed(() => route.query.sectionId?.toString())
 const storeOnly = computed(() => route.query.storeOnly === 'true')
 
 const sectionIndex = computed(() => {
-  const index = Number(route.query.sectionIndex || 0)
+  const index = Number(route.query.sectionIndex ?? 0)
   console.log('Current section index:', index)
   return index
 })
 
 const totalPatternMarks = computed(() => {
-  const marks = Number(route.query.totalMarks || 0)
+  const marks = Number(route.query.totalMarks ?? 0)
   console.log('Total pattern marks:', marks)
   return marks
 })
@@ -124,9 +124,9 @@ const fetchSectionFromBackend = async () => {
       questionType:
         sectionData.subsection_question_types.find(
           (qt: SubsectionQuestionType) => qt.seqencial_subquestion_number === 0,
-        )?.question_type?.type_name || '',
+        )?.question_type?.type_name ?? '',
       questionTypes: sectionData.subsection_question_types
-        .sort(
+        .toSorted(
           (a: SubsectionQuestionType, b: SubsectionQuestionType) =>
             a.seqencial_subquestion_number - b.seqencial_subquestion_number,
         )
@@ -267,7 +267,7 @@ const prepareSectionDataForStore = (formData: SectionFormData, isNew: boolean = 
     questionTypes: formData.questionTypes,
     seqencial_section_number: isNew 
       ? patternStore.sections[sectionIndex.value].seqencial_section_number
-      : Number(route.query.sequenceNumber || 0),
+      : Number(route.query.sequenceNumber ?? 0),
     isModified: !isNew,
     isNew: isNew,
   }
@@ -296,7 +296,7 @@ const handleSubmit = async (formData: SectionFormData) => {
     // Validate section marks
     const requiredQuestions = Number(formData.requiredQuestions)
     const marksPerQuestion = Number(formData.marksPerQuestion)
-    const availableMarks = Number(route.query.remainingMarks || 0)
+    const availableMarks = Number(route.query.remainingMarks ?? 0)
     
     if (!validateSectionMarks(requiredQuestions, marksPerQuestion, availableMarks)) {
       return

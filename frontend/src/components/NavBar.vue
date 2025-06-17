@@ -58,9 +58,9 @@
             </li>
             <li class="nav-item">
               <router-link
-                to="/admin/questionbank"
+                to="/admin/questionBank"
                 class="nav-link pb-0"
-                id="navQuestion"
+                id="navQuestionBank"
                 @click="closeOffcanvas"
               >
                 Question Bank
@@ -147,8 +147,10 @@
 import { Modal, Offcanvas } from 'bootstrap'
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 let logoutModal: Modal | null = null
 let offcanvasInstance: Offcanvas | null = null
 
@@ -172,21 +174,15 @@ const showLogoutModal = () => {
   logoutModal?.show()
 }
 
-const handleLogout = () => {
-  logoutModal?.hide()
-  // Clear all authentication data
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  localStorage.clear() // Clear any remaining data
-
-  // Reset any auth state in your app
-  document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-
-  // Redirect to login page
-  router.push('/login')
-
-  // Force a page reload to clear any cached data
-  window.location.reload()
+const handleLogout = async () => {
+  try {
+    logoutModal?.hide()
+    await authStore.logout()
+  } catch (error) {
+    console.error('Error during logout:', error)
+    // Even if logout fails, redirect to login
+    router.push('/login')
+  }
 }
 
 const closeOffcanvas = () => {

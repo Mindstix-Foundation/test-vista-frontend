@@ -207,13 +207,18 @@
                               <td colspan="2" class="p-0">
                                 <div class="question-types-container bg-light">
                                   <table class="table table-sm mb-0 question-types-table">
+                                    <thead>
+                                      <tr>
+                                        <th scope="col" class="px-4 py-2">Question Details</th>
+                                      </tr>
+                                    </thead>
                                     <tbody>
                                       <!-- When only one type of question in the section, show individually numbered questions -->
                                       <template v-if="hasOnlyOneQuestionType(section)">
                                         <tr class="question-type-header">
                                           <td colspan="2" class="px-4 py-2 small fw-bold text-secondary">
                                             <div class="ms-4">
-                                              All {{ section.total_questions }} questions are of type: {{ section.subsection_question_types[0]?.question_type?.type_name }}
+                                              All {{ section.total_questions }} questions are of type: {{ section.subsection_question_types[0]?.question_type?.type_name ?? 'Unknown Type' }}
                                             </div>
                                           </td>
                                         </tr>
@@ -310,7 +315,7 @@
                                           
                                           <td class="px-4 py-2">
                                             <div class="ms-4 d-flex align-items-center justify-content-between flex-column flex-md-row">
-                                              <span class="mb-2 mb-md-0 question-type-name">{{ qType.seqencial_subquestion_number || '-' }}) {{ qType.question_type?.type_name || 'Unknown Type' }}</span>
+                                              <span class="mb-2 mb-md-0 question-type-name">{{ qType.seqencial_subquestion_number || '-' }}) {{ qType.question_type?.type_name ?? 'Unknown Type' }}</span>
                                               <div class="position-relative ms-md-auto">
                                                 <span class="chapter-name-text">
                                                   {{ getAllocatedChapterName(section.id, qType.seqencial_subquestion_number) }}
@@ -474,7 +479,7 @@ interface PatternSection {
   pattern_id: number;
   sequence_number: number;
   section_number: number;
-  sub_section: string;
+  sub_section: string | null;
   section_name: string;
   total_questions: number;
   mandotory_questions: number;
@@ -525,7 +530,7 @@ const patternDetails = ref<Pattern | null>(null)
 const isLoading = ref(false)
 
 // Get question source from query params
-const questionSource = computed(() => route.query.questionSource as string || 'both')
+const questionSource = computed(() => route.query.questionSource as string ?? 'both')
 
 // Replace placeholder chapters with state from API
 const availableChapters = ref<AvailableChapter[]>([])
@@ -666,68 +671,87 @@ const updateSelectedChapter = (sectionId: number, questionIndex: number, chapter
   
   // Only trigger updates if this is a new chapter selection
   if (isNewChapter) {
-    console.log(`Chapter changed from ${previousChapterId} to ${chapterId} - marking for marks distribution update`);
-    
-    // Set flag to indicate pending update
-    pendingAllocationUpdate.value = true;
-    
-    // Cancel any existing timeout to prevent multiple rapid calls
-    if (allocationUpdateTimeout) {
-      clearTimeout(allocationUpdateTimeout);
-    }
-    
-    // Schedule allocation update after a short delay to batch multiple changes
-    allocationUpdateTimeout = setTimeout(() => {
-      if (pendingAllocationUpdate.value) {
-        console.log('Executing batched marks distribution update');
-        // Only fetch allocation if we actually need to update
-        fetchTestPaperAllocation().then(() => {
-          if (testPaperAllocation.value?.chapterMarks) {
-            console.log('Got test paper allocation, updating chapter marks');
-            updateChapterMarksFromAllocation();
-            // Update available chapters for current view if needed
-            fetchAvailableChapters(currentQuestionTypeId.value || 0);
-          } else {
-            console.warn('No chapter marks found in test paper allocation');
-          }
-          // Reset the pending flag after update
-          pendingAllocationUpdate.value = false;
-        }).catch(error => {
-          console.error('Error fetching test paper allocation:', error);
-          pendingAllocationUpdate.value = false;
-        });
-      }
-    }, 500); // Wait 500ms to batch multiple changes
+    scheduleAllocationUpdate();
   }
   
   // Update available chapters data for this question type if needed
-  const section = patternDetails.value?.sections?.find(s => s.id === sectionId);
-  if (section?.subsection_question_types && section.subsection_question_types.length > 0) {
-    let questionTypeId: number | null = null;
-    
-    // Get the question type ID based on the question index
-    if (hasOnlyOneQuestionType(section)) {
-      // If there's only one type, use that type for all questions
-      questionTypeId = section.subsection_question_types[0]?.question_type_id || null;
+  updateQuestionTypeData(sectionId, questionIndex);
+}
+
+// Extract allocation update scheduling to reduce complexity
+const scheduleAllocationUpdate = () => {
+  console.log('Marking for marks distribution update');
+  
+  // Set flag to indicate pending update
+  pendingAllocationUpdate.value = true;
+  
+  // Cancel any existing timeout to prevent multiple rapid calls
+  if (allocationUpdateTimeout) {
+    clearTimeout(allocationUpdateTimeout);
+  }
+  
+  // Schedule allocation update after a short delay to batch multiple changes
+  allocationUpdateTimeout = setTimeout(() => {
+    if (pendingAllocationUpdate.value) {
+      processAllocationUpdate();
+    }
+  }, 500); // Wait 500ms to batch multiple changes
+}
+
+// Extract allocation update processing to reduce complexity
+const processAllocationUpdate = () => {
+  console.log('Executing batched marks distribution update');
+  // Only fetch allocation if we actually need to update
+  fetchTestPaperAllocation().then(() => {
+    if (testPaperAllocation.value?.chapterMarks) {
+      console.log('Got test paper allocation, updating chapter marks');
+      updateChapterMarksFromAllocation();
+      // Update available chapters for current view if needed
+      fetchAvailableChapters(currentQuestionTypeId.value ?? 0);
     } else {
-      // Otherwise, find the specific question type for this question index
-      const questionType = section.subsection_question_types.find(
-        qt => qt.seqencial_subquestion_number === questionIndex
-      );
-      questionTypeId = questionType?.question_type_id || null;
+      console.warn('No chapter marks found in test paper allocation');
     }
-    
-    // If we found a question type ID, fetch its data
-    if (questionTypeId !== null && questionTypeId !== currentQuestionTypeId.value) {
-      fetchQuestionTypeData(questionTypeId);
-    }
+    // Reset the pending flag after update
+    pendingAllocationUpdate.value = false;
+  }).catch(error => {
+    console.error('Error fetching test paper allocation:', error);
+    pendingAllocationUpdate.value = false;
+  });
+}
+
+// Extract question type data update to reduce complexity
+const updateQuestionTypeData = (sectionId: number, questionIndex: number) => {
+  const section = patternDetails.value?.sections?.find(s => s.id === sectionId);
+  if (!section?.subsection_question_types || section.subsection_question_types.length === 0) {
+    return;
+  }
+  
+  const questionTypeId = getQuestionTypeId(section, questionIndex);
+  
+  // If we found a question type ID, fetch its data
+  if (questionTypeId !== null && questionTypeId !== currentQuestionTypeId.value) {
+    fetchQuestionTypeData(questionTypeId);
+  }
+}
+
+// Extract question type ID determination to reduce complexity
+const getQuestionTypeId = (section: PatternSection, questionIndex: number): number | null => {
+  if (hasOnlyOneQuestionType(section)) {
+    // If there's only one type, use that type for all questions
+    return section.subsection_question_types?.[0]?.question_type_id ?? null;
+  } else {
+    // Otherwise, find the specific question type for this question index
+    const questionType = section.subsection_question_types?.find(
+      qt => qt.seqencial_subquestion_number === questionIndex
+    );
+    return questionType?.question_type_id ?? null;
   }
 }
 
 // Method to get selected chapter for a question
 const getSelectedChapter = (sectionId: number, questionIndex: number): number | null => {
   const key = `${sectionId}-${questionIndex}`;
-  return selectedChapters.value[key] || null;
+  return selectedChapters.value[key] ?? null;
 }
 
 // Fetch available chapters for a specific question type
@@ -749,18 +773,18 @@ const fetchAvailableChapters = async (questionTypeId: number) => {
     }));
     
     // Sort fallback data by marks
-    availableChapters.value.sort((a, b) => (b.marks || 0) - (a.marks || 0));
+    availableChapters.value.sort((a, b) => (b.marks ?? 0) - (a.marks ?? 0));
   }
 };
 
 // Computed property to get total marks assigned
 const totalAssignedMarks = computed(() => {
-  return chapters.value.reduce((total, chapter) => total + (chapter.marks || 0), 0)
+  return chapters.value.reduce((total, chapter) => total + (chapter.marks ?? 0), 0)
 })
 
 // Add a computed property for absolute marks
 const absoluteMarks = computed(() => {
-  return testPaperAllocation.value?.absoluteMarks || totalMarks.value || 0;
+  return testPaperAllocation.value?.absoluteMarks ?? totalMarks.value ?? 0;
 });
 
 // Update isMarksDistributionValid computed property to use absoluteMarks
@@ -776,19 +800,11 @@ const hasZeroMarksChapters = computed(() => {
 
 // Get details from query parameters
 const patternId = route.query.patternId as string
-const boardName = computed(() => {
-  // If board name is in the query params, use it
-  if (route.query.board) {
-    return route.query.board as string
-  }
-  // Since board information isn't available in teaching_subjects,
-  // just use a fallback value
-  return 'Not Selected'
-})
-const mediumName = computed(() => route.query.medium as string || 'Not Selected')
-const standardName = computed(() => route.query.standard as string || 'Not Selected')
-const subjectName = computed(() => route.query.subject as string || 'Not Selected')
-const patternName = computed(() => route.query.patternName as string || 'Not Selected')
+const boardName = computed(() => route.query.board as string ?? 'Not Selected')
+const mediumName = computed(() => route.query.medium as string ?? 'Not Selected')
+const standardName = computed(() => route.query.standard as string ?? 'Not Selected')
+const subjectName = computed(() => route.query.subject as string ?? 'Not Selected')
+const patternName = computed(() => route.query.patternName as string ?? 'Not Selected')
 
 // Fetch pattern details
 const fetchPatternDetails = async () => {
@@ -866,9 +882,29 @@ const initializeChapterSelections = () => {
   // Get chapters sorted by marks descending
   const sortedChapters = [...chapters.value].sort((a, b) => b.marks - a.marks);
   
+  if (!validateChaptersAndSections(sortedChapters)) {
+    return;
+  }
+  
+  // For each section, initialize the question-chapter assignments
+  const sections = patternDetails.value?.sections ?? [];
+  sections.forEach(section => {
+    assignChaptersToSection(section, sortedChapters);
+  });
+  
+  console.log('Finished initializing chapter selections');
+  
+  // Now fetch allocation once, after all selections have been made
+  fetchAndProcessAllocation();
+}
+
+/**
+ * Validates chapters and sections availability and sets initial state
+ */
+const validateChaptersAndSections = (sortedChapters: ChapterWithMarks[]) => {
   if (sortedChapters.length === 0) {
     console.warn('No chapters available to initialize selections');
-    return;
+    return false;
   }
   
   // If there's only one chapter, automatically set hasGeneratedDistribution to true
@@ -878,60 +914,71 @@ const initializeChapterSelections = () => {
   }
   
   // Get pattern sections
-  const sections = patternDetails.value?.sections || [];
+  const sections = patternDetails.value?.sections ?? [];
   if (sections.length === 0) {
     console.warn('No pattern sections available to initialize selections');
-    return;
+    return false;
   }
   
   console.log('Initializing selections for sections:', sections);
-  
-  // For each section, initialize the question-chapter assignments
-  sections.forEach(section => {
-    // For sections with only one question type
-    if (hasOnlyOneQuestionType(section)) {
-      // Assign each numbered question to a chapter, giving priority to chapters with more marks
-      for (let i = 1; i <= section.total_questions; i++) {
-        // If there's only one chapter, assign all questions to it
-        if (sortedChapters.length === 1) {
-          // Just update the map directly without triggering API calls
-          const key = `${section.id}-${i}`;
-          selectedChapters.value[key] = sortedChapters[0].id;
-        } else {
-          // Otherwise, distribute based on marks percentage
-          // Find the index in the sorted chapters array, based on question index and total marks
-          const chapIndex = i % sortedChapters.length;
-          // Just update the map directly without triggering API calls
-          const key = `${section.id}-${i}`;
-          selectedChapters.value[key] = sortedChapters[chapIndex].id;
-        }
-      }
-    } 
-    // For sections with multiple question types
-    else if (section.subsection_question_types && section.subsection_question_types.length > 0) {
-      section.subsection_question_types.forEach(qType => {
-        if (qType.seqencial_subquestion_number) {
-          // If there's only one chapter, assign all questions to it
-          if (sortedChapters.length === 1) {
-            // Just update the map directly without triggering API calls
-            const key = `${section.id}-${qType.seqencial_subquestion_number}`;
-            selectedChapters.value[key] = sortedChapters[0].id;
-          } else {
-            // Otherwise, distribute based on marks percentage
-            const qIndex = qType.seqencial_subquestion_number;
-            const chapIndex = qIndex % sortedChapters.length;
-            // Just update the map directly without triggering API calls
-            const key = `${section.id}-${qIndex}`;
-            selectedChapters.value[key] = sortedChapters[chapIndex].id;
-          }
-        }
-      });
+  return true;
+}
+
+/**
+ * Assigns chapters to questions in a section
+ */
+const assignChaptersToSection = (section: PatternSection, sortedChapters: ChapterWithMarks[]) => {
+  // For sections with only one question type
+  if (hasOnlyOneQuestionType(section)) {
+    assignChaptersToSingleTypeSection(section, sortedChapters);
+  } 
+  // For sections with multiple question types
+  else if (section.subsection_question_types && section.subsection_question_types.length > 0) {
+    assignChaptersToMultiTypeSection(section, sortedChapters);
+  }
+}
+
+/**
+ * Assigns chapters to a section with a single question type
+ */
+const assignChaptersToSingleTypeSection = (section: PatternSection, sortedChapters: ChapterWithMarks[]) => {
+  // Assign each numbered question to a chapter, giving priority to chapters with more marks
+  for (let i = 1; i <= section.total_questions; i++) {
+    assignChapterToQuestion(section.id, i, sortedChapters);
+  }
+}
+
+/**
+ * Assigns chapters to a section with multiple question types
+ */
+const assignChaptersToMultiTypeSection = (section: PatternSection, sortedChapters: ChapterWithMarks[]) => {
+  section.subsection_question_types?.forEach(qType => {
+    if (qType.seqencial_subquestion_number) {
+      assignChapterToQuestion(section.id, qType.seqencial_subquestion_number, sortedChapters);
     }
   });
+}
+
+/**
+ * Assigns a chapter to a specific question
+ */
+const assignChapterToQuestion = (sectionId: number, questionIndex: number, sortedChapters: ChapterWithMarks[]) => {
+  const key = `${sectionId}-${questionIndex}`;
   
-  console.log('Finished initializing chapter selections');
-  
-  // Now fetch allocation once, after all selections have been made
+  if (sortedChapters.length === 1) {
+    // If there's only one chapter, assign all questions to it
+    selectedChapters.value[key] = sortedChapters[0].id;
+  } else {
+    // Otherwise, distribute based on marks percentage
+    const chapIndex = questionIndex % sortedChapters.length;
+    selectedChapters.value[key] = sortedChapters[chapIndex].id;
+  }
+}
+
+/**
+ * Fetches allocation and processes the results
+ */
+const fetchAndProcessAllocation = () => {
   fetchTestPaperAllocation().then(() => {
     // Update chapter marks based on the initialization we just did
     if (testPaperAllocation.value?.chapterMarks) {
@@ -957,6 +1004,42 @@ const initializeChapterSelections = () => {
 const testPaperAllocation = ref<TestPaperAllocation | null>(null);
 const lastUsedEndpoint = ref<'allocation' | 'distribute' | null>(null);
 
+// Helper function to resolve medium IDs from various sources
+const resolveMediumIds = (): number[] => {
+  let mediumIds: number[] = [];
+  
+  // Try to get from route parameters first
+  if (route.query.mediumId) {
+    const mediumIdParam = route.query.mediumId.toString();
+    // Handle both single value and comma-separated values
+    mediumIds = mediumIdParam.split(',')
+                 .map(id => parseInt(id.trim(), 10))
+                 .filter(id => !isNaN(id));
+  }
+  
+  // If no valid medium IDs found in route parameters, try fallback options
+  if (mediumIds.length === 0) {
+    console.warn('No valid medium IDs found in route parameters, using fallback');
+    
+    // Try to get from user profile
+    if (userProfile.value?.teaching_subjects?.[0]?.medium?.id) {
+      const mediumIdFromProfile = parseInt(userProfile.value.teaching_subjects[0].medium.id, 10);
+      if (!isNaN(mediumIdFromProfile)) {
+        mediumIds.push(mediumIdFromProfile);
+      }
+    }
+    
+    // Last resort fallback - only if needed
+    if (mediumIds.length === 0) {
+      console.warn('Using default medium ID 1 as last resort');
+      mediumIds.push(1);
+    }
+  }
+  
+  console.log('Using medium IDs for allocation:', mediumIds);
+  return mediumIds;
+}
+
 // Add a method to fetch test paper allocation
 const fetchTestPaperAllocation = async () => {
   try {
@@ -965,36 +1048,8 @@ const fetchTestPaperAllocation = async () => {
     // Get chapter IDs
     const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
-    // Get medium IDs from route parameters - properly parse to avoid NaN values
-    let mediumIds = [];
-    if (route.query.mediumId) {
-      const mediumIdParam = route.query.mediumId.toString();
-      // Handle both single value and comma-separated values
-      mediumIds = mediumIdParam.split(',')
-                   .map(id => parseInt(id.trim(), 10))
-                   .filter(id => !isNaN(id));
-    }
-    
-    // If no valid medium IDs found in route parameters, try fallback options
-    if (mediumIds.length === 0) {
-      console.warn('No valid medium IDs found in route parameters, using fallback');
-      
-      // Try to get from user profile
-      if (userProfile.value?.teaching_subjects?.[0]?.medium?.id) {
-        const mediumIdFromProfile = parseInt(userProfile.value.teaching_subjects[0].medium.id, 10);
-        if (!isNaN(mediumIdFromProfile)) {
-          mediumIds.push(mediumIdFromProfile);
-        }
-      }
-      
-      // Last resort fallback - only if needed
-      if (mediumIds.length === 0) {
-        console.warn('Using default medium ID 1 as last resort');
-        mediumIds.push(1);
-      }
-    }
-    
-    console.log('Using medium IDs for allocation:', mediumIds);
+    // Get medium IDs using the helper function
+    const mediumIds = resolveMediumIds();
     
     // Call the API endpoint with the current selected chapters
     const response = await axiosInstance.get('/test-paper/allocation', {
@@ -1002,7 +1057,7 @@ const fetchTestPaperAllocation = async () => {
         patternId: patternId,
         chapterIds: chapterIds.split(',').map(Number),
         mediumIds: mediumIds,
-        questionOrigin: questionSource.value || 'both'
+        questionOrigin: questionSource.value ?? 'both'
       }
     });
     
@@ -1045,41 +1100,62 @@ const updateChapterMarksFromAllocation = () => {
   
   // For each chapter in our state, find the corresponding chapter in the allocation
   chapters.value.forEach(chapter => {
-    const allocationChapter = testPaperAllocation.value.chapterMarks.find(
-      (ch: AllocationChapter) => ch.chapterId === chapter.id
-    );
-    
-    if (allocationChapter) {
-      const suggestedMarks = allocationChapter.absoluteMarks;
-      const previousMarks = chapter.marks;
-      
-      // Get the chapter's marks range
-      const range = chapterMarksRanges.value.find(r => r.chapterId === chapter.id);
-      
-      if (range) {
-        if (range.possibleMarks.includes(suggestedMarks)) {
-          chapter.marks = suggestedMarks;
-        } else {
-          const closestMark = range.possibleMarks.reduce((prev, curr) => {
-            return Math.abs(curr - suggestedMarks) < Math.abs(prev - suggestedMarks) ? curr : prev;
-          }, range.possibleMarks[0]);
-          
-          chapter.marks = closestMark;
-        }
-      } else {
-        chapter.marks = suggestedMarks;
-      }
-      
-      if (previousMarks !== chapter.marks) {
-        console.log(`Updated marks for chapter ${chapter.id} (${chapter.name}): ${previousMarks} → ${chapter.marks}`);
-      }
-    } else {
-      console.warn(`No allocation found for chapter ${chapter.id} (${chapter.name})`);
-    }
+    updateSingleChapterMarks(chapter);
   });
   
   // Verify total marks after update
   console.log(`Marks distribution after update: Total ${totalAssignedMarks.value}/${absoluteMarks.value}`);
+};
+
+// Helper function to update marks for a single chapter
+const updateSingleChapterMarks = (chapter: ChapterWithMarks) => {
+  const allocationChapter = findAllocationChapter(chapter.id);
+  if (!allocationChapter) {
+    console.warn(`No allocation found for chapter ${chapter.id} (${chapter.name})`);
+    return;
+  }
+  
+  const suggestedMarks = allocationChapter.absoluteMarks;
+  const previousMarks = chapter.marks;
+  
+  // Update the chapter marks based on the suggested marks and available ranges
+  chapter.marks = calculateAppropriateMarks(chapter.id, suggestedMarks);
+  
+  // Log changes if marks were updated
+  if (previousMarks !== chapter.marks) {
+    console.log(`Updated marks for chapter ${chapter.id} (${chapter.name}): ${previousMarks} → ${chapter.marks}`);
+  }
+};
+
+// Helper function to find allocation chapter by ID
+const findAllocationChapter = (chapterId: number): AllocationChapter | undefined => {
+  return testPaperAllocation.value?.chapterMarks.find(
+    (ch: AllocationChapter) => ch.chapterId === chapterId
+  );
+};
+
+// Helper function to calculate appropriate marks based on available ranges
+const calculateAppropriateMarks = (chapterId: number, suggestedMarks: number): number => {
+  const range = chapterMarksRanges.value.find(r => r.chapterId === chapterId);
+  
+  if (!range) {
+    return suggestedMarks; // No range constraints, use suggested marks directly
+  }
+  
+  // If the suggested marks are in the possible marks range, use them
+  if (range.possibleMarks.includes(suggestedMarks)) {
+    return suggestedMarks;
+  }
+  
+  // Otherwise find the closest valid mark in the range
+  return findClosestValidMark(range.possibleMarks, suggestedMarks);
+};
+
+// Helper function to find the closest valid mark to a suggested value
+const findClosestValidMark = (possibleMarks: number[], targetValue: number): number => {
+  return possibleMarks.reduce((prev, curr) => {
+    return Math.abs(curr - targetValue) < Math.abs(prev - targetValue) ? curr : prev;
+  }, possibleMarks[0]);
 };
 
 // Method to get the allocated chapter name for a specific section and question
@@ -1218,7 +1294,7 @@ const fetchUserProfile = async () => {
   try {
     isLoading.value = true
     const response = await axiosInstance.get('/auth/profile')
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       // We can directly use board details from userProfile instead of fetching school details
       // No need to call fetchSchoolDetails() since board info is available in profile
@@ -1257,52 +1333,67 @@ const toggleQuestionTypes = async (sectionId: number) => {
 // Method to fetch question type data for a specific question type ID
 const fetchQuestionTypeData = async (questionTypeId: number) => {
   // If we already have this question type's data from a previous API call, use it
-  if (questionTypesData.value.length > 0) {
-    const existingData = questionTypesData.value.find(qt => qt.type === questionTypeId);
-    if (existingData) {
-      // Update available chapters without making a new API call
-      availableChapters.value = existingData.chapters.map(chapter => {
-        const matchedChapter = chapters.value.find(c => c.id === chapter.id);
-        return {
-          chapterId: chapter.id,
-          chapterName: chapter.name,
-          questionCount: chapter.count,
-          marks: matchedChapter?.marks || 0,
-          percentage: matchedChapter ? calculatePercentage(matchedChapter.marks) : 0
-        };
-      });
-      
-      // Sort by marks then question count
-      availableChapters.value.sort((a, b) => {
-        if ((b.marks || 0) !== (a.marks || 0)) {
-          return (b.marks || 0) - (a.marks || 0);
-        }
-        return (b.questionCount || 0) - (a.questionCount || 0);
-      });
-      
-      return;
-    }
+  const existingData = findExistingQuestionTypeData(questionTypeId);
+  if (existingData) {
+    updateAvailableChaptersFromExistingData(existingData);
+    return;
   }
   
   // Otherwise fetch data from API
   await fetchAvailableChapters(questionTypeId);
-}
+};
+
+// Helper function to find existing question type data
+const findExistingQuestionTypeData = (questionTypeId: number) => {
+  if (questionTypesData.value.length > 0) {
+    return questionTypesData.value.find(qt => qt.type === questionTypeId);
+  }
+  return null;
+};
+
+// Helper function to update available chapters from existing data
+const updateAvailableChaptersFromExistingData = (existingData: QuestionTypeData) => {
+  // Update available chapters without making a new API call
+  availableChapters.value = existingData.chapters.map(chapter => ({
+    chapterId: chapter.id,
+    chapterName: chapter.name,
+    questionCount: chapter.count,
+    marks: matchedChapter?.marks ?? 0,
+    percentage: matchedChapter ? calculatePercentage(matchedChapter.marks) : 0
+  }));
+  
+  // Sort chapters by marks then question count
+  sortAvailableChaptersByMarks();
+};
+
+// Helper function to sort available chapters by marks and question count
+const sortAvailableChaptersByMarks = () => {
+  availableChapters.value.sort((a, b) => {
+    const aMarks = a.marks ?? 0;
+    const bMarks = b.marks ?? 0;
+    
+    if (bMarks !== aMarks) {
+      return bMarks - aMarks;
+    }
+    return (b.questionCount ?? 0) - (a.questionCount ?? 0);
+  });
+};
 
 // New method to select appropriate question type for a section
 const selectQuestionTypeForSection = async (section: PatternSection) => {
-  if (!section || !section.subsection_question_types || section.subsection_question_types.length === 0) {
+  if (!section?.subsection_question_types?.length) {
     return;
   }
   
   // If there's only one type of question in this section, use that type
   if (hasOnlyOneQuestionType(section)) {
     const firstQuestionType = section.subsection_question_types[0];
-    if (firstQuestionType && firstQuestionType.question_type_id) {
+    if (firstQuestionType?.question_type_id) {
       await fetchAvailableChapters(firstQuestionType.question_type_id);
     }
   } 
   // Otherwise use the first question type for now
-  else if (section.subsection_question_types[0] && section.subsection_question_types[0].question_type_id) {
+  else if (section.subsection_question_types[0]?.question_type_id) {
     await fetchAvailableChapters(section.subsection_question_types[0].question_type_id);
   }
 }
@@ -1353,7 +1444,7 @@ const incrementMarks = (chapter: ChapterWithMarks) => {
 
 // Method to check if question types are visible for a given section
 const isQuestionTypesVisible = (sectionId: number): boolean => {
-  return questionTypesVisibility.value[sectionId] || false
+  return questionTypesVisibility.value[sectionId] ?? false
 }
 
 // New computed function to check if a section has only one question type
@@ -1377,7 +1468,7 @@ const generateNumberedList = (section: PatternSection): Array<{number: number; t
   }
   
   // Get the type name from the first question (since all are same type)
-  const typeName: string = section.subsection_question_types[0]?.question_type?.type_name || 'Unknown Type';
+  const typeName: string = section.subsection_question_types[0]?.question_type?.type_name ?? 'Unknown Type';
   
   // Generate a list of questions with numbers from 1 to total_questions
   const result: Array<{number: number; typeName: string}> = [];
@@ -1399,8 +1490,8 @@ const fetchChapterMarksRanges = async () => {
     const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
     // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
+    const mediumId = route.query.mediumId ?? 
+                    userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
                     '1';
     
     // Call the API endpoint
@@ -1482,7 +1573,7 @@ const getNextValidMark = (chapter: ChapterWithMarks): number => {
   const nextMark = range.possibleMarks.find(mark => mark > chapter.marks);
   
   // If no next mark found, return the current mark
-  return nextMark !== undefined ? nextMark : chapter.marks;
+  return nextMark ?? chapter.marks;
 };
 
 // Method to get the previous valid mark for a chapter (for decrement)
@@ -1620,8 +1711,8 @@ const fetchQuestionTypesAvailability = async () => {
     const chapterIds = chapters.value.map(chapter => chapter.id).join(',');
     
     // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
+    const mediumId = route.query.mediumId ?? 
+                    userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
                     '1';
     
     // Call the API endpoint
@@ -1634,7 +1725,7 @@ const fetchQuestionTypesAvailability = async () => {
     });
     
     // Check if the response is valid
-    if (response.data && response.data.success && response.data.data && response.data.data.questionTypes) {
+    if (response.data?.success && response.data?.data?.questionTypes) {
       questionTypesAvailability.value = response.data.data.questionTypes;
       console.log('Question types availability loaded successfully:', questionTypesAvailability.value);
       
@@ -1701,11 +1792,11 @@ const selectChapterForQuestion = (questionType: number, chapterId: number, secti
 // Calculate special count for each chapter
 const getSpecialCount = (count: number, questionType: number, chapterId: number): number => {
   // Get the default special count for this question type, or use the default value
-  const typeSpecialCount = specialQuestionTypeCounts.value[questionType] || defaultSpecialCount.value;
+  const typeSpecialCount = specialQuestionTypeCounts.value[questionType] ?? defaultSpecialCount.value;
   
   // Get the used count for this chapter and question type
   const key = `${chapterId}-${questionType}`;
-  const usedCount = usedQuestions.value[key] || 0;
+  const usedCount = usedQuestions.value[key] ?? 0;
   
   // Remaining count is the default minus used
   return Math.max(0, typeSpecialCount - usedCount);
@@ -1749,53 +1840,79 @@ const initializeUsedQuestionCounts = () => {
   // Track which chapters are already used for each question type
   const chapterUsage = new Map<string, number>();
   
-  // Count all used chapters and question types
-  if (patternDetails.value?.sections) {
-    patternDetails.value.sections.forEach(section => {
-      // Process each question in this section
-      for (let i = 1; i <= section.total_questions; i++) {
-        const chapterId = getSelectedChapter(section.id, i);
-        if (chapterId !== null) {
-          // Get question type ID
-          let questionTypeId = null;
-          
-          if (hasOnlyOneQuestionType(section) && section.subsection_question_types && section.subsection_question_types[0]?.question_type_id) {
-            // If section has only one question type, use that type
-            questionTypeId = section.subsection_question_types[0].question_type_id;
-          } else if (section.subsection_question_types) {
-            // Find the question type for this specific question
-            const questionType = section.subsection_question_types.find(
-              qt => qt.seqencial_subquestion_number === i
-            );
-            if (questionType?.question_type_id) {
-              questionTypeId = questionType.question_type_id;
-            }
-          }
-          
-          if (questionTypeId !== null) {
-            // Create key for this chapter-question type combination
-            const key = `${chapterId}-${questionTypeId}`;
-            
-            // Increment count for this chapter-question type
-            if (!usedQuestions.value[key]) {
-              usedQuestions.value[key] = 0;
-            }
-            usedQuestions.value[key] += 1;
-            
-            // Update combined chapter usage tracker
-            const chapterKey = `${chapterId}`;
-            chapterUsage.set(chapterKey, (chapterUsage.get(chapterKey) || 0) + 1);
-          }
-        }
-      }
-    });
+  // Process sections if available
+  if (!patternDetails.value?.sections) {
+    return;
   }
+  
+  // Count all used chapters and question types
+  patternDetails.value.sections.forEach(section => {
+    processQuestionsForSection(section, chapterUsage);
+  });
   
   // Ensure the display is updated with the latest marks distribution
   nextTick(() => {
     // Force re-compute of chapter marks percentages after changes
   });
-}
+};
+
+/**
+ * Process all questions in a section to count usage
+ */
+const processQuestionsForSection = (section: PatternSection, chapterUsage: Map<string, number>) => {
+  // Process each question in this section
+  for (let i = 1; i <= section.total_questions; i++) {
+    const chapterId = getSelectedChapter(section.id, i);
+    if (chapterId === null) {
+      continue;
+    }
+    
+    const questionTypeId = determineQuestionTypeId(section, i);
+    if (questionTypeId === null) {
+      continue;
+    }
+    
+    updateUsageCounts(chapterId, questionTypeId, chapterUsage);
+  }
+};
+
+/**
+ * Determine the question type ID for a given question in a section
+ */
+const determineQuestionTypeId = (section: PatternSection, questionIndex: number): number | null => {
+  // If section has only one question type, use that type
+  if (hasOnlyOneQuestionType(section) && section.subsection_question_types?.[0]?.question_type_id) {
+    return section.subsection_question_types[0]?.question_type_id;
+  } 
+  
+  // Find the question type for this specific question
+  if (section.subsection_question_types) {
+    const questionType = section.subsection_question_types.find(
+      qt => qt.seqencial_subquestion_number === questionIndex
+    );
+    return questionType?.question_type_id ?? null;
+  }
+  
+  return null;
+};
+
+/**
+ * Update the usage counts for a chapter and question type
+ */
+const updateUsageCounts = (chapterId: number, questionTypeId: number, chapterUsage: Map<string, number>) => {
+  // Create key for this chapter-question type combination
+  const key = `${chapterId}-${questionTypeId}`;
+  
+  // Increment count for this chapter-question type
+  if (!usedQuestions.value[key]) {
+    usedQuestions.value[key] = 0;
+  }
+  usedQuestions.value[key] += 1;
+  
+  // Update combined chapter usage tracker
+  const chapterKey = `${chapterId}`;
+  chapterUsage.set(chapterKey, (chapterUsage.get(chapterKey) ?? 0) + 1);
+};
 
 // Debug function to see current chapter usage for all question types
 const debugChapterUsage = () => {
@@ -1806,7 +1923,7 @@ const debugChapterUsage = () => {
   questionTypesAvailability.value.forEach(questionType => {
     questionType.chapters.forEach(chapter => {
       const key = `${chapter.id}-${questionType.type}`;
-      const usedCount = usedQuestions.value[key] || 0;
+      const usedCount = usedQuestions.value[key] ?? 0;
       const specialCount = getSpecialCount(chapter.count, questionType.type, chapter.id);
       
       if (!usage[questionType.name]) {
@@ -1898,24 +2015,8 @@ const generate = async () => {
   isLoading.value = true;
   
   try {
-    // Get chapter IDs with marks
-    const chapterIds = chapters.value.map(chapter => chapter.id);
-    
-    // Get medium ID from route or profile
-    const mediumId = route.query.mediumId || 
-                    userProfile.value?.teaching_subjects?.[0]?.medium?.id || 
-                    '1';
-    
-    // Extract just the mark values as an array of numbers
-    const requestedMarks = chapters.value.map(chapter => chapter.marks);
-    
-    console.log('Generating marks distribution with:', {
-      patternId,
-      chapterIds,
-      mediumIds: [Number(mediumId)],
-      requestedMarks,
-      questionOrigin: questionSource.value || 'both'
-    });
+    // Get API request parameters
+    const { chapterIds, mediumId, requestedMarks, origin } = prepareDistributionParams();
     
     // Call the API endpoint with the required parameters
     const response = await axiosInstance.get('/chapter-marks-distribution/distribute', {
@@ -1924,56 +2025,119 @@ const generate = async () => {
         chapterIds,
         mediumIds: [Number(mediumId)],
         requestedMarks,
-        questionOrigin: questionSource.value || 'both'
+        questionOrigin: origin
       }
     });
     
-    // Check for successful response
-    if (response.data) {
-      console.log('Chapter marks distribution API response:', response.data);
-      
-      // Update test paper allocation with response data
-      testPaperAllocation.value = response.data;
-      
-      // Set flag to indicate user has generated distribution after changes
-      hasGeneratedDistribution.value = true;
-      
-      // Store the distribute data and update last used endpoint
-      localStorage.setItem('distributeData', JSON.stringify(response.data));
-      lastUsedEndpoint.value = 'distribute';
-      localStorage.setItem('lastUsedEndpoint', 'distribute');
-      
-      // Update chapter marks from the response
-      if (response.data.chapterMarks) {
-        chapters.value.forEach(chapter => {
-          const chapterMark = response.data.chapterMarks.find(
-            (cm: { chapterId: number; absoluteMarks: number; requestedMarks: number }) => 
-              cm.chapterId === chapter.id
-          );
-          if (chapterMark) {
-            chapter.marks = chapterMark.absoluteMarks;
-          }
-        });
-      }
-      
-      // Update question selections based on the new allocation
-      if (response.data.sectionAllocations) {
-        updateSelectedChaptersFromAllocation();
-      }
-      
-      // Show warning if there are insufficient questions
-      if (response.data.insufficientQuestions) {
-        showWarningToast(response.data.allocationMessage || 'Some marks could not be allocated due to insufficient questions');
-      }
-    } else {
+    // Process response
+    if (!response.data) {
       throw new Error('No data received from chapter marks distribution API');
     }
+    
+    handleSuccessResponse(response.data);
   } catch (error) {
-    console.error('Error in generate function:', error);
-    showErrorToast(error instanceof Error ? error.message : 'Failed to generate marks distribution. Please try again.');
+    handleError(error);
   } finally {
     isLoading.value = false;
   }
+};
+
+// Helper function to prepare distribution parameters
+const prepareDistributionParams = () => {
+  // Get chapter IDs with marks
+  const chapterIds = chapters.value.map(chapter => chapter.id);
+  
+  // Get medium ID from route or profile
+  const mediumId = route.query.mediumId ?? 
+                  userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
+                  '1';
+  
+  // Extract just the mark values as an array of numbers
+  const requestedMarks = chapters.value.map(chapter => chapter.marks);
+  
+  // Get question origin
+  const origin = questionSource.value ?? 'both';
+  
+  console.log('Generating marks distribution with:', {
+    patternId,
+    chapterIds,
+    mediumIds: [Number(mediumId)],
+    requestedMarks,
+    questionOrigin: origin
+  });
+  
+  return { chapterIds, mediumId, requestedMarks, origin };
+};
+
+// Helper function to handle successful response
+const handleSuccessResponse = (data: TestPaperAllocation) => {
+  console.log('Chapter marks distribution API response:', data);
+  
+  // Update test paper allocation with response data
+  testPaperAllocation.value = data;
+  
+  // Set flag to indicate user has generated distribution after changes
+  hasGeneratedDistribution.value = true;
+  
+  // Store the distribute data and update last used endpoint
+  localStorage.setItem('distributeData', JSON.stringify(data));
+  lastUsedEndpoint.value = 'distribute';
+  localStorage.setItem('lastUsedEndpoint', 'distribute');
+  
+  // Update chapter marks and selections
+  updateChapterMarksFromDistribution(data);
+  
+  // Show warning if there are insufficient questions
+  if (data.insufficientQuestions) {
+    showWarningToast(data.allocationMessage ?? 
+      'Some marks could not be allocated due to insufficient questions');
+  }
+};
+
+// Helper function to update chapter marks from distribution data
+const updateChapterMarksFromDistribution = (data: TestPaperAllocation) => {
+  // Only set the flag if it's not already set by another function
+  const shouldManageFlag = !pendingAllocationUpdate.value;
+  
+  if (shouldManageFlag) {
+    // Temporarily set flag to prevent the chapters watcher from triggering allocation API
+    pendingAllocationUpdate.value = true;
+  }
+  
+  // Update chapter marks
+  if (data.chapterMarks) {
+    chapters.value.forEach(chapter => {
+      const chapterMark = data.chapterMarks.find(
+        (cm: { chapterId: number; absoluteMarks: number; requestedMarks: number }) => 
+          cm.chapterId === chapter.id
+      );
+      
+      if (chapterMark) {
+        chapter.marks = chapterMark.absoluteMarks;
+      }
+    });
+  }
+  
+  // Update question selections based on the new allocation
+  if (data.sectionAllocations) {
+    updateSelectedChaptersFromAllocation();
+  }
+  
+  // Only reset the flag if we set it in this function
+  if (shouldManageFlag) {
+    // Reset the pending flag after a short delay to allow other operations
+    setTimeout(() => {
+      pendingAllocationUpdate.value = false;
+    }, 100);
+  }
+};
+
+// Helper function to handle errors
+const handleError = (error: unknown) => {
+  console.error('Error in generate function:', error);
+  showErrorToast(error instanceof Error 
+    ? error.message 
+    : 'Failed to generate marks distribution. Please try again.');
 };
 
 // Add warning toast function
@@ -2005,8 +2169,7 @@ const updateSelectedChaptersFromAllocation = () => {
   
   console.log('Updating selected chapters from allocation');
   
-  // Temporarily set flag to prevent watch handler from triggering API calls
-  pendingAllocationUpdate.value = true;
+  // Note: pendingAllocationUpdate flag is managed by the calling function
   
   // Process each section from the allocation
   testPaperAllocation.value.sectionAllocations.forEach((section: SectionAllocation) => {
@@ -2021,6 +2184,7 @@ const updateSelectedChaptersFromAllocation = () => {
             const key = `${section.sectionId}-${questionIndex}`;
             
             // Update the selected chapter for this section and question
+            // DIRECTLY update selectedChapters without triggering updateSelectedChapter
             selectedChapters.value[key] = allocation.chapterId;
             console.log(`Updated section ${section.sectionId}, question ${questionIndex} to chapter ${allocation.chapterId} (${allocation.chapterName})`);
           });
@@ -2032,14 +2196,11 @@ const updateSelectedChaptersFromAllocation = () => {
   // Update used questions count
   updateUsedQuestionsCount();
   
-  // Reset the pending flag
-  pendingAllocationUpdate.value = false;
-  
   // Trigger UI refresh for the pattern card
   setTimeout(() => {
     console.log('Pattern card UI refresh triggered');
     // Force UI update for the pattern card sections
-    const sections = patternDetails.value?.sections || [];
+    const sections = patternDetails.value?.sections ?? [];
     sections.forEach(section => {
       if (questionTypesVisibility.value[section.id]) {
         // If section is already expanded, refresh its question types
@@ -2202,12 +2363,13 @@ h4 {
 /* Mobile optimized marks input group */
 .marks-input-group {
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
   background-color: transparent;
   width: auto;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: none;
+  /* Previously had duplicate align-items property */
 }
 
 /* Styling for the card */
@@ -2758,70 +2920,18 @@ h4 {
   font-weight: 500;
   font-size: 0.85rem;
 }
-
-/* Styling for marks increment/decrement buttons */
-.marks-input-group {
-  display: flex;
-  align-items: center;
-  background-color: transparent;
-}
+/* Styling for marks increment/decrement buttons - merged with previous .marks-input-group */
 
 .marks-input-group .btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
-  padding: 0;
-  z-index: 1;
-  background-color: #f8f9fa;
-  box-shadow: none;
-  border-radius: 4px;
-  margin: 0 3px;
-  overflow: hidden;
-}
-
-.marks-input-group .btn i {
-  font-size: 16px;
-  line-height: 1;
-  display: inline-block;
-  text-align: center;
-  width: 16px;
-  height: 16px;
-}
-
-.marks-input-group .btn i.bi-dash-lg,
-.marks-input-group .btn i.bi-plus-lg {
-  vertical-align: middle;
-}
-
-.marks-input-group .btn:hover:not(:disabled) {
-  background-color: #e9ecef;
-}
-
-.marks-input-group .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.marks-input-group .form-control {
-  min-width: 60px;
-  font-weight: bold;
-  border: none;
-  background-color: #f8f9fa;
-  border-radius: 0 !important;
-  margin: 0;
-  padding: 0;
-  box-shadow: none;
-  height: 36px !important;
+  /* Combine styles from duplicate selector at line 2931 */
   min-height: 36px !important;
   max-height: 36px !important;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  padding: 0 0.5rem !important;
+  margin: 0 !important;
+  line-height: 1 !important;
 }
 
 .marks-value {
@@ -2850,10 +2960,16 @@ h4 {
   .marks-input-group .btn {
     width: 34px;
     height: 34px;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    min-width: 52px;
   }
   
   .marks-input-group .form-control {
     min-width: 52px;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
   }
   
   /* Optimize marks summary for small screens */
@@ -2900,16 +3016,7 @@ h4 {
 }
 
 @media (max-width: 576px) {
-  .marks-input-group .btn-minus,
-  .marks-input-group .btn-plus,
   .marks-input-group .form-control {
-    height: 34px !important;
-    min-height: 34px !important;
-    max-height: 34px !important;
-  }
-  
-  .marks-input-group .form-control {
-    height: 34px !important;
     min-height: 34px !important;
     max-height: 34px !important;
     min-width: 52px;
@@ -3075,6 +3182,36 @@ h4 {
 .chapter-select-dropdown option:disabled {
   opacity: 0.6;
   color: #6c757d;
+}
+
+@media (max-width: 576px) {
+  /* Optimize marks summary for small screens */
+  .marks-summary .text-muted {
+    font-size: 0.9rem;
+  }
+}
+
+/* Print styles - optimize for A4 printing */
+@media print {
+  .preview-container {
+    box-shadow: none;
+    padding: 0;
+  }
+  
+  .btn, .form-control, .nav-tabs {
+    display: none !important;
+  }
+  
+  body {
+    background: white;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
 }
 
 </style> 

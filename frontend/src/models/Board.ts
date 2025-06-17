@@ -122,3 +122,43 @@ export interface UpdateSubjectDto {
   name?: string
   board_id?: number
 }
+
+// Board Management DTOs (simplified for consolidated endpoint)
+export interface BoardManagementAddressDto {
+  street: string;
+  postal_code: string;
+  city_id: number;
+}
+
+export interface BoardManagementBoardDto {
+  name: string;
+  abbreviation?: string;
+}
+
+export interface BoardManagementInstructionMediumDto {
+  name: string;
+}
+
+export interface BoardManagementStandardDto {
+  name: string;
+}
+
+export interface BoardManagementSubjectDto {
+  name: string;
+}
+
+export interface CreateBoardManagementDto {
+  address: BoardManagementAddressDto;
+  board: BoardManagementBoardDto;
+  instructionMediums: BoardManagementInstructionMediumDto[];
+  standards: BoardManagementStandardDto[];
+  subjects: BoardManagementSubjectDto[];
+}
+
+export interface BoardManagementResponse {
+  board: Board
+  address: Address
+  instruction_mediums: MediumOfInstruction[]
+  standards: Standard[]
+  subjects: Subject[]
+}

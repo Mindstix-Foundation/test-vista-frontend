@@ -7,7 +7,7 @@
       <div class="row justify-content-center align-items-center my-1">
         <div class="col col-12 col-sm-5">
           <p class="text-muted text-start fs-5 m-0">
-            <span class="col-12 col-md-auto">{{ selectedBoard?.name }} |</span>
+            <span class="col-12 col-md-auto">{{ selectedBoard?.name }} | </span>
             <span class="col-12 col-md-auto"> {{ selectedMedium?.instruction_medium }}</span>
           </p>
           <h3 class="fw-bolder text-start text-dark m-0">Standard {{ selectedStandard?.name }}</h3>
@@ -68,6 +68,7 @@
         <div class="col col-12 col-sm-10 col-md-10">
           <div class="table-responsive">
             <table class="table table-sm table-hover table-striped table-bordered">
+              <caption>List of subjects for the selected standard</caption>
               <colgroup>
                 <col style="width: 10px" />
                 <col style="width: 100%" />
@@ -131,6 +132,7 @@
                 <div class="col-12">
                   <div class="table-responsive">
                     <table class="table table-sm table-hover table-striped table-bordered">
+                      <caption>List of available subjects that can be added to the standard</caption>
                       <thead>
                         <tr>
                           <th scope="col" style="width: 50px"></th>
@@ -237,6 +239,7 @@
                 <div class="col-12">
                   <div class="table-responsive">
                     <table class="table table-sm table-hover table-striped table-bordered">
+                      <caption>List of subjects that can be removed from the standard</caption>
                       <thead>
                         <tr>
                           <th scope="col" style="width: 50px"></th>
@@ -580,6 +583,40 @@ const toggleRemoveSubjectSelection = (subjectId: number) => {
   }
 }
 
+// Helper function to clean up the modal
+const cleanupModal = (modal: bootstrap.Modal, modalElement: HTMLElement) => {
+  modal.hide()
+  setTimeout(() => {
+    modalElement.remove()
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove())
+    document.body.classList.remove('modal-open')
+    document.body.style.removeProperty('overflow')
+    document.body.style.removeProperty('padding-right')
+  }, 300)
+}
+
+// Helper function to handle subject deletion
+const removeSubject = async (subjectId: number): Promise<void> => {
+  const subject = subjects.value.find(s => s.id === subjectId)
+  if (!subject) return
+
+  try {
+    await axiosInstance.delete(`/medium-standard-subjects/${subject.mediumStandardSubjectId}`)
+  } catch (error) {
+    const axiosError = error as { response?: { status: number } }
+    if (axiosError.response && axiosError.response.status === 409) {
+      const subjectName = subjects.value.find(s => s.id === subjectId)?.name ?? 'Unknown'
+      toastStore.showToast({
+        title: 'Error',
+        message: `Cannot remove subject "${subjectName}" as it has existing relationships.`,
+        type: 'error',
+      })
+      return
+    }
+    throw new Error(`Failed to delete subject mapping`)
+  }
+}
+
 const removeSelectedSubjects = async () => {
   try {
     // Hide the remove subject modal first
@@ -654,69 +691,40 @@ const removeSelectedSubjects = async () => {
       confirmButton.disabled = input.value !== 'sure'
     })
 
-    // Function to properly cleanup modal
-    const cleanupModal = () => {
-      modal.hide()
-      setTimeout(() => {
-        modalElement.remove()
-        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove())
-        document.body.classList.remove('modal-open')
-        document.body.style.removeProperty('overflow')
-        document.body.style.removeProperty('padding-right')
-      }, 300)
-    }
-
     // Add event listeners
     modalElement.querySelector('.btn-secondary')?.addEventListener('click', () => {
-      cleanupModal()
+      cleanupModal(modal, modalElement)
     })
 
-    confirmButton?.addEventListener('click', async () => {
-      try {
-        // Process removals using the mediumStandardSubjectId
-        for (const subjectId of selectedRemoveSubjectIds.value) {
-          try {
-            const subject = subjects.value.find(s => s.id === subjectId)
-            if (!subject) continue
-
-            await axiosInstance.delete(
-              `/medium-standard-subjects/${subject.mediumStandardSubjectId}`
-            )
-          } catch (error) {
-            const axiosError = error as { response?: { status: number } }
-            if (axiosError.response && axiosError.response.status === 409) {
-              const subjectName = subjects.value.find(s => s.id === subjectId)?.name || 'Unknown'
-              toastStore.showToast({
-                title: 'Error',
-                message: `Cannot remove subject "${subjectName}" as it has existing relationships.`,
-                type: 'error',
-              })
-              continue
-            }
-            throw new Error(`Failed to delete subject mapping`)
+    confirmButton?.addEventListener('click', () => {
+      void (async () => {
+        try {
+          // Process removals using the mediumStandardSubjectId
+          for (const subjectId of selectedRemoveSubjectIds.value) {
+            await removeSubject(subjectId)
           }
+
+          // Refresh subjects list
+          await fetchSubjects()
+
+          // Hide confirmation modal
+          cleanupModal(modal, modalElement)
+
+          // Show success toast
+          toastStore.showToast({
+            title: 'Success',
+            message: 'Subjects removed successfully',
+            type: 'success',
+          })
+        } catch (error) {
+          console.error('Error removing subjects:', error)
+          toastStore.showToast({
+            title: 'Error',
+            message: 'Failed to remove subjects. Please try again.',
+            type: 'error',
+          })
         }
-
-        // Refresh subjects list
-        await fetchSubjects()
-
-        // Hide confirmation modal
-        cleanupModal()
-
-        // Show success toast
-        toastStore.showToast({
-          title: 'Success',
-          message: 'Subjects removed successfully',
-          type: 'success',
-        })
-      } catch (error) {
-        console.error('Error removing subjects:', error)
-        toastStore.showToast({
-          title: 'Error',
-          message: 'Failed to remove subjects. Please try again.',
-          type: 'error',
-        })
-      }
+      })()
     })
   } catch (error) {
     console.error('Error removing subjects:', error)

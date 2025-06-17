@@ -257,6 +257,7 @@ import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Define component name (for linter)
 defineOptions({
@@ -379,7 +380,7 @@ interface ChapterItem {
 
 // User data
 const userProfile = ref<UserProfile | null>(null)
-const schoolId = computed(() => userProfile.value?.schools?.[0]?.id || 0)
+const schoolId = computed(() => userProfile.value?.schools?.[0]?.id ?? 0)
 
 // Options for dropdowns
 const instructionMediums = ref<InstructionMediumItem[]>([])
@@ -441,7 +442,7 @@ const fetchUserProfile = async () => {
     const response = await axiosInstance.get('/auth/profile')
     console.log('User profile response:', response.data)
     
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       console.log('User profile set:', userProfile.value)
       console.log('School ID:', schoolId.value)
@@ -617,7 +618,7 @@ const handleSubjectChange = async () => {
 // Update the selectPattern function
 const selectPattern = async () => {
   if (!isFormValid.value) {
-    showErrorToast('Please fill all required fields')
+    showErrorToast(VALIDATION_MESSAGES.FORM.FILL_ALL_REQUIRED)
     return
   }
   
@@ -645,13 +646,13 @@ const selectPattern = async () => {
     const queryParams = {
       // Display names for UI
       medium: encodeURIComponent(selectedMediums.value.map(m => m.name).join(',')),
-      standard: encodeURIComponent(selectedStandardObj.value?.name || ''),
-      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name || ''),
+      standard: encodeURIComponent(selectedStandardObj.value?.name ?? ''),
+      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name ?? ''),
       
       // IDs for API calls
       mediumId: selectedInstructionMedium.value,
-      standardId: selectedStandardObj.value?.id?.toString() || '',
-      subjectId: selectedSubjectObj.value?.subject_id?.toString() || '',
+      standardId: selectedStandardObj.value?.id?.toString() ?? '',
+      subjectId: selectedSubjectObj.value?.subject_id?.toString() ?? '',
       schoolId: schoolId.value.toString(),
       totalMarks: totalMarks.value.toString(),
       questionSource: questionSource.value,
@@ -779,7 +780,7 @@ const restoreMarksSelection = async (formState) => {
   
   selectedMarksObj.value = availableMarks.value.find(
     m => m.name === formState.selectedMarksObj.name
-  ) || null
+  ) ?? null
   
   if (selectedMarksObj.value) {
     totalMarks.value = parseInt(selectedMarksObj.value.name, 10)
@@ -873,7 +874,7 @@ const fetchAvailableMarks = async () => {
     })
     
     // Transform marks for the dropdown
-    if (response.data && response.data.marks) {
+    if (response.data?.marks) {
       availableMarks.value = response.data.marks.map((mark: number) => ({
         id: mark,
         name: mark.toString()

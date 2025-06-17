@@ -11,11 +11,11 @@
             console.log('AddTranslation - Current query params:', currentRoute.query);
             
             const queryParams = {
-              page: currentRoute.query.returnPage,
-              sort: currentRoute.query.returnSort,
-              topic: currentRoute.query.returnTopic,
-              type: currentRoute.query.returnType,
-              search: currentRoute.query.returnSearch
+              page: currentRoute.query.returnPage ?? undefined,
+              sort: currentRoute.query.returnSort ?? undefined,
+              topic: currentRoute.query.returnTopic ?? undefined,
+              type: currentRoute.query.returnType ?? undefined,
+              search: currentRoute.query.returnSearch ?? undefined
             };
             
             console.log('AddTranslation - Navigating back with params:', queryParams);
@@ -311,7 +311,7 @@
                       </div>
                       
                       <!-- Image Upload Section -->
-                      <!-- Only enable image upload if there's an original image for this option -->
+                      <!-- Only show image upload if there's an original image for this option -->
                       <div v-if="originalOptionImages && originalOptionImages[index]" class="mb-2">
                         <div class="input-group input-group-sm">
                           <input type="file" class="form-control" :id="'optionImage' + (index + 1)" accept="image/*" @change="e => handleOptionImageChange(e, index)">
@@ -326,16 +326,6 @@
                           <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" @click="clearOptionImage(index)">
                             <i class="bi bi-x"></i>
                           </button>
-                        </div>
-                      </div>
-                      <!-- Disabled image upload with explanation if original has no image -->
-                      <div v-else class="mb-2">
-                        <div class="input-group input-group-sm">
-                          <input type="file" class="form-control" disabled title="Original option does not have an image. You can only upload images for options that have images in the original question.">
-                          <span class="input-group-text text-muted small">
-                            <i class="bi bi-info-circle me-1"></i>
-                            No original image
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -399,20 +389,12 @@
                     </label>
                   </div>
 
-                  <!-- Only enable image upload if the original question has an image -->
+                  <!-- Only show image upload if the original question has an image -->
                   <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                     <span class="input-group-text text-muted small">
                       <i class="bi bi-info-circle me-1"></i>
                       Original has image
-                    </span>
-                  </div>
-                  <!-- Disabled image upload with explanation if original has no image -->
-                  <div class="input-group input-group-sm mb-3" v-else>
-                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
-                    <span class="input-group-text text-muted small">
-                      <i class="bi bi-info-circle me-1"></i>
-                      No original image
                     </span>
                   </div>
                   <div class="col text-end">
@@ -478,20 +460,12 @@
                     </label>
                   </div>
                   
-                  <!-- Only enable image upload if the original question has an image -->
+                  <!-- Only show image upload if the original question has an image -->
                   <div class="input-group input-group-sm mb-3" v-if="questionImage">
                     <input type="file" class="form-control" id="inputGroupFile01" accept="image/*" ref="questionImageInput" @change="handleImageChange">
                     <span class="input-group-text text-muted small">
                       <i class="bi bi-info-circle me-1"></i>
                       Original has image
-                    </span>
-                  </div>
-                  <!-- Disabled image upload with explanation if original has no image -->
-                  <div class="input-group input-group-sm mb-3" v-else>
-                    <input type="file" class="form-control" disabled title="Original question does not have an image. You can only upload images when the original question has an image.">
-                    <span class="input-group-text text-muted small">
-                      <i class="bi bi-info-circle me-1"></i>
-                      No original image
                     </span>
                   </div>
                 </div>
@@ -718,6 +692,25 @@
         <span class="visually-hidden">Saving translation...</span>
       </output>
     </div>
+
+    <!-- Enhanced Image Upload Modals -->
+    <ImageUploadEditor
+      v-if="showQuestionImageModal"
+      :questionText="originalQuestion"
+      :questionNumber="1"
+      imageType="question"
+      @close="closeQuestionImageModal"
+      @upload="handleQuestionImageUploaded"
+    />
+
+    <ImageUploadEditor
+      v-if="showOptionImageModal"
+      :questionText="originalQuestion"
+      :questionNumber="1"
+      imageType="option"
+      @close="closeOptionImageModal"
+      @upload="handleOptionImageUploaded"
+    />
   </div>
 </template>
 
@@ -726,6 +719,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
+import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -869,6 +863,11 @@ const optionImagePreviews = ref<(string | null)[]>([])
 const originalOptionIsCorrect = ref<boolean[]>([])
 const optionImageIds = ref<(number | null)[]>([]) // To store original image IDs
 
+// Add new state for image upload modals
+const showQuestionImageModal = ref(false)
+const showOptionImageModal = ref(false)
+const currentOptionIndex = ref<number>(-1)
+
 // Methods
 function autoResize(event: Event) {
   const textarea = event.target as HTMLTextAreaElement
@@ -923,41 +922,76 @@ function handleImageChange(event: Event) {
   }
 }
 
-// Helper function to create a toast notification
-function showToast(title, message, type) {
-  toastStore.showToast({
-    title,
-    message,
-    type
-  });
+// Add new methods for ImageUploadEditor
+function openQuestionImageModal() {
+  showQuestionImageModal.value = true;
+}
+
+function closeQuestionImageModal() {
+  showQuestionImageModal.value = false;
+}
+
+function handleQuestionImageUploaded(imageData: any) {
+  // Handle the uploaded question image
+  newImageSelected.value = true;
+  // Store the image file for later upload during save
+  const questionImageInput = document.getElementById('inputGroupFile01') as HTMLInputElement;
+  if (questionImageInput && imageData.file) {
+    // Create a new FileList with the uploaded file
+    const dt = new DataTransfer();
+    dt.items.add(imageData.file);
+    questionImageInput.files = dt.files;
+  }
+  closeQuestionImageModal();
+}
+
+function openOptionImageModal(optionIndex: number) {
+  currentOptionIndex.value = optionIndex;
+  showOptionImageModal.value = true;
+}
+
+function closeOptionImageModal() {
+  showOptionImageModal.value = false;
+  currentOptionIndex.value = -1;
+}
+
+function handleOptionImageUploaded(imageData: any) {
+  // Handle the uploaded option image
+  if (currentOptionIndex.value >= 0) {
+    const optionImageInput = document.getElementById(`optionImage${currentOptionIndex.value + 1}`) as HTMLInputElement;
+    if (optionImageInput && imageData.file) {
+      // Create a new FileList with the uploaded file
+      const dt = new DataTransfer();
+      dt.items.add(imageData.file);
+      optionImageInput.files = dt.files;
+      
+      // Trigger the existing change handler
+      handleOptionImageChange({ target: optionImageInput } as Event, currentOptionIndex.value);
+    }
+  }
+  closeOptionImageModal();
 }
 
 // Helper function to handle image upload
-async function uploadImage(file) {
+async function uploadImage(file, customWidth?: number, customHeight?: number) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const uploadResponse = await axiosInstance.post(
-    '/images/upload',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+  // Add custom dimensions if provided
+  if (customWidth !== undefined) {
+    formData.append('width', customWidth.toString());
+  }
+  if (customHeight !== undefined) {
+    formData.append('height', customHeight.toString());
+  }
+
+  const response = await axiosInstance.post('/images/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
     }
-  );
+  });
 
-  const imageCreateRequest = {
-    image_url: uploadResponse.data.image_url,
-    original_filename: uploadResponse.data.original_filename || file.name,
-    file_size: uploadResponse.data.file_size || file.size,
-    file_type: uploadResponse.data.file_type || file.type,
-    width: uploadResponse.data.width,
-    height: uploadResponse.data.height
-  };
-
-  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-  return imageResponse.data.id;
+  return response.data.id;
 }
 
 // Helper function to handle image processing logic
@@ -1068,7 +1102,6 @@ async function processMatchPairs(translationRequest) {
   }
 }
 
-// Helper function to handle fill in the blanks
 function processFillInTheBlanks(translationRequest) {
   if (questionType.value !== 'Fill in the Blanks') {
     return;
@@ -1087,11 +1120,11 @@ function getQueryParams() {
   return {
     success: 'true',
     message: 'Translation added successfully',
-    page: currentRoute.query.returnPage || undefined,
-    sort: currentRoute.query.returnSort || undefined,
-    topic: currentRoute.query.returnTopic || undefined,
-    type: currentRoute.query.returnType || undefined,
-    search: currentRoute.query.returnSearch || undefined
+    page: currentRoute.query.returnPage ?? undefined,
+    sort: currentRoute.query.returnSort ?? undefined,
+    topic: currentRoute.query.returnTopic ?? undefined,
+    type: currentRoute.query.returnType ?? undefined,
+    search: currentRoute.query.returnSearch ?? undefined
   };
 }
 
@@ -1145,7 +1178,7 @@ async function saveTranslation() {
     const axiosError = error as AxiosErrorResponse;
     showToast(
       'Error',
-      axiosError.response?.data?.message || 'Failed to save translation',
+      axiosError.response?.data?.message ?? 'Failed to save translation',
       'error'
     );
   } finally {
@@ -1219,10 +1252,7 @@ async function fetchQuestionDetails() {
   const questionDetails = questionDetailsResponse.data;
 
   // Check if question has any question_texts with topics
-  if (!questionDetails.question_texts ||
-      !questionDetails.question_texts[0] ||
-      !questionDetails.question_texts[0].topic ||
-      !questionDetails.question_texts[0].topic.id) {
+  if (!questionDetails?.question_texts?.[0]?.topic?.id) {
     console.error('Question has no associated topic');
     toastStore.showToast({
       title: 'Error',
@@ -1272,7 +1302,7 @@ function processSelectedTranslation(selectedTranslation) {
 }
 
 function processQuestionImage(selectedTranslation) {
-  if (selectedTranslation.image_id && selectedTranslation.image) {
+  if (selectedTranslation?.image_id && selectedTranslation?.image) {
     imageLoading.value = true;
     questionImage.value = {
       id: selectedTranslation.image_id,
@@ -1288,7 +1318,7 @@ function processQuestionOptions(selectedTranslation) {
                    questionType.value === 'True or False';
                    
   if (isMcqType && selectedTranslation.mcq_options) {
-    processMcqOptions(selectedTranslation);
+    loadMcqOptions(selectedTranslation);
   }
   
   const isMatchPairsType = (questionType.value === 'Match the Pairs' || 
@@ -1297,11 +1327,11 @@ function processQuestionOptions(selectedTranslation) {
                           selectedTranslation.match_pairs.length > 0;
                           
   if (isMatchPairsType) {
-    processMatchPairs(selectedTranslation);
+    loadMatchPairs(selectedTranslation);
   }
 }
 
-function processMcqOptions(selectedTranslation) {
+function loadMcqOptions(selectedTranslation) {
   originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
   // Initialize translated options array with the same length
   translatedOptions.value = Array(originalOptions.value.length).fill('');
@@ -1331,64 +1361,10 @@ function processOptionDetails(option, index) {
   }
 
   // Set option image if available
-  if (option.image_id && option.image && option.image.presigned_url) {
+  if (option.image_id && option?.image?.presigned_url) {
     originalOptionImages.value[index] = option.image.presigned_url;
     optionImageLoading.value[index] = true;
     optionImageIds.value[index] = option.image_id;
-  }
-}
-
-function processMatchPairs(selectedTranslation) {
-  originalMatchPairs.value = selectedTranslation.match_pairs.map(
-    (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
-  );
-
-  // Initialize translatedMatchPairs with empty strings for each pair
-  translatedMatchPairs.value = Array(originalMatchPairs.value.length)
-    .fill(0)
-    .map(() => ({ left_text: '', right_text: '' }));
-    
-  // Initialize arrays for match pair images
-  initializeMatchPairArrays(originalMatchPairs.value.length);
-  
-  // Process each match pair
-  selectedTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
-    processMatchPairImages(pair, index);
-  });
-}
-
-function initializeMatchPairArrays(length) {
-  originalMatchPairLeftImages.value = Array(length).fill(null);
-  originalMatchPairRightImages.value = Array(length).fill(null);
-  pairLeftImageLoading.value = Array(length).fill(false);
-  pairLeftImageError.value = Array(length).fill(false);
-  pairRightImageLoading.value = Array(length).fill(false);
-  pairRightImageError.value = Array(length).fill(false);
-  pairLeftImagePreviews.value = Array(length).fill(null);
-  pairRightImagePreviews.value = Array(length).fill(null);
-  pairLeftImageIds.value = Array(length).fill(null);
-  pairRightImageIds.value = Array(length).fill(null);
-}
-
-function processMatchPairImages(pair, index) {
-  // Handle left side image
-  if (pair.left_image_id) {
-    const leftImage = pair.left_image;
-    if (leftImage && leftImage.presigned_url) {
-      originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
-      pairLeftImageLoading.value[index] = true;
-      pairLeftImageIds.value[index] = pair.left_image_id;
-    }
-  }
-  
-  // Handle right side image
-  if (pair.right_image_id) {
-    const rightImage = pair.right_image;
-    if (rightImage && rightImage.presigned_url) {
-      originalMatchPairRightImages.value[index] = rightImage.presigned_url;
-      pairRightImageLoading.value[index] = true;
-      pairRightImageIds.value[index] = pair.right_image_id;
-    }
   }
 }
 
@@ -1413,7 +1389,7 @@ function handleLoadError(error) {
   const axiosError = error as AxiosErrorResponse;
   toastStore.showToast({
     title: 'Error',
-    message: axiosError.response?.data?.message || 'Failed to load question data',
+    message: axiosError.response?.data?.message ?? 'Failed to load question data',
     type: 'error'
   });
 
@@ -1423,70 +1399,113 @@ function handleLoadError(error) {
 
 // New function to handle changing the selected translation
 function changeTranslation(index: number) {
-  if (index >= 0 && index < availableTranslations.value.length) {
-    selectedTranslationIndex.value = index;
-    const selectedTranslation = availableTranslations.value[index];
+  if (index < 0 || index >= availableTranslations.value.length) {
+    return;
+  }
+  
+  selectedTranslationIndex.value = index;
+  const selectedTranslation = availableTranslations.value[index];
 
-    // Update the displayed original question
-    originalQuestion.value = selectedTranslation.question_text;
+  // Update the displayed original question
+  originalQuestion.value = selectedTranslation.question_text;
 
-    // Update image if available
-    if (selectedTranslation.image_id && selectedTranslation.image) {
-      imageLoading.value = true;
-      imageError.value = false;
-      questionImage.value = {
-        id: selectedTranslation.image_id,
-        presigned_url: selectedTranslation.image.presigned_url,
-        image_url: selectedTranslation.image.image_url
-      };
-    } else {
-      questionImage.value = null;
+  // Update image if available
+  updateQuestionImage(selectedTranslation);
+  
+  // Update options for specific question types
+  updateQuestionOptions(selectedTranslation);
+
+  // Reset translated options to empty for the new translation
+  translatedOptions.value = Array(originalOptions.value.length).fill('');
+
+  // Reset preview images
+  optionImagePreviews.value = Array(originalOptions.value.length).fill(null);
+
+  // Resize textareas after update
+  resizeTextareas();
+}
+
+// Helper function to update the question image
+function updateQuestionImage(translation) {
+  if (translation?.image_id && translation?.image) {
+    imageLoading.value = true;
+    imageError.value = false;
+    questionImage.value = {
+      id: translation.image_id,
+      presigned_url: translation.image.presigned_url,
+      image_url: translation.image.image_url
+    };
+  } else {
+    questionImage.value = null;
+  }
+}
+
+// Helper function to update question options
+function updateQuestionOptions(translation) {
+  const isOptionBasedQuestion = isOptionTypeQuestion(questionType.value);
+  
+  if (isOptionBasedQuestion && translation.mcq_options) {
+    // Extract option text
+    originalOptions.value = translation.mcq_options.map((opt) => opt.option_text);
+
+    // Reset arrays for option images and correct status
+    resetOptionArrays(originalOptions.value.length);
+
+    // Process each option
+    processOptions(translation.mcq_options);
+  }
+}
+
+// Helper function to check if question type uses options
+function isOptionTypeQuestion(type) {
+  return type === 'Multiple Choice Question (MCQ)' ||
+         type === 'Odd One Out' ||
+         type === 'True or False';
+}
+
+// Helper function to reset option arrays
+function resetOptionArrays(optionsCount) {
+  originalOptionImages.value = Array(optionsCount).fill(null);
+  optionImageLoading.value = Array(optionsCount).fill(false);
+  optionImageError.value = Array(optionsCount).fill(false);
+  originalOptionIsCorrect.value = Array(optionsCount).fill(false);
+  optionImageIds.value = Array(optionsCount).fill(null);
+}
+
+// Helper function to process options
+function processOptions(options) {
+  options.forEach((option, index) => {
+    // Set correct option
+    if (option.is_correct) {
+      originalOptionIsCorrect.value[index] = true;
     }
 
-    // Update options for MCQ, Odd One Out, and True/False with option images
-    if ((questionType.value === 'Multiple Choice Question (MCQ)' ||
-         questionType.value === 'Odd One Out' ||
-         questionType.value === 'True or False') &&
-        selectedTranslation.mcq_options) {
+    // Set option image if available
+    processOptionImage(option, index);
+  });
+}
 
-      // Extract option text
-      originalOptions.value = selectedTranslation.mcq_options.map((opt: McqOption) => opt.option_text);
+// Helper function to process option image
+function processOptionImage(option, index) {
+  if (option.image_id && option?.image?.presigned_url) {
+    originalOptionImages.value[index] = option.image.presigned_url;
+    optionImageLoading.value[index] = true;
+    optionImageIds.value[index] = option.image_id;
+  }
+}
 
-      // Reset arrays for option images and correct status
-      originalOptionImages.value = Array(originalOptions.value.length).fill(null);
-      optionImageLoading.value = Array(originalOptions.value.length).fill(false);
-      optionImageError.value = Array(originalOptions.value.length).fill(false);
-      originalOptionIsCorrect.value = Array(originalOptions.value.length).fill(false);
-      optionImageIds.value = Array(originalOptions.value.length).fill(null);
-
-      // Loop through options to extract images and correct status
-      selectedTranslation.mcq_options.forEach((option: McqOption, index: number) => {
-        // Set correct option
-        if (option.is_correct) {
-          originalOptionIsCorrect.value[index] = true;
-        }
-
-        // Set option image if available
-        if (option.image_id && option.image && option.image.presigned_url) {
-          originalOptionImages.value[index] = option.image.presigned_url;
-          optionImageLoading.value[index] = true;
-          optionImageIds.value[index] = option.image_id;
-        }
-      });
-    }
-
-    // Reset translated options to empty for the new translation
-    translatedOptions.value = Array(originalOptions.value.length).fill('');
-
-    // Reset preview images
-    optionImagePreviews.value = Array(originalOptions.value.length).fill(null);
-
-    // Resize textareas after update
-    setTimeout(() => {
-      document.querySelectorAll('textarea').forEach(textarea => {
-        autoResize({ target: textarea } as unknown as Event);
-      });
-    }, 0);
+// Helper function to resize textareas
+function resizeTextareas() {
+  // Use a different approach than the one in initializeTextareas
+  const textareas = document.querySelectorAll('textarea');
+  if (textareas.length > 0) {
+    // Process each textarea with a small delay between them
+    textareas.forEach((textarea, index) => {
+      // Stagger the resize operations slightly
+      setTimeout(() => {
+        autoResizeElement(textarea);
+      }, index * 5); // 5ms delay between each textarea resize
+    });
   }
 }
 
@@ -1657,6 +1676,61 @@ function clearOptionImage(index: number): void {
   }
 }
 
+// Helper function to load match pairs from selected translation
+async function loadMatchPairs(selectedTranslation) {
+  originalMatchPairs.value = selectedTranslation.match_pairs.map(
+    (pair: MatchPair) => ({ left_text: pair.left_text, right_text: pair.right_text })
+  );
+
+  // Initialize translatedMatchPairs with empty strings for each pair
+  translatedMatchPairs.value = Array(originalMatchPairs.value.length)
+    .fill(0)
+    .map(() => ({ left_text: '', right_text: '' }));
+    
+  // Initialize arrays for match pair images
+  initializeMatchPairArrays(originalMatchPairs.value.length);
+  
+  // Process each match pair
+  selectedTranslation.match_pairs.forEach((pair: MatchPair, index: number) => {
+    processMatchPairImages(pair, index);
+  });
+}
+
+function initializeMatchPairArrays(length) {
+  originalMatchPairLeftImages.value = Array(length).fill(null);
+  originalMatchPairRightImages.value = Array(length).fill(null);
+  pairLeftImageLoading.value = Array(length).fill(false);
+  pairLeftImageError.value = Array(length).fill(false);
+  pairRightImageLoading.value = Array(length).fill(false);
+  pairRightImageError.value = Array(length).fill(false);
+  pairLeftImagePreviews.value = Array(length).fill(null);
+  pairRightImagePreviews.value = Array(length).fill(null);
+  pairLeftImageIds.value = Array(length).fill(null);
+  pairRightImageIds.value = Array(length).fill(null);
+}
+
+function processMatchPairImages(pair, index) {
+  // Handle left side image
+  if (pair.left_image_id) {
+    const leftImage = pair.left_image;
+    if (leftImage?.presigned_url) {
+      originalMatchPairLeftImages.value[index] = leftImage.presigned_url;
+      pairLeftImageLoading.value[index] = true;
+      pairLeftImageIds.value[index] = pair.left_image_id;
+    }
+  }
+  
+  // Handle right side image
+  if (pair.right_image_id) {
+    const rightImage = pair.right_image;
+    if (rightImage?.presigned_url) {
+      originalMatchPairRightImages.value[index] = rightImage.presigned_url;
+      pairRightImageLoading.value[index] = true;
+      pairRightImageIds.value[index] = pair.right_image_id;
+    }
+  }
+}
+
 // Lifecycle hooks
 onMounted(() => {
   // Load data from localStorage
@@ -1676,7 +1750,7 @@ onMounted(() => {
 
   // Check for success message in route query params (if coming back from another page)
   if (route.query.success === 'true') {
-    const message = route.query.message as string || 'Operation completed successfully';
+    const message = route.query.message ?? 'Operation completed successfully';
 
     toastStore.showToast({
       title: 'Success',

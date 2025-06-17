@@ -244,6 +244,7 @@
               <transition name="slide-fade">
                 <div class="row mt-3 pattern-details" v-if="pattern.isExpanded">
                   <table class="table table-sm table-striped table-bordered">
+                    <caption>Pattern section details showing section names, question counts, and marks allocation</caption>
                     <tbody>
                       <tr class="table-dark">
                         <th><strong>Section Name</strong></th>
@@ -428,7 +429,7 @@ interface Pattern {
     id: number
     pattern_id: number
     seqencial_section_number: number
-    sub_section: string
+    sub_section: string | null
     section_name: string
     total_questions: number
     mandotory_questions: number
@@ -437,6 +438,20 @@ interface Pattern {
     updated_at: string
   }>
   isExpanded?: boolean
+}
+
+interface Section {
+  id: number
+  pattern_id: number
+  section_number: number
+  sequence_number: number
+  section_name: string
+  sub_section: string | null
+  total_questions: number
+  mandotory_questions: number
+  marks_per_question: number
+  created_at: string
+  updated_at: string
 }
 
 // Data
@@ -548,11 +563,11 @@ const visiblePageNumbers = computed(() => {
 
 // Computed properties for available standards and subjects
 const availableStandards = computed(() => {
-  return selectedBoard.value?.standards || []
+  return selectedBoard.value?.standards ?? []
 })
 
 const availableSubjects = computed(() => {
-  return selectedBoard.value?.subjects || []
+  return selectedBoard.value?.subjects ?? []
 })
 
 // Handle search input with debounce
@@ -936,8 +951,8 @@ const fetchBoardDetails = async (boardId: number) => {
     if (response.data) {
       // Keep the original board reference but update its properties
       if (selectedBoard.value) {
-        selectedBoard.value.standards = response.data.standards || []
-        selectedBoard.value.subjects = response.data.subjects || []
+        selectedBoard.value.standards = response.data.standards ?? []
+        selectedBoard.value.subjects = response.data.subjects ?? []
       }
     }
   } catch (error) {

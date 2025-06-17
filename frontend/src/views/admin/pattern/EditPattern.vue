@@ -121,13 +121,19 @@ interface Section {
   pattern_id: number
   section_number: number
   sequence_number: number
-  sub_section: string
-  section_name: string
+  sub_section: string | null
+  sectionName: string
+  questionType: string
+  requiredQuestions: number
+  marksPerQuestion: number
   total_questions: number
   mandotory_questions: number
   marks_per_question: number
   created_at: string
   updated_at: string
+  isModified?: boolean
+  isNew?: boolean
+  questionTypes?: string[]
 }
 
 interface Pattern {
@@ -499,46 +505,47 @@ const updateExistingSections = async () => {
 }
 
 // Helper function to update question types for a section
-const updateSectionQuestionTypes = async (section: any) => {
-  if (!section.id) return
-  
-  // Get current question types
-  const { data: currentQuestionTypes } = await axiosInstance.get(
-    `/subsection-question-types?sectionId=${section.id}`
-  )
-  
-  // Delete all existing question types
-  for (const qt of currentQuestionTypes) {
-    console.log(`Deleting question type: ${qt.id}`)
-    await axiosInstance.delete(`/subsection-question-types/${qt.id}`)
+const updateSectionQuestionTypes = async (section: Section) => {
+  try {
+    // Delete existing question types
+    const { data: currentQuestionTypes } = await axiosInstance.get(
+      `/subsection-question-types?sectionId=${section.id}`,
+    )
+
+    for (const qt of currentQuestionTypes) {
+      await axiosInstance.delete(`/subsection-question-types/${qt.id}`)
+    }
+
+    await createQuestionTypesForSection(section)
+  } catch (error) {
+    console.error('Error updating question types:', error)
   }
-  
-  // Create new question types
-  await createQuestionTypesForSection(section)
-}
+};
 
 // Helper function to create question types for a section
-const createQuestionTypesForSection = async (section: any) => {
-  if (!section.id) return
-  
-  if (section.sameType) {
-    // Create single question type with sequential number 0
-    console.log(`Creating question type for section: ${section.questionType}`)
-    const questionType = await getQuestionTypeByName(section.questionType)
-    if (questionType && section.id) {
-      await createSubsectionQuestionType(section.id, 0, questionType.id)
-    }
-  } else {
-    // Create multiple question types with sequential numbers
-    console.log(`Creating multiple question types for section: ${section.questionTypes.join(', ')}`)
-    for (let i = 0; i < section.questionTypes.length; i++) {
-      const questionType = await getQuestionTypeByName(section.questionTypes[i])
+const createQuestionTypesForSection = async (section: Section) => {
+  try {
+    if (section.questionType) {
+      // Single question type
+      console.log(`Creating question type for section: ${section.questionType}`)
+      const questionType = await getQuestionTypeByName(section.questionType)
       if (questionType && section.id) {
-        await createSubsectionQuestionType(section.id, i + 1, questionType.id)
+        await createSubsectionQuestionType(section.id, 0, questionType.id)
+      }
+    } else if (section.questionTypes && section.questionTypes.length > 0) {
+      // Multiple question types
+      console.log(`Creating multiple question types for section: ${section.questionTypes.join(', ')}`)
+      for (let i = 0; i < section.questionTypes.length; i++) {
+        const questionType = await getQuestionTypeByName(section.questionTypes[i])
+        if (questionType && section.id) {
+          await createSubsectionQuestionType(section.id, i + 1, questionType.id)
+        }
       }
     }
+  } catch (error) {
+    console.error('Error creating question types:', error)
   }
-}
+};
 
 // Helper function to create new sections
 const createNewSections = async () => {
@@ -591,7 +598,7 @@ const handleSuccess = () => {
 }
 
 // Helper function to handle error
-const handleError = (err: any) => {
+const handleError = (err: unknown) => {
   console.error('Error updating pattern:', err)
   error.value = 'Failed to update pattern. Please try again.'
   
@@ -835,13 +842,80 @@ const restoreSectionsToDeleteFromLocalStorage = () => {
   }
 };
 
-// Helper function to restore form data from pattern store
-const restoreFormDataFromStore = () => {
+// Helper functions to reduce complexity
+const restoreFormDataFromPatternStore = () => {
   if (patternStore.formData) {
     formData.value = { ...patternStore.formData };
     console.log('EditPattern - Restored form data from pattern store:', formData.value);
   }
-  loading.value = false;
+};
+
+const logSectionChanges = (modifiedSections: Section[], newSections: Section[]) => {
+  console.log('EditPattern - Found modified sections:',
+    modifiedSections.map(s => ({
+      id: s.id,
+      name: s.sectionName,
+      questionType: s.questionType,
+      requiredQuestions: s.requiredQuestions,
+      marksPerQuestion: s.marksPerQuestion,
+      totalMarks: s.requiredQuestions * s.marksPerQuestion,
+      isModified: s.isModified
+    }))
+  );
+
+  console.log('EditPattern - Found new sections:',
+    newSections.map(s => ({
+      name: s.sectionName,
+      questionType: s.questionType,
+      requiredQuestions: s.requiredQuestions,
+      marksPerQuestion: s.marksPerQuestion,
+      totalMarks: s.requiredQuestions * s.marksPerQuestion,
+      isNew: s.isNew
+    }))
+  );
+};
+
+const recalculateMarks = () => {
+  // Force recalculation of remaining marks in the pattern store
+  const totalSectionMarks = patternStore.sections.reduce((total, section) => {
+    const sectionMarks = section.requiredQuestions * section.marksPerQuestion;
+    console.log(`EditPattern - Section ${section.sectionName}: ${sectionMarks} marks`);
+    return total + sectionMarks;
+  }, 0);
+
+  const newRemainingMarks = formData.value.totalMarks - totalSectionMarks;
+
+  console.log('EditPattern - Recalculating remaining marks after section modification:', {
+    totalPatternMarks: formData.value.totalMarks,
+    totalSectionMarks,
+    newRemainingMarks
+  });
+
+  return { totalSectionMarks, newRemainingMarks };
+};
+
+const updateFormComponentMarks = () => {
+  if (formComponent.value) {
+    // Force a recalculation in the component
+    setTimeout(() => {
+      if (formComponent.value) {
+        console.log('EditPattern - Updating form component remaining marks');
+        // Trigger a recalculation in the PatternFormComponent
+        formComponent.value.recalculateRemainingMarks?.();
+      }
+    }, 0);
+  }
+};
+
+const handleSectionChanges = () => {
+  const modifiedSections = patternStore.sections.filter(section => section.isModified);
+  const newSections = patternStore.sections.filter(section => section.isNew);
+  
+  if (modifiedSections.length > 0 || newSections.length > 0) {
+    logSectionChanges(modifiedSections, newSections);
+    recalculateMarks();
+    updateFormComponentMarks();
+  }
 };
 
 onMounted(() => {
@@ -858,14 +932,14 @@ onMounted(() => {
 
   if (previousRoute === 'editSection' && (hasModifiedSections || hasNewSections)) {
     console.log('EditPattern - Returning from EditSection with modified or new data, skipping fetch');
-    restoreFormDataFromStore();
+    restoreFormDataFromPatternStore();
   } else if (isFirstMount.value) {
     console.log('EditPattern - First mount, fetching pattern data');
     fetchPattern();
     isFirstMount.value = false;
   } else {
     console.log('EditPattern - Remounted but not from EditSection, skipping fetch');
-    restoreFormDataFromStore();
+    restoreFormDataFromPatternStore();
   }
 
   // Initialize delete section modal
@@ -879,90 +953,35 @@ onActivated(() => {
 
   // Check if we're returning from EditSection or AddSection
   const previousRoute = router.currentRoute.value.query.from;
+  
   if (previousRoute === 'editSection') {
     console.log('EditPattern - Activated after returning from EditSection');
+    restoreFormDataFromPatternStore();
+    handleSectionChanges();
+  }
+});
 
-    // Make sure formData is properly set from patternStore
-    if (patternStore.formData) {
-      formData.value = { ...patternStore.formData };
-      console.log('EditPattern - Restored form data from pattern store:', formData.value);
-    }
-
-    // Check for modified or new sections
-    const modifiedSections = patternStore.sections.filter(section => section.isModified);
-    const newSections = patternStore.sections.filter(section => section.isNew);
-
-    if (modifiedSections.length > 0 || newSections.length > 0) {
-      console.log('EditPattern - Found modified sections:',
-        modifiedSections.map(s => ({
-          id: s.id,
-          name: s.sectionName,
-          questionType: s.questionType,
-          requiredQuestions: s.requiredQuestions,
-          marksPerQuestion: s.marksPerQuestion,
-          totalMarks: s.requiredQuestions * s.marksPerQuestion,
-          isModified: s.isModified
-        }))
-      );
-
-      console.log('EditPattern - Found new sections:',
-        newSections.map(s => ({
-          name: s.sectionName,
-          questionType: s.questionType,
-          requiredQuestions: s.requiredQuestions,
-          marksPerQuestion: s.marksPerQuestion,
-          totalMarks: s.requiredQuestions * s.marksPerQuestion,
-          isNew: s.isNew
-        }))
-      );
-
-      // Force recalculation of remaining marks in the pattern store
-      const totalSectionMarks = patternStore.sections.reduce((total, section) => {
-        const sectionMarks = section.requiredQuestions * section.marksPerQuestion;
-        console.log(`EditPattern - Section ${section.sectionName}: ${sectionMarks} marks`);
-        return total + sectionMarks;
-      }, 0);
-
-      const newRemainingMarks = formData.value.totalMarks - totalSectionMarks;
-
-      console.log('EditPattern - Recalculating remaining marks after section modification:', {
-        totalPatternMarks: formData.value.totalMarks,
-        totalSectionMarks,
-        newRemainingMarks
-      });
-
-      // If formComponent is available, update its remaining marks
-      if (formComponent.value) {
-        // Force a recalculation in the component
-        setTimeout(() => {
-          if (formComponent.value) {
-            console.log('EditPattern - Updating form component remaining marks');
-            // Trigger a recalculation in the PatternFormComponent
-            formComponent.value.recalculateRemainingMarks?.();
-          }
-        }, 0);
+// Watch route changes for section modifications
+watch(
+  () => route.name,
+  (newRouteName: string | null, oldRouteName: string | null) => {
+    const isReturningFromSectionEdit = (
+      (oldRouteName === 'editSection' || oldRouteName === 'addSection') && 
+      newRouteName === 'editPattern'
+    );
+    
+    if (isReturningFromSectionEdit) {
+      console.log('EditPattern - Navigated back from section editing');
+      
+      const hasModifiedSections = patternStore.sections.some(section => section.isModified);
+      const hasNewSections = patternStore.sections.some(section => section.isNew);
+      
+      if (hasModifiedSections || hasNewSections) {
+        console.log('EditPattern - Modified or new sections detected');
       }
     }
   }
-
-  // Add this after the onActivated hook
-  watch(
-    () => route.name,
-    (newRouteName, oldRouteName) => {
-      if ((oldRouteName === 'editSection' || oldRouteName === 'addSection') && newRouteName === 'editPattern') {
-        console.log('EditPattern - Navigated back from section editing');
-
-        // Check if any sections are marked as modified or new
-        const modifiedSections = patternStore.sections.filter(section => section.isModified);
-        const newSections = patternStore.sections.filter(section => section.isNew);
-
-        if (modifiedSections.length > 0 || newSections.length > 0) {
-          console.log('EditPattern - Modified or new sections detected');
-        }
-      }
-    }
-  );
-});
+);
 
 onBeforeUnmount(() => {
   const nextRoute = router.currentRoute.value.name

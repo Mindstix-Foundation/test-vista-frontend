@@ -17,7 +17,7 @@
             :is-valid="validationStates.name.valid"
             :is-touched="validationStates.name.touched"
             :required="true"
-            :error-message="'Please enter a school name'"
+            :error-message="VALIDATION_MESSAGES.NAME.REQUIRED"
             next-field-id="boardName"
             :format-value="capitalizeWords"
             @update:model-value="(value) => { form.name = value }"
@@ -44,7 +44,7 @@
             @change="handleBoardChange"
           />
           <div class="invalid-feedback" v-if="!validationStates.board.valid && validationStates.board.touched">
-            Please select a board
+            {{ VALIDATION_MESSAGES.BOARD.REQUIRED }}
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@
             :is-valid="validationStates.principalName.valid"
             :is-touched="validationStates.principalName.touched"
             :required="true"
-            :error-message="'Please enter a valid principal name (only letters and spaces, minimum 3 characters)'"
+            :error-message="VALIDATION_MESSAGES.NAME.INVALID"
             next-field-id="contactNo1"
             :format-value="capitalizeWords"
             @update:model-value="(value) => { form.principal_name = value }"
@@ -94,7 +94,7 @@
             :is-valid="validationStates.contactNumber.valid"
             :is-touched="validationStates.contactNumber.touched"
             :required="true"
-            :error-message="'Please enter a valid contact number'"
+            :error-message="VALIDATION_MESSAGES.CONTACT.INVALID"
             next-field-id="contactNo2"
             :format-value="formatContactNumber"
             @update:model-value="(value) => { form.contact_number = value }"
@@ -120,7 +120,7 @@
             :is-valid="validationStates.alternateContactNumber.valid"
             :is-touched="validationStates.alternateContactNumber.touched"
             :required="false"
-            :error-message="'Please enter a valid contact number that is different from the primary contact number'"
+            :error-message="VALIDATION_MESSAGES.CONTACT.DIFFERENT"
             next-field-id="email"
             :format-value="formatContactNumber"
             @update:model-value="(value) => { form.alternate_contact_number = value }"
@@ -147,7 +147,7 @@
             :is-valid="validationStates.email.valid"
             :is-touched="validationStates.email.touched"
             :required="true"
-            :error-message="'Please enter a valid email address'"
+            :error-message="VALIDATION_MESSAGES.EMAIL.INVALID"
             next-field-id="medium0"
             @update:model-value="(value) => { form.email = value }"
             @input="(e) => {
@@ -203,7 +203,7 @@
               class="invalid-feedback d-block"
               v-if="!validationStates.mediums.valid && validationStates.mediums.touched"
             >
-              Please select at least one medium
+              {{ VALIDATION_MESSAGES.MEDIUM.REQUIRED }}
             </div>
           </fieldset>
         </div>
@@ -249,7 +249,7 @@
               class="invalid-feedback d-block"
               v-if="!validationStates.standards.valid && validationStates.standards.touched"
             >
-              Please select at least one standard
+              {{ VALIDATION_MESSAGES.STANDARD.REQUIRED }}
             </div>
           </fieldset>
         </div>
@@ -334,6 +334,7 @@ import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 import AddressFieldset from '@/components/common/AddressFieldset.vue'
 import FormInput from '@/components/common/FormInput.vue'
 import BaseFormLayout from '@/components/common/BaseFormLayout.vue'
+import { validateContactNumber, formatContactNumber, validateEmail, formatContactNumberForAPI, VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Update interfaces based on Prisma schema
 interface Country {
@@ -585,50 +586,7 @@ const fetchSchoolStandards = async (schoolId: number): Promise<SchoolStandardRes
   }
 }
 
-// Add email validation function
-const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  return emailRegex.test(email)
-}
-
-// Add contact number formatting function
-const formatContactNumber = (number: string): string => {
-  // Remove all whitespace and any characters that aren't numbers or +
-  const cleaned = number.replace(/[^\d+]/g, '')
-
-  if (!cleaned) return ''
-
-  // If it starts with +, keep it as is
-  if (cleaned.startsWith('+')) {
-    return cleaned
-  }
-
-  // If it's 10 digits (Indian number), add +91
-  if (cleaned.length === 10) {
-    return `+91${cleaned}`
-  }
-
-  // For other lengths, if no + prefix, add it
-  if (cleaned.length >= 10 && cleaned.length <= 15) {
-    return `+${cleaned}`
-  }
-
-  return cleaned
-}
-
-// Add contact number validation function
-const validateContactNumber = (number: string): boolean => {
-  if (!number) return false
-  
-  const cleaned = number.replace(/[^\d+]/g, '')
-
-  // Must contain only numbers and optionally a + at the start
-  if (!/^\+?\d+$/.test(cleaned)) return false
-
-  // Must be between 10 and 15 digits (including country code)
-  const digitCount = cleaned.replace(/\D/g, '').length
-  return digitCount >= 10 && digitCount <= 15
-}
+// Validation functions are now imported from @/utils/validationConstants
 
 // Add principal name validation function
 const validatePrincipalName = (name: string): boolean => {
@@ -797,11 +755,11 @@ const handleNormalChanges = (
 const handleMediumChanges = (currentMediums: SchoolMediumResponse[], formMediums: number[]) => {
   // Handle deleted mediums
   currentMediums.forEach((medium) => {
-    const mediumId = medium.instruction_medium_id || medium.id
+    const mediumId = medium.instruction_medium_id ?? medium.id
     if (mediumId && !formMediums.includes(mediumId)) {
       // Find the medium name from availableMediums
       const mediumInfo = availableMediums.value.find((m) => m.id === mediumId)
-      const mediumName = mediumInfo?.name || 'Unknown Medium'
+      const mediumName = mediumInfo?.name ?? 'Unknown Medium'
       addChange({
         type: 'delete',
         message: `Remove medium: ${mediumName}`,
@@ -814,7 +772,7 @@ const handleMediumChanges = (currentMediums: SchoolMediumResponse[], formMediums
   // Handle added mediums
   formMediums.forEach((mediumId) => {
     const exists = currentMediums.some((m) => {
-      const existingId = m.instruction_medium_id || m.id
+      const existingId = m.instruction_medium_id ?? m.id
       return existingId === mediumId
     })
 
@@ -838,9 +796,9 @@ const handleStandardChanges = (
 ) => {
   // Handle deleted standards
   currentStandards.forEach((standard) => {
-    const standardId = standard.standard_id || standard.id
+    const standardId = standard.standard_id ?? standard.id
     if (standardId && !formStandards.includes(standardId)) {
-      const standardName = standard.standard?.name || standard.name
+      const standardName = standard.standard?.name ?? standard.name
       addChange({
         type: 'delete',
         message: `Remove standard: ${standardName}`,
@@ -853,7 +811,7 @@ const handleStandardChanges = (
   // Handle added standards
   formStandards.forEach((standardId) => {
     const exists = currentStandards.some((s) => {
-      const existingId = s.standard_id || s.id
+      const existingId = s.standard_id ?? s.id
       return existingId === standardId
     })
 
@@ -914,8 +872,8 @@ const handleBoardChangeInEdit = (
   
   // When changing boards, all current mediums and standards will be removed
   currentMediums.forEach(medium => {
-    const mediumId = medium.instruction_medium_id || medium.id
-    const mediumName = medium.instruction_medium?.name || medium.name || 'Unknown Medium'
+    const mediumId = medium.instruction_medium_id ?? medium.id
+    const mediumName = medium.instruction_medium?.name ?? medium.name ?? 'Unknown Medium'
     if (mediumId) {
       addChange({
         type: 'delete',
@@ -927,8 +885,8 @@ const handleBoardChangeInEdit = (
   })
   
   currentStandards.forEach(standard => {
-    const standardId = standard.standard_id || standard.id
-    const standardName = standard.standard?.name || standard.name || 'Unknown Standard'
+    const standardId = standard.standard_id ?? standard.id
+    const standardName = standard.standard?.name ?? standard.name ?? 'Unknown Standard'
     if (standardId) {
       addChange({
         type: 'delete',
@@ -995,7 +953,7 @@ const calculateChanges = async () => {
   handleBasicInfoChanges(schoolId)
 }
 
-// Update confirmAndSubmit to handle both add and edit modes
+// Update confirmAndSubmit to format contact numbers for API
 const confirmAndSubmit = async () => {
   try {
     isSubmitting.value = true
@@ -1014,8 +972,17 @@ const confirmAndSubmit = async () => {
       document.body.style.removeProperty('padding-right')
     }
 
-    // Emit the form data to the parent component
-    emit('submit', form.value)
+    // Format contact numbers for API submission
+    const formDataForAPI = {
+      ...form.value,
+      contact_number: formatContactNumberForAPI(form.value.contact_number),
+      alternate_contact_number: form.value.alternate_contact_number 
+        ? formatContactNumberForAPI(form.value.alternate_contact_number)
+        : ''
+    }
+
+    // Emit the formatted form data to the parent component
+    emit('submit', formDataForAPI)
   } catch (error) {
     console.error('Error submitting form:', error)
   } finally {
@@ -1034,7 +1001,7 @@ const fetchBoards = async () => {
   try {
     const { data } = await axiosInstance.get('/boards')
     // Handle both paginated and non-paginated response formats
-    boards.value = data.data || data
+    boards.value = data.data ?? data
   } catch (error) {
     console.error('Error fetching boards:', error)
   }

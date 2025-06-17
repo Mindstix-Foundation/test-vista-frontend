@@ -342,15 +342,15 @@ const viewQuestions = () => {
   // Store selected values in localStorage or state management
   localStorage.setItem('questionBank', JSON.stringify({
     boardId: selectedBoard.value?.id,
-    boardName: selectedBoard.value?.name || '',
+    boardName: selectedBoard.value?.name ?? '',
     mediumId: selectedMedium.value?.id,
-    mediumName: selectedMedium.value?.instruction_medium || '',
+    mediumName: selectedMedium.value?.instruction_medium ?? '',
     standardId: selectedStandard.value?.id,
-    standardName: selectedStandard.value?.name || '',
+    standardName: selectedStandard.value?.name ?? '',
     subjectId: selectedSubject.value?.id,
-    subjectName: selectedSubject.value?.name || '',
+    subjectName: selectedSubject.value?.name ?? '',
     chapterId: selectedChapter.value?.id,
-    chapterName: selectedChapter.value?.name || ''
+    chapterName: selectedChapter.value?.name ?? ''
   }))
 
   // Navigate to question dashboard page

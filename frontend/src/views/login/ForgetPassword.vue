@@ -19,7 +19,7 @@
           :class="{ 'is-invalid': emailError }"
           required
         />
-        <div class="invalid-feedback">Please enter a valid email address.</div>
+        <div class="invalid-feedback">{{ VALIDATION_MESSAGES.EMAIL.INVALID }}</div>
       </div>
 
       <button class="btn btn-primary w-100 mb-3" @click="handleSendResetLink" :disabled="isLoading">
@@ -49,6 +49,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import LoginNavBar from '@/components/LoginNavBar.vue'
 import axiosInstance from '@/config/axios'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 const router = useRouter()
 const email = ref('')
@@ -58,11 +59,8 @@ const successMessage = ref('')
 const isLoading = ref(false)
 
 const validateEmail = (email: string) => {
-  return String(email)
-    .toLowerCase()
-    .match(
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    )
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.exec(String(email).toLowerCase()) !== null;
 }
 
 const handleSendResetLink = async () => {
@@ -74,7 +72,7 @@ const handleSendResetLink = async () => {
   // Validate email format
   if (!validateEmail(email.value)) {
     emailError.value = true
-    errorMessage.value = 'Please enter a valid email address.'
+    errorMessage.value = VALIDATION_MESSAGES.EMAIL.INVALID
     return
   }
 
@@ -98,7 +96,7 @@ const handleSendResetLink = async () => {
     console.error('Reset link send error:', error)
     const apiError = error as { response?: { data?: { message?: string } } }
     errorMessage.value =
-      apiError.response?.data?.message || 'Failed to send reset link. Please try again.'
+      apiError.response?.data?.message ?? 'Failed to send reset link. Please try again.'
   } finally {
     isLoading.value = false
   }

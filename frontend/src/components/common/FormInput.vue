@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 const props = withDefaults(
   defineProps<{
@@ -85,7 +86,7 @@ const props = withDefaults(
     placeholder: '',
     required: false,
     disabled: false,
-    errorMessage: 'This field is required',
+    errorMessage: VALIDATION_MESSAGES.FIELD.REQUIRED,
     isValid: false,
     isTouched: false,
     autocomplete: 'off',
@@ -155,12 +156,12 @@ const findAndFocusNextElement = (currentId: string) => {
     document.querySelectorAll(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
-  ) as HTMLElement[]
+  )
   
   const currentInput = document.getElementById(currentId)
   if (!currentInput) return
   
-  const currentIndex = allFocusable.indexOf(currentInput as HTMLElement)
+  const currentIndex = allFocusable.indexOf(currentInput)
   const hasNextElement = currentIndex > -1 && currentIndex < allFocusable.length - 1
   
   if (hasNextElement) {

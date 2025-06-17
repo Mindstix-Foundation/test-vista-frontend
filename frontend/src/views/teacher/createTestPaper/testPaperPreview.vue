@@ -105,14 +105,21 @@
         <div class="row mb-3 d-md-none">
           <div class="col-12 d-flex justify-content-center">
             <div class="view-mode-toggle-container">
-              <div class="form-check form-switch form-check-inline">
-                <input class="form-check-input" type="checkbox" id="viewModeToggle" v-model="mobileViewMode">
-                <label class="form-check-label" for="viewModeToggle">
-                  <span v-if="mobileViewMode"><i class="bi bi-phone me-1"></i> Mobile View</span>
-                  <span v-else><i class="bi bi-file-earmark-text me-1"></i> A4 Preview</span>
-                </label>
+              <div class="view-mode-selector">
+                <button 
+                  :class="['view-mode-btn', mobileViewMode ? 'active' : '']" 
+                  @click="mobileViewMode = true"
+                >
+                  <i class="bi bi-phone me-1"></i> Mobile View
+                </button>
+                <button 
+                  :class="['view-mode-btn', !mobileViewMode ? 'active' : '']" 
+                  @click="mobileViewMode = false"
+                >
+                  <i class="bi bi-file-earmark-text me-1"></i> A4 Preview
+                </button>
               </div>
-              <!-- New zoom slider for A4 view on mobile -->
+              <!-- Zoom slider for A4 view on mobile -->
               <div v-if="!mobileViewMode" class="zoom-control-container mt-2">
                 <div class="zoom-label d-flex align-items-center justify-content-center">
                   <i class="bi bi-zoom-out me-2"></i>
@@ -414,13 +421,6 @@
       <!-- Back to top button -->
       <div id="backToTop" class="d-flex" @click="scrollToTop" style="display: none !important;">
         <i class="bi bi-arrow-up"></i>
-      </div>
-      
-      <!-- Simple toast notification for layout changes -->
-      <div id="layoutToast" class="layout-toast" :class="{ 'show-toast': showLayoutToast }">
-        <div class="layout-toast-content">
-          <i class="bi bi-check-circle me-2"></i> {{ layoutToastMessage }}
-        </div>
       </div>
       
       <!-- Fixed back button for mobile only -->
@@ -781,11 +781,11 @@ const cancelEditingTitle = () => {
 const fetchUserProfile = async () => {
   try {
     const response = await axiosInstance.get('/auth/profile')
-    if (response.data && response.data.data) {
+    if (response.data?.data) {
       userProfile.value = response.data.data
       
       // Get school name from user profile
-      if (userProfile.value && userProfile.value.schools && userProfile.value.schools.length > 0) {
+      if (userProfile.value?.schools?.length > 0) {
         schoolName.value = userProfile.value.schools[0].name
       }
     } else {
@@ -1032,182 +1032,239 @@ const fetchTestPaperQuestions = async (storedData?: ApiResponse) => {
   try {
     // First check if we already have final questions distribution data
     if (storedData && route.query.hasFinalDistribution === 'true') {
-      console.log('Using final questions distribution data');
-      apiData.value = storedData;
-      transformApiDataToDisplayFormat(storedData);
+      useStoredDistributionData(storedData);
       return;
     }
     
-    // Use stored data if available, otherwise create request data
-    let requestData;
+    // Prepare request data
+    const requestData = prepareRequestData(storedData);
     
-    if (storedData) {
-      requestData = storedData;
-      console.log('Using data from last used endpoint:', lastUsedEndpoint.value);
-    } else {
-      // Get the latest data based on which endpoint was last used
-      const latestData = getLatestData();
-      
-      if (latestData) {
-        requestData = latestData;
-        console.log('Using latest data from endpoint:', lastUsedEndpoint.value);
-      } else {
-        // If no data is available, use the mock data as a fallback
-        console.log('No data available from previous endpoints, using mock data');
-        requestData = {
-          patternId: parseInt(patternId.value),
-          patternName: patternName.value,
-          totalMarks: parseInt(totalMarks.value),
-          absoluteMarks: 59,
-          sectionAllocations: [
-            {
-              sectionId: 1,
-              pattern_id: 1,
-              sectionName: "Fill in blanks",
-              sequentialNumber: 1,
-              section_number: 1,
-              subSection: "A",
-              totalQuestions: 7,
-              mandotory_questions: 5,
-              marks_per_question: 1,
-              absoluteMarks: 7,
-              totalMarks: 5,
-              subsectionAllocations: [
-                {
-                  subsectionQuestionTypeId: 1,
-                  section_id: 1,
-                  questionTypeName: "Fill in the Blanks",
-                  sequentialNumber: 0,
-                  question_type_id: 6,
-                  question_type: {
-                    id: 6,
-                    type_name: "Fill in the Blanks"
-                  },
-                  allocatedChapters: [
-                    {
-                      chapterId: 1,
-                      chapterName: "Addition"
-                    },
-                    {
-                      chapterId: 3,
-                      chapterName: "Multiplication"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              sectionId: 2,
-              pattern_id: 1,
-              sectionName: "Answer the following question.",
-              sequentialNumber: 2,
-              section_number: 1,
-              subSection: "B",
-              totalQuestions: 7,
-              mandotory_questions: 5,
-              marks_per_question: 2,
-              absoluteMarks: 14,
-              totalMarks: 10,
-              subsectionAllocations: [
-                {
-                  subsectionQuestionTypeId: 2,
-                  section_id: 2,
-                  questionTypeName: "Multiple Choice Question (MCQ)",
-                  sequentialNumber: 1,
-                  question_type_id: 1,
-                  question_type: {
-                    id: 1,
-                    type_name: "Multiple Choice Question (MCQ)"
-                  },
-                  allocatedChapters: [
-                    {
-                      chapterId: 1,
-                      chapterName: "Addition"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          chapterMarks: [
-            {
-              chapterId: 1,
-              chapterName: "Addition",
-              absoluteMarks: 8
-            },
-            {
-              chapterId: 2,
-              chapterName: "Subtraction",
-              absoluteMarks: 7
-            }
-          ]
-        }
-      }
-    }
-
-    // Make the API call to get final questions distribution
-    const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData)
-    
-    if (response.data) {
-      apiData.value = response.data
-      console.log('API Response Data Structure:', response.data)
-      
-      // Save the data to localStorage for future use
-      localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
-      
-      // Check for question_text_topics in the first question if available
-      if (response.data.sectionAllocations && 
-          response.data.sectionAllocations[0] && 
-          response.data.sectionAllocations[0].subsectionAllocations &&
-          response.data.sectionAllocations[0].subsectionAllocations[0] &&
-          response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters &&
-          response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters[0] &&
-          response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters[0].question) {
-        const firstQuestion = response.data.sectionAllocations[0].subsectionAllocations[0].allocatedChapters[0].question;
-        if (firstQuestion.question_texts && firstQuestion.question_texts[0]) {
-          console.log('First question text structure:', firstQuestion.question_texts[0]);
-        }
-      }
-      
-      transformApiDataToDisplayFormat(response.data)
-      console.log('Successfully fetched test paper questions using data from:', lastUsedEndpoint.value)
-    } else {
-      console.error('Unexpected API response format:', response)
-    }
+    // Make API call and process response
+    await fetchAndProcessQuestions(requestData);
   } catch (error) {
-    console.error('Error fetching test paper questions:', error)
+    console.error('Error fetching test paper questions:', error);
   }
-}
+};
+
+// Use stored distribution data directly
+const useStoredDistributionData = (data: ApiResponse) => {
+  console.log('Using final questions distribution data');
+  apiData.value = data;
+  transformApiDataToDisplayFormat(data);
+};
+
+// Prepare request data from stored data or create fallback
+const prepareRequestData = (storedData?: ApiResponse): ApiResponse => {
+  if (storedData) {
+    console.log('Using data from last used endpoint:', lastUsedEndpoint.value);
+    return storedData;
+  }
+  
+  // Get the latest data based on which endpoint was last used
+  const latestData = getLatestData();
+  
+  if (latestData) {
+    console.log('Using latest data from endpoint:', lastUsedEndpoint.value);
+    return latestData;
+  }
+  
+  // If no data is available, use the mock data as a fallback
+  console.log('No data available from previous endpoints, using mock data');
+  return createMockData();
+};
+
+// Create mock data as fallback
+const createMockData = () => {
+  return {
+    patternId: parseInt(patternId.value),
+    patternName: patternName.value,
+    totalMarks: parseInt(totalMarks.value),
+    absoluteMarks: 59,
+    sectionAllocations: [
+      {
+        sectionId: 1,
+        pattern_id: 1,
+        sectionName: "Fill in blanks",
+        sequentialNumber: 1,
+        section_number: 1,
+        subSection: "A",
+        totalQuestions: 7,
+        mandotory_questions: 5,
+        marks_per_question: 1,
+        absoluteMarks: 7,
+        totalMarks: 5,
+        subsectionAllocations: [
+          {
+            subsectionQuestionTypeId: 1,
+            section_id: 1,
+            questionTypeName: "Fill in the Blanks",
+            sequentialNumber: 0,
+            question_type_id: 6,
+            question_type: {
+              id: 6,
+              type_name: "Fill in the Blanks"
+            },
+            allocatedChapters: [
+              {
+                chapterId: 1,
+                chapterName: "Addition"
+              },
+              {
+                chapterId: 3,
+                chapterName: "Multiplication"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        sectionId: 2,
+        pattern_id: 1,
+        sectionName: "Answer the following question.",
+        sequentialNumber: 2,
+        section_number: 1,
+        subSection: "B",
+        totalQuestions: 7,
+        mandotory_questions: 5,
+        marks_per_question: 2,
+        absoluteMarks: 14,
+        totalMarks: 10,
+        subsectionAllocations: [
+          {
+            subsectionQuestionTypeId: 2,
+            section_id: 2,
+            questionTypeName: "Multiple Choice Question (MCQ)",
+            sequentialNumber: 1,
+            question_type_id: 1,
+            question_type: {
+              id: 1,
+              type_name: "Multiple Choice Question (MCQ)"
+            },
+            allocatedChapters: [
+              {
+                chapterId: 1,
+                chapterName: "Addition"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    chapterMarks: [
+      {
+        chapterId: 1,
+        chapterName: "Addition",
+        absoluteMarks: 8
+      },
+      {
+        chapterId: 2,
+        chapterName: "Subtraction",
+        absoluteMarks: 7
+      }
+    ]
+  };
+};
+
+// Fetch questions from API and process response
+const fetchAndProcessQuestions = async (requestData: ApiResponse) => {
+  // Make the API call to get final questions distribution
+  const response = await axiosInstance.post('/chapter-marks-distribution/final-questions-distribution', requestData);
+  
+  if (!response.data) {
+    console.error('Unexpected API response format:', response);
+    return;
+  }
+  
+  // Set API data and log structure
+  apiData.value = response.data;
+  console.log('API Response Data Structure:', response.data);
+  
+  // Save the data to localStorage for future use
+  localStorage.setItem('finalQuestionsDistribution', JSON.stringify(response.data));
+  
+  // Log first question structure if available
+  logFirstQuestionStructure(response.data);
+  
+  // Transform API data to display format
+  transformApiDataToDisplayFormat(response.data);
+  console.log('Successfully fetched test paper questions using data from:', lastUsedEndpoint.value);
+};
+
+// Log first question structure for debugging
+const logFirstQuestionStructure = (data: ApiResponse) => {
+  const sections = data.sectionAllocations;
+  if (!sections?.[0]) return;
+  
+  const firstSection = sections[0];
+  if (!firstSection.subsectionAllocations?.[0]) return;
+  
+  const firstSubsection = firstSection.subsectionAllocations[0];
+  if (!firstSubsection.allocatedChapters?.[0]) return;
+  
+  const firstChapter = firstSubsection.allocatedChapters[0];
+  if (!firstChapter.question) return;
+  
+  const firstQuestion = firstChapter.question;
+  if (firstQuestion.question_texts?.[0]) {
+    console.log('First question text structure:', firstQuestion.question_texts[0]);
+  }
+};
 
 // Transform API data to display format
 const transformApiDataToDisplayFormat = (data: ApiResponse) => {
-  if (!data || !data.sectionAllocations) {
+  if (!data?.sectionAllocations) {
     console.error('Invalid API data: missing sectionAllocations');
     return;
   }
 
-  // Extract available mediums from the API response if available
-  if (data.mediums && data.mediums.length > 0) {
-    console.log('Mediums from API:', data.mediums);
-    availableMediums.value = data.mediums.map((medium: ApiMedium) => ({
-      id: medium.id,
-      name: medium.instruction_medium
-    }));
-    
-    // If current medium is not in the available list, reset to the first one
-    if (!availableMediums.value.some(m => m.id === currentMediumId.value) && availableMediums.value.length > 0) {
-      console.log('Current medium not in available list, resetting to:', availableMediums.value[0].name);
-      currentMediumId.value = availableMediums.value[0].id;
-    }
-  } else {
+  // Process the mediums and sections
+  processAvailableMediums(data);
+  testPaperSections.value = processAllSections(data.sectionAllocations);
+};
+
+// Process available mediums from API data
+const processAvailableMediums = (data: ApiResponse) => {
+  if (!data.mediums || data.mediums.length === 0) {
     console.warn('No mediums available in API response');
+    return;
   }
+  
+  console.log('Mediums from API:', data.mediums);
+  availableMediums.value = data.mediums.map((medium: ApiMedium) => ({
+    id: medium.id,
+    name: medium.instruction_medium
+  }));
+  
+  // If current medium is not in the available list, reset to the first one
+  if (!availableMediums.value.some(m => m.id === currentMediumId.value) && availableMediums.value.length > 0) {
+    console.log('Current medium not in available list, resetting to:', availableMediums.value[0].name);
+    currentMediumId.value = availableMediums.value[0].id;
+  }
+};
 
-  const displaySections: DisplaySection[] = [];
+// Process all sections into display sections
+const processAllSections = (sectionAllocations: ApiResponse['sectionAllocations']): DisplaySection[] => {
   let sectionNumberCounter = 1;
+  const sortedSections = sortSectionsBySequence(sectionAllocations);
+  
+  return sortedSections.map(section => {
+    const displaySection = createDisplaySection(section, sectionNumberCounter);
+    
+    // If we used a counter-based section number, increment the counter
+    if (!section.section_number) {
+      sectionNumberCounter++;
+    }
+    
+    // Process subsections and questions for this section
+    processSubsections(section, displaySection);
+    
+    return displaySection;
+  });
+};
 
-  // Sort sections by sequentialNumber or sectionId for consistent ordering
-  const sortedSections = [...data.sectionAllocations].sort((a, b) => {
+// Sort sections by sequentialNumber or sectionId
+const sortSectionsBySequence = (sections: ApiResponse['sectionAllocations']) => {
+  return [...sections].sort((a, b) => {
     // First try to sort by sequentialNumber if available
     if (a.sequentialNumber !== undefined && b.sequentialNumber !== undefined) {
       return a.sequentialNumber - b.sequentialNumber;
@@ -1215,478 +1272,672 @@ const transformApiDataToDisplayFormat = (data: ApiResponse) => {
     // Fall back to sectionId
     return a.sectionId - b.sectionId;
   });
+};
 
-  // Process each section
-  sortedSections.forEach(section => {
-    // Create formatted section number display (e.g., "1.A")
-    const sectionNum = section.section_number || sectionNumberCounter;
-    const subSection = section.subSection || '';
-    const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
-    
-    const displaySection: DisplaySection = {
-      sectionNumber: section.section_number || sectionNumberCounter++,
-      sectionName: section.sectionName,
-      totalMarks: section.totalMarks,
-      questions: [],
-      subSection: section.subSection,
-      sectionNumberDisplay: sectionNumberDisplay,
-      mandotory_questions: section.mandotory_questions
-    };
+// Create a display section object from API section data
+const createDisplaySection = (
+  section: ApiResponse['sectionAllocations'][0],
+  counter: number
+): DisplaySection => {
+  // Create formatted section number display (e.g., "1.A")
+  const sectionNum = section.section_number ?? counter;
+  const subSection = section.subSection ?? '';
+  const sectionNumberDisplay = subSection ? `${sectionNum}.${subSection}` : `${sectionNum}`;
+  
+  return {
+    sectionNumber: section.section_number ?? counter,
+    sectionName: section.sectionName,
+    totalMarks: section.totalMarks,
+    questions: [],
+    subSection: section.subSection,
+    sectionNumberDisplay: sectionNumberDisplay,
+    mandotory_questions: section.mandotory_questions
+  };
+};
 
-    let questionNumberCounter = 1;
-
-    // Process each subsection within a section
-    section.subsectionAllocations.forEach(subsection => {
-      // Process each chapter's questions within a subsection
-      subsection.allocatedChapters.forEach(chapter => {
-        if (chapter.question) {
-          const question = chapter.question;
-          
-          // Find the correct question text based on the current medium
-          let questionText: QuestionText | undefined;
-          
-          if (question.question_texts && question.question_texts.length > 0) {
-            // First try to find an exact match for the current medium
-            questionText = question.question_texts.find(text => 
-              text.question_text_topics && 
-              text.question_text_topics.length > 0 && 
-              text.question_text_topics[0].instruction_medium_id === currentMediumId.value
-            );
-            
-            // If no match, use the first question text as a fallback
-            if (!questionText) {
-              console.warn(`No question text found for medium ID ${currentMediumId.value}, using first available`);
-              questionText = question.question_texts[0];
-            }
-          } else {
-            console.warn('Question has no question_texts array, skipping');
-            return; // Skip this question if no question texts available
-          }
-          
-          // Extract topic ID from either topic or question_text_topics
-          let topicId: number | undefined;
-          if (questionText.topic) {
-            topicId = questionText.topic.id;
-          } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-            topicId = questionText.question_text_topics[0].question_topic_id;
-          }
-          
-          // Create display question based on question type
-          const displayQuestion: DisplayQuestion = {
-            questionNumber: questionNumberCounter++,
-            questionText: questionText.question_text,
-            marks: section.marks_per_question || Math.ceil(section.totalMarks / section.totalQuestions), // Use marks_per_question if available
-            questionType: question.question_type.type_name,
-            originalQuestion: question,
-            topicId: topicId,
-            chapterId: chapter.chapterId // Store the chapter ID with the question
-          };
-
-          // Process MCQ options if they exist
-          if (questionText.mcq_options && questionText.mcq_options.length > 0) {
-            displayQuestion.options = questionText.mcq_options.map((option, index) => {
-              return {
-                label: String.fromCharCode(65 + index), // A, B, C, D...
-                text: option.option_text,
-                isCorrect: option.is_correct
-              };
-            });
-          }
-
-          // Process match pairs if they exist
-          if (questionText.match_pairs && questionText.match_pairs.length > 0) {
-            displayQuestion.matchPairs = questionText.match_pairs.map(pair => {
-              return {
-                leftText: pair.left_text || '', // Handle null left_text
-                rightText: pair.right_text || '' // Handle null right_text
-              };
-            });
-          }
-
+// Process subsections and questions for a section
+const processSubsections = (
+  section: ApiResponse['sectionAllocations'][0],
+  displaySection: DisplaySection
+) => {
+  let questionNumberCounter = 1;
+  
+  // Process each subsection within a section
+  section.subsectionAllocations.forEach(subsection => {
+    // Process each chapter's questions within a subsection
+    subsection.allocatedChapters.forEach(chapter => {
+      if (chapter.question) {
+        const displayQuestion = processQuestion(chapter, questionNumberCounter, section);
+        
+        if (displayQuestion) {
           displaySection.questions.push(displayQuestion);
+          questionNumberCounter++;
         }
-      });
+      }
     });
-
-    displaySections.push(displaySection);
   });
+};
 
-  testPaperSections.value = displaySections;
-}
+// Process a question and return the display question object
+const processQuestion = (
+  chapter: { chapterId: number; chapterName: string; question?: Question },
+  questionNumber: number,
+  section: ApiResponse['sectionAllocations'][0]
+): DisplayQuestion | null => {
+  const question = chapter.question;
+  if (!question) return null;
+  
+  // Find question text for the current medium
+  const questionText = findQuestionTextForMedium(question);
+  if (!questionText) return null;
+  
+  // Extract topic ID from questionText
+  const topicId = getTopicIdFromQuestionText(questionText);
+  
+  // Create the display question
+  const displayQuestion = createBaseDisplayQuestion(
+    questionNumber,
+    questionText.question_text,
+    section,
+    question,
+    topicId,
+    chapter.chapterId
+  );
+  
+  // Process options and match pairs
+  addOptionsToQuestion(displayQuestion, questionText);
+  addMatchPairsToQuestion(displayQuestion, questionText);
+  
+  return displayQuestion;
+};
+
+// Find question text for current medium
+const findQuestionTextForMedium = (question: Question): QuestionText | undefined => {
+  if (!question.question_texts || question.question_texts.length === 0) {
+    console.warn('Question has no question_texts array, skipping');
+    return undefined;
+  }
+  
+  // First try to find an exact match for the current medium
+  const matchingText = question.question_texts.find(text => 
+    text.question_text_topics && 
+    text.question_text_topics.length > 0 && 
+    text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+  );
+  
+  // If no match, use the first question text as a fallback
+  if (!matchingText) {
+    console.warn(`No question text found for medium ID ${currentMediumId.value}, using first available`);
+    return question.question_texts[0];
+  }
+  
+  return matchingText;
+};
+
+// Extract topic ID from question text
+const getTopicIdFromQuestionText = (questionText: QuestionText): number | undefined => {
+  if (questionText.topic) {
+    return questionText.topic.id;
+  } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+    return questionText.question_text_topics[0].question_topic_id;
+  }
+  return undefined;
+};
+
+// Create base display question with common properties
+const createBaseDisplayQuestion = (
+  questionNumber: number,
+  questionText: string,
+  section: ApiResponse['sectionAllocations'][0],
+  originalQuestion: Question,
+  topicId?: number,
+  chapterId?: number
+): DisplayQuestion => {
+  return {
+    questionNumber,
+    questionText,
+    marks: section.marks_per_question ?? Math.ceil(section.totalMarks / section.totalQuestions),
+    questionType: originalQuestion.question_type.type_name,
+    originalQuestion,
+    topicId,
+    chapterId
+  };
+};
+
+// Add MCQ options to display question if they exist
+const addOptionsToQuestion = (displayQuestion: DisplayQuestion, questionText: QuestionText) => {
+  if (questionText.mcq_options && questionText.mcq_options.length > 0) {
+    displayQuestion.options = questionText.mcq_options.map((option, index) => ({
+      label: String.fromCharCode(65 + index), // A, B, C, D...
+      text: option.option_text,
+      isCorrect: option.is_correct
+    }));
+  }
+};
+
+// Add match pairs to display question if they exist
+const addMatchPairsToQuestion = (displayQuestion: DisplayQuestion, questionText: QuestionText) => {
+  if (questionText.match_pairs && questionText.match_pairs.length > 0) {
+    displayQuestion.matchPairs = questionText.match_pairs.map(pair => ({
+      leftText: pair.left_text || '', // Handle null left_text
+      rightText: pair.right_text || '' // Handle null right_text
+    }));
+  }
+};
 
 // Change a single question - calls the API to get a replacement
 const changeQuestion = async (sectionIndex: number, questionIndex: number) => {
   try {
-    // Show loading state on the button
-    const button = document.querySelector(`#question-${sectionIndex}-${questionIndex} .shuffle-button`) as HTMLButtonElement;
-    if (button) {
-      button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
-      button.disabled = true;
-    }
-
-    // Get the current question
-    const section = testPaperSections.value[sectionIndex];
-    const question = section.questions[questionIndex];
-    const originalQuestion = question.originalQuestion;
+    updateButtonToLoadingState(sectionIndex, questionIndex);
     
-    // Get the question text id
-    const questionTextId = originalQuestion.question_texts && originalQuestion.question_texts.length > 0 
+    const { section, question, originalQuestion } = getQuestionContext(sectionIndex, questionIndex);
+    const questionTextId = getQuestionTextId(originalQuestion);
+    const mediumIds = getMediumIds();
+    const chapterId = await findChapterId(question, originalQuestion);
+    const questionTypeId = originalQuestion.question_type_id;
+    
+    // Get question text IDs to exclude from replacement
+    const questionTextIds = collectQuestionTextIds(questionTextId, questionTypeId, chapterId);
+    
+    // Make API call to get replacement question
+    const newQuestion = await fetchReplacementQuestion(questionTextIds, mediumIds, chapterId);
+    
+    // Process and replace question
+    processAndReplaceQuestion(section, questionIndex, question, newQuestion, chapterId);
+    
+    // Update stored API data
+    updateStoredApiDataWithNewQuestion(sectionIndex, questionIndex, newQuestion, chapterId);
+    
+    console.log('Question successfully changed');
+  } catch (error) {
+    handleChangeQuestionError(error);
+  } finally {
+    restoreButtonState(sectionIndex, questionIndex);
+  }
+};
+
+// Update button to show loading state
+const updateButtonToLoadingState = (sectionIndex: number, questionIndex: number) => {
+  const button = document.querySelector(`#question-${sectionIndex}-${questionIndex} .shuffle-button`) as HTMLButtonElement;
+  if (button) {
+    button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
+    button.disabled = true;
+  }
+};
+
+// Get the context of the question to be changed
+const getQuestionContext = (sectionIndex: number, questionIndex: number) => {
+  const section = testPaperSections.value[sectionIndex];
+  const question = section.questions[questionIndex];
+  const originalQuestion = question.originalQuestion;
+  
+  return { section, question, originalQuestion };
+};
+
+// Get the question text ID from the original question
+const getQuestionTextId = (originalQuestion: Question) => {
+  const questionTextId = originalQuestion.question_texts && 
+    originalQuestion.question_texts.length > 0 
       ? originalQuestion.question_texts[0].id 
       : null;
       
-    if (!questionTextId) {
-      throw new Error('Question text ID not found');
-    }
-    
-    // Get all available medium IDs instead of just the current one
-    const mediumIds = availableMediums.value.map(medium => medium.id);
-    
-    // If no medium IDs available, use the current medium ID as fallback
-    if (mediumIds.length === 0) {
-      mediumIds.push(currentMediumId.value);
-    }
-    
-    // Find the chapter ID for the current question
-    let chapterId: number | undefined;
-    
-    // First try to get chapter ID from question_topics
-    if (originalQuestion.question_topics && originalQuestion.question_topics.length > 0) {
-      chapterId = originalQuestion.question_topics[0].topic?.chapter?.id;
-    }
-    
-    // If not found in question_topics, try question_text_topics
-    if (!chapterId && originalQuestion.question_texts && originalQuestion.question_texts.length > 0) {
-      const questionText = originalQuestion.question_texts[0];
-      if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-        const questionTopic = questionText.question_text_topics[0].question_topic;
-        if (questionTopic && questionTopic.topic && questionTopic.topic.chapter) {
-          chapterId = questionTopic.topic.chapter.id;
-        }
-      }
-    }
-    
-    // If still not found, check if it was stored in the display question from previous changes
-    if (!chapterId && question.chapterId) {
-      chapterId = question.chapterId;
-    }
-    
-    // If no chapter ID found, use from API data
-    if (!chapterId) {
-      const apiDataValue = apiData.value;
-      if (apiDataValue && apiDataValue.sectionAllocations) {
-        // Find the question in the API data to get its chapter ID
-        outerLoop: for (const section of apiDataValue.sectionAllocations) {
-          if (section.subsectionAllocations) {
-            for (const subsection of section.subsectionAllocations) {
-              if (subsection.allocatedChapters) {
-                for (const chapter of subsection.allocatedChapters) {
-                  if (chapter.question && chapter.question.id === originalQuestion.id) {
-                    chapterId = chapter.chapterId;
-                    break outerLoop;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    // If still no chapter ID, fallback to route params
-    if (!chapterId) {
-      const chapters = route.query.chapters ? JSON.parse(decodeURIComponent(route.query.chapters as string)) : [];
-      chapterId = chapters.length > 0 ? chapters[0].id : 1;
-      console.warn(`Chapter ID not found, using default from route: ${chapterId}`);
-    }
-    
-    // Get the question type ID
-    const questionTypeId = originalQuestion.question_type_id;
-    
-    // Get all question text IDs from the same chapter and question type across the entire test paper
-    const questionTextIds: number[] = [];
-    
-    // First add the current question text ID
-    questionTextIds.push(questionTextId);
-    
-    // Helper function to get chapter ID for a question
-    const getQuestionChapterId = (q: Question): number | undefined => {
-      // Try from question_topics first
-      if (q.question_topics && q.question_topics.length > 0) {
-        const topic = q.question_topics[0].topic;
-        if (topic && topic.chapter) {
-          return topic.chapter.id;
-        }
-      }
-      
-      // Try from question_text_topics next
-      if (q.question_texts && q.question_texts.length > 0) {
-        const questionText = q.question_texts[0];
-        if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-          const questionTopic = questionText.question_text_topics[0].question_topic;
-          if (questionTopic && questionTopic.topic && questionTopic.topic.chapter) {
-            return questionTopic.topic.chapter.id;
-          }
-        }
-      }
-      
-      // Look in API data as fallback
-      const apiDataValue = apiData.value;
-      if (apiDataValue && apiDataValue.sectionAllocations) {
-        for (const section of apiDataValue.sectionAllocations) {
-          if (section.subsectionAllocations) {
-            for (const subsection of section.subsectionAllocations) {
-              if (subsection.allocatedChapters) {
-                for (const chapter of subsection.allocatedChapters) {
-                  if (chapter.question && chapter.question.id === q.id) {
-                    return chapter.chapterId;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      return undefined;
-    };
-    
-    // Loop through all sections in the test paper
-    for (const section of testPaperSections.value) {
-      for (const q of section.questions) {
-        // Skip the current question as we already added it
-        if (q.originalQuestion.id === originalQuestion.id) continue;
-        
-        // Only consider questions with the same question type
-        if (q.originalQuestion.question_type_id === questionTypeId) {
-          // Get the chapter ID for this question
-          let questionChapterId: number | undefined;
-          
-          // First check if the question has a stored chapterId property
-          if (q.chapterId) {
-            questionChapterId = q.chapterId;
-          } else {
-            // Otherwise, try to find it from the question data
-            questionChapterId = getQuestionChapterId(q.originalQuestion);
-          }
-          
-          // Only include question text IDs from the same chapter
-          if (questionChapterId === chapterId) {
-            // Get the question text ID
-            if (q.originalQuestion.question_texts && q.originalQuestion.question_texts.length > 0) {
-              const qTextId = q.originalQuestion.question_texts[0].id;
-              questionTextIds.push(qTextId);
-            }
-          }
-        }
-      }
-    }
-    
-    console.log('Change question parameters:', {
-      questionTextIds,
-      mediumIds,
-      chapterId,
-      questionOrigin: 'both'
-    });
-    
-    // Build query params
-    const queryParams = new URLSearchParams();
-    
-    // Add question text IDs
-    questionTextIds.forEach(id => {
-      queryParams.append('questionTextIds', id.toString());
-    });
-    
-    // Add all medium IDs
-    mediumIds.forEach(id => {
-      queryParams.append('mediumIds', id.toString());
-    });
-    
-    // Add chapter ID
-    queryParams.append('chapterId', chapterId.toString());
-    
-    // Add question origin
-    queryParams.append('questionOrigin', 'both');
-    
-    // Make the API call to get a replacement question
-    const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
-    
-    if (response.data && response.data.question) {
-      const newQuestion = response.data.question;
-      console.log('New question received:', newQuestion);
-      
-      // Find the correct question text based on the current medium
-      let questionText: QuestionText | undefined;
-      
-      if (newQuestion.question_texts && newQuestion.question_texts.length > 0) {
-        // First try to find an exact match for the current medium
-        questionText = newQuestion.question_texts.find(text => 
-          text.question_text_topics && 
-          text.question_text_topics.length > 0 && 
-          text.question_text_topics[0].instruction_medium_id === currentMediumId.value
-        );
-        
-        // If no match, use the first question text as a fallback
-        if (!questionText) {
-          questionText = newQuestion.question_texts[0];
-        }
-      } else {
-        throw new Error('No question texts available in the new question');
-      }
-      
-      // Extract topic ID from question_topics or question_text_topics
-      let topicId: number | undefined;
-      if (newQuestion.question_topics && newQuestion.question_topics.length > 0) {
-        topicId = newQuestion.question_topics[0].topic_id;
-      } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
-        topicId = questionText.question_text_topics[0].question_topic_id;
-      }
-      
-      // Create display question based on question type
-      const displayQuestion: DisplayQuestion = {
-        questionNumber: question.questionNumber, // Keep the same question number
-        questionText: questionText.question_text,
-        marks: question.marks, // Keep the same marks
-        questionType: newQuestion.question_type.type_name,
-        originalQuestion: newQuestion,
-        topicId: topicId,
-        chapterId: chapterId // Store the chapter ID with the question for future changes
-      };
-      
-      // Process MCQ options if they exist
-      if (questionText.mcq_options && questionText.mcq_options.length > 0) {
-        displayQuestion.options = questionText.mcq_options.map((option, index) => {
-          return {
-            label: String.fromCharCode(65 + index), // A, B, C, D...
-            text: option.option_text,
-            isCorrect: option.is_correct
-          };
-        });
-      }
-      
-      // Process match pairs if they exist
-      if (questionText.match_pairs && questionText.match_pairs.length > 0) {
-        displayQuestion.matchPairs = questionText.match_pairs.map(pair => {
-          return {
-            leftText: pair.left_text,
-            rightText: pair.right_text
-          };
-        });
-      }
-      
-      // Replace the question in the section
-      section.questions[questionIndex] = displayQuestion;
-      
-      // Update the stored API data structure to include this new question
-      // This is the key step to ensure medium changes work with changed questions
-      updateStoredApiDataWithNewQuestion(sectionIndex, questionIndex, newQuestion, chapterId);
-      
-      console.log('Question successfully changed');
-    } else {
-      console.error('Unexpected API response format:', response.data);
-      throw new Error('Failed to get replacement question');
-    }
-  } catch (error) {
-    console.error('Error changing question:', error);
-    // Show error message to user
-    alert('Failed to change question. Please try again later.');
-  } finally {
-    // Restore the button to its original state
-    const button = document.querySelector(`#question-${sectionIndex}-${questionIndex} .shuffle-button`) as HTMLButtonElement;
-    if (button) {
-      button.innerHTML = `<span class="d-inline-flex align-items-center">
-        <i class="bi bi-arrow-clockwise me-1"></i><span class="d-none d-sm-inline">Change</span>
-      </span>`;
-      button.disabled = false;
+  if (!questionTextId) {
+    throw new Error('Question text ID not found');
+  }
+  
+  return questionTextId;
+};
+
+// Get all available medium IDs
+const getMediumIds = () => {
+  const mediumIds = availableMediums.value.map(medium => medium.id);
+  
+  // If no medium IDs available, use the current medium ID as fallback
+  if (mediumIds.length === 0) {
+    mediumIds.push(currentMediumId.value);
+  }
+  
+  return mediumIds;
+};
+
+// Find chapter ID through multiple sources
+const findChapterId = async (
+  question: DisplayQuestion, 
+  originalQuestion: Question
+): Promise<number> => {
+  let chapterId: number | undefined;
+  
+  // Try to get from question_topics
+  chapterId = getChapterIdFromQuestionTopics(originalQuestion);
+  
+  // Try to get from question_text_topics
+  if (!chapterId) {
+    chapterId = getChapterIdFromQuestionTextTopics(originalQuestion);
+  }
+  
+  // Check if stored in display question
+  if (!chapterId && question.chapterId) {
+    chapterId = question.chapterId;
+  }
+  
+  // Try to find in API data
+  if (!chapterId) {
+    chapterId = findChapterIdInApiData(originalQuestion);
+  }
+  
+  // Fall back to route params
+  if (!chapterId) {
+    chapterId = getChapterIdFromRouteParams();
+  }
+  
+  return chapterId;
+};
+
+// Try to get chapter ID from question_topics
+const getChapterIdFromQuestionTopics = (question: Question): number | undefined => {
+  if (question.question_topics && question.question_topics.length > 0) {
+    return question.question_topics[0].topic?.chapter?.id;
+  }
+  return undefined;
+};
+
+// Try to get chapter ID from question_text_topics
+const getChapterIdFromQuestionTextTopics = (question: Question): number | undefined => {
+  return question.question_texts?.[0]?.question_text_topics?.[0]?.question_topic?.topic?.chapter?.id;
+};
+
+// Try to find chapter ID in API data
+const findChapterIdInApiData = (questionToFind: Question): number | undefined => {
+  const apiDataValue = apiData.value;
+  if (!apiDataValue?.sectionAllocations) return undefined;
+  
+  return findChapterIdInSections(apiDataValue.sectionAllocations, questionToFind.id);
+};
+
+// Helper function to search through sections for a question
+const findChapterIdInSections = (sections: SectionAllocation[], questionId: number): number | undefined => {
+  for (const section of sections) {
+    const chapterId = findChapterIdInSubsections(section, questionId);
+    if (chapterId) return chapterId;
+  }
+  return undefined;
+};
+
+// Helper function to search through subsections of a section
+const findChapterIdInSubsections = (section: SectionAllocation, questionId: number): number | undefined => {
+  if (!section.subsectionAllocations) return undefined;
+  
+  for (const subsection of section.subsectionAllocations) {
+    const chapterId = findChapterIdInChapters(subsection, questionId);
+    if (chapterId) return chapterId;
+  }
+  return undefined;
+};
+
+// Helper function to search through chapters of a subsection
+const findChapterIdInChapters = (subsection: SubsectionAllocation, questionId: number): number | undefined => {
+  if (!subsection.allocatedChapters) return undefined;
+  
+  for (const chapter of subsection.allocatedChapters) {
+    if (chapter.question && chapter.question.id === questionId) {
+      return chapter.chapterId;
     }
   }
-}
+  return undefined;
+};
+
+// Get chapter ID from route params as fallback
+const getChapterIdFromRouteParams = (): number => {
+  const chapters = route.query.chapters 
+    ? JSON.parse(decodeURIComponent(route.query.chapters as string)) 
+    : [];
+  
+  const chapterId = chapters.length > 0 ? chapters[0].id : 1;
+  console.warn(`Chapter ID not found, using default from route: ${chapterId}`);
+  
+  return chapterId;
+};
+
+// Get chapter ID for a question (used for checking other questions)
+const getQuestionChapterId = (q: Question): number | undefined => {
+  // Try from question_topics first
+  const fromTopics = getChapterIdFromQuestionTopics(q);
+  if (fromTopics) return fromTopics;
+  
+  // Try from question_text_topics next
+  const fromTextTopics = getChapterIdFromQuestionTextTopics(q);
+  if (fromTextTopics) return fromTextTopics;
+  
+  // Look in API data as fallback
+  return findChapterIdInApiData(q);
+};
+
+// Collect question text IDs from similar questions (same chapter, same type)
+const collectQuestionTextIds = (
+  currentQuestionTextId: number, 
+  questionTypeId: number, 
+  chapterId: number
+): number[] => {
+  const questionTextIds: number[] = [currentQuestionTextId];
+  
+  // Loop through test paper sections
+  for (const section of testPaperSections.value) {
+    collectSimilarQuestionsFromSection(section, questionTextIds, currentQuestionTextId, questionTypeId, chapterId);
+  }
+  
+  return questionTextIds;
+};
+
+// Helper function to collect question text IDs from a section
+const collectSimilarQuestionsFromSection = (
+  section: DisplaySection,
+  questionTextIds: number[],
+  currentQuestionTextId: number,
+  questionTypeId: number,
+  chapterId: number
+) => {
+  for (const q of section.questions) {
+    // Skip questions that don't match our criteria
+    if (!isSimilarQuestion(q, currentQuestionTextId, questionTypeId, chapterId)) continue;
+    
+    // Add the question text ID if it exists
+    addQuestionTextId(q, questionTextIds);
+  }
+};
+
+// Check if a question matches our similarity criteria
+const isSimilarQuestion = (
+  question: DisplayQuestion,
+  currentQuestionTextId: number,
+  questionTypeId: number,
+  chapterId: number
+): boolean => {
+  // Skip the current question
+  if (question.originalQuestion.id === currentQuestionTextId) return false;
+  
+  // Only consider questions with the same question type
+  if (question.originalQuestion.question_type_id !== questionTypeId) return false;
+  
+  // Get the chapter ID for this question
+  const questionChapterId = question.chapterId ?? getQuestionChapterId(question.originalQuestion);
+  
+  // Only include questions from the same chapter
+  return questionChapterId === chapterId;
+};
+
+// Add question text ID to the collection if it exists
+const addQuestionTextId = (question: DisplayQuestion, questionTextIds: number[]) => {
+  if (question.originalQuestion.question_texts && 
+      question.originalQuestion.question_texts.length > 0) {
+    questionTextIds.push(question.originalQuestion.question_texts[0].id);
+  }
+};
+
+// Fetch replacement question from API
+const fetchReplacementQuestion = async (
+  questionTextIds: number[], 
+  mediumIds: number[], 
+  chapterId: number
+): Promise<Question> => {
+  // Build query params
+  const queryParams = new URLSearchParams();
+  
+  // Add question text IDs
+  questionTextIds.forEach(id => {
+    queryParams.append('questionTextIds', id.toString());
+  });
+  
+  // Add all medium IDs
+  mediumIds.forEach(id => {
+    queryParams.append('mediumIds', id.toString());
+  });
+  
+  // Add chapter ID and question origin
+  queryParams.append('chapterId', chapterId.toString());
+  queryParams.append('questionOrigin', 'both');
+  
+  console.log('Change question parameters:', {
+    questionTextIds,
+    mediumIds,
+    chapterId,
+    questionOrigin: 'both'
+  });
+  
+  // Make the API call
+  const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
+  
+  if (!response.data?.question) {
+    console.error('Unexpected API response format:', response.data);
+    throw new Error('Failed to get replacement question');
+  }
+  
+  return response.data.question;
+};
+
+// Process and replace the question
+const processAndReplaceQuestion = (
+  section: DisplaySection,
+  questionIndex: number,
+  oldQuestion: DisplayQuestion,
+  newQuestion: Question,
+  chapterId: number
+) => {
+  // Find question text for current medium
+  const questionText = findQuestionTextForNewQuestion(newQuestion);
+  
+  // Extract topic ID
+  const topicId = getTopicIdFromNewQuestion(newQuestion, questionText);
+  
+  // Create display question
+  const displayQuestion = createReplacementDisplayQuestion(
+    oldQuestion.questionNumber,
+    questionText.question_text,
+    oldQuestion.marks,
+    newQuestion,
+    topicId,
+    chapterId
+  );
+  
+  // Process options and match pairs
+  addOptionsToQuestion(displayQuestion, questionText);
+  addMatchPairsToQuestion(displayQuestion, questionText);
+  
+  // Replace the question in the section
+  section.questions[questionIndex] = displayQuestion;
+};
+
+// Find question text for new question based on medium
+const findQuestionTextForNewQuestion = (newQuestion: Question): QuestionText => {
+  if (!newQuestion.question_texts || newQuestion.question_texts.length === 0) {
+    throw new Error('No question texts available in the new question');
+  }
+  
+  // First try to find an exact match for the current medium
+  const matchingText = newQuestion.question_texts.find(text => 
+    text.question_text_topics && 
+    text.question_text_topics.length > 0 && 
+    text.question_text_topics[0].instruction_medium_id === currentMediumId.value
+  );
+  
+  // If no match, use the first question text as a fallback
+  return matchingText ?? newQuestion.question_texts[0];
+};
+
+// Get topic ID from new question
+const getTopicIdFromNewQuestion = (
+  newQuestion: Question, 
+  questionText: QuestionText
+): number | undefined => {
+  if (newQuestion.question_topics && newQuestion.question_topics.length > 0) {
+    return newQuestion.question_topics[0].topic_id;
+  } else if (questionText.question_text_topics && questionText.question_text_topics.length > 0) {
+    return questionText.question_text_topics[0].question_topic_id;
+  }
+  return undefined;
+};
+
+// Create a display question object for the replacement
+const createReplacementDisplayQuestion = (
+  questionNumber: number,
+  questionText: string,
+  marks: number,
+  originalQuestion: Question,
+  topicId?: number,
+  chapterId?: number
+): DisplayQuestion => {
+  return {
+    questionNumber,  // Keep the same question number
+    questionText,
+    marks,  // Keep the same marks
+    questionType: originalQuestion.question_type.type_name,
+    originalQuestion,
+    topicId,
+    chapterId  // Store the chapter ID for future changes
+  };
+};
+
+// Handle error in change question process
+const handleChangeQuestionError = (error: unknown) => {
+  console.error('Error changing question:', error);
+  // Show error message to user
+  alert('Failed to change question. Please try again later.');
+};
+
+// Restore button to original state
+const restoreButtonState = (sectionIndex: number, questionIndex: number) => {
+  const button = document.querySelector(`#question-${sectionIndex}-${questionIndex} .shuffle-button`) as HTMLButtonElement;
+  if (button) {
+    button.innerHTML = `<span class="d-inline-flex align-items-center">
+      <i class="bi bi-arrow-clockwise me-1"></i><span class="d-none d-sm-inline">Change</span>
+    </span>`;
+    button.disabled = false;
+  }
+};
 
 // New function to update the stored API data structure with a new question
 const updateStoredApiDataWithNewQuestion = (sectionIndex: number, questionIndex: number, newQuestion: Question, chapterId: number) => {
-  if (!apiData.value || !apiData.value.sectionAllocations) {
+  if (!apiData.value?.sectionAllocations) {
     console.warn('Cannot update stored API data: no apiData available');
     return;
   }
   
   try {
-    // Find the section in the API data that corresponds to the display section
+    // Find the corresponding section in API data
     const section = testPaperSections.value[sectionIndex];
-    
-    // Find the corresponding section in the API data
-    const apiSection = apiData.value.sectionAllocations.find(s => 
-      s.sectionName === section.sectionName && 
-      (s.section_number === section.sectionNumber || s.sequentialNumber === section.sectionNumber)
-    );
+    const apiSection = findCorrespondingApiSection(section);
     
     if (!apiSection) {
       console.warn(`Cannot find section in API data for section index ${sectionIndex}`);
       return;
     }
     
-    // Now we need to find the corresponding question in the API data structure
-    // Loop through all subsections and their allocated chapters
-    let found = false;
-    
-    for (const subsection of apiSection.subsectionAllocations) {
-      if (found) break;
-      
-      for (let i = 0; i < subsection.allocatedChapters.length; i++) {
-        const chapter = subsection.allocatedChapters[i];
-        
-        // If this chapter has a question and it's the one we're replacing
-        if (chapter.question) {
-          // Count how many questions we've seen so far
-          let questionCount = 0;
-          
-          // Count questions in all previous subsections
-          for (const prevSubsection of apiSection.subsectionAllocations) {
-            if (prevSubsection === subsection) {
-              // For the current subsection, count questions up to the current chapter
-              for (let j = 0; j < i; j++) {
-                if (prevSubsection.allocatedChapters[j].question) {
-                  questionCount++;
-                }
-              }
-              break;
-            } else {
-              // For previous subsections, count all questions
-              for (const prevChapter of prevSubsection.allocatedChapters) {
-                if (prevChapter.question) {
-                  questionCount++;
-                }
-              }
-            }
-          }
-          
-          // If this is the question we're looking for
-          if (questionCount === questionIndex) {
-            // Replace the question in the API data structure
-            chapter.question = newQuestion;
-            
-            // Update the chapter ID if needed
-            if (chapter.chapterId !== chapterId) {
-              chapter.chapterId = chapterId;
-            }
-            
-            console.log(`Updated question in API data at section ${sectionIndex}, question ${questionIndex}`);
-            found = true;
-            break;
-          }
-        }
-      }
-    }
+    // Find and update the question in API data
+    const found = findAndUpdateQuestion(apiSection, questionIndex, newQuestion, chapterId, sectionIndex);
     
     if (!found) {
       console.warn(`Could not find question in API data for section ${sectionIndex}, question ${questionIndex}`);
     }
     
-    // Update the stored data
-    localStorage.setItem('finalQuestionsDistribution', JSON.stringify(apiData.value));
-    console.log('Updated finalQuestionsDistribution in localStorage with new question');
+    // Save updated API data to localStorage
+    saveUpdatedApiData();
   } catch (error) {
     console.error('Error updating stored API data with new question:', error);
   }
-}
+};
+
+// Find the section in API data that matches the display section
+const findCorrespondingApiSection = (displaySection: DisplaySection) => {
+  return apiData.value!.sectionAllocations.find(s => 
+    s.sectionName === displaySection.sectionName && 
+    (s.section_number === displaySection.sectionNumber || s.sequentialNumber === displaySection.sectionNumber)
+  );
+};
+
+// Find the question in API data and update it
+const findAndUpdateQuestion = (
+  apiSection: SectionAllocation,
+  targetQuestionIndex: number,
+  newQuestion: Question,
+  chapterId: number,
+  sectionIndex: number
+): boolean => {
+  // Get question position information
+  const questionPositions = getQuestionPositions(apiSection);
+  
+  // Find the matching question position
+  const matchingPosition = questionPositions.find(pos => pos.questionIndex === targetQuestionIndex);
+  
+  if (!matchingPosition) {
+    return false;
+  }
+  
+  // Update the question at the found position
+  updateQuestionAtPosition(matchingPosition, newQuestion, chapterId, sectionIndex, targetQuestionIndex);
+  
+  return true;
+};
+
+// Create a map of all question positions in a section
+const getQuestionPositions = (apiSection: SectionAllocation) => {
+  const positions: {
+    subsection: SubsectionAllocation;
+    chapterIndex: number;
+    chapter: ChapterAllocation;
+    questionIndex: number;
+  }[] = [];
+  
+  let questionIndex = 0;
+  
+  // Iterate through subsections
+  for (const subsection of apiSection.subsectionAllocations) {
+    // Iterate through chapters in each subsection
+    for (let chapterIndex = 0; chapterIndex < subsection.allocatedChapters.length; chapterIndex++) {
+      const chapter = subsection.allocatedChapters[chapterIndex];
+      
+      // If this chapter has a question, add its position
+      if (chapter.question) {
+        positions.push({
+          subsection,
+          chapterIndex,
+          chapter,
+          questionIndex: questionIndex++
+        });
+      }
+    }
+  }
+  
+  return positions;
+};
+
+// Update the question at the specified position
+const updateQuestionAtPosition = (
+  position: {
+    subsection: SubsectionAllocation;
+    chapterIndex: number;
+    chapter: ChapterAllocation;
+    questionIndex: number;
+  },
+  newQuestion: Question,
+  chapterId: number,
+  sectionIndex: number,
+  questionIndex: number
+) => {
+  // Update the question
+  position.chapter.question = newQuestion;
+  
+  // Update the chapter ID if it's different
+  if (position.chapter.chapterId !== chapterId) {
+    position.chapter.chapterId = chapterId;
+  }
+  
+  console.log(`Updated question in API data at section ${sectionIndex}, question ${questionIndex}`);
+};
+
+// Save the updated API data to localStorage
+const saveUpdatedApiData = () => {
+  localStorage.setItem('finalQuestionsDistribution', JSON.stringify(apiData.value));
+  console.log('Updated finalQuestionsDistribution in localStorage with new question');
+};
 
 // Save page functionality (placeholder)
 const savePage = async () => {
@@ -1986,17 +2237,6 @@ const handleGlobalLayoutClickOutside = (event: MouseEvent) => {
   }
 }
 
-// Show layout change toast notification
-const showLayoutChangeToast = (message: string) => {
-  layoutToastMessage.value = message;
-  showLayoutToast.value = true;
-  
-  // Auto-hide after 3 seconds
-  setTimeout(() => {
-    showLayoutToast.value = false;
-  }, 3000);
-}
-
 // Apply global layout to all MCQ questions
 const applyGlobalLayout = (layout: string) => {
   // Set the selected global layout
@@ -2018,17 +2258,6 @@ const applyGlobalLayout = (layout: string) => {
   // Save the updated layouts to localStorage
   saveOptionLayoutsToLocalStorage()
   
-  // Show feedback
-  const layoutNames = {
-    'row': 'Single Row',
-    'grid': '2x2 Grid',
-    'column': 'Single Column'
-  };
-  
-  // Show feedback with toast notification
-  const message = `Applied ${layoutNames[layout as keyof typeof layoutNames]} layout to ${mcqCount} questions`;
-  showLayoutChangeToast(message);
-  
   // Close the selector
   hideGlobalLayoutOptions();
 }
@@ -2038,10 +2267,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
   document.removeEventListener('click', handleGlobalLayoutClickOutside);
 });
-
-// Toast notification for layout changes
-const showLayoutToast = ref(false)
-const layoutToastMessage = ref('')
 
 // Hide layout selectors when scrolling
 const handleLayoutSelectorsOnScroll = () => {
@@ -2180,7 +2405,7 @@ const handleMediumDropdownClickOutside = (event: MouseEvent) => {
 const fetchAvailableMediums = () => {
   try {
     // Extract mediums from the API response data
-    if (apiData.value && apiData.value.mediums && apiData.value.mediums.length > 0) {
+    if (apiData.value?.mediums?.length > 0) {
       availableMediums.value = apiData.value.mediums.map((medium: ApiMedium) => ({
         id: medium.id,
         name: medium.instruction_medium
@@ -2215,10 +2440,6 @@ const changeMedium = async (mediumId: number) => {
   // Update current medium ID
   currentMediumId.value = mediumId;
   showMediumDropdown.value = false;
-  
-  // Show toast notification for medium change
-  const mediumName = availableMediums.value.find(m => m.id === mediumId)?.name || 'Unknown';
-  showLayoutChangeToast(`Changed to ${mediumName} medium`);
   
   try {
     // For questions that have been individually changed, we need to check if they have
@@ -2283,7 +2504,6 @@ const changeMedium = async (mediumId: number) => {
     console.error('Error changing medium:', error);
     // In case of error, revert to previous medium
     currentMediumId.value = previousMediumId;
-    showLayoutChangeToast('Failed to change medium. Please try again.');
   }
 };
 
@@ -2296,97 +2516,132 @@ const fetchQuestionWithNewMedium = async (
   mediumId: number
 ) => {
   try {
-    // Get all available medium IDs
-    const mediumIds = availableMediums.value.map(medium => medium.id);
-    
-    // Make sure the target medium is included
-    if (!mediumIds.includes(mediumId)) {
-      mediumIds.push(mediumId);
-    }
-    
-    // Build query params
-    const queryParams = new URLSearchParams();
-    
-    // Add question text ID
-    queryParams.append('questionTextIds', questionTextId.toString());
-    
-    // Add all medium IDs
-    mediumIds.forEach(id => {
-      queryParams.append('mediumIds', id.toString());
-    });
-    
-    // Add chapter ID
-    queryParams.append('chapterId', chapterId.toString());
-    
-    // Add question origin
-    queryParams.append('questionOrigin', 'both');
-    
     // Make the API call to get a replacement question
+    const queryParams = prepareQueryParams(questionTextId, chapterId, mediumId);
     const response = await axiosInstance.get(`/chapter-marks-distribution/change-question?${queryParams.toString()}`);
     
-    if (response.data && response.data.question) {
-      const newQuestion = response.data.question;
-      
-      // Check if the new question has the text for the current medium
-      const hasTextForCurrentMedium = newQuestion.question_texts.some(text => 
-        text.question_text_topics && 
-        text.question_text_topics.length > 0 && 
-        text.question_text_topics[0].instruction_medium_id === mediumId
-      );
-      
-      if (hasTextForCurrentMedium) {
-        // Update the question in our display data
-        const section = testPaperSections.value[sectionIndex];
-        const question = section.questions[questionIndex];
-        
-        // Store the new question data
-        question.originalQuestion = newQuestion;
-        
-        // Find the correct question text based on the current medium
-        const questionText = newQuestion.question_texts.find(text => 
-          text.question_text_topics && 
-          text.question_text_topics.length > 0 && 
-          text.question_text_topics[0].instruction_medium_id === mediumId
-        ) || newQuestion.question_texts[0];
-        
-        // Update the question display
-        question.questionText = questionText.question_text;
-        
-        // Process MCQ options if they exist
-        if (questionText.mcq_options && questionText.mcq_options.length > 0) {
-          question.options = questionText.mcq_options.map((option, index) => {
-            return {
-              label: String.fromCharCode(65 + index), // A, B, C, D...
-              text: option.option_text,
-              isCorrect: option.is_correct
-            };
-          });
-        }
-        
-        // Process match pairs if they exist
-        if (questionText.match_pairs && questionText.match_pairs.length > 0) {
-          question.matchPairs = questionText.match_pairs.map(pair => {
-            return {
-              leftText: pair.left_text || '', // Handle null left_text
-              rightText: pair.right_text || '' // Handle null right_text
-            };
-          });
-        }
-        
-        console.log(`Updated question ${sectionIndex}-${questionIndex} with medium ${mediumId}`);
-      } else {
-        console.warn(`New question does not have text for medium ${mediumId}`);
-      }
-    } else {
+    if (!response.data?.question) {
       console.error('Unexpected API response format:', response.data);
+      return;
     }
+    
+    // Process the response data
+    processNewQuestion(sectionIndex, questionIndex, response.data.question, mediumId);
   } catch (error) {
     console.error('Error fetching question with new medium:', error);
   }
 };
 
+// Prepare query parameters for API call
+const prepareQueryParams = (questionTextId: number, chapterId: number, mediumId: number): URLSearchParams => {
+  // Get all medium IDs
+  const mediumIds = availableMediums.value.map(medium => medium.id);
+  
+  // Make sure target medium is included
+  if (!mediumIds.includes(mediumId)) {
+    mediumIds.push(mediumId);
+  }
+  
+  // Build and return query params
+  const queryParams = new URLSearchParams();
+  
+  queryParams.append('questionTextIds', questionTextId.toString());
+  
+  mediumIds.forEach(id => {
+    queryParams.append('mediumIds', id.toString());
+  });
+  
+  queryParams.append('chapterId', chapterId.toString());
+  queryParams.append('questionOrigin', 'both');
+  
+  return queryParams;
+};
+
+// Process a new question received from the API
+const processNewQuestion = (
+  sectionIndex: number,
+  questionIndex: number,
+  newQuestion: Question,
+  mediumId: number
+) => {
+  // Check if the new question has text for the requested medium
+  const hasTextForMedium = newQuestion.question_texts.some(text => 
+    text.question_text_topics && 
+    text.question_text_topics.length > 0 && 
+    text.question_text_topics[0].instruction_medium_id === mediumId
+  );
+  
+  if (!hasTextForMedium) {
+    console.warn(`New question does not have text for medium ${mediumId}`);
+    return;
+  }
+  
+  // Get the section and question
+  const section = testPaperSections.value[sectionIndex];
+  const question = section.questions[questionIndex];
+  
+  // Update the question with the new data
+  updateQuestionData(question, newQuestion, mediumId);
+  
+  console.log(`Updated question ${sectionIndex}-${questionIndex} with medium ${mediumId}`);
+};
+
+// Update question data with new question information
+const updateQuestionData = (question: DisplayQuestion, newQuestion: Question, mediumId: number) => {
+  // Store the new question data
+  question.originalQuestion = newQuestion;
+  
+  // Find the correct question text based on the medium
+  const questionText = findQuestionTextForSpecificMedium(newQuestion, mediumId);
+  
+  // Update the question display
+  question.questionText = questionText.question_text;
+  
+  // Update options and match pairs
+  updateQuestionOptions(question, questionText);
+  updateQuestionMatchPairs(question, questionText);
+};
+
+// Find the question text for the specified medium
+const findQuestionTextForSpecificMedium = (question: Question, mediumId: number): QuestionText => {
+  // Try to find text matching the medium
+  const text = question.question_texts.find(text => 
+    text.question_text_topics && 
+    text.question_text_topics.length > 0 && 
+    text.question_text_topics[0].instruction_medium_id === mediumId
+  );
+  
+  // Return matching text or fall back to first one
+  return text ?? question.question_texts[0];
+};
+
+// Update question options
+const updateQuestionOptions = (question: DisplayQuestion, questionText: QuestionText) => {
+  if (!questionText.mcq_options || questionText.mcq_options.length === 0) {
+    return;
+  }
+  
+  question.options = questionText.mcq_options.map((option, index) => ({
+    label: String.fromCharCode(65 + index), // A, B, C, D...
+    text: option.option_text,
+    isCorrect: option.is_correct
+  }));
+};
+
+// Update question match pairs
+const updateQuestionMatchPairs = (question: DisplayQuestion, questionText: QuestionText) => {
+  if (!questionText.match_pairs || questionText.match_pairs.length === 0) {
+    return;
+  }
+  
+  question.matchPairs = questionText.match_pairs.map(pair => ({
+    leftText: pair.left_text || '', // Handle null left_text
+    rightText: pair.right_text || '' // Handle null right_text
+  }));
+};
+
 // Add mobileViewMode state
-const mobileViewMode = ref(false);
+const mobileViewMode = ref(true);
 
 // Add zoom level state and computed style for A4 paper
 const zoomLevel = ref(100);
@@ -2408,7 +2663,7 @@ const a4PaperStyle = computed(() => {
 const updateZoom = () => {
   // Update localStorage to remember user's preference
   localStorage.setItem('a4ZoomLevel', zoomLevel.value.toString());
-};
+}
 </script>
 
 <style scoped>
@@ -2822,10 +3077,6 @@ const updateZoom = () => {
     display: none !important;
   }
   
-  .question-type-badge {
-    display: none;
-  }
-  
   /* Print-specific option layouts */
   .options-row {
     flex-wrap: wrap;
@@ -2836,7 +3087,6 @@ const updateZoom = () => {
     flex: 0 0 24%;
     min-width: auto;
   }
-  
   .options-grid {
     flex-wrap: wrap;
     gap: 5px;
@@ -2883,13 +3133,7 @@ const updateZoom = () => {
     display: none !important; /* Hide change button in print */
   }
   
-  /* Ensure section headers don't break across pages */
-  .section-header {
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
-  }
 }
-
 /* Mobile styles for fixed bottom buttons */
 @media (max-width: 576px) {
   .container {
@@ -3013,29 +3257,12 @@ const updateZoom = () => {
     margin-bottom: 0.5rem;
   }
   
-  /* Improve option layout selector on mobile */
+  /* Layout selector styling for mobile */
   .layout-selector {
-    width: 270px;
-  }
-  
-  @media (max-width: 576px) {
-    /* Layout selector mobile positioning adjustments */
-    .layout-selector {
-      width: 90%;
-      max-width: 270px;
-    }
-    
-    .layout-cards {
-      grid-gap: 8px;
-    }
-  }
-  
-  /* Maintain option layouts on mobile but with adjusted sizes */
-  /* Row layout - preserve row but with smaller items */
-  .option-item-row {
+    width: 90%;
+    max-width: 270px;
     font-size: 0.9rem;
   }
-  
   /* Grid layout - preserve 2x2 grid */
   .options-grid {
     gap: 5px;
@@ -3062,29 +3289,29 @@ const updateZoom = () => {
     flex: 1 0 75%;
     padding-right: 0;
   }
-  
+
   .question-marks {
     flex: 1 0 25%;
     width: auto;
     padding-left: 5px;
     text-align: right;
   }
-  
+
   /* Ensure marks and change button display properly on small screens */
   .marks-row {
     justify-content: flex-end;
   }
-  
+
   .marks {
     font-size: 0.9rem;
   }
-  
+
   .shuffle-button {
     min-width: auto;
     padding: 0.2rem 0.4rem;
     font-size: 0.8rem;
   }
-  
+
   /* Title editing form on mobile */
   .edit-title-form {
     min-width: auto;
@@ -3175,19 +3402,6 @@ const updateZoom = () => {
 .edit-time-form input[type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
-}
-
-/* Question type badge */
-.question-type-badge {
-  font-size: 0.7rem;
-  background-color: #f0f0f0;
-  color: #666;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  margin-left: 8px;
-  vertical-align: middle;
-  font-weight: normal;
-  white-space: nowrap;
 }
 
 /* Back to top button */
@@ -3373,70 +3587,8 @@ const updateZoom = () => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.layout-options {
-  margin-bottom: 15px;
-}
-
-.layout-option-title {
-  font-weight: bold;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-.layout-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 10px;
-}
-
-.layout-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.layout-card {
-  width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 5px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #f9f9f9;
-  margin-bottom: 5px;
-}
-
-.layout-card:hover {
-  background-color: #f0f0f0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.layout-card.active {
-  border-color: #007bff;
-  background-color: rgba(0, 123, 255, 0.08);
-  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.3);
-}
-
-.layout-preview {
-  height: 50px;
-  display: flex;
-  font-size: 0.7rem;
-  color: #666;
-}
-
-.layout-label {
-  text-align: center;
-  font-size: 0.8rem;
-  color: #555;
-  font-weight: 500;
-  margin-top: 3px;
-}
-
+/* Cancel button styling */
 .cancel-button {
-  display: block;
-  width: 100%;
-  margin-top: 10px;
-  padding: 0.75rem 1rem;
   background-color: #f0f0f0;
   border: none;
   border-radius: 4px;
@@ -3449,33 +3601,6 @@ const updateZoom = () => {
 
 .cancel-button:hover {
   background-color: #e0e0e0;
-}
-
-/* Toast notification styles */
-.layout-toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #28a745;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  display: none;
-  z-index: 1000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.layout-toast.show-toast {
-  display: block;
-}
-
-.layout-toast-content {
-  display: flex;
-  align-items: center;
-}
-
-.layout-toast i {
-  margin-right: 10px;
 }
 
 /* Mobile action buttons at bottom */
@@ -3543,25 +3668,9 @@ const updateZoom = () => {
   .option-item-column {
     width: 100% !important;
   }
-}
-
-/* Layout previews for options */
-.global-layout-selector {
-  position: fixed;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  width: 300px;
-  padding: 15px;
-  z-index: 1050;
-  animation: fadeIn 0.2s ease-in-out;
-}
-
-@media (max-width: 576px) {
+  
+  /* Global layout selector mobile positioning */
   .global-layout-selector {
-    width: 90% !important;
-    max-width: 320px !important;
     left: 50% !important;
     top: 50% !important;
     transform: translate(-50%, -50%) !important;
@@ -3764,23 +3873,6 @@ const updateZoom = () => {
   font-size: 1.1rem;
 }
 
-/* Styles for mobile medium button that appears after the title */
-.medium-button-mobile {
-  padding: 6px 10px;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  min-width: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  background-color: #f8f9fa;
-  color: #212529;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  margin-left: auto; /* Push to right side if there's space */
-}
-
 /* Consistent styling for mobile action buttons */
 .mobile-action-btn {
   padding: 6px 10px;
@@ -3798,21 +3890,7 @@ const updateZoom = () => {
     transform: translateY(0);
   }
 }
-
-.medium-dropdown-mobile {
-  position: fixed;
-  width: 90%;
-  max-width: 250px;
-  padding: 10px;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 1050;
-  animation: fadeInDropdown 0.2s ease-out;
-}
-
-/* A4 Paper Card Styles */
+/* A4 paper container styles */
 .a4-paper-container {
   display: flex;
   justify-content: center;
@@ -3878,13 +3956,6 @@ const updateZoom = () => {
     padding-bottom: 60px;
   }
   
-  .a4-paper-container {
-    max-width: 210mm; /* Limit to A4 width */
-    margin-left: auto;
-    margin-right: auto;
-    overflow-x: visible; /* No horizontal scroll needed on desktop */
-  }
-  
   .a4-paper-card {
     max-width: 100%; /* Ensure it fits within container */
     box-shadow: 0 8px 24px rgba(0,0,0,0.12); /* Enhanced shadow for desktop */
@@ -3897,44 +3968,66 @@ const updateZoom = () => {
   flex-direction: column;
   align-items: center;
   margin-bottom: 15px;
-  background-color: rgba(255,255,255,0.9);
-  padding: 5px 15px;
-  border-radius: 20px;
+  background-color: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 300px;
 }
 
-.form-check-input {
-  margin-right: 10px;
+.view-mode-selector {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+}
+
+.view-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-mode-btn:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+
+.view-mode-btn.active {
+  background-color: #212529;
+  color: white;
+  border-color: #212529;
+  font-weight: 500;
+}
+
+.zoom-control-container {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.zoom-value {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 5px;
 }
 
 .scroll-hint {
   font-size: 0.8rem;
   color: #6c757d;
-  margin-top: 5px;
+  margin-top: 8px;
   text-align: center;
 }
-
-/* Print styles for A4 paper */
-@media print {
-  .a4-paper-card {
-    width: 210mm;
-    height: 297mm;
-    padding: 0;
-    box-shadow: none;
-    border: none;
-    margin: 0;
-  }
-  
-  /* Hide view mode toggle when printing */
-  .view-mode-toggle-container {
-    display: none !important;
-  }
-  
-  /* Always use A4 preview mode when printing */
-  .mobile-view .a4-paper-card {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 20mm;
-  }
-}
-</style> 
+</style>

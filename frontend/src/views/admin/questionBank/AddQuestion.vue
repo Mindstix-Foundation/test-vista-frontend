@@ -32,7 +32,10 @@
         :questionBankData="questionBankData"
         :chapterId="questionBankData.chapterId"
         @save="handleSaveQuestion"
+        @openQuestionImageModal="openQuestionImageModal"
+        @openOptionImageModal="openOptionImageModal"
         :useSearchableDropdown="true"
+        ref="questionFormComponent"
       />
       <div v-else class="alert alert-danger text-center">
         Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
@@ -45,6 +48,32 @@
         <span class="visually-hidden">Saving...</span>
       </output>
     </div>
+
+    <!-- Enhanced Image Upload Modals -->
+    <ImageUploadEditor
+      :isVisible="showQuestionImageModal"
+      :questionText="currentQuestionData.questionText"
+      :questionNumber="1"
+      imageType="question"
+      :questionType="currentQuestionData.questionType"
+      :options="currentQuestionData.options"
+      @close="() => showQuestionImageModal = false"
+      @cancelled="handleQuestionImageCancelled"
+      @imageUploaded="handleQuestionImageUploaded"
+    />
+
+    <ImageUploadEditor
+      :isVisible="showOptionImageModal"
+      :questionText="currentQuestionData.questionText"
+      :questionNumber="1"
+      imageType="option"
+      :questionType="currentQuestionData.questionType"
+      :options="currentQuestionData.options"
+      :optionIndex="currentOptionIndex"
+      @close="() => showOptionImageModal = false"
+      @cancelled="handleOptionImageCancelled"
+      @imageUploaded="handleOptionImageUploaded"
+    />
   </div>
 </template>
 
@@ -54,6 +83,9 @@ import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
 import { useToastStore } from '@/store/toast'
+import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
+import imageService from '@/services/imageService'
+import { useImageUploadStore } from '@/stores/imageUpload'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -71,8 +103,24 @@ defineOptions({
 
 const router = useRouter()
 const toastStore = useToastStore()
+const imageUploadStore = useImageUploadStore()
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const questionFormComponent = ref<any>(null)
+
+// Add new state for image upload modals
+const showQuestionImageModal = ref(false)
+const showOptionImageModal = ref(false)
+const currentOptionIndex = ref<number>(-1)
+const currentQuestionData = ref<{
+  questionText: string
+  questionType: string
+  options?: string[]
+}>({
+  questionText: '',
+  questionType: '',
+  options: []
+})
 
 // Data from localStorage
 const questionBankData = ref({
@@ -98,70 +146,57 @@ function validateChapterId() {
 }
 
 // Helper functions for image upload and processing
-async function uploadImage(file: File) {
-  // Create FormData for file upload
-  const formData = new FormData();
-  formData.append('file', file);
-
-  // Upload the image
-  const uploadResponse = await axiosInstance.post(
-    '/images/upload',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    }
-  );
-
-  // Extract image details from upload response
-  const uploadedImageDetails = uploadResponse.data;
-
-  // Create image record with returned details
-  const imageCreateRequest = {
-    image_url: uploadedImageDetails.image_url,
-    original_filename: uploadedImageDetails.original_filename || file.name,
-    file_size: uploadedImageDetails.file_size || file.size,
-    file_type: uploadedImageDetails.file_type || file.type,
-    width: uploadedImageDetails.width,
-    height: uploadedImageDetails.height
-  };
-
-  const imageResponse = await axiosInstance.post('/images', imageCreateRequest);
-  return imageResponse.data.id;
-}
+const uploadImage = async (imageFile: File, customWidth?: number, customHeight?: number): Promise<number> => {
+  try {
+    // Use the imageService which now supports custom dimensions
+    const response = await imageService.uploadImage(imageFile, customWidth, customHeight);
+    return response.id;
+  } catch (error) {
+    console.error('Failed to upload image:', error);
+    throw error;
+  }
+};
 
 // Process main question image
-async function processMainQuestionImage(imageFile: File) {
-  try {
-    return await uploadImage(imageFile);
-  } catch (error: unknown) {
-    console.error('Error uploading image:', error);
-    
-    // Check for specific image validation errors
-    const axiosError = error as AxiosErrorResponse;
-    if (axiosError.response?.data?.message) {
-      // Show error toast using toast store
-      toastStore.showToast({
-        title: 'Image Upload Error',
-        message: axiosError.response.data.message,
-        type: 'error'
-      });
+const processMainQuestionImage = async (customWidth?: number, customHeight?: number) => {
+  const questionImageData = imageUploadStore.getQuestionImage()
+  if (questionImageData) {
+    try {
+      // Upload image with custom dimensions from the store
+      const imageId = await uploadImage(
+        questionImageData.file, 
+        customWidth || questionImageData.metadata.width, 
+        customHeight || questionImageData.metadata.height
+      );
       
-      // Rethrow to signal a critical error
-      throw error;
+      // Update the store with the uploaded ID
+      imageUploadStore.updateUploadedId(questionImageData.id, imageId);
+      
+      return imageId;
+    } catch (error: any) {
+      console.error('Error processing main question image:', error);
+      if (error.response?.data?.statusCode === 413) {
+        toastStore.showToast({
+          title: 'Image file size is too large',
+          message: 'Please select a smaller image.',
+          type: 'warning'
+        });
+      } else if (error.response?.data?.statusCode === 400) {
+        toastStore.showToast({
+          title: 'Invalid image format',
+          message: 'Please select a valid image file.',
+          type: 'warning'
+        });
+      }
+      return null; // Return null to continue without image
     }
-    // For other errors, return null to continue without image
-    return null;
   }
-}
+  return null;
+};
 
 // Process MCQ options
-async function processMCQOptions(options: string[], correctOptionIndex: number | undefined, optionImages?: (File | null)[]) {
+async function processMCQOptions(options: string[], correctOptionIndex: number | undefined) {
   const mcqOptions = [];
-  
-  // Determine if we have images to process
-  const hasOptionImages = optionImages && Array.isArray(optionImages);
   
   for (let i = 0; i < options.length; i++) {
     if (options[i].trim() === '') continue;
@@ -175,10 +210,19 @@ async function processMCQOptions(options: string[], correctOptionIndex: number |
       is_correct: i === correctOptionIndex
     };
     
-    // Process option image if it exists
-    if (hasOptionImages && optionImages[i]) {
+    // Process option image if it exists in store
+    const optionImageData = imageUploadStore.getOptionImage(i);
+    if (optionImageData) {
       try {
-        option.image_id = await uploadImage(optionImages[i] as File);
+        const imageId = await uploadImage(
+          optionImageData.file,
+          optionImageData.metadata.width,
+          optionImageData.metadata.height
+        );
+        option.image_id = imageId;
+        
+        // Update the store with the uploaded ID
+        imageUploadStore.updateUploadedId(optionImageData.id, imageId);
       } catch (error) {
         console.error(`Error uploading image for option ${i+1}:`, error);
         // Continue without the image if upload fails
@@ -200,7 +244,7 @@ function createPairObject(leftText: string, rightText: string) {
 }
 
 // Helper to upload image with error handling
-async function uploadPairImage(image: File, side: string, index: number) {
+async function uploadPairImage(image: File, side: string, index: number): Promise<number | undefined> {
   try {
     return await uploadImage(image);
   } catch (error) {
@@ -210,38 +254,74 @@ async function uploadPairImage(image: File, side: string, index: number) {
 }
 
 // Process match pairs
-async function processMatchPairs(lhs: string[], rhs: string[], optionImages?: (File | null)[]) {
+async function processMatchPairs(lhs: string[], rhs: string[]) {
   const matchPairs = [];
   const maxLength = Math.max(lhs.length, rhs.length);
-  const hasOptionImages = optionImages && Array.isArray(optionImages);
   
   for (let i = 0; i < maxLength; i++) {
-    // Skip empty pairs
-    const leftText = i < lhs.length ? lhs[i].trim() : '';
-    const rightText = i < rhs.length ? rhs[i].trim() : '';
-    
-    if (leftText === '' && rightText === '') continue;
-    
-    // Create the pair object
-    const pair = createPairObject(leftText, rightText);
-    
-    // Process images if they exist
-    if (hasOptionImages) {
-      // Handle left image
-      if (i < lhs.length && optionImages[i]) {
-        pair.left_image_id = await uploadPairImage(optionImages[i] as File, 'left', i);
-      }
-      
-      // Handle right image
-      if (i < rhs.length && optionImages[i + 10]) {
-        pair.right_image_id = await uploadPairImage(optionImages[i + 10] as File, 'right', i);
-      }
+    const pair = await processSingleMatchPair(lhs, rhs, i);
+    if (pair) {
+      matchPairs.push(pair);
     }
-    
-    matchPairs.push(pair);
   }
   
   return matchPairs;
+}
+
+// Helper to process a single match pair
+async function processSingleMatchPair(lhs: string[], rhs: string[], index: number) {
+  // Get text values with defaults
+  const leftText = index < lhs.length ? lhs[index].trim() : '';
+  const rightText = index < rhs.length ? rhs[index].trim() : '';
+  
+  // Skip empty pairs
+  if (leftText === '' && rightText === '') return null;
+  
+  // Create the pair object
+  const pair = createPairObject(leftText, rightText);
+  
+  // Process images if applicable
+  await processMatchPairImages(pair, index);
+  
+  return pair;
+}
+
+// Helper to process images for a match pair
+async function processMatchPairImages(
+  pair: { left_text: string; right_text: string; left_image_id?: number; right_image_id?: number }, 
+  index: number
+) {
+  // Handle left image (using same index as option)
+  const leftImageData = imageUploadStore.getOptionImage(index);
+  if (leftImageData) {
+    try {
+      const imageId = await uploadImage(
+        leftImageData.file,
+        leftImageData.metadata.width,
+        leftImageData.metadata.height
+      );
+      pair.left_image_id = imageId;
+      imageUploadStore.updateUploadedId(leftImageData.id, imageId);
+    } catch (error) {
+      console.error(`Error uploading left image for pair ${index+1}:`, error);
+    }
+  }
+  
+  // Handle right image (using index + 10 for right side)
+  const rightImageData = imageUploadStore.getOptionImage(index + 10);
+  if (rightImageData) {
+    try {
+      const imageId = await uploadImage(
+        rightImageData.file,
+        rightImageData.metadata.width,
+        rightImageData.metadata.height
+      );
+      pair.right_image_id = imageId;
+      imageUploadStore.updateUploadedId(rightImageData.id, imageId);
+    } catch (error) {
+      console.error(`Error uploading right image for pair ${index+1}:`, error);
+    }
+  }
 }
 
 // Create question request base
@@ -251,7 +331,23 @@ function createBaseQuestionRequest(payload: {
   topicId: number;
   questionText: string;
 }, imageId: number | null) {
-  const request = {
+  const request: {
+    question_type_id: number;
+    board_question: boolean;
+    question_text_data: {
+      question_text: string;
+      image_id?: number;
+      mcq_options?: any[];
+      match_pairs?: any[];
+      answer_text?: string;
+    };
+    question_topic_data: {
+      topic_id: number;
+    };
+    question_text_topic_medium_data: {
+      instruction_medium_id: number;
+    };
+  } = {
     question_type_id: payload.questionTypeId,
     board_question: payload.isPreviousExam,
     question_text_data: {
@@ -274,12 +370,12 @@ function createBaseQuestionRequest(payload: {
 }
 
 // Handle special question types (Odd One Out, Correlation)
-function processSpecialQuestionTypes(request, questionTypeId: number, correctAnswer?: string) {
+function processSpecialQuestionTypes(request: any, questionTypeId: number, correctAnswer?: string) {
   if (questionTypeId === 2) { // Odd One Out
-    request.question_text_data.answer_text = correctAnswer || "See question for details";
+    request.question_text_data.answer_text = correctAnswer ?? "See question for details";
   } 
   else if (questionTypeId === 3) { // Complete the Correlation
-    request.question_text_data.answer_text = correctAnswer || "See question for correlation details";
+    request.question_text_data.answer_text = correctAnswer ?? "See question for correlation details";
   }
   
   return request;
@@ -305,11 +401,11 @@ async function handleSaveQuestion(payload: {
     // Show loading overlay
     isSubmitting.value = true;
     
-    // Process main question image if provided
+    // Process main question image if exists in store
     let imageId = null;
-    if (payload.imageFile) {
+    if (imageUploadStore.getQuestionImage()) {
       try {
-        imageId = await processMainQuestionImage(payload.imageFile);
+        imageId = await processMainQuestionImage();
       } catch {
         // Critical error occurred, abort question creation
         isSubmitting.value = false;
@@ -325,8 +421,7 @@ async function handleSaveQuestion(payload: {
       createQuestionRequest.question_text_data.mcq_options = 
         await processMCQOptions(
           payload.additionalData.options, 
-          payload.additionalData.correctOption,
-          payload.optionImages
+          payload.additionalData.correctOption
         );
     }
     
@@ -335,8 +430,7 @@ async function handleSaveQuestion(payload: {
       createQuestionRequest.question_text_data.match_pairs = 
         await processMatchPairs(
           payload.additionalData.lhs,
-          payload.additionalData.rhs,
-          payload.optionImages
+          payload.additionalData.rhs
         );
     }
     
@@ -352,6 +446,9 @@ async function handleSaveQuestion(payload: {
     // Make API call to create the question
     const response = await axiosInstance.post('/questions/add', createQuestionRequest);
     console.log('Question created successfully:', response.data);
+    
+    // Clear images from store after successful save
+    imageUploadStore.clearAllImages();
     
     // Navigate back to question dashboard with success query param
     router.push({
@@ -370,14 +467,83 @@ async function handleSaveQuestion(payload: {
     const axiosError = error as AxiosErrorResponse;
     toastStore.showToast({
       title: 'Error',
-      message: axiosError.response?.data?.message || 'Failed to create question',
+      message: axiosError.response?.data?.message ?? 'Failed to create question',
       type: 'error'
     });
   }
 }
 
+// Add methods for ImageUploadEditor
+function openQuestionImageModal(data: { questionText: string; questionType: string; options?: string[] }) {
+  currentQuestionData.value = data
+  showQuestionImageModal.value = true
+}
+
+function openOptionImageModal(data: { questionText: string; questionType: string; options?: string[]; optionIndex: number }) {
+  currentQuestionData.value = data
+  currentOptionIndex.value = data.optionIndex
+  showOptionImageModal.value = true
+}
+
+function handleQuestionImageUploaded(imageData: any) {
+  // Store image locally in Pinia store
+  console.log('Question image uploaded locally:', imageData);
+  showQuestionImageModal.value = false;
+  
+  // Store in Pinia store
+  imageUploadStore.setQuestionImage(imageData.file, imageData.metadata);
+  
+  // Pass the image data to the QuestionFormComponent for preview
+  if (questionFormComponent.value && imageData.file) {
+    questionFormComponent.value.setUploadedQuestionImage(imageData.file, imageData.id, imageData.url);
+  }
+}
+
+function handleOptionImageUploaded(imageData: any) {
+  // Store image locally in Pinia store
+  console.log('Option image uploaded locally for index:', currentOptionIndex.value, imageData);
+  showOptionImageModal.value = false;
+  
+  // Store in Pinia store
+  imageUploadStore.setOptionImage(currentOptionIndex.value, imageData.file, imageData.metadata);
+  
+  // Pass the image data to the QuestionFormComponent for preview
+  if (questionFormComponent.value && imageData.file && currentOptionIndex.value >= 0) {
+    questionFormComponent.value.setUploadedOptionImage(imageData.file, currentOptionIndex.value, imageData.id, imageData.url);
+  }
+}
+
+function handleQuestionImageCancelled() {
+  // Handle cancelled question image
+  console.log('Question image cancelled')
+  showQuestionImageModal.value = false
+  
+  // Remove from Pinia store
+  imageUploadStore.removeQuestionImage()
+  
+  // Emit a custom event that the QuestionFormComponent can listen to
+  window.dispatchEvent(new CustomEvent('clearQuestionImage'))
+}
+
+function handleOptionImageCancelled() {
+  console.log('Option image upload cancelled');
+  showOptionImageModal.value = false;
+  
+  // Remove from Pinia store
+  imageUploadStore.removeOptionImage(currentOptionIndex.value)
+  
+  // Emit custom event with optionIndex
+  const event = new CustomEvent('clearOptionImage', { 
+    detail: { optionIndex: currentOptionIndex.value } 
+  });
+  window.dispatchEvent(event);
+}
+
 // Lifecycle hooks
 onMounted(() => {
+  // Clear any existing images when component mounts
+  imageUploadStore.clearAllImages();
+  
   // Load data from localStorage
   const storedData = localStorage.getItem('questionBank')
   if (storedData) {

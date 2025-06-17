@@ -188,20 +188,21 @@ const imageLoadingState = ref<boolean>(false);
 const questionImage = ref<HTMLImageElement | null>(null);
 
 // Computed values with defaults
-const showFooter = computed(() => props.showFooter !== undefined ? props.showFooter : true);
-const highlightCorrect = computed(() => props.highlightCorrect !== undefined ? props.highlightCorrect : true);
-const showPreviewIndicator = computed(() => props.showPreviewIndicator !== undefined ? props.showPreviewIndicator : false);
-const showDebugInfo = computed(() => props.showDebugInfo !== undefined ? props.showDebugInfo : false);
-const optionLayout = computed(() => props.optionLayout || 'grid');
-const questionTextMaxLength = computed(() => props.questionTextMaxLength || 200);
-const answerTextMaxLength = computed(() => props.answerTextMaxLength || 200);
-const optionTextMaxLength = computed(() => props.optionTextMaxLength || 80);
+const showFooter = computed(() => props.showFooter ?? true);
+const highlightCorrect = computed(() => props.highlightCorrect ?? true);
+const showPreviewIndicator = computed(() => props.showPreviewIndicator ?? false);
+const showDebugInfo = computed(() => props.showDebugInfo ?? false);
+const optionLayout = computed(() => props.optionLayout ?? 'grid');
+const questionTextMaxLength = computed(() => props.questionTextMaxLength ?? 200);
+const answerTextMaxLength = computed(() => props.answerTextMaxLength ?? 200);
+const optionTextMaxLength = computed(() => props.optionTextMaxLength ?? 80);
 
 // Determine question type
 const isMcqQuestion = computed(() => {
   // Only include MCQ type, remove Odd One Out and True/False
-  return props.questionType?.includes('MCQ') ||
-         props.questionType?.includes('Multiple Choice');
+  const hasTypeMCQ = props.questionType?.includes('MCQ') ?? false;
+  const hasTypeMultipleChoice = props.questionType?.includes('Multiple Choice') ?? false;
+  return hasTypeMCQ || hasTypeMultipleChoice;
 });
 
 const isMatchPairsQuestion = computed(() => {

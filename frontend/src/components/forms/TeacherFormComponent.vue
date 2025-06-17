@@ -24,7 +24,7 @@
             class="invalid-feedback"
             v-if="!validationStates.name.valid && validationStates.name.touched"
           >
-            {{ v$.name.$errors[0]?.$message || 'Please enter a valid name' }}
+            {{ v$.name.$errors[0]?.$message ?? VALIDATION_MESSAGES.NAME.INVALID }}
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@
             validationStates.boardId.touched
           "
         >
-          Please select a board
+          {{ VALIDATION_MESSAGES.BOARD.REQUIRED }}
         </div>
       </div>
 
@@ -93,10 +93,10 @@
         >
           {{
             !formData.boardId
-              ? 'Please select a board first'
+              ? VALIDATION_MESSAGES.SCHOOL.SELECT_BOARD_FIRST
               : formData.boardId && schools.length === 0
-                ? 'This board has no schools'
-                : 'Please select a school'
+                ? VALIDATION_MESSAGES.SCHOOL.NO_SCHOOLS
+                : VALIDATION_MESSAGES.SCHOOL.REQUIRED
           }}
         </div>
       </div>
@@ -155,7 +155,7 @@
             class="invalid-feedback"
             v-if="!validationStates.contactNumber.valid && validationStates.contactNumber.touched"
           >
-            Please enter a valid contact number
+            {{ VALIDATION_MESSAGES.CONTACT.INVALID }}
           </div>
         </div>
       </div>
@@ -190,7 +190,7 @@
               validationStates.alternateContactNumber.touched
             "
           >
-            Please enter a valid contact number
+            {{ VALIDATION_MESSAGES.CONTACT.INVALID }}
           </div>
         </div>
       </div>
@@ -227,7 +227,7 @@
               validationStates.highestQualification.touched
             "
           >
-            Qualification must be at least 2 characters
+            {{ VALIDATION_MESSAGES.QUALIFICATION.MIN_LENGTH }}
           </div>
         </div>
       </div>
@@ -304,7 +304,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h4 class="modal-title" id="subjectSelectModalLabel">
-                Select Subjects for Standard {{ selectedStandard?.name || '' }}
+                Select Subjects for Standard {{ selectedStandard?.name ?? '' }}
               </h4>
             </div>
             <div class="modal-body">
@@ -429,14 +429,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, onMounted, watch, computed, nextTick } from 'vue'
 import useVuelidate from '@vuelidate/core'
 import { required, email, helpers } from '@vuelidate/validators'
 import type { TeacherFormData } from '@/models/Teacher'
 import axiosInstance from '@/config/axios'
 import { Modal } from 'bootstrap'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import { useToastStore } from '@/store/toast'
+import { validateContactNumber, formatContactNumber, formatContactNumberForAPI, VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Props and Emits
 const props = defineProps<{
@@ -460,51 +462,6 @@ const route = useRoute()
 const isEditMode = computed(() => route.name === 'editTeacher')
 
 // Utility functions
-const validateContactNumber = (number: string): boolean => {
-  const cleaned = number.replace(/[^\d+]/g, '')
-
-  // Must contain only numbers and optionally a + at the start
-  if (!/^\+?\d+$/.test(cleaned)) return false
-
-  // If starts with +91, must have 10-15 digits after
-  if (cleaned.startsWith('+91')) {
-    const digitCount = cleaned.substring(3).length // Count digits after +91
-    return digitCount >= 10 && digitCount <= 15
-  }
-
-  // For other international numbers
-  const digitCount = cleaned.replace(/\D/g, '').length
-  return digitCount >= 10 && digitCount <= 15
-}
-
-const formatContactNumber = (number: string): string => {
-  // Remove all whitespace and any characters that aren't numbers or +
-  const cleaned = number.replace(/[^\d+]/g, '')
-
-  if (!cleaned) return ''
-
-  // If it starts with +91, ensure 10-15 digits follow
-  if (cleaned.startsWith('+91')) {
-    const digits = cleaned.substring(3) // Remove +91
-    if (digits.length > 15) {
-      return '+91' + digits.substring(0, 15) // Keep only first 15 digits
-    }
-    return cleaned
-  }
-
-  // If it starts with +, keep it as is
-  if (cleaned.startsWith('+')) {
-    return cleaned
-  }
-
-  // If it's 10-15 digits (Indian number), add +91
-  if (cleaned.length >= 10 && cleaned.length <= 15) {
-    return `+91${cleaned}`
-  }
-
-  return cleaned
-}
-
 const capitalizeWords = (str: string) => {
   return str
     .split(' ')
@@ -618,61 +575,61 @@ const formData = reactive<FormDataType>({
 // Validation Rules
 const rules = {
   name: {
-    required: helpers.withMessage('Teacher name is required', required),
+    required: helpers.withMessage(VALIDATION_MESSAGES.NAME.REQUIRED, required),
     minLength: helpers.withMessage(
-      'Name must be at least 3 characters',
+      VALIDATION_MESSAGES.NAME.MIN_LENGTH,
       (value: string) => value.length >= 3,
     ),
-    validName: helpers.withMessage('Name can only contain letters and spaces', (value: string) =>
+    validName: helpers.withMessage(VALIDATION_MESSAGES.NAME.INVALID_CHARS, (value: string) =>
       /^[a-zA-Z\s]*$/.test(value),
     ),
   },
   boardId: {
-    required: helpers.withMessage('Board selection is required', required),
-    validBoard: helpers.withMessage('Please select a valid board', (value: number) => {
+    required: helpers.withMessage(VALIDATION_MESSAGES.BOARD.REQUIRED, required),
+    validBoard: helpers.withMessage(VALIDATION_MESSAGES.BOARD.INVALID, (value: number) => {
       return value !== 0 && value !== undefined && value !== null;
     }),
   },
   schoolId: {
-    required: helpers.withMessage('School selection is required', required),
+    required: helpers.withMessage(VALIDATION_MESSAGES.SCHOOL.REQUIRED, required),
     validSchool: helpers.withMessage(
-      'Please select a valid school',
+      VALIDATION_MESSAGES.SCHOOL.INVALID,
       (value: number) => value !== 0,
     ),
   },
   emailId: {
-    required: helpers.withMessage('Email is required', required),
-    email: helpers.withMessage('Please enter a valid email address', email),
-    validEmail: helpers.withMessage('Please enter a valid email address', (value: string) =>
+    required: helpers.withMessage(VALIDATION_MESSAGES.EMAIL.REQUIRED, required),
+    email: helpers.withMessage(VALIDATION_MESSAGES.EMAIL.INVALID, email),
+    validEmail: helpers.withMessage(VALIDATION_MESSAGES.EMAIL.INVALID, (value: string) =>
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value),
     ),
   },
   contactNumber: {
-    required: helpers.withMessage('Contact number is required', required),
-    valid: helpers.withMessage('Please enter a valid contact number', (value: string) =>
+    required: helpers.withMessage(VALIDATION_MESSAGES.CONTACT.REQUIRED, required),
+    valid: helpers.withMessage(VALIDATION_MESSAGES.CONTACT.INVALID, (value: string) =>
       validateContactNumber(value),
     ),
   },
   alternateContactNumber: {
     valid: helpers.withMessage(
-      'Please enter a valid contact number',
+      VALIDATION_MESSAGES.CONTACT.INVALID,
       (value: string) => !value || validateContactNumber(value),
     ),
-    different: helpers.withMessage(
-      'Alternate contact number must be different from primary contact number',
+    notSame: helpers.withMessage(
+      VALIDATION_MESSAGES.CONTACT.DUPLICATE,
       (value: string) => !value || value !== formData.contactNumber,
     ),
   },
   highestQualification: {
-    required: helpers.withMessage('Qualification is required', required),
+    required: helpers.withMessage(VALIDATION_MESSAGES.QUALIFICATION.REQUIRED, required),
     minLength: helpers.withMessage(
-      'Qualification must be at least 2 characters',
+      VALIDATION_MESSAGES.QUALIFICATION.MIN_LENGTH,
       (value: string) => value.length >= 2,
     ),
   },
   teacherSubjects: {
     required: helpers.withMessage(
-      'Please select at least one standard with subjects',
+      VALIDATION_MESSAGES.TEACHER_SUBJECTS.REQUIRED,
       (value: TeacherSubject[]) => value.length > 0,
     ),
   },
@@ -806,7 +763,7 @@ watch(
       validationStates.boardId.valid = boardValid
 
       // Trigger vuelidate validation
-      await v$.value.$touch()
+      v$.value.$touch()
     }
   },
   { immediate: true },
@@ -902,7 +859,7 @@ const tryFixingBoardValidation = async () => {
   // Force update the model and validation state
   formData.boardId = selectedBoard.value.id
   v$.value.boardId.$model = selectedBoard.value.id
-  await v$.value.boardId.$touch()
+  v$.value.boardId.$touch()
   
   // Try validation again
   return await v$.value.$validate()
@@ -913,18 +870,23 @@ const handleValidationSuccess = async () => {
     await calculateChanges()
     saveConfirmationModal.value?.show()
   } else {
+    // Format contact numbers for API submission
+    const formDataForAPI = {
+      name: formData.name,
+      emailId: formData.emailId,
+      contactNumber: formatContactNumberForAPI(formData.contactNumber),
+      alternateContactNumber: formData.alternateContactNumber 
+        ? formatContactNumberForAPI(formData.alternateContactNumber)
+        : '',
+      highestQualification: formData.highestQualification,
+      schoolId: formData.schoolId,
+      boardId: formData.boardId,
+      teacherSubjects: formData.teacherSubjects,
+      groupedSubjects: formData.groupedSubjects,
+    }
+
     emit('submit', {
-      formData: {
-        name: formData.name,
-        emailId: formData.emailId,
-        contactNumber: formData.contactNumber,
-        alternateContactNumber: formData.alternateContactNumber,
-        highestQualification: formData.highestQualification,
-        schoolId: formData.schoolId,
-        boardId: formData.boardId,
-        teacherSubjects: formData.teacherSubjects,
-        groupedSubjects: formData.groupedSubjects,
-      },
+      formData: formDataForAPI,
       changes: [],
     })
   }
@@ -944,7 +906,7 @@ const handleValidationFailure = () => {
   // Find the first invalid field based on our preferred order
   const firstInvalidField = fieldOrder.find((field) => {
     const validationField = v$.value[field.key]
-    return validationField && validationField.$error
+    return validationField?.$error
   })
 
   // Focus the first invalid field
@@ -997,77 +959,113 @@ const calculateChanges = async () => {
   changes.value = []
 
   if (!props.initialData) {
-    // If no initial data, all current subjects are additions
-    formData.groupedSubjects?.forEach((standard) => {
-      standard.subjects.forEach((subject) => {
-        changes.value.push({
-          type: 'add',
-          message: `Added "${subject.name}" to Standard ${standard.standardName}`,
-        })
-      })
-    })
+    handleNewTeacherSubjects()
     return
   }
 
-  // Check basic information changes
-  if (formData.name !== props.initialData.name) {
+  checkBasicInfoChanges()
+  checkSchoolChange()
+  checkStandardChanges()
+}
+
+// Helper function to track new teacher subjects
+const handleNewTeacherSubjects = () => {
+  formData.groupedSubjects?.forEach((standard) => {
+    standard.subjects.forEach((subject) => {
+      changes.value.push({
+        type: 'add',
+        message: `Added "${subject.name}" to Standard ${standard.standardName}`,
+      })
+    })
+  })
+}
+
+// Helper function to check for changes in basic teacher information
+const checkBasicInfoChanges = () => {
+  // Check name change
+  if (formData.name !== props.initialData!.name) {
     changes.value.push({
       type: 'modify',
-      message: `Name: ${props.initialData.name} → ${formData.name}`,
+      message: `Name: ${props.initialData!.name} → ${formData.name}`,
     })
   }
 
-  if (formData.emailId !== props.initialData.emailId) {
+  // Check email change
+  if (formData.emailId !== props.initialData!.emailId) {
     changes.value.push({
       type: 'modify',
-      message: `Email: ${props.initialData.emailId} → ${formData.emailId}`,
+      message: `Email: ${props.initialData!.emailId} → ${formData.emailId}`,
     })
   }
 
-  if (formData.contactNumber !== props.initialData.contactNumber) {
+  // Check contact number change
+  if (formData.contactNumber !== props.initialData!.contactNumber) {
     changes.value.push({
       type: 'modify',
-      message: `Contact Number: ${props.initialData.contactNumber} → ${formData.contactNumber}`,
+      message: `Contact Number: ${props.initialData!.contactNumber} → ${formData.contactNumber}`,
     })
   }
 
-  if (formData.alternateContactNumber !== props.initialData.alternateContactNumber) {
+  // Check alternate contact number change
+  if (formData.alternateContactNumber !== props.initialData!.alternateContactNumber) {
     changes.value.push({
       type: 'modify',
-      message: `Alternate Contact: ${props.initialData.alternateContactNumber || 'None'} → ${
-        formData.alternateContactNumber || 'None'
+      message: `Alternate Contact: ${props.initialData!.alternateContactNumber ?? 'None'} → ${
+        formData.alternateContactNumber ?? 'None'
       }`,
     })
   }
 
-  if (formData.highestQualification !== props.initialData.highestQualification) {
+  // Check qualification change
+  if (formData.highestQualification !== props.initialData!.highestQualification) {
     changes.value.push({
       type: 'modify',
-      message: `Qualification: ${props.initialData.highestQualification} → ${formData.highestQualification}`,
+      message: `Qualification: ${props.initialData!.highestQualification} → ${formData.highestQualification}`,
     })
   }
+}
 
-  // Check school change
-  if (formData.schoolId !== props.initialData.schoolId) {
+// Helper function to check for school change
+const checkSchoolChange = () => {
+  if (formData.schoolId !== props.initialData!.schoolId) {
     const oldSchool = schools.value.find((s) => s.id === props.initialData?.schoolId)
     const newSchool = schools.value.find((s) => s.id === formData.schoolId)
     changes.value.push({
       type: 'modify',
-      message: `School: ${oldSchool?.name || ''} → ${newSchool?.name || ''}`,
+      message: `School: ${oldSchool?.name ?? ''} → ${newSchool?.name ?? ''}`,
     })
   }
+}
 
-  // Track removed standards (entire standard with all its subjects)
-  const initialStandards = props.initialData.groupedSubjects || []
-  const currentStandards = formData.groupedSubjects || []
+// Helper function to check for standard and subject changes
+const checkStandardChanges = () => {
+  const initialStandards = props.initialData!.groupedSubjects ?? []
+  const currentStandards = formData.groupedSubjects ?? []
 
-  // Check for completely removed standards
+  checkRemovedStandards(initialStandards, currentStandards)
+  checkNewStandards(initialStandards, currentStandards)
+  checkModifiedStandards(initialStandards, currentStandards)
+}
+
+// Define proper interfaces for standards and subjects
+interface Standard {
+  standardId: number
+  standardName: string
+  subjects: Subject[]
+}
+
+interface Subject {
+  id: number
+  name: string
+}
+
+// Helper function to check for completely removed standards
+const checkRemovedStandards = (initialStandards: Standard[], currentStandards: Standard[]) => {
   initialStandards.forEach((standard) => {
     const standardExists = currentStandards.some((s) => s.standardId === standard.standardId)
-
+    
     if (!standardExists) {
-      // Add individual removal messages for each subject in the standard
-      standard.subjects.forEach((subject) => {
+      standard.subjects.forEach((subject: Subject) => {
         changes.value.push({
           type: 'delete',
           message: `Removed "${subject.name}" from Standard ${standard.standardName}`,
@@ -1075,13 +1073,15 @@ const calculateChanges = async () => {
       })
     }
   })
+}
 
-  // Check for completely new standards
+// Helper function to check for completely new standards
+const checkNewStandards = (initialStandards: Standard[], currentStandards: Standard[]) => {
   currentStandards.forEach((standard) => {
     const standardIsNew = !initialStandards.some((s) => s.standardId === standard.standardId)
-
+    
     if (standardIsNew) {
-      standard.subjects.forEach((subject) => {
+      standard.subjects.forEach((subject: Subject) => {
         changes.value.push({
           type: 'add',
           message: `Added "${subject.name}" to Standard ${standard.standardName}`,
@@ -1089,33 +1089,45 @@ const calculateChanges = async () => {
       })
     }
   })
+}
 
-  // Check for individual subject changes within existing standards
+// Helper function to check for modified standards (added/removed subjects)
+const checkModifiedStandards = (initialStandards: Standard[], currentStandards: Standard[]) => {
   currentStandards.forEach((currentStandard) => {
     const initialStandard = initialStandards.find(
-      (s) => s.standardId === currentStandard.standardId,
+      (s) => s.standardId === currentStandard.standardId
     )
+    
     if (initialStandard) {
-      // Check for added subjects
-      currentStandard.subjects.forEach((subject) => {
-        const subjectExists = initialStandard.subjects.some((s) => s.id === subject.id)
-        if (!subjectExists) {
-          changes.value.push({
-            type: 'add',
-            message: `Added "${subject.name}" to Standard ${currentStandard.standardName}`,
-          })
-        }
-      })
+      checkAddedSubjects(currentStandard, initialStandard)
+      checkRemovedSubjects(currentStandard, initialStandard)
+    }
+  })
+}
 
-      // Check for removed subjects
-      initialStandard.subjects.forEach((subject) => {
-        const subjectStillExists = currentStandard.subjects.some((s) => s.id === subject.id)
-        if (!subjectStillExists) {
-          changes.value.push({
-            type: 'delete',
-            message: `Removed "${subject.name}" from Standard ${currentStandard.standardName}`,
-          })
-        }
+// Helper function to check for added subjects within a standard
+const checkAddedSubjects = (currentStandard: Standard, initialStandard: Standard) => {
+  currentStandard.subjects.forEach((subject: Subject) => {
+    const subjectExists = initialStandard.subjects.some((s: Subject) => s.id === subject.id)
+    
+    if (!subjectExists) {
+      changes.value.push({
+        type: 'add',
+        message: `Added "${subject.name}" to Standard ${currentStandard.standardName}`,
+      })
+    }
+  })
+}
+
+// Helper function to check for removed subjects within a standard
+const checkRemovedSubjects = (currentStandard: Standard, initialStandard: Standard) => {
+  initialStandard.subjects.forEach((subject: Subject) => {
+    const subjectStillExists = currentStandard.subjects.some((s: Subject) => s.id === subject.id)
+    
+    if (!subjectStillExists) {
+      changes.value.push({
+        type: 'delete',
+        message: `Removed "${subject.name}" from Standard ${currentStandard.standardName}`,
       })
     }
   })
@@ -1125,12 +1137,14 @@ const handleConfirm = async () => {
   try {
     isSubmitting.value = true
 
-    // Get the updated teacher data from the form
+    // Get the updated teacher data from the form with formatted contact numbers
     const teacherData = {
       name: formData.name,
       emailId: formData.emailId,
-      contactNumber: formData.contactNumber,
-      alternateContactNumber: formData.alternateContactNumber,
+      contactNumber: formatContactNumberForAPI(formData.contactNumber),
+      alternateContactNumber: formData.alternateContactNumber 
+        ? formatContactNumberForAPI(formData.alternateContactNumber)
+        : '',
       highestQualification: formData.highestQualification,
       schoolId: formData.schoolId,
       boardId: formData.boardId,
@@ -1269,12 +1283,12 @@ const addSubjects = () => {
     const subject = availableSubjects.value.find((s) => s.id === subjectId)
     return {
       id: subjectId, // Use the subject ID directly
-      name: subject?.name || 'Unknown Subject',
+      name: subject?.name ?? 'Unknown Subject',
     }
   })
 
   // Remove existing standard from groupedSubjects if it exists
-  const otherStandards = (formData.groupedSubjects || []).filter(
+  const otherStandards = (formData.groupedSubjects ?? []).filter(
     (group) => group.standardId !== selectedStandard.value?.standard.id,
   )
 
@@ -1388,7 +1402,7 @@ const handleEmailInput = async (e: Event) => {
       const isAvailable = data.available === true
       
       validationStates.emailId.valid = isAvailable
-      emailErrorMessage.value = isAvailable ? '' : data.message || 'This email is already in use'
+      emailErrorMessage.value = isAvailable ? '' : data.message ?? 'This email is already in use'
     } catch {
       // Error handling for email check
       // If there's an error checking, we'll just validate the format
@@ -1397,7 +1411,9 @@ const handleEmailInput = async (e: Event) => {
     }
   } else {
     validationStates.emailId.valid = false
-    emailErrorMessage.value = 'Please enter a valid email address'
+    emailErrorMessage.value = VALIDATION_MESSAGES.EMAIL.REQUIRED
+    v$.value.emailId.$touch()
+    return
   }
 
   v$.value.emailId.$touch()
@@ -1410,7 +1426,7 @@ const handleEmailBlur = async () => {
   
   if (!value) {
     validationStates.emailId.valid = false
-    emailErrorMessage.value = 'Email is required'
+    emailErrorMessage.value = VALIDATION_MESSAGES.EMAIL.REQUIRED
     v$.value.emailId.$touch()
     return
   }
@@ -1419,7 +1435,7 @@ const handleEmailBlur = async () => {
   
   if (!isValidFormat) {
     validationStates.emailId.valid = false
-    emailErrorMessage.value = 'Please enter a valid email address'
+    emailErrorMessage.value = VALIDATION_MESSAGES.EMAIL.INVALID
     v$.value.emailId.$touch()
     return
   }
@@ -1439,7 +1455,7 @@ const handleEmailBlur = async () => {
     const isAvailable = data.available === true
     
     validationStates.emailId.valid = isAvailable
-    emailErrorMessage.value = isAvailable ? '' : data.message || 'This email is already in use'
+    emailErrorMessage.value = isAvailable ? '' : data.message ?? 'This email is already in use'
   } catch {
     // Error handling for email availability check
     // If there's an error checking, we'll just validate the format
@@ -1565,6 +1581,7 @@ const handleSchoolChange = async (school: { id: number; name: string } | null) =
     
     // Update validation
     v$.value.schoolId.$touch()
+    v$.value.$touch()
     return
   }
 
@@ -1583,8 +1600,8 @@ const handleSchoolChange = async (school: { id: number; name: string } | null) =
   validationStates.schoolId.valid = true
 
   // Force validation update
-  await v$.value.schoolId.$touch()
-  await v$.value.$touch()
+  v$.value.schoolId.$touch()
+  v$.value.$touch()
 
   // Fetch standards for this school
   try {
@@ -1641,6 +1658,7 @@ const handleBoardChange = async (board: { id: number; name: string } | null) => 
     
     // Update validation
     v$.value.boardId.$touch()
+    v$.value.$touch()
     return
   }
 
@@ -1666,8 +1684,8 @@ const handleBoardChange = async (board: { id: number; name: string } | null) => 
   validationStates.boardId.valid = true
 
   // Force validation update
-  await v$.value.boardId.$touch()
-  await v$.value.$touch()
+  v$.value.boardId.$touch()
+  v$.value.$touch()
 
   // Fetch schools for selected board
   await fetchSchools()

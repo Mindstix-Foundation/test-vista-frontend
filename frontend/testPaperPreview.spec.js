@@ -1,0 +1,1 @@
+import { mount } from '@vue/test-utils'; import TestPaperPreview from './src/views/teacher/createTestPaper/testPaperPreview.vue'; describe('TestPaperPreview', () => { it('parses correctly', () => { expect(() => mount(TestPaperPreview)).not.toThrow(); }); });

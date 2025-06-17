@@ -1,5 +1,24 @@
 import axios from 'axios'
 
+// Helper function to safely access localStorage
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key)
+    } catch (error) {
+      console.warn('localStorage access failed:', error)
+      return null
+    }
+  },
+  clear: (): void => {
+    try {
+      localStorage.clear()
+    } catch (error) {
+      console.warn('localStorage clear failed:', error)
+    }
+  }
+}
+
 const axiosInstance = axios.create({
   baseURL: import.meta.env.PROD
     ? import.meta.env.VITE_API_URL
@@ -9,11 +28,14 @@ const axiosInstance = axios.create({
   },
 })
 
+// Add debounce for auth expired events
+let authExpiredTimeout: number | null = null
+
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
     // Get the latest token from localStorage
-    const token = localStorage.getItem('access_token')
+    const token = safeLocalStorage.getItem('access_token')
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -33,11 +55,19 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Clear local storage
-      localStorage.clear()
+      // Debounce auth expired events to prevent rapid successive calls
+      if (authExpiredTimeout) {
+        clearTimeout(authExpiredTimeout)
+      }
+      
+      authExpiredTimeout = setTimeout(() => {
+        // Clear local storage
+        safeLocalStorage.clear()
 
-      // Dispatch a custom event that components can listen for
-      window.dispatchEvent(new CustomEvent('auth:expired'))
+        // Dispatch a custom event that components can listen for
+        window.dispatchEvent(new CustomEvent('auth:expired'))
+        authExpiredTimeout = null
+      }, 100) as unknown as number // 100ms debounce
     }
     return Promise.reject(error instanceof Error ? error : new Error(String(error)))
   },

@@ -169,7 +169,7 @@ const editSection = (index: number) => {
 
   // Calculate remaining marks excluding current section's marks
   const currentSectionMarks = sectionToEdit.requiredQuestions * sectionToEdit.marksPerQuestion
-  const remainingMarksExcludingCurrent = formComponent.value?.remainingMarks || 0
+  const remainingMarksExcludingCurrent = formComponent.value?.remainingMarks ?? 0
   const totalRemainingMarks = remainingMarksExcludingCurrent + currentSectionMarks
 
   console.log('AddPattern - Navigation params:', {

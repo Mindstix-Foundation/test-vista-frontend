@@ -49,8 +49,8 @@
             <div class="invalid-feedback">
               {{
                 isDuplicate(item.name, index)
-                  ? `This ${itemLabelPrefix.toLowerCase()} already exists`
-                  : `At least one ${itemLabelPrefix.toLowerCase()} is required`
+                  ? `This ${itemLabelPrefix.toLowerCase()} ${VALIDATION_MESSAGES.LIST.DUPLICATE}`
+                  : `At least one ${itemLabelPrefix.toLowerCase()} ${VALIDATION_MESSAGES.LIST.AT_LEAST_ONE_REQUIRED}`
               }}
             </div>
           </div>
@@ -61,7 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Define the item interface
 interface ListItem {
@@ -104,12 +105,85 @@ const focusedIndex = ref(-1)
 const draggedItemIndex = ref<number | null>(null)
 const dragOverItemIndex = ref<number | null>(null)
 
+// Auto-scroll state
+const autoScrollInterval = ref<number | null>(null)
+const isDragging = ref(false)
+
 // Computed
 const items = computed({
   get: () => props.modelValue,
   set: (value) => {
     emit('update:modelValue', value)
   },
+})
+
+// Auto-scroll functionality
+const startAutoScroll = (direction: 'up' | 'down', speed: number = 5) => {
+  if (autoScrollInterval.value) return // Already scrolling
+  
+  // Add visual indicator class to body
+  document.body.classList.add(`auto-scrolling-${direction}`)
+  
+  autoScrollInterval.value = window.setInterval(() => {
+    if (!isDragging.value) {
+      stopAutoScroll()
+      return
+    }
+    
+    const scrollAmount = direction === 'up' ? -speed : speed
+    window.scrollBy(0, scrollAmount)
+  }, 16) // ~60fps
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollInterval.value) {
+    clearInterval(autoScrollInterval.value)
+    autoScrollInterval.value = null
+  }
+  
+  // Remove visual indicator classes from body
+  document.body.classList.remove('auto-scrolling-up', 'auto-scrolling-down')
+}
+
+const handleDragOverForAutoScroll = (event: DragEvent) => {
+  if (!isDragging.value) return
+  
+  const viewportHeight = window.innerHeight
+  const mouseY = event.clientY
+  const scrollThreshold = 100 // pixels from edge to start scrolling
+  const maxSpeed = 15
+  
+  // Calculate distance from edges
+  const distanceFromTop = mouseY
+  const distanceFromBottom = viewportHeight - mouseY
+  
+  // Stop any existing auto-scroll
+  stopAutoScroll()
+  
+  // Check if we should scroll up
+  if (distanceFromTop < scrollThreshold && window.scrollY > 0) {
+    const speed = Math.max(3, maxSpeed * (1 - distanceFromTop / scrollThreshold))
+    startAutoScroll('up', speed)
+  }
+  // Check if we should scroll down
+  else if (distanceFromBottom < scrollThreshold) {
+    const speed = Math.max(3, maxSpeed * (1 - distanceFromBottom / scrollThreshold))
+    startAutoScroll('down', speed)
+  }
+}
+
+// Add global drag over listener for auto-scroll
+onMounted(() => {
+  if (props.draggable) {
+    document.addEventListener('dragover', handleDragOverForAutoScroll)
+  }
+})
+
+onUnmounted(() => {
+  if (props.draggable) {
+    document.removeEventListener('dragover', handleDragOverForAutoScroll)
+    stopAutoScroll()
+  }
 })
 
 // Check if an index refers to the last empty field
@@ -196,12 +270,12 @@ const handleEnterKey = (index: number, currentItem: ListItem, event: KeyboardEve
       document.querySelectorAll(
         'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )
-    ) as HTMLElement[]
+    )
     
     // Get current input
     const currentInput = document.getElementById(getInputId(index))
     if (currentInput) {
-      const currentIndex = allFocusable.indexOf(currentInput as HTMLElement)
+      const currentIndex = allFocusable.indexOf(currentInput)
       // Find the next input outside this component
       if (currentIndex > -1 && currentIndex < allFocusable.length - 1) {
         const nextElement = allFocusable[currentIndex + 1]
@@ -273,6 +347,7 @@ const getInputId = (index: number) => {
 // Drag and drop functionality
 const dragStart = (event: DragEvent, index: number) => {
   if (props.draggable && event.dataTransfer && !isLastEmptyField(index)) {
+    isDragging.value = true
     draggedItemIndex.value = index
     event.dataTransfer.effectAllowed = 'move'
     
@@ -316,44 +391,56 @@ const dragStart = (event: DragEvent, index: number) => {
   }
 }
 
+// Clear drag-over state from all item containers
+const clearDragOverState = () => {
+  document.querySelectorAll('.item-container').forEach(item => {
+    item.classList.remove('drag-over')
+  })
+}
+
+// Handle item shifting animation between source and target
+const updateItemShiftingClasses = (start: number, end: number, sourceIndex: number) => {
+  const containers = document.querySelectorAll('.item-container')
+  containers.forEach((container, idx) => {
+    const shouldShift = idx >= start && 
+                        idx <= end && 
+                        idx !== sourceIndex && 
+                        !isLastEmptyField(idx)
+    
+    container.classList.toggle('item-shifting', shouldShift)
+  })
+}
+
 const dragEnter = (event: DragEvent, index: number) => {
-  if (props.draggable && !isLastEmptyField(index)) {
-    // Only process if we're entering a different item
-    if (dragOverItemIndex.value !== index) {
-      // Clear previous drag-over state
-      document.querySelectorAll('.item-container').forEach(item => {
-        item.classList.remove('drag-over')
-      })
-      
-      dragOverItemIndex.value = index
-      const target = event.target as HTMLElement
-      const itemContainer = target.closest('.item-container')
-      
-      if (itemContainer) {
-        // Highlight the target position
-        itemContainer.classList.add('drag-over')
-        
-        // Animate all items between drag source and target
-        if (draggedItemIndex.value !== null) {
-          const start = Math.min(draggedItemIndex.value, index)
-          const end = Math.max(draggedItemIndex.value, index)
-          
-          const containers = document.querySelectorAll('.item-container')
-          containers.forEach((container, idx) => {
-            if (idx >= start && idx <= end && idx !== draggedItemIndex.value && !isLastEmptyField(idx)) {
-              container.classList.add('item-shifting')
-            } else {
-              container.classList.remove('item-shifting')
-            }
-          })
-        }
-      }
-    }
+  // Early return if conditions aren't met
+  if (!props.draggable || isLastEmptyField(index) || dragOverItemIndex.value === index) {
+    return
+  }
+
+  // Update drag-over state
+  clearDragOverState()
+  dragOverItemIndex.value = index
+  
+  const target = event.target as HTMLElement
+  const itemContainer = target.closest('.item-container')
+  if (!itemContainer) return
+  
+  // Highlight the target position
+  itemContainer.classList.add('drag-over')
+  
+  // Handle shifting animation only if we have a valid source
+  if (draggedItemIndex.value !== null) {
+    const start = Math.min(draggedItemIndex.value, index)
+    const end = Math.max(draggedItemIndex.value, index)
+    updateItemShiftingClasses(start, end, draggedItemIndex.value)
   }
 }
 
 const dragEnd = () => {
   if (props.draggable) {
+    isDragging.value = false
+    stopAutoScroll()
+    
     // Reset all classes and states
     const itemContainers = document.querySelectorAll('.item-container')
     itemContainers.forEach(item => {
@@ -467,6 +554,7 @@ watch(
   cursor: grab;
   color: #666;
   font-size: 0.9rem;
+  user-select: none;
 }
 
 .drag-handle:hover {
@@ -476,6 +564,41 @@ watch(
 /* Add animation transition for all items during drag */
 .row > .col-12 {
   transition: transform 0.15s ease-out, opacity 0.15s ease;
+}
+
+/* Auto-scroll indicators */
+body.auto-scrolling-up::before,
+body.auto-scrolling-down::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(13, 110, 253, 0.1), transparent);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+body.auto-scrolling-up::before {
+  top: 0;
+}
+
+body.auto-scrolling-down::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(13, 110, 253, 0.1), transparent);
+}
+
+/* Smooth scrolling for the entire page during drag */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Disable text selection during drag */
+.item-container.dragging * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 @keyframes slideInFromTop {

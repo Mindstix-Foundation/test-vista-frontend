@@ -133,6 +133,7 @@ import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 // Define component name (for linter)
 defineOptions({
@@ -178,10 +179,10 @@ const selectedStandardObj = ref<StandardItem | null>(null)
 const selectedSubjectObj = ref<SubjectItem | null>(null)
 
 // Computed values for form values
-const selectedBoard = computed(() => selectedBoardObj.value?.id?.toString() || '')
-const selectedInstructionMedium = computed(() => selectedMediumObj.value?.id?.toString() || '')
-const selectedStandard = computed(() => selectedStandardObj.value?.id?.toString() || '')
-const selectedSubject = computed(() => selectedSubjectObj.value?.subject_id?.toString() || '')
+const selectedBoard = computed(() => selectedBoardObj.value?.id?.toString() ?? '')
+const selectedInstructionMedium = computed(() => selectedMediumObj.value?.id?.toString() ?? '')
+const selectedStandard = computed(() => selectedStandardObj.value?.id?.toString() ?? '')
+const selectedSubject = computed(() => selectedSubjectObj.value?.subject_id?.toString() ?? '')
 
 // Options for dropdowns
 const boards = ref<BoardItem[]>([])
@@ -282,7 +283,7 @@ const handleStandardChange = async () => {
 // View syllabus function
 const viewSyllabus = async () => {
   if (!isFormValid.value) {
-    showErrorToast('Please fill all required fields')
+    showErrorToast(VALIDATION_MESSAGES.FORM.FILL_ALL_REQUIRED)
     return
   }
   
@@ -293,15 +294,15 @@ const viewSyllabus = async () => {
     const queryParams = {
       // Display names for UI
       board: encodeURIComponent(selectedBoardObj.value ? `${selectedBoardObj.value.name} (${selectedBoardObj.value.abbreviation})` : ''),
-      medium: encodeURIComponent(selectedMediumObj.value?.instruction_medium || ''),
-      standard: encodeURIComponent(selectedStandardObj.value?.name || ''),
-      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name || ''),
+      medium: encodeURIComponent(selectedMediumObj.value?.instruction_medium ?? ''),
+      standard: encodeURIComponent(selectedStandardObj.value?.name ?? ''),
+      subject: encodeURIComponent(selectedSubjectObj.value?.subject_name ?? ''),
       
       // IDs for API calls
-      boardId: selectedBoardObj.value?.id.toString() || '',
-      mediumId: selectedMediumObj.value?.id.toString() || '',
-      standardId: selectedStandardObj.value?.id.toString() || '',
-      subjectId: selectedSubjectObj.value?.subject_id.toString() || ''
+      boardId: selectedBoardObj.value?.id.toString() ?? '',
+      mediumId: selectedMediumObj.value?.id.toString() ?? '',
+      standardId: selectedStandardObj.value?.id.toString() ?? '',
+      subjectId: selectedSubjectObj.value?.subject_id.toString() ?? ''
     }
     
     // Navigate to the detailed view page with query parameters
@@ -360,12 +361,7 @@ onMounted(async () => {
   try {
     // Fetch boards from API
     const response = await axiosInstance.get('/boards')
-    if (response.data && response.data.data) {
-      boards.value = response.data.data
-    } else {
-      console.error('Unexpected API response format for boards:', response.data)
-      boards.value = []
-    }
+    boards.value = response.data?.data ?? []
   } catch (error) {
     console.error('Error loading boards:', error)
     showErrorToast('Failed to load boards. Please refresh the page and try again.')

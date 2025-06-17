@@ -32,7 +32,7 @@
               required
             />
             <label for="floatingQueNum">Q.</label>
-            <div class="invalid-feedback">Please enter a valid question number greater than 0</div>
+            <div class="invalid-feedback">{{ VALIDATION_MESSAGES.SECTION.QUESTION_NUMBER }}</div>
           </div>
 
           <!-- Sub Question -->
@@ -50,10 +50,9 @@
               v-model="formData.subQuestion"
               @input="handleSectionHeaderInput"
               @blur="handleSectionHeaderBlur"
-              required
             />
             <label for="floatingSubQue">Sub Q.</label>
-            <div class="invalid-feedback">Please enter a sub question</div>
+            <div class="invalid-feedback">{{ VALIDATION_MESSAGES.SECTION.SUB_QUESTION }}</div>
           </div>
 
           <!-- Section Name -->
@@ -74,9 +73,9 @@
               required
             />
             <label for="floatingSection">Section Name / Main Question</label>
-            <div class="invalid-feedback">Please enter a section name</div>
+            <div class="invalid-feedback">{{ VALIDATION_MESSAGES.SECTION.NAME }}</div>
           </div>
-          <div class="invalid-feedback">Please fill in all section header fields</div>
+          <div class="invalid-feedback">{{ VALIDATION_MESSAGES.SECTION.HEADER_FIELDS }}</div>
         </div>
       </div>
 
@@ -103,7 +102,7 @@
                 required
               />
               <label for="totalQuestion">Total Questions</label>
-              <div class="invalid-feedback">Please enter total questions</div>
+              <div class="invalid-feedback">{{ VALIDATION_MESSAGES.SECTION.TOTAL_QUESTIONS }}</div>
             </div>
           </div>
 
@@ -127,7 +126,7 @@
                 required
               />
               <label for="requiredQuestion">Mandatory Question</label>
-              <div class="invalid-feedback">Please enter required questions</div>
+              <div class="invalid-feedback">{{ VALIDATION_MESSAGES.SECTION.REQUIRED_QUESTIONS }}</div>
             </div>
           </div>
 
@@ -154,9 +153,9 @@
               <div class="invalid-feedback">
                 {{
                   formData.marksPerQuestion === ''
-                    ? 'Please enter marks per question'
+                    ? VALIDATION_MESSAGES.SECTION.MARKS_PER_QUESTION
                     : Number(formData.marksPerQuestion) <= 0
-                      ? 'Marks per question must be greater than 0'
+                      ? VALIDATION_MESSAGES.SECTION.MARKS_GREATER_THAN_ZERO
                       : `Total section marks (${Number(formData.requiredQuestions) * Number(formData.marksPerQuestion)}) exceeds the available marks (${availableMarks}). Please enter a smaller value.`
                 }}
               </div>
@@ -282,6 +281,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
 import axiosInstance from '@/config/axios'
+import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 export interface SectionFormData {
   questionNumber: string
@@ -460,7 +460,7 @@ onMounted(async () => {
       selectedQuestionTypes.value = props.initialSectionData.questionTypes.map((type) => {
         const found = questionTypes.value.find((qt) => qt.type_name === type)
         console.log(`Finding match for type ${type}:`, found)
-        return found || null
+        return found ?? null
       })
       console.log('Set selectedQuestionTypes to:', selectedQuestionTypes.value)
     }
@@ -472,9 +472,9 @@ watch(selectedQuestionType, (newValue) => {
   console.log('Watch - Selected question type changed:', newValue)
   if (formData.value.sameType) {
     console.log('Updating form data with new question type:', newValue?.type_name)
-    formData.value.questionType = newValue?.type_name || ''
+    formData.value.questionType = newValue?.type_name ?? ''
     formData.value.questionTypes = Array(Number(formData.value.totalQuestions)).fill(
-      newValue?.type_name || '',
+      newValue?.type_name ?? '',
     )
     console.log('Updated form data:', formData.value)
   }
@@ -493,10 +493,10 @@ watch(
         const currentTypes = [...formData.value.questionTypes]
         formData.value.questionTypes = Array(numValue)
           .fill('')
-          .map((_, i) => currentTypes[i] || '')
+          .map((_, i) => currentTypes[i] ?? '')
         selectedQuestionTypes.value = Array(numValue)
           .fill(null)
-          .map((_, i) => selectedQuestionTypes.value[i] || null)
+          .map((_, i) => selectedQuestionTypes.value[i] ?? null)
         // Initialize touched state for each question type
         questionTypeTouched.value = Array(numValue)
           .fill(false)
@@ -557,7 +557,8 @@ const isQuestionNumberValid = computed(() => {
 })
 
 const isSubQuestionValid = computed(() => {
-  return formData.value.subQuestion.trim() !== ''
+  // Sub question is now optional, so it's always valid (can be empty or have content)
+  return true
 })
 
 const isSectionNameValid = computed(() => {
@@ -565,7 +566,7 @@ const isSectionNameValid = computed(() => {
 })
 
 const isSectionHeaderValid = computed(() => {
-  return isQuestionNumberValid.value && isSubQuestionValid.value && isSectionNameValid.value
+  return isQuestionNumberValid.value && isSectionNameValid.value
 })
 
 const showSectionHeaderError = computed(() => {
@@ -705,7 +706,7 @@ const handleIndividualQuestionTypeInput = (value: unknown, index: number) => {
   
   // Update the question type value
   const questionType = value as QuestionType | null
-  formData.value.questionTypes[index] = questionType?.type_name || ''
+  formData.value.questionTypes[index] = questionType?.type_name ?? ''
   
   // Check if all question types are valid
   const allTypesValid = formData.value.questionTypes.every((type) => type.trim() !== '')
