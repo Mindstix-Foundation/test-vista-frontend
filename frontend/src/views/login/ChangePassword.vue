@@ -203,6 +203,8 @@ const changePassword = async () => {
       const userRole = authStore.userRole
       if (userRole === 'TEACHER') {
         router.push({ name: 'teacherProfile' })
+      } else if (userRole === 'STUDENT') {
+        router.push({ name: 'studentProfile' })
       } else {
         router.push({ name: 'adminProfile' })
       }
@@ -238,6 +240,8 @@ const goToProfile = () => {
   const userRole = authStore.userRole
   if (userRole === 'TEACHER') {
     router.push({ name: 'teacherProfile' })
+  } else if (userRole === 'STUDENT') {
+    router.push({ name: 'studentProfile' })
   } else {
     router.push({ name: 'adminProfile' })
   }
