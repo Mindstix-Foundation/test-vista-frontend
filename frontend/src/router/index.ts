@@ -9,12 +9,13 @@ import LoginHomepage from '@/views/login/LoginHomepage.vue'
 import ForgetPassword from '@/views/login/ForgetPassword.vue'
 import ResetPassword from '@/views/login/ResetPassword.vue'
 import ChangePassword from '@/views/login/ChangePassword.vue'
+import StudentRegistration from '@/views/login/StudentRegistration.vue'
 import AdminProfile from '@/views/admin/profile/AdminProfile.vue'
 import TeacherProfile from '@/views/teacher/profile/TeacherProfile.vue'
 import { useAuthStore } from '@/stores/auth'
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/change-password']
+const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/change-password', '/student-registration']
 
 // Update the route meta type
 declare module 'vue-router' {
@@ -29,6 +30,12 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: LoginHomepage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/student-registration',
+    name: 'studentRegistration',
+    component: StudentRegistration,
     meta: { requiresAuth: false },
   },
   {

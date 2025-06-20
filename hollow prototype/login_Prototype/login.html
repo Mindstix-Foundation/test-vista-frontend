@@ -89,7 +89,13 @@
             </div>
 
             <button class="btn btn-primary w-100 mb-2" onclick="login()">Log In</button>
-            <button class="btn btn-link text-decoration-none w-100" onclick="forgotPassword()">Forgot Password?</button>
+            <button class="btn btn-link text-decoration-none w-100 mb-2" onclick="forgotPassword()">Forgot Password?</button>
+            
+            <!-- Register Student Button -->
+            <div class="text-center mt-3">
+                <p class="text-muted">Don't have an account?</p>
+                <button class="btn btn-outline-primary w-100" onclick="registerStudent()">Register as Student</button>
+            </div>
 
             <!-- Error message below login -->
             <div id="error-message" class="error-message"></div>
@@ -158,6 +164,11 @@
         function forgotPassword() {
             // Redirect to the forgotPassword.html page
             window.location.href = 'forgetPassword.html';
+        }
+
+        function registerStudent() {
+            // Redirect to the student registration page
+            window.location.href = 'studentRegistration.html';
         }
     </script>
 
