@@ -48,50 +48,30 @@
                 </div>
               </div>
 
-              <!-- School Name -->
+              <!-- Email ID -->
               <div class="row mb-2">
-                <label for="schoolName" class="col-12 col-lg-3 col-form-label fw-bold"
-                  >School Name:</label
-                >
+                <label for="emailId" class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
                 <div class="col-12 col-lg-9">
                   <input
                     type="text"
                     readonly
                     class="form-control-plaintext"
-                    id="schoolName"
-                    :value="profile.school_name || 'Not assigned'"
+                    id="emailId"
+                    :value="profile.email_id"
                   />
                 </div>
               </div>
 
-              <!-- Student ID -->
+              <!-- Date of Birth -->
               <div class="row mb-2">
-                <label for="studentId" class="col-12 col-lg-3 col-form-label fw-bold"
-                  >Student ID:</label
-                >
+                <label for="dateOfBirth" class="col-12 col-lg-3 col-form-label fw-bold">Date of Birth:</label>
                 <div class="col-12 col-lg-9">
                   <input
                     type="text"
                     readonly
                     class="form-control-plaintext"
-                    id="studentId"
-                    :value="profile.student_id || 'Not assigned'"
-                  />
-                </div>
-              </div>
-
-              <!-- Standard -->
-              <div class="row mb-2">
-                <label for="standard" class="col-12 col-lg-3 col-form-label fw-bold"
-                  >Standard:</label
-                >
-                <div class="col-12 col-lg-9">
-                  <input
-                    type="text"
-                    readonly
-                    class="form-control-plaintext"
-                    id="standard"
-                    :value="profile.standard || 'Not assigned'"
+                    id="dateOfBirth"
+                    :value="formatDateOfBirth(profile.date_of_birth)"
                   />
                 </div>
               </div>
@@ -132,16 +112,50 @@
                 </div>
               </div>
 
-              <!-- Email -->
+              <!-- School Name -->
               <div class="row mb-2">
-                <label for="emailId" class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
+                <label for="schoolName" class="col-12 col-lg-3 col-form-label fw-bold"
+                  >School Name:</label
+                >
                 <div class="col-12 col-lg-9">
                   <input
                     type="text"
                     readonly
                     class="form-control-plaintext"
-                    id="emailId"
-                    :value="profile.email_id"
+                    id="schoolName"
+                    :value="profile.school_name || 'Not assigned'"
+                  />
+                </div>
+              </div>
+
+              <!-- Standard -->
+              <div class="row mb-2">
+                <label for="standard" class="col-12 col-lg-3 col-form-label fw-bold"
+                  >Standard:</label
+                >
+                <div class="col-12 col-lg-9">
+                  <input
+                    type="text"
+                    readonly
+                    class="form-control-plaintext"
+                    id="standard"
+                    :value="profile.standard || 'Not assigned'"
+                  />
+                </div>
+              </div>
+
+              <!-- Student ID -->
+              <div class="row mb-2">
+                <label for="studentId" class="col-12 col-lg-3 col-form-label fw-bold"
+                  >Student ID:</label
+                >
+                <div class="col-12 col-lg-9">
+                  <input
+                    type="text"
+                    readonly
+                    class="form-control-plaintext"
+                    id="studentId"
+                    :value="profile.student_id || 'Not assigned'"
                   />
                 </div>
               </div>
@@ -227,6 +241,7 @@ interface Profile {
   contact_number: string
   alternate_contact_number?: string
   student_id?: string
+  date_of_birth?: string
   school_name?: string
   standard?: string
   roles: Role[]
@@ -236,6 +251,25 @@ interface Profile {
 const profile = ref<Profile>({} as Profile)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+/**
+ * Format date of birth for display
+ */
+const formatDateOfBirth = (dateString?: string): string => {
+  if (!dateString) return 'Not provided'
+  
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return 'Invalid date'
+  }
+}
 
 /**
  * Fetch user profile data from API

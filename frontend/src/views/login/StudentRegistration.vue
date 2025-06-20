@@ -47,91 +47,113 @@
             </div>
           </div>
 
-          <div class="col col-12 col-sm-10 col-md-8">
-            <div class="form-floating">
-              <input
-                ref="emailInput"
-                type="email"
-                class="form-control"
-                :class="{
-                  'is-valid': validationStates.emailId.valid && validationStates.emailId.touched,
-                  'is-invalid': !validationStates.emailId.valid && validationStates.emailId.touched,
-                }"
-                id="emailId"
-                v-model="formData.emailId"
-                placeholder="Enter Email Address"
-                @input="handleEmailInput"
-                @blur="handleEmailBlur"
-                @keydown="handleKeyDown($event, 'password')"
-                required
-              />
-              <label for="emailId" class="form-label">Email Address <span class="text-danger">*</span></label>
-              <div
-                class="invalid-feedback"
-                v-if="!validationStates.emailId.valid && validationStates.emailId.touched"
-              >
-                {{ emailErrorMessage }}
-              </div>
-            </div>
-          </div>
-
+          <!-- Email and Date of Birth -->
           <div class="col col-12 col-sm-10 col-md-8">
             <div class="row g-3 justify-content-center">
               <div class="col-12 col-md-6">
                 <div class="form-floating">
                   <input
-                    ref="passwordInput"
-                    type="password"
+                    ref="emailInput"
+                    type="email"
                     class="form-control"
                     :class="{
-                      'is-invalid': !validationStates.password.valid && validationStates.password.touched,
-                      'is-valid': validationStates.password.valid && validationStates.password.touched,
+                      'is-valid': validationStates.emailId.valid && validationStates.emailId.touched,
+                      'is-invalid': !validationStates.emailId.valid && validationStates.emailId.touched,
                     }"
-                    id="password"
-                    v-model="formData.password"
-                    placeholder="Enter Password"
-                    @input="handlePasswordInput"
-                    @keydown="handleKeyDown($event, 'confirmPassword')"
+                    id="emailId"
+                    v-model="formData.emailId"
+                    placeholder="Enter Email Address"
+                    @input="handleEmailInput"
+                    @blur="handleEmailBlur"
+                    @keydown="handleKeyDown($event, 'dateOfBirth')"
                     required
                   />
-                  <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                  <label for="emailId" class="form-label">Email Address <span class="text-danger">*</span></label>
                   <div
                     class="invalid-feedback"
-                    v-if="!validationStates.password.valid && validationStates.password.touched"
+                    v-if="!validationStates.emailId.valid && validationStates.emailId.touched"
                   >
-                    {{ VALIDATION_MESSAGES.PASSWORD.COMPLEXITY }}
+                    {{ emailErrorMessage }}
                   </div>
                 </div>
               </div>
               <div class="col-12 col-md-6">
-                <div class="form-floating">
+                <div class="form-floating date-picker-container">
                   <input
-                    ref="confirmPasswordInput"
-                    type="password"
-                    class="form-control"
-                    :class="{
-                      'is-invalid': !validationStates.confirmPassword.valid && validationStates.confirmPassword.touched,
-                      'is-valid': validationStates.confirmPassword.valid && validationStates.confirmPassword.touched,
-                    }"
-                    id="confirmPassword"
-                    v-model="formData.confirmPassword"
-                    placeholder="Confirm Password"
-                    @input="handleConfirmPasswordInput"
+                    ref="dateOfBirthInput"
+                    type="text"
+                    class="form-control date-picker-input"
+                    id="dateOfBirth"
+                    v-model="formattedDateOfBirth"
+                    placeholder="dd/mm/yyyy"
+                    @input="handleDateInput"
+                    @blur="handleDateBlur"
+                    @focus="showDatePicker"
                     @keydown="handleKeyDown($event, 'contactNumber')"
-                    required
+                    readonly
                   />
-                  <label for="confirmPassword" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                  <div
-                    class="invalid-feedback"
-                    v-if="!validationStates.confirmPassword.valid && validationStates.confirmPassword.touched"
-                  >
-                    {{ VALIDATION_MESSAGES.PASSWORD.MISMATCH }}
+                  <label for="dateOfBirth" class="form-label">Date of Birth</label>
+                  <div class="calendar-icon" @click="showDatePicker">
+                    <i class="bi bi-calendar3"></i>
+                  </div>
+                  
+                  <!-- Custom Date Picker -->
+                  <div v-if="showDatePickerModal" class="date-picker-modal" @click.stop>
+                    <div class="date-picker-header">
+                      <button type="button" @click="previousMonth" class="nav-btn">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                      
+                      <div class="month-year-selectors">
+                        <select v-model="currentMonth" class="month-select">
+                          <option v-for="(month, index) in monthNames" :key="index" :value="index">
+                            {{ month }}
+                          </option>
+                        </select>
+                        <select v-model="currentYear" class="year-select">
+                          <option v-for="year in yearOptions" :key="year" :value="year">
+                            {{ year }}
+                          </option>
+                        </select>
+                      </div>
+                      
+                      <button type="button" @click="nextMonth" class="nav-btn">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </div>
+                    
+                    <div class="date-picker-calendar">
+                      <div class="weekdays">
+                        <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+                      </div>
+                      <div class="days">
+                        <div 
+                          v-for="date in calendarDays" 
+                          :key="date.key"
+                          class="day"
+                          :class="{
+                            'other-month': !date.isCurrentMonth,
+                            'selected': date.isSelected,
+                            'today': date.isToday
+                          }"
+                          @click="selectDate(date)"
+                        >
+                          {{ date.day }}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="date-picker-footer">
+                      <button type="button" @click="clearDate" class="btn btn-outline-secondary btn-sm">Clear</button>
+                      <button type="button" @click="closeDatePicker" class="btn btn-primary btn-sm">Done</button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+          <!-- Contact Numbers -->
           <div class="col col-12 col-sm-10 col-md-8">
             <div class="row g-3 justify-content-center">
               <div class="col-12 col-md-6">
@@ -174,7 +196,7 @@
                     v-model="formData.alternateContactNumber"
                     placeholder="Enter Alternate Contact Number"
                     @input="handleAlternateContactInput"
-                    @keydown="handleKeyDown($event, 'dateOfBirth')"
+                    @keydown="handleKeyDown($event, 'board')"
                   />
                   <label for="alternateContactNumber" class="form-label">Alternate Contact Number (Optional)</label>
                   <div
@@ -185,20 +207,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="col col-12 col-sm-10 col-md-8">
-            <div class="date-input-container">
-              <input
-                ref="dateOfBirthInput"
-                type="date"
-                class="form-control date-input"
-                id="dateOfBirth"
-                v-model="formData.dateOfBirth"
-                @keydown="handleKeyDown($event, 'board')"
-              />
-              <label for="dateOfBirth" class="date-label">Date of Birth</label>
             </div>
           </div>
 
@@ -263,7 +271,7 @@
             </div>
           </div>
 
-          <!-- Standard and Student ID in 50-50 layout -->
+          <!-- Standard and Student ID -->
           <div class="col col-12 col-sm-10 col-md-8">
             <div class="row g-3 justify-content-center">
               <div class="col-12 col-md-6">
@@ -308,6 +316,7 @@
                     v-model="formData.studentId"
                     placeholder="Enter Student ID"
                     @input="handleStudentIdInput"
+                    @keydown="handleKeyDown($event, 'password')"
                     :disabled="!formData.schoolStandardId"
                     required
                   />
@@ -323,6 +332,70 @@
                     v-if="!formData.schoolStandardId"
                   >
                     {{ VALIDATION_MESSAGES.STUDENT.SELECT_STANDARD_FIRST }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Fields -->
+          <div class="col col-12 col-sm-10 col-md-8">
+            <div class="row g-3 justify-content-center">
+              <div class="col-12 col-md-6">
+                <div class="form-floating password-field">
+                  <input
+                    ref="passwordInput"
+                    :type="showPassword ? 'text' : 'password'"
+                    class="form-control"
+                    :class="{
+                      'is-invalid': !validationStates.password.valid && validationStates.password.touched,
+                      'is-valid': validationStates.password.valid && validationStates.password.touched,
+                    }"
+                    id="password"
+                    v-model="formData.password"
+                    placeholder="Enter Password"
+                    @input="handlePasswordInput"
+                    @keydown="handleKeyDown($event, 'confirmPassword')"
+                    required
+                  />
+                  <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                  <div class="password-toggle" @click="togglePasswordVisibility">
+                    <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                  </div>
+                  <div
+                    class="invalid-feedback"
+                    v-if="!validationStates.password.valid && validationStates.password.touched"
+                  >
+                    {{ VALIDATION_MESSAGES.PASSWORD.COMPLEXITY }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-floating password-field">
+                  <input
+                    ref="confirmPasswordInput"
+                    :type="showConfirmPassword ? 'text' : 'password'"
+                    class="form-control"
+                    :class="{
+                      'is-invalid': !validationStates.confirmPassword.valid && validationStates.confirmPassword.touched,
+                      'is-valid': validationStates.confirmPassword.valid && validationStates.confirmPassword.touched,
+                    }"
+                    id="confirmPassword"
+                    v-model="formData.confirmPassword"
+                    placeholder="Confirm Password"
+                    @input="handleConfirmPasswordInput"
+                    @keydown="handleKeyDown($event, 'submit')"
+                    required
+                  />
+                  <label for="confirmPassword" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                  <div class="password-toggle" @click="toggleConfirmPasswordVisibility">
+                    <i :class="showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                  </div>
+                  <div
+                    class="invalid-feedback"
+                    v-if="!validationStates.confirmPassword.valid && validationStates.confirmPassword.touched"
+                  >
+                    {{ VALIDATION_MESSAGES.PASSWORD.MISMATCH }}
                   </div>
                 </div>
               </div>
@@ -357,7 +430,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import LoginNavBar from '@/components/LoginNavBar.vue'
 import SearchableDropdown from '@/components/common/SearchableDropdown.vue'
@@ -422,6 +495,72 @@ const contactInput = ref<HTMLInputElement | null>(null)
 const alternateContactInput = ref<HTMLInputElement | null>(null)
 const dateOfBirthInput = ref<HTMLInputElement | null>(null)
 const studentIdInput = ref<HTMLInputElement | null>(null)
+
+// Add refs for password visibility
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+// Date picker variables
+const showDatePickerModal = ref(false)
+const selectedDate = ref<Date | null>(null)
+const currentMonth = ref(new Date().getMonth())
+const currentYear = ref(new Date().getFullYear())
+const formattedDateOfBirth = ref('')
+
+// Date picker computed properties
+const currentMonthYear = computed(() => {
+  const date = new Date(currentYear.value, currentMonth.value)
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
+
+const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
+const yearOptions = computed(() => {
+  const currentYear = new Date().getFullYear()
+  const years = []
+  // Generate years from 100 years ago to current year
+  for (let year = currentYear - 100; year <= currentYear; year++) {
+    years.push(year)
+  }
+  return years.reverse() // Most recent years first
+})
+
+const calendarDays = computed(() => {
+  const days = []
+  const firstDay = new Date(currentYear.value, currentMonth.value, 1)
+  const lastDay = new Date(currentYear.value, currentMonth.value + 1, 0)
+  const today = new Date()
+  
+  // Add days from previous month
+  const startDate = new Date(firstDay)
+  startDate.setDate(startDate.getDate() - firstDay.getDay())
+  
+  // Generate 42 days (6 weeks)
+  for (let i = 0; i < 42; i++) {
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + i)
+    
+    const isCurrentMonth = date.getMonth() === currentMonth.value
+    const isToday = date.toDateString() === today.toDateString()
+    const isSelected = selectedDate.value && date.toDateString() === selectedDate.value.toDateString()
+    
+    days.push({
+      day: date.getDate(),
+      date: date,
+      isCurrentMonth,
+      isToday,
+      isSelected,
+      key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+    })
+  }
+  
+  return days
+})
 
 // Add computed property for student ID error message
 const studentIdErrorMessage = ref('')
@@ -743,12 +882,147 @@ const handleKeyDown = (event: KeyboardEvent, nextFieldId: string) => {
   }
 }
 
+// Add methods for password visibility toggle
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
+}
+
+const toggleConfirmPasswordVisibility = () => {
+  showConfirmPassword.value = !showConfirmPassword.value
+}
+
+// Date picker methods
+const formatDateToDDMMYYYY = (date: Date): string => {
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
+const formatDateToYYYYMMDD = (date: Date): string => {
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const year = date.getFullYear()
+  return `${year}-${month}-${day}`
+}
+
+const parseDDMMYYYY = (dateString: string): Date | null => {
+  const parts = dateString.split('/')
+  if (parts.length !== 3) return null
+  
+  const day = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10) - 1
+  const year = parseInt(parts[2], 10)
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null
+  
+  const date = new Date(year, month, day)
+  if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
+    return null
+  }
+  
+  return date
+}
+
+const showDatePicker = () => {
+  showDatePickerModal.value = true
+  // Set current month/year to selected date or current date
+  if (selectedDate.value) {
+    currentMonth.value = selectedDate.value.getMonth()
+    currentYear.value = selectedDate.value.getFullYear()
+  }
+}
+
+const closeDatePicker = () => {
+  showDatePickerModal.value = false
+}
+
+const selectDate = (dateObj: any) => {
+  selectedDate.value = dateObj.date
+  formattedDateOfBirth.value = formatDateToDDMMYYYY(dateObj.date)
+  formData.dateOfBirth = formatDateToYYYYMMDD(dateObj.date) // Use timezone-safe formatting
+  showDatePickerModal.value = false
+}
+
+const clearDate = () => {
+  selectedDate.value = null
+  formattedDateOfBirth.value = ''
+  formData.dateOfBirth = ''
+  showDatePickerModal.value = false
+}
+
+const previousMonth = () => {
+  if (currentMonth.value === 0) {
+    currentMonth.value = 11
+    currentYear.value--
+  } else {
+    currentMonth.value--
+  }
+}
+
+const nextMonth = () => {
+  if (currentMonth.value === 11) {
+    currentMonth.value = 0
+    currentYear.value++
+  } else {
+    currentMonth.value++
+  }
+}
+
+const handleDateInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = target.value
+  
+  // Allow only numbers and forward slashes
+  const sanitized = value.replace(/[^\d/]/g, '')
+  
+  // Auto-format as user types
+  let formatted = sanitized
+  if (sanitized.length >= 2 && sanitized.indexOf('/') === -1) {
+    formatted = sanitized.substring(0, 2) + '/' + sanitized.substring(2)
+  }
+  if (sanitized.length >= 5 && sanitized.split('/').length === 2) {
+    const parts = sanitized.split('/')
+    formatted = parts[0] + '/' + parts[1].substring(0, 2) + '/' + parts[1].substring(2)
+  }
+  
+  formattedDateOfBirth.value = formatted
+}
+
+const handleDateBlur = () => {
+  const date = parseDDMMYYYY(formattedDateOfBirth.value)
+  if (date) {
+    selectedDate.value = date
+    formData.dateOfBirth = formatDateToYYYYMMDD(date) // Use timezone-safe formatting
+    formattedDateOfBirth.value = formatDateToDDMMYYYY(date)
+  } else if (formattedDateOfBirth.value.trim()) {
+    // Invalid date format, clear it
+    formattedDateOfBirth.value = ''
+    selectedDate.value = null
+    formData.dateOfBirth = ''
+  }
+}
+
 // Initialize
 onMounted(() => {
   fetchBoards()
   nextTick(() => {
     nameInput.value?.focus()
   })
+  
+  // Close date picker when clicking outside
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement
+    const datePickerContainer = target.closest('.date-picker-container')
+    if (!datePickerContainer && showDatePickerModal.value) {
+      showDatePickerModal.value = false
+    }
+  })
+})
+
+// Clean up event listener
+onBeforeUnmount(() => {
+  document.removeEventListener('click', () => {})
 })
 </script>
 
@@ -767,75 +1041,186 @@ body {
   background-color: #FBFBFB;
 }
 
-/* Date input styling */
-.date-input-container {
+/* Modern Date Picker Styling */
+.date-picker-container {
   position: relative;
-  margin-bottom: 1rem;
 }
 
-.date-input {
-  height: calc(3.5rem + 2px);
-  padding: 1rem 0.75rem 0.25rem 0.75rem;
+.date-picker-input {
+  cursor: pointer;
   background-color: #FBFBFB;
-  border: 1px solid #ced4da;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  line-height: 1.25;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+  font-size: 1.1rem;
+  padding: 4px;
+}
+
+.calendar-icon:hover {
+  color: #495057;
+}
+
+.date-picker-modal {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  margin-top: 4px;
+  overflow: hidden;
   width: 100%;
 }
 
-.date-input:focus {
-  border-color: #86b7fe;
-  outline: 0;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+.date-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
 }
 
-.date-label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  padding: 1rem 0.75rem;
-  pointer-events: none;
-  border: 1px solid transparent;
-  transform-origin: 0 0;
-  transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
-  color: #6c757d;
-  font-size: 0.875rem;
-  opacity: 0.65;
-  transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+.month-year-selectors {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
-/* Date input webkit styling */
-.date-input::-webkit-calendar-picker-indicator {
-  background: transparent;
-  bottom: 0;
-  color: transparent;
+.month-select,
+.year-select {
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  background-color: white;
+  color: #495057;
   cursor: pointer;
-  height: auto;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: auto;
+  outline: none;
 }
 
-.date-input::-webkit-inner-spin-button,
-.date-input::-webkit-clear-button {
-  display: none;
+.month-select:focus,
+.year-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.25);
 }
 
-.error-message {
-  color: red;
-  font-size: 0.875rem;
-  margin-top: 5px;
+.month-select {
+  min-width: 80px;
 }
 
-.success-message {
-  color: green;
-  font-size: 0.875rem;
-  margin-top: 5px;
+.year-select {
+  min-width: 60px;
+}
+
+.month-year {
+  font-weight: 600;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.date-picker-calendar {
+  padding: 6px;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 3px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6c757d;
+  padding: 4px 2px;
+  text-transform: uppercase;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.day {
+  text-align: center;
+  padding: 6px 2px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day:hover {
+  background-color: #f8f9fa;
+}
+
+.day.other-month {
+  color: #adb5bd;
+}
+
+.day.today {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.day.selected {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+}
+
+.day.selected:hover {
+  background-color: #0056b3;
+}
+
+.date-picker-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+}
+
+.date-picker-footer .btn {
+  font-size: 0.8rem;
+  padding: 4px 10px;
 }
 
 /* Custom button styling */
@@ -906,5 +1291,60 @@ body {
 .form-control:disabled {
   background-color: #e9ecef;
   opacity: 1;
+}
+
+/* Password field styling for floating forms */
+.password-field {
+  position: relative;
+}
+
+.password-field .password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 1.75rem;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  margin-top: 0;
+}
+
+.password-field .password-toggle:hover {
+  color: #495057;
+}
+
+/* Adjust padding for password fields to accommodate the eye icon */
+.password-field .form-control {
+  padding-right: 2.5rem;
+}
+
+/* Override validation styling for password fields to account for eye icon */
+.password-field .form-control.is-valid {
+  padding-right: 5.5rem;
+  background-position: right calc(0.375em + 4rem) center;
+}
+
+.password-field .form-control.is-invalid {
+  padding-right: 5.5rem;
+  background-position: right calc(0.375em + 4rem) center;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.875rem;
+  margin-top: 5px;
+}
+
+.success-message {
+  color: green;
+  font-size: 0.875rem;
+  margin-top: 5px;
 }
 </style> 
