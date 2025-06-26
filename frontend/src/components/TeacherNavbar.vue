@@ -68,6 +68,16 @@
             </li>
             <li class="nav-item">
               <router-link
+                to="/teacher/manage-students"
+                class="nav-link pb-0"
+                id="navManageStudents"
+                @click="closeOffcanvas"
+              >
+                MANAGE STUDENTS
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link
                 to="/teacher/profile"
                 class="nav-link pb-0"
                 id="navProfile"

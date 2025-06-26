@@ -255,6 +255,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/syllabus/ViewSyllabus.vue'),
       },
       {
+        path: 'manage-students',
+        name: 'manageStudents',
+        component: () => import('@/views/teacher/manageStudents/ManageStudents.vue'),
+      },
+      {
         path: 'create-test-paper',
         name: 'createTestPaper',
         component: () => import('@/views/teacher/createTestPaper/createTestPaperDashboard.vue'),
@@ -306,6 +311,11 @@ const routes: RouteRecordRaw[] = [
         path: 'home',
         name: 'studentHome',
         component: () => import('@/views/student/home/StudentHome.vue'),
+      },
+      {
+        path: 'enroll',
+        name: 'studentEnroll',
+        component: () => import('@/views/student/enroll/SubjectEnrollment.vue'),
       },
       {
         path: 'exam',

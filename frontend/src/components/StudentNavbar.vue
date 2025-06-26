@@ -39,6 +39,16 @@
             <li class="nav-item">
               <router-link
                 class="nav-link pb-0"
+                id="navEnroll"
+                to="/student/enroll"
+                @click="closeOffcanvas"
+              >
+                <i class="bi bi-book-half me-1"></i>ENROLL
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link
+                class="nav-link pb-0"
                 id="navExam"
                 to="/student/exam"
                 @click="closeOffcanvas"
