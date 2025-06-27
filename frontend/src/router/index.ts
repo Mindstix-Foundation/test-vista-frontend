@@ -345,7 +345,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'exam',
         name: 'studentExam',
-        component: () => import('@/views/student/exam/StudentExam.vue'),
+        component: () => import('@/views/student/exam/AssignedTest.vue'),
       },
       {
         path: 'results',
@@ -356,16 +356,6 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         name: 'studentProfile',
         component: () => import('@/views/student/profile/StudentProfile.vue'),
-      },
-      {
-        path: 'practice',
-        name: 'studentPractice',
-        component: () => import('@/views/student/practice/StudentPractice.vue'),
-      },
-      {
-        path: 'test-series',
-        name: 'studentTestSeries',
-        component: () => import('@/views/student/test-series/StudentTestSeries.vue'),
       },
     ],
   },
