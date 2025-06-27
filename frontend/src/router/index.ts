@@ -240,6 +240,31 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/home/TeacherHome.vue'),
       },
       {
+        path: 'assign-online-test',
+        name: 'assignOnlineTest',
+        component: () => import('@/views/teacher/assignTest/assignTestDashboard.vue'),
+      },
+      {
+        path: 'assign-test/create',
+        name: 'createTestAssign',
+        component: () => import('@/views/teacher/assignTest/createTest.vue'),
+      },
+      {
+        path: 'assign-test/select-pattern',
+        name: 'selectTestPatternAssign',
+        component: () => import('@/views/teacher/assignTest/selectMcqPattern.vue'),
+      },
+      {
+        path: 'assign-test/chapter-marks',
+        name: 'createTestPaperDetailAssign',
+        component: () => import('@/views/teacher/assignTest/chapterMarksDistribution.vue'),
+      },
+      {
+        path: 'assign-test/preview-test-paper',
+        name: 'previewTestPaper',
+        component: () => import('@/views/teacher/assignTest/previewTestPaper.vue'),
+      },
+      {
         path: 'profile',
         name: 'teacherProfile',
         component: TeacherProfile,
