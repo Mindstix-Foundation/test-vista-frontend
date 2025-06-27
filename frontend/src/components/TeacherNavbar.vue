@@ -39,8 +39,22 @@
             <li class="nav-item">
               <router-link
                 class="nav-link pb-0"
+                :class="{ 'custom-active': isAssignTestActive }"
+                id="navAssignOnlineTest"
+                to="/teacher/assign-online-test"
+                :exact="false"
+                @click="closeOffcanvas"
+              >
+                ASSIGN ONLINE TEST
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link
+                class="nav-link pb-0"
+                :class="{ 'custom-active': isCreateTestPaperActive }"
                 id="navCreateTestPaper"
                 to="/teacher/create-test-paper"
+                :exact="false"
                 @click="closeOffcanvas"
               >
                 CREATE TEST PAPER
@@ -135,14 +149,31 @@
 
 <script setup lang="ts">
 import { Modal, Offcanvas } from 'bootstrap'
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 let logoutModal: Modal | null = null
 let offcanvasInstance: Offcanvas | null = null
+
+// Computed properties for custom active states
+const isAssignTestActive = computed(() => {
+  const path = route.path
+  return path === '/teacher/assign-online-test' || 
+         path.startsWith('/teacher/assign-test/')
+})
+
+const isCreateTestPaperActive = computed(() => {
+  const path = route.path
+  return path === '/teacher/create-test-paper' || 
+         path.startsWith('/teacher/create-test-paper') ||
+         path === '/teacher/select-test-pattern' ||
+         path === '/teacher/test-paper-preview' ||
+         path === '/teacher/save-test-paper'
+})
 
 onMounted(() => {
   const modalElement = document.getElementById('logoutModal')
@@ -282,6 +313,20 @@ const closeOffcanvas = () => {
 
 /* Active link styling */
 .router-link-active:not(.navbar-brand) {
+  font-weight: bold !important;
+  text-decoration: underline !important;
+  text-decoration-color: white !important;
+}
+
+/* Prevent default router-link-active on custom controlled links */
+#navAssignOnlineTest.router-link-active,
+#navCreateTestPaper.router-link-active {
+  font-weight: normal !important;
+  text-decoration: none !important;
+}
+
+/* Custom active state for grouped routes */
+.custom-active {
   font-weight: bold !important;
   text-decoration: underline !important;
   text-decoration-color: white !important;

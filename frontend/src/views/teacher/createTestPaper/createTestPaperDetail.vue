@@ -445,6 +445,12 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 
+// API Configuration
+const apiBaseUrl = import.meta.env.PROD
+  ? import.meta.env.VITE_API_URL
+  : 'http://localhost:3000' // Development API URL
+
+const authToken = localStorage.getItem('access_token')
 
 // User profile and school data interfaces
 interface UserProfile {
@@ -705,7 +711,8 @@ const processAllocationUpdate = () => {
   fetchTestPaperAllocation().then(() => {
     if (testPaperAllocation.value?.chapterMarks) {
       console.log('Got test paper allocation, updating chapter marks');
-      updateChapterMarksFromAllocation();
+      // Use the same function as Generate buttons to properly update pattern card
+      updateChapterMarksFromDistribution(testPaperAllocation.value);
       // Update available chapters for current view if needed
       fetchAvailableChapters(currentQuestionTypeId.value ?? 0);
     } else {
@@ -982,7 +989,8 @@ const fetchAndProcessAllocation = () => {
   fetchTestPaperAllocation().then(() => {
     // Update chapter marks based on the initialization we just did
     if (testPaperAllocation.value?.chapterMarks) {
-      updateChapterMarksFromAllocation();
+      // Use the same function as Generate buttons to properly update pattern card
+      updateChapterMarksFromDistribution(testPaperAllocation.value);
       
       // Set hasGeneratedDistribution to true since we just loaded allocation data
       hasGeneratedDistribution.value = true;
@@ -1052,7 +1060,7 @@ const fetchTestPaperAllocation = async () => {
     const mediumIds = resolveMediumIds();
     
     // Call the API endpoint with the current selected chapters
-    const response = await axiosInstance.get('/test-paper/allocation', {
+    const response = await axiosInstance.get('/create-test-paper/allocation', {
       params: {
         patternId: patternId,
         chapterIds: chapterIds.split(',').map(Number),
@@ -1072,7 +1080,8 @@ const fetchTestPaperAllocation = async () => {
       
       // Update chapter marks based on the allocation
       if (testPaperAllocation.value?.chapterMarks) {
-        updateChapterMarksFromAllocation();
+        // Use the same function as Generate buttons to properly update pattern card
+        updateChapterMarksFromDistribution(response.data);
         return response.data; // Return data for promise chaining
       } else {
         console.warn('No chapter marks found in test paper allocation response');
@@ -1524,7 +1533,27 @@ const fetchChapterMarksRanges = async () => {
   }
 };
 
-// Add a helper function to show error toast
+// Helper function to show success toast
+const showSuccessToast = (message: string) => {
+  const successToast = document.createElement('div');
+  successToast.className = 'alert alert-success alert-dismissible fade show fixed-top mx-auto mt-3';
+  successToast.style.width = '350px';
+  successToast.style.zIndex = '9999';
+  successToast.innerHTML = `
+    <strong>Success!</strong> ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  document.body.appendChild(successToast);
+  
+  // Remove the toast after 3 seconds
+  setTimeout(() => {
+    if (successToast.parentNode) {
+      document.body.removeChild(successToast);
+    }
+  }, 3000);
+};
+
+// Helper function to show error toast
 const showErrorToast = (message: string) => {
   const errorToast = document.createElement('div');
   errorToast.className = 'alert alert-danger alert-dismissible fade show fixed-top mx-auto mt-3';
@@ -1971,41 +2000,88 @@ watch(() => chapters.value, (newChapters) => {
 
 // Add a function to refresh the chapter marks distribution
 const refreshChapterMarksDistribution = async () => {
-  console.log('Manually refreshing chapter marks distribution...');
-  
-  // If we're already in the middle of an update, cancel it
-  if (allocationUpdateTimeout) {
-    clearTimeout(allocationUpdateTimeout);
+  if (isLoading.value || !absoluteMarks.value || chapters.value.length === 0) {
+    return;
   }
-  
-  // Show loading state
+
+  // Set loading state
   isLoading.value = true;
   
   try {
-    // Set pending flag to prevent watcher from triggering another API call
+    // Set flag to prevent allocation API triggering during update
     pendingAllocationUpdate.value = true;
+
+    // Prepare API parameters
+    const chapterIds = chapters.value.map(chapter => chapter.id);
     
-    // Fetch new allocation from API
-    await fetchTestPaperAllocation();
+    // Get medium ID from route or profile (same pattern as other functions)
+    const mediumId = route.query.mediumId ?? 
+                    userProfile.value?.teaching_subjects?.[0]?.medium?.id ?? 
+                    '1';
     
-    // Set flag to indicate user has generated distribution after changes
-    hasGeneratedDistribution.value = true;
+    const mediumIds = [parseInt(mediumId.toString())];
+    const patternIdNum = parseInt(patternId);
     
-    // Update question selections based on the new allocation
-    if (testPaperAllocation.value?.sectionAllocations) {
-      updateSelectedChaptersFromAllocation();
+    console.log('refreshChapterMarksDistribution API call parameters:', {
+      patternId: patternIdNum,
+      chapterIds,
+      mediumIds,
+      questionOrigin: 'both'
+    });
+    
+    // Call the test-paper allocation API
+    const response = await fetch(
+      `${apiBaseUrl}/create-test-paper/allocation?` + 
+      `patternId=${patternIdNum}&` +
+      `${chapterIds.map(id => `chapterIds=${id}`).join('&')}&` +
+      `${mediumIds.map(id => `mediumIds=${id}`).join('&')}&` +
+      `questionOrigin=both`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status: ${response.status}`);
     }
+
+    const allocationData = await response.json();
     
-    // Reset the pending flag AFTER everything is complete
-    setTimeout(() => {
-      pendingAllocationUpdate.value = false;
-    }, 500);
+    console.log('refreshChapterMarksDistribution API response:', allocationData);
+    
+    // Update chapter marks from API response
+    if (allocationData.chapterMarks && Array.isArray(allocationData.chapterMarks)) {
+      // Store the allocation data
+      testPaperAllocation.value = allocationData;
+      
+      // Use the same function as other Generate buttons to properly update pattern card
+      updateChapterMarksFromDistribution(allocationData);
+
+      // Set the generated distribution flag
+      hasGeneratedDistribution.value = true;
+
+      console.log('Marks distributed from API:', 
+        allocationData.chapterMarks.map(c => `${c.chapterName}: ${c.absoluteMarks}`));
+
+      // Show success message
+      // showSuccessToast('Marks distributed successfully from server!');
+    } else {
+      throw new Error('Invalid API response format');
+    }
+
   } catch (error) {
-    console.error('Error refreshing marks distribution:', error);
-    // Reset the flag in case of error
-    pendingAllocationUpdate.value = false;
+    console.error('Error in refreshChapterMarksDistribution:', error);
+    showErrorToast('Failed to get marks distribution from server. Please try again.');
   } finally {
-    isLoading.value = false;
+    // Reset loading state and pending flag after a short delay
+    setTimeout(() => {
+      isLoading.value = false;
+      pendingAllocationUpdate.value = false;
+    }, 100);
   }
 };
 
@@ -2019,7 +2095,7 @@ const generate = async () => {
     const { chapterIds, mediumId, requestedMarks, origin } = prepareDistributionParams();
     
     // Call the API endpoint with the required parameters
-    const response = await axiosInstance.get('/chapter-marks-distribution/distribute', {
+    const response = await axiosInstance.get('/create-test-paper/allocation', {
       params: {
         patternId,
         chapterIds,
@@ -2324,10 +2400,7 @@ h4 {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Chapter marks input styling */
-.input-group .form-control {
-  border-right: none;
-}
+
 
 .input-group .input-group-text {
   background-color: #f8f9fa;
