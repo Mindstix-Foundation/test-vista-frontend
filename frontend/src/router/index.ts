@@ -359,6 +359,31 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // Student Exam Flow Routes (without navbar)
+  {
+    path: '/student/exam/instructions',
+    name: 'examInstructions',
+    component: () => import('@/views/student/exam/Instructions.vue'),
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
+  {
+    path: '/student/exam/take',
+    name: 'takeExam',
+    component: () => import('@/views/student/exam/TakeExam.vue'),
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
+  {
+    path: '/student/exam/result',
+    name: 'examResult',
+    component: () => import('@/views/student/exam/Result.vue'),
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
+  {
+    path: '/student/exam/detailed-report',
+    name: 'examDetailedReport',
+    component: () => import('@/views/student/exam/DetailedReport.vue'),
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
 ]
 
 const router = createRouter({

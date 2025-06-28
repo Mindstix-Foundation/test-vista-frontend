@@ -185,14 +185,6 @@
                   </button>
 
                   <button 
-                    v-if="test.status === 'completed'"
-                    class="btn btn-success action-btn mb-2" 
-                    @click="viewResults(test.id)"
-                  >
-                    <i class="bi bi-check-circle me-2"></i>View Results
-                  </button>
-
-                  <button 
                     v-if="test.status === 'absent'"
                     class="btn btn-danger action-btn mb-2" 
                     disabled
@@ -303,11 +295,6 @@ const startTest = (testId: number) => {
   router.push(`/student/exam/instructions?test=${testId}&type=start`)
 }
 
-const viewResults = (testId: number) => {
-  // Navigate to view results page
-  router.push(`/student/exam/results?test=${testId}`)
-}
-
 const closeToast = () => {
   showToast.value = false
 }
@@ -339,92 +326,259 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Test paper card styling to match project theme */
+/* Test paper card styling with modern design */
 .test-paper-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border: 1px solid #e9ecef;
   transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+.test-paper-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
 }
 
 .test-paper-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.test-paper-card .card-body {
+  padding: 1.75rem;
 }
 
 .test-paper-card .card-title {
-  color: #212529;
-  font-weight: 600;
+  color: #2c3e50;
+  font-weight: 700;
+  font-size: 1.35rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
 }
 
-/* Paper info item styling */
+/* Enhanced status badges */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Paper info item styling with better spacing */
 .paper-info-item {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
   display: flex;
   align-items: center;
+  color: #495057;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.paper-info-item i {
+  color: #6c757d;
+  font-size: 1.1rem;
+  width: 24px;
+  margin-right: 0.5rem;
+}
+
+.paper-info-item .fw-medium {
+  color: #343a40;
+}
+
+/* Enhanced alert styling for different statuses */
+.alert {
+  border-radius: 10px;
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 0;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  color: #0c5460;
+  border-left: 4px solid #17a2b8;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  color: #856404;
+  border-left: 4px solid #ffc107;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+.alert small {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Progress bar improvements */
+.progress {
+  height: 10px;
+  border-radius: 10px;
+  background-color: #e9ecef;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  border-radius: 10px;
+  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  transition: width 0.6s ease;
 }
 
 /* Action buttons styling */
 .action-btn {
   min-width: 160px;
-  border-radius: 5px;
+  border-radius: 8px;
   transition: all 0.3s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: none;
 }
 
-/* Filter button styles to match project theme */
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Filter button styles */
 .btn-outline-dark {
-  color: #212529;
-  border-color: #212529;
+  color: #495057;
+  border-color: #dee2e6;
+  background-color: #ffffff;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .btn-outline-dark:hover:not(:disabled) {
-  background-color: #212529;
+  background-color: #495057;
   color: white;
-  border-color: #212529;
+  border-color: #495057;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(73, 80, 87, 0.2);
 }
 
 .btn-outline-dark.active {
-  background-color: #212529;
-  border-color: #212529;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  border-color: #495057;
   color: white;
+  box-shadow: 0 2px 8px rgba(73, 80, 87, 0.3);
 }
 
-/* Test button styles */
+/* Test button styles with gradients */
 .btn-start-test {
-  background-color: #28a745;
-  border-color: #28a745;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
 }
 
 .btn-start-test:hover {
-  background-color: #218838;
-  border-color: #1e7e34;
+  background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
   color: white;
 }
 
 .btn-continue-test {
-  background-color: #007bff;
-  border-color: #007bff;
+  background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
   color: white;
 }
 
 .btn-continue-test:hover {
-  background-color: #0056b3;
-  border-color: #004085;
+  background: linear-gradient(135deg, #0056b3 0%, #520dc2 100%);
   color: white;
 }
 
-/* Empty state styling to match project theme */
+/* Enhanced empty state styling */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  text-align: center;
 }
 
-/* Responsive adjustments to match project patterns */
+.empty-state i {
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+/* Header styling improvements */
+h5.text-left {
+  color: #2c3e50;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+h6 {
+  color: #495057;
+  font-weight: 600;
+}
+
+.badge.bg-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+  border-radius: 15px;
+  padding: 0.4rem 0.8rem;
+}
+
+/* Card status indicators */
+.test-paper-card:has(.alert-success)::before {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.test-paper-card:has(.alert-info)::before {
+  background: linear-gradient(135deg, #17a2b8 0%, #007bff 100%);
+}
+
+.test-paper-card:has(.alert-warning)::before {
+  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.test-paper-card:has(.alert-danger)::before {
+  background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+}
+
+/* Responsive adjustments */
 @media (max-width: 767.98px) {
   .action-btn {
     width: 100%;
@@ -433,10 +587,17 @@ onMounted(() => {
   }
   
   .paper-info-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
   }
   
-  /* Font size adjustments to match project */
+  .test-paper-card .card-body {
+    padding: 1.5rem;
+  }
+  
+  .test-paper-card .card-title {
+    font-size: 1.2rem;
+  }
+  
   h5 {
     font-size: 1.2rem !important;
     font-weight: 600 !important;
@@ -446,7 +607,6 @@ onMounted(() => {
     font-size: 1rem !important;
   }
   
-  /* Button group adjustments for mobile */
   .btn-group {
     display: flex;
     width: 100%;
@@ -458,7 +618,6 @@ onMounted(() => {
 }
 
 @media (max-width: 576px) {
-  /* Phone-specific adjustments to match project */
   h5 {
     font-size: 1.15rem !important;
   }
@@ -467,15 +626,21 @@ onMounted(() => {
     font-size: 0.95rem !important;
   }
   
-  /* Container padding adjustments */
   .container {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
   
-  /* Card body padding adjustments */
-  .card-body {
-    padding: 1rem 0.75rem;
+  .test-paper-card .card-body {
+    padding: 1.25rem;
+  }
+  
+  .test-paper-card .card-title {
+    font-size: 1.1rem;
+  }
+  
+  .paper-info-item {
+    font-size: 0.9rem;
   }
 }
 </style> 
