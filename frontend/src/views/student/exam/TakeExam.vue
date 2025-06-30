@@ -64,6 +64,15 @@
         <div class="question-panel">
           <div class="question-header">
             <div class="question-number">Question {{ currentQuestionIndex + 1 }}</div>
+            <div class="question-timer">
+              <div class="timer-icon">
+                <i class="bi bi-stopwatch"></i>
+              </div>
+              <div class="timer-info">
+                <div class="timer-current">{{ formatQuestionTime(currentQuestionTime) }}</div>
+                <div class="timer-label">Time on Question</div>
+              </div>
+            </div>
           </div>
           
           <div class="question-text" v-if="currentQuestion" v-html="currentQuestion.question_text"></div>
@@ -305,11 +314,14 @@ const timeRemaining = ref(0)
 const timer = ref<any>(null)
 const questionStartTime = ref(0)
 const questionTimeSpent = ref<any>({})
+const currentQuestionTime = ref(0)
+const questionTimer = ref<any>(null)
+const autoSaveTimer = ref<any>(null)
 const showFullscreenWarning = ref(false)
 const studentName = ref('')
 const showExitWarning = ref(false)
 const showSubmitConfirmation = ref(false)
-const fullscreenChecker = ref<NodeJS.Timeout | null>(null)
+const fullscreenChecker = ref<any>(null)
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
 
@@ -333,6 +345,13 @@ const timerClass = computed(() => {
   return ''
 })
 
+// Format question time in MM:SS format
+const formatQuestionTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
 // Methods
 const initializeExam = async () => {
   try {
@@ -352,11 +371,14 @@ const initializeExam = async () => {
     questions.value = examResponse.questions
     
     // Set up timer
-    if (examResponse.timeRemaining !== undefined) {
-      timeRemaining.value = examResponse.timeRemaining
-    } else {
+    if ((examResponse as any).timeRemaining !== undefined) {
+      timeRemaining.value = (examResponse as any).timeRemaining
+    } else if ((examResponse as any).duration_minutes) {
       // Calculate time remaining based on duration
-      timeRemaining.value = examResponse.duration_minutes * 60
+      timeRemaining.value = (examResponse as any).duration_minutes * 60
+    } else {
+      // Default to 1 hour if no duration specified
+      timeRemaining.value = 3600
     }
   
     // Get student info from localStorage or API
@@ -365,8 +387,20 @@ const initializeExam = async () => {
     // Start timer
     startTimer()
     
-    // Mark first question as visited
+    // Mark first question as visited and start question timer
     visitedQuestions.value.add(0)
+    questionStartTime.value = Date.now()
+    currentQuestionTime.value = 0
+    
+    // Start question timer
+    questionTimer.value = setInterval(() => {
+      currentQuestionTime.value++
+    }, 1000)
+    
+    // Start periodic auto-save (every 30 seconds)
+    autoSaveTimer.value = setInterval(async () => {
+      await saveCurrentAnswer()
+    }, 30000)
     
     // Check fullscreen
     checkFullscreen()
@@ -385,8 +419,11 @@ const retryLoadExam = () => {
   initializeExam()
 }
 
-const loadQuestion = (index: number) => {
+const loadQuestion = async (index: number) => {
   if (index < 0 || index >= questions.value.length) return
+  
+  // Save current answer before navigating away
+  await saveCurrentAnswer()
   
   // Record time spent on previous question
   if (questionStartTime.value > 0 && currentQuestionIndex.value >= 0) {
@@ -397,81 +434,104 @@ const loadQuestion = (index: number) => {
     questionTimeSpent.value[currentQuestionIndex.value] += timeSpent
   }
   
+  // Stop previous question timer
+  if (questionTimer.value) {
+    clearInterval(questionTimer.value)
+  }
+  
   currentQuestionIndex.value = index
   questionStartTime.value = Date.now()
   visitedQuestions.value.add(index)
+  
+  // Initialize current question time with previously spent time
+  currentQuestionTime.value = Math.floor((questionTimeSpent.value[index] || 0) / 1000)
+  
+  // Start new question timer
+  questionTimer.value = setInterval(() => {
+    currentQuestionTime.value++
+  }, 1000)
 }
 
-const selectOption = async (optionIndex: number) => {
+const selectOption = (optionIndex: number) => {
   console.log('=== SELECT OPTION DEBUG ===')
   console.log('currentQuestionIndex.value:', currentQuestionIndex.value)
   console.log('optionIndex:', optionIndex)
   console.log('answers before:', answers)
   console.log('answers keys before:', Object.keys(answers))
   
-  // Store the answer
+  // Store the answer locally (no API call yet)
   answers[currentQuestionIndex.value] = optionIndex
   
   console.log('answers after:', answers)
   console.log('answers keys after:', Object.keys(answers))
   console.log('answers stringified:', JSON.stringify(answers))
   console.log('answers[currentQuestionIndex.value]:', answers[currentQuestionIndex.value])
+}
 
-  // Auto-save answer when option is selected
-  if (attemptId.value && currentQuestion.value) {
-    const question = currentQuestion.value
-    const questionTextId = question.question_text_id || question.question_id
-    const selectedOptionId = question.option_ids?.[optionIndex as number]
-    
-    if (!selectedOptionId) {
-      console.error('No option ID found for index:', optionIndex, 'in option_ids:', question.option_ids)
-      return
-    }
-    
-    const timeSpent = Math.floor((Date.now() - questionStartTime.value) / 1000)
-    
-    const submissionData = {
-      test_attempt_id: attemptId.value,
-      question_id: question.question_id,
-      question_text_id: questionTextId,
-      selected_option_id: selectedOptionId,
-      time_spent_seconds: timeSpent,
-      is_flagged: markedQuestions.value.has(currentQuestionIndex.value)
-    }
-    
-    console.log('Auto-saving answer:', submissionData)
-    
-    try {
-      await testAssignmentService.submitAnswer(submissionData)
-      console.log('Answer submitted successfully')
-    } catch (error) {
-      console.error('Error saving answer:', error)
-      // Don't block user interaction, just log the error
-    }
+// Save current answer to API
+const saveCurrentAnswer = async () => {
+  if (!attemptId.value || !currentQuestion.value || answers[currentQuestionIndex.value] === undefined) {
+    return // No answer to save
+  }
+  
+  const question = currentQuestion.value
+  const optionIndex = answers[currentQuestionIndex.value]
+  const questionTextId = question.question_text_id || question.question_id
+  const selectedOptionId = question.option_ids?.[optionIndex]
+  
+  if (!selectedOptionId) {
+    console.error('No option ID found for index:', optionIndex, 'in option_ids:', question.option_ids)
+    return
+  }
+  
+  const timeSpent = currentQuestionTime.value
+  
+  const submissionData = {
+    test_attempt_id: attemptId.value,
+    question_id: question.question_id,
+    question_text_id: questionTextId,
+    selected_option_id: selectedOptionId,
+    time_spent_seconds: timeSpent,
+    is_flagged: markedQuestions.value.has(currentQuestionIndex.value)
+  }
+  
+  console.log('Saving answer:', submissionData)
+  
+  try {
+    await testAssignmentService.submitAnswer(submissionData)
+    console.log('Answer saved successfully')
+  } catch (error) {
+    console.error('Error saving answer:', error)
+    // Don't block navigation, just log the error
   }
 }
 
 const saveAndNext = async () => {
   if (isSubmittingAnswer.value) return
   
-  // Simply move to next question without API call
-  // The answer is already saved when user selects an option
+  isSubmittingAnswer.value = true
+  
+  // Save current answer and move to next question
   if (currentQuestionIndex.value < questions.value.length - 1) {
-    nextQuestion()
+    await nextQuestion()
   } else {
+    // Save current answer before submitting exam
+    await saveCurrentAnswer()
     submitExam()
   }
+  
+  isSubmittingAnswer.value = false
 }
 
-const previousQuestion = () => {
+const previousQuestion = async () => {
   if (currentQuestionIndex.value > 0) {
-    loadQuestion(currentQuestionIndex.value - 1)
+    await loadQuestion(currentQuestionIndex.value - 1)
   }
 }
 
-const nextQuestion = () => {
+const nextQuestion = async () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
-    loadQuestion(currentQuestionIndex.value + 1)
+    await loadQuestion(currentQuestionIndex.value + 1)
   }
 }
 
@@ -506,6 +566,9 @@ const confirmSubmitExam = async () => {
   
   try {
     isSubmittingExam.value = true
+    
+    // Save the current answer before submitting
+    await saveCurrentAnswer()
     
     console.log('=== EXAM SUBMISSION DEBUG ===')
     console.log('attemptId.value:', attemptId.value)
@@ -661,6 +724,12 @@ onUnmounted(() => {
   if (timer.value) {
     clearInterval(timer.value)
   }
+  if (questionTimer.value) {
+    clearInterval(questionTimer.value)
+  }
+  if (autoSaveTimer.value) {
+    clearInterval(autoSaveTimer.value)
+  }
   if (fullscreenChecker.value) {
     clearInterval(fullscreenChecker.value)
   }
@@ -806,12 +875,48 @@ body {
   border-bottom: 2px solid #e9ecef;
   padding-bottom: 15px;
   margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .question-number {
   color: #dc3545;
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+/* Question Timer Styles */
+.question-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.timer-icon {
+  color: #28a745;
+  font-size: 1.2rem;
+}
+
+.timer-info {
+  text-align: center;
+}
+
+.timer-current {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #28a745;
+  line-height: 1;
+}
+
+.timer-label {
+  font-size: 0.7rem;
+  color: #6c757d;
+  margin-top: 2px;
 }
 
 .question-text {
@@ -1205,6 +1310,16 @@ body {
   .question-btn {
     width: 40px;
     height: 40px;
+  }
+
+  .question-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .question-timer {
+    align-self: flex-end;
   }
 }
 

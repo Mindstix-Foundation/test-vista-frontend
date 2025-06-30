@@ -1,6 +1,49 @@
-# test-vista
+# Test Vista Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+Vue.js frontend application for the Test Vista educational platform.
+
+## Development Setup
+
+```bash
+npm install
+npm run dev
+```
+
+## Student Login Testing
+
+The application includes an ITI Student Login system. For testing purposes, you can use the following approach:
+
+### Testing Student Login
+
+1. Go to the login page: `http://localhost:5174/`
+2. Click on "Student Login" 
+3. On the ITI Student Login page, click "Show Test Students" to see available test data
+4. Click "Use Data" next to any student to auto-fill the form
+5. Click "Login" to test the authentication
+
+### Available Test Data
+
+The system contains several test students in "Test School" under "Test Board" and "Jr Kg" standard. Some examples:
+- Name: "preman sokande", Roll: "10"
+- Name: "uday", Roll: "2" 
+- Name: "hitesh", Roll: "4"
+
+### Manual Entry
+
+If entering data manually, ensure:
+- Name matches exactly (case-sensitive)
+- Roll number matches exactly
+- Select "Test Board" → "Test School" → "Jr Kg"
+
+### Troubleshooting
+
+- **Login Failed**: Check that name and roll number match exactly with database entries
+- **Server Error**: Ensure backend is running on port 3000
+- **Network Issues**: Check proxy configuration in vite.config.ts
+
+## API Integration
+
+The frontend connects to the backend API at `http://localhost:3000` via proxy configuration.
 
 ## Recommended IDE Setup
 

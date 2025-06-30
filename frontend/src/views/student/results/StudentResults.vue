@@ -8,7 +8,7 @@
               <i class="bi bi-clipboard-check" style="font-size: 3rem; color: #6c757d;"></i>
               <h3 class="mt-3">Student Results</h3>
               <p class="text-muted">This page is under development.</p>
-              <router-link to="/student/home" class="btn btn-primary">
+              <router-link to="/student/exam" class="btn btn-primary">
                 <i class="bi bi-arrow-left"></i> Back to Home
               </router-link>
             </div>

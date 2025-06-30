@@ -138,6 +138,12 @@
                       <i class="bi bi-eye me-2"></i>View Questions
                     </button>
                     <button 
+                      @click="viewResults(paper)" 
+                      class="btn btn-outline-success action-btn w-100"
+                    >
+                      <i class="bi bi-bar-chart me-2"></i>Result Dashboard
+                    </button>
+                    <button 
                       @click="deleteTestPaper(paper)" 
                       class="btn btn-outline-danger action-btn w-100"
                     >
@@ -192,11 +198,159 @@
             <div class="row mb-3">
               <div class="col-md-6">
                 <label for="dueDate" class="form-label">Due Date *</label>
-                <input type="date" class="form-control" id="dueDate" v-model="assignmentData.dueDate" required>
+                <div class="custom-date-picker">
+                  <input 
+                    type="text" 
+                    class="form-control date-input-modern" 
+                    id="dueDate" 
+                    v-model="formattedDueDate"
+                    placeholder="DD-MM-YYYY"
+                    @click="showDueDatePicker = true"
+                    @focus="showDueDatePicker = true"
+                    readonly
+                    required
+                  >
+                  <i class="bi bi-calendar3 date-icon"></i>
+                  
+                  <!-- Custom Date Picker Dropdown -->
+                  <div v-if="showDueDatePicker" class="date-picker-dropdown">
+                    <div class="date-picker-header">
+                      <button @click="previousMonth('due')" class="nav-btn">&lt;</button>
+                      <span class="month-year">{{ currentMonthYear('due') }}</span>
+                      <button @click="nextMonth('due')" class="nav-btn">&gt;</button>
+                    </div>
+                    <div class="date-picker-calendar">
+                      <div class="weekdays">
+                        <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
+                      </div>
+                      <div class="dates">
+                        <button 
+                          v-for="date in getCalendarDates('due')" 
+                          :key="date.key"
+                          @click="selectDate('due', date)"
+                          class="date-btn"
+                          :class="{
+                            'other-month': date.otherMonth,
+                            'selected': date.selected,
+                            'today': date.today
+                          }"
+                          :disabled="date.otherMonth"
+                        >
+                          {{ date.day }}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="date-picker-footer">
+                      <button @click="clearDate('due')" class="btn btn-sm btn-outline-secondary">Clear</button>
+                      <button @click="selectToday('due')" class="btn btn-sm btn-outline-primary">Today</button>
+                    </div>
+                  </div>
+                </div>
+                <small class="form-text text-muted">Format: DD-MM-YYYY</small>
               </div>
               <div class="col-md-6">
                 <label for="availableFrom" class="form-label">Available From *</label>
-                <input type="datetime-local" class="form-control" id="availableFrom" v-model="assignmentData.availableFrom" required>
+                <div class="custom-datetime-picker">
+                  <input 
+                    type="text" 
+                    class="form-control datetime-input-modern" 
+                    id="availableFrom" 
+                    v-model="formattedAvailableFrom"
+                    placeholder="DD-MM-YYYY HH:MM"
+                    @click="showAvailablePicker = true"
+                    @focus="showAvailablePicker = true"
+                    readonly
+                    required
+                  >
+                  <i class="bi bi-calendar-event date-icon"></i>
+                  
+                  <!-- Custom DateTime Picker Dropdown -->
+                  <div v-if="showAvailablePicker" class="date-picker-dropdown datetime-dropdown">
+                    <div class="date-picker-header">
+                      <button @click="previousMonth('available')" class="nav-btn">&lt;</button>
+                      <span class="month-year">{{ currentMonthYear('available') }}</span>
+                      <button @click="nextMonth('available')" class="nav-btn">&gt;</button>
+                    </div>
+                    <div class="date-picker-calendar">
+                      <div class="weekdays">
+                        <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
+                      </div>
+                      <div class="dates">
+                        <button 
+                          v-for="date in getCalendarDates('available')" 
+                          :key="date.key"
+                          @click="selectDate('available', date)"
+                          class="date-btn"
+                          :class="{
+                            'other-month': date.otherMonth,
+                            'selected': date.selected,
+                            'today': date.today
+                          }"
+                          :disabled="date.otherMonth"
+                        >
+                          {{ date.day }}
+                        </button>
+                      </div>
+                    </div>
+                                          <div class="time-picker-section">
+                        <div class="time-picker-header">Select Time</div>
+                        <div class="time-inputs">
+                          <div class="time-input-group">
+                            <input 
+                              type="number" 
+                              v-model="displayHour" 
+                              min="1" 
+                              max="12" 
+                              class="time-input"
+                              placeholder="HH"
+                              @input="updateDisplayTime"
+                            >
+                            <label>Hour</label>
+                          </div>
+                          <span class="time-separator">:</span>
+                          <div class="time-input-group">
+                            <input 
+                              type="number" 
+                              v-model="availableTime.minute" 
+                              min="0" 
+                              max="59" 
+                              class="time-input"
+                              placeholder="MM"
+                              @input="updateAvailableTime"
+                            >
+                            <label>Minute</label>
+                          </div>
+                          <div class="ampm-toggle">
+                            <button 
+                              @click="toggleAMPM('AM')" 
+                              class="ampm-btn"
+                              :class="{ active: availableTime.ampm === 'AM' }"
+                            >
+                              AM
+                            </button>
+                            <button 
+                              @click="toggleAMPM('PM')" 
+                              class="ampm-btn"
+                              :class="{ active: availableTime.ampm === 'PM' }"
+                            >
+                              PM
+                            </button>
+                          </div>
+                        </div>
+                        <div class="quick-time-buttons">
+                          <button @click="setQuickTime12('9:00 AM')" class="btn btn-sm btn-outline-secondary">9:00 AM</button>
+                          <button @click="setQuickTime12('12:00 PM')" class="btn btn-sm btn-outline-secondary">12:00 PM</button>
+                          <button @click="setQuickTime12('3:00 PM')" class="btn btn-sm btn-outline-secondary">3:00 PM</button>
+                          <button @click="setQuickTime12('6:00 PM')" class="btn btn-sm btn-outline-secondary">6:00 PM</button>
+                        </div>
+                      </div>
+                    <div class="date-picker-footer">
+                      <button @click="clearDate('available')" class="btn btn-sm btn-outline-secondary">Clear</button>
+                      <button @click="selectToday('available')" class="btn btn-sm btn-outline-primary">Today</button>
+                    </div>
+                  </div>
+                </div>
+                <small class="form-text text-muted">Format: DD-MM-YYYY HH:MM</small>
               </div>
             </div>
             
@@ -246,7 +400,7 @@
                     <div class="spinner-border spinner-border-sm text-primary" role="status">
                       <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="mt-2 mb-0 text-muted small">Loading enrolled students...</p>
+                    <p class="mt-2 mb-0 text-muted small">Loading ITI students...</p>
                   </div>
                 </div>
                 
@@ -421,16 +575,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification Component -->
+    <ToastNotification />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import axiosInstance from '@/config/axios'
+import { useToastStore } from '@/stores/toast'
+import ToastNotification from '@/components/common/ToastNotification.vue'
 
 const router = useRouter()
+const toastStore = useToastStore()
 
 // Define interfaces for type safety
 interface TestPaper {
@@ -581,6 +741,30 @@ const assignedOnlyToggle = ref(false) // boolean: false = all students, true = a
 const assigningTest = ref(false)
 const removingAssignment = ref(false)
 
+// Date picker reactive variables
+const showDueDatePicker = ref(false)
+const showAvailablePicker = ref(false)
+const dueDatePicker = ref({
+  year: new Date().getFullYear(),
+  month: new Date().getMonth()
+})
+const availableDatePicker = ref({
+  year: new Date().getFullYear(),
+  month: new Date().getMonth()
+})
+const availableTime = ref({
+  hour: 9,
+  minute: 0,
+  ampm: 'AM' as 'AM' | 'PM'
+})
+
+// Calendar configuration
+const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const months = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
 // Reactive variables
 const testPapers = ref<TestPaper[]>([])
 const filteredTestPapers = computed(() => {
@@ -664,6 +848,72 @@ const hasSelectedStudents = computed(() => {
   return filteredStudents.value.some(student => student.selected)
 })
 
+// Date formatting computed properties
+const formattedDueDate = computed({
+  get: () => {
+    if (!assignmentData.value.dueDate) return ''
+    const date = new Date(assignmentData.value.dueDate)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}-${month}-${year}`
+  },
+  set: (value: string) => {
+    // This will be handled by the date picker
+  }
+})
+
+const formattedAvailableFrom = computed({
+  get: () => {
+    if (!assignmentData.value.availableFrom) return ''
+    const date = new Date(assignmentData.value.availableFrom)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    
+    // Convert to 12-hour format
+    let hour = date.getHours()
+    const minute = date.getMinutes().toString().padStart(2, '0')
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    hour = hour % 12
+    if (hour === 0) hour = 12
+    
+    return `${day}-${month}-${year} ${hour}:${minute} ${ampm}`
+  },
+  set: (value: string) => {
+    // This will be handled by the date picker
+  }
+})
+
+// Display hour computed property for 12-hour format
+const displayHour = computed({
+  get: () => {
+    let hour = availableTime.value.hour
+    if (availableTime.value.ampm === 'PM' && hour !== 12) hour += 12
+    if (availableTime.value.ampm === 'AM' && hour === 12) hour = 0
+    
+    // Convert back to 12-hour display
+    const displayHour = hour % 12
+    return displayHour === 0 ? 12 : displayHour
+  },
+  set: (value: number) => {
+    // Convert 12-hour to 24-hour and update
+    let hour24 = value
+    if (availableTime.value.ampm === 'PM' && value !== 12) {
+      hour24 = value + 12
+    } else if (availableTime.value.ampm === 'AM' && value === 12) {
+      hour24 = 0
+    }
+    availableTime.value.hour = hour24
+    updateAvailableTime()
+  }
+})
+
+// Toast helper functions
+const showToast = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  toastStore.showToast({ title, message, type })
+}
+
 // API Methods
 const fetchOnlineTestPapers = async () => {
   try {
@@ -735,65 +985,87 @@ const sortTestPapers = () => {
 }
 
 const assignToStudents = async (paper: TestPaper) => {
-  selectedPaper.value = paper
+  // Store test paper data temporarily in sessionStorage
+  sessionStorage.setItem(`testPaper_${paper.id}`, JSON.stringify(paper))
   
-  // Reset toggle to show all students by default
-  assignedOnlyToggle.value = false
-  
-  // Load enrolled students for this test paper's standard and subject
-  await loadEnrolledStudents(paper)
-  
-  const modal = new Modal(document.getElementById('assignModal')!)
-  modal.show()
+  // Navigate to dedicated assignment page
+  router.push({
+    name: 'assignToStudents',
+    params: { testPaperId: paper.id.toString() }
+  })
 }
 
-// API method to load enrolled students
+// API method to load ITI students instead of enrolled students
 const loadEnrolledStudents = async (paper: TestPaper) => {
   try {
     loadingStudents.value = true
-    console.log('Loading enrolled students for paper:', paper.name, 'Toggle:', assignedOnlyToggle.value)
+    console.log('Loading ITI students for paper:', paper.name)
     
-    const params: any = {
-      standard_id: paper.pattern.standard.id,
-      subject_id: paper.pattern.subject.id,
-      paper_id: paper.id
-    }
-    
-    // Set assigned_only parameter based on toggle state
-    params.assigned_only = assignedOnlyToggle.value
-    
-    const response = await axiosInstance.get('/student-subject-enrollments/teacher/enrolled-students', {
-      params
+    // Use ITI students API instead of enrolled students API
+    const response = await axiosInstance.get('/iti-mocktest/students', {
+      params: {
+        schoolId: paper.school.id,  // Use school from test paper
+        standardId: paper.pattern.standard.id  // Use standard from test paper pattern
+      }
     })
     
-    console.log('API Response - Students found:', response.data?.length || 0)
+    console.log('API Response - ITI Students found:', response.data?.data?.length || 0)
     
-    if (response.data && Array.isArray(response.data)) {
-      // Transform API response to match Student interface
-      students.value = response.data.map((enrollment: any) => ({
-        id: enrollment.student_id,
-        name: enrollment.student_name,
-        rollNumber: enrollment.student_roll_number,
+    if (response.data && response.data.statusCode === 200 && Array.isArray(response.data.data)) {
+      // Get existing assignments for this paper to determine assignment status
+      let assignedStudentIds = new Set<number>()
+      
+      if (paper.id) {
+        try {
+          const assignmentsResponse = await axiosInstance.get('/test-assignments', {
+            params: {
+              test_paper_id: paper.id
+            }
+          })
+          
+          if (assignmentsResponse.data && Array.isArray(assignmentsResponse.data)) {
+            assignedStudentIds = new Set(assignmentsResponse.data.map((a: any) => a.student_id))
+          }
+        } catch (assignmentError) {
+          console.warn('Could not fetch existing assignments:', assignmentError)
+        }
+      }
+      
+      // Transform ITI students API response to match Student interface
+      students.value = response.data.data.map((itiStudent: any) => ({
+        id: itiStudent.id,  // Use ITI student ID
+        name: itiStudent.user.name,
+        rollNumber: itiStudent.student_id,  // ITI student roll number
         selected: false,
-        isAssigned: enrollment.is_assigned || false
+        isAssigned: assignedStudentIds.has(itiStudent.id)
       }))
       
-      console.log('Loaded students:', students.value.length)
+      // Filter based on assignedOnlyToggle if needed
+      if (assignedOnlyToggle.value === true) {
+        // Show only assigned students
+        students.value = students.value.filter(student => student.isAssigned)
+      } else if (assignedOnlyToggle.value === false) {
+        // Show only unassigned students  
+        students.value = students.value.filter(student => !student.isAssigned)
+      }
+      // If undefined, show all students with assignment status
+      
+      console.log('Loaded ITI students:', students.value.length)
     } else {
       console.warn('Unexpected API response format:', response.data)
       students.value = []
     }
   } catch (error: any) {
-    console.error('Error loading enrolled students:', error)
+    console.error('Error loading ITI students:', error)
     
     // Handle specific error cases
     if (error.response?.status === 404) {
-      console.error('No students found or teacher does not teach this subject-standard combination')
+      console.error('No ITI students found for this standard and school')
       students.value = []
     } else if (error.response?.status === 401) {
       console.error('User not authenticated')
     } else {
-      console.error('Failed to load enrolled students')
+      console.error('Failed to load ITI students')
       students.value = []
     }
   } finally {
@@ -816,10 +1088,18 @@ const viewQuestions = async (paper: TestPaper) => {
     console.log('Questions loaded:', response.data)
   } catch (error) {
     console.error('Error fetching questions:', error)
-    alert('Failed to load questions. Please try again.')
+    showToast('Error', 'Failed to load questions. Please try again.', 'error')
   } finally {
     loadingQuestions.value = false
   }
+}
+
+const viewResults = (paper: TestPaper) => {
+  // Navigate to result dashboard with test paper ID
+  router.push({
+    name: 'testResultDashboard',
+    params: { testPaperId: paper.id.toString() }
+  })
 }
 
 const closeQuestionsModal = () => {
@@ -836,9 +1116,9 @@ const getAllQuestionsFlat = () => {
   
   const allQuestions: Question[] = []
   
-  currentQuestions.value.sections.forEach(section => {
-    section.subsections.forEach(subsection => {
-      subsection.questions.forEach(question => {
+  currentQuestions.value.sections.forEach((section: QuestionSection) => {
+    section.subsections.forEach((subsection: QuestionSubsection) => {
+      subsection.questions.forEach((question: Question) => {
         allQuestions.push(question)
       })
     })
@@ -862,10 +1142,12 @@ const confirmDelete = async () => {
   if (!selectedPaper.value) return
 
   try {
-    // Call delete API (to be implemented in backend)
     console.log('Deleting test paper:', selectedPaper.value.id)
     
-    // For now, just remove from local array
+    // Call the correct delete API endpoint for online test papers
+    await axiosInstance.delete(`/create-test-paper/online/${selectedPaper.value.id}`)
+    
+    // Remove from local array after successful deletion
     const index = testPapers.value.findIndex(p => p.id === selectedPaper.value!.id)
     if (index > -1) {
       testPapers.value.splice(index, 1)
@@ -875,11 +1157,19 @@ const confirmDelete = async () => {
     modal?.hide()
     selectedPaper.value = null
     
-    // TODO: Implement actual delete API call
-    // await axiosInstance.delete(`/create-test-paper/online/${selectedPaper.value.id}`)
-  } catch (error) {
+    showToast('Success', 'Test paper deleted successfully.', 'success')
+  } catch (error: any) {
     console.error('Error deleting test paper:', error)
-    alert('Failed to delete test paper. Please try again.')
+    
+    let errorMessage = 'Failed to delete test paper. Please try again.'
+    
+    if (error.response?.status === 404) {
+      errorMessage = 'Test paper not found or you do not have permission to delete it.'
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.message || 'Cannot delete test paper - it may have active student attempts.'
+    }
+    
+    showToast('Error', errorMessage, 'error')
   }
 }
 
@@ -891,21 +1181,26 @@ const toggleAllStudents = () => {
 
 const confirmAssignment = async () => {
   if (filteredStudents.value.length === 0) {
-    alert('No students are available for assignment.')
+    showToast('No Students Available', 'No students are available for assignment.', 'info')
     return
   }
   
   const selectedStudents = filteredStudents.value.filter(s => s.selected)
   if (selectedStudents.length === 0) {
-    alert('Please select at least one student')
+    showToast('No Students Selected', 'Please select at least one student to assign the test.', 'info')
     return
   }
   
   if (!assignmentData.value.dueDate || !assignmentData.value.availableFrom) {
-    alert('Please fill in all required fields (Due Date and Available From)')
+    showToast('Missing Information', 'Please fill in all required fields (Due Date and Available From).', 'warning')
     return
   }
 
+  // Directly execute assignment without confirmation modal
+  await executeAssignment(selectedStudents)
+}
+
+const executeAssignment = async (selectedStudents: Student[]) => {
   try {
     assigningTest.value = true
     
@@ -932,28 +1227,28 @@ const confirmAssignment = async () => {
       })
       
       // Show success message
-      let message = `Test assigned successfully!\n`
-      message += `Assigned: ${result.assigned || selectedStudents.length} students\n`
+      let message = `Test assigned successfully to ${result.assigned || selectedStudents.length} student(s)!`
       
       if (result.failed && result.failed.length > 0) {
-        message += `Failed: ${result.failed.length} students\n`
-        message += `Reasons: ${result.failed.map((f: any) => `${f.student_name}: ${f.reason}`).join(', ')}`
+        message += ` Failed: ${result.failed.length} students.`
       }
       
-      alert(message)
+      showToast('Assignment Successful', message, 'success')
       
       console.log('Assignment completed:', result)
     }
   } catch (error: any) {
     console.error('Error assigning test:', error)
     
+    let errorMessage = 'Failed to assign test. Please try again.'
+    
     if (error.response?.status === 400) {
-      alert('Invalid assignment data. Please check your inputs.')
+      errorMessage = 'Invalid assignment data. Please check your inputs.'
     } else if (error.response?.status === 404) {
-      alert('Test paper or students not found.')
-    } else {
-      alert('Failed to assign test. Please try again.')
+      errorMessage = 'Test paper or students not found.'
     }
+    
+    showToast('Assignment Failed', errorMessage, 'error')
   } finally {
     assigningTest.value = false
   }
@@ -993,13 +1288,18 @@ const filterStudents = async () => {
 const removeAssignment = async (student: Student) => {
   if (!selectedPaper.value) return
   
+  // Directly execute removal without confirmation modal
+  await executeRemoveAssignment(student)
+}
+
+const executeRemoveAssignment = async (student: Student) => {
   try {
     removingAssignment.value = true
     
     const response = await axiosInstance.delete('/test-assignments', {
       data: {
         student_id: student.id,
-        test_paper_id: selectedPaper.value.id
+        test_paper_id: selectedPaper.value!.id
       }
     })
     
@@ -1011,26 +1311,213 @@ const removeAssignment = async (student: Student) => {
       console.log('Assignment removed successfully for student:', student.name)
       
       // Show success message
-      alert(`Test assignment removed for ${student.name}`)
+      showToast('Assignment Removed', `Test assignment removed successfully for ${student.name}.`, 'success')
     }
   } catch (error: any) {
     console.error('Error removing assignment:', error)
     
+    let errorMessage = 'Failed to remove assignment. Please try again.'
+    
     if (error.response?.status === 404) {
-      alert('Assignment not found')
+      errorMessage = 'Assignment not found.'
     } else if (error.response?.status === 400) {
-      alert('Cannot remove assignment - student may have already started the test')
-    } else {
-      alert('Failed to remove assignment. Please try again.')
+      errorMessage = 'Cannot remove assignment - student may have already started the test.'
     }
+    
+    showToast('Remove Assignment Failed', errorMessage, 'error')
   } finally {
     removingAssignment.value = false
   }
 }
 
+// Date picker methods
+const currentMonthYear = (type: 'due' | 'available') => {
+  const picker = type === 'due' ? dueDatePicker.value : availableDatePicker.value
+  return `${months[picker.month]} ${picker.year}`
+}
+
+const previousMonth = (type: 'due' | 'available') => {
+  const picker = type === 'due' ? dueDatePicker.value : availableDatePicker.value
+  if (picker.month === 0) {
+    picker.month = 11
+    picker.year--
+  } else {
+    picker.month--
+  }
+}
+
+const nextMonth = (type: 'due' | 'available') => {
+  const picker = type === 'due' ? dueDatePicker.value : availableDatePicker.value
+  if (picker.month === 11) {
+    picker.month = 0
+    picker.year++
+  } else {
+    picker.month++
+  }
+}
+
+const getCalendarDates = (type: 'due' | 'available') => {
+  const picker = type === 'due' ? dueDatePicker.value : availableDatePicker.value
+  const firstDay = new Date(picker.year, picker.month, 1)
+  const lastDay = new Date(picker.year, picker.month + 1, 0)
+  const today = new Date()
+  const selectedDate = type === 'due' 
+    ? (assignmentData.value.dueDate ? new Date(assignmentData.value.dueDate) : null)
+    : (assignmentData.value.availableFrom ? new Date(assignmentData.value.availableFrom) : null)
+  
+  const dates = []
+  const startDate = new Date(firstDay)
+  startDate.setDate(startDate.getDate() - firstDay.getDay())
+  
+  for (let i = 0; i < 42; i++) {
+    const currentDate = new Date(startDate)
+    currentDate.setDate(startDate.getDate() + i)
+    
+    const isSelected = selectedDate && 
+      currentDate.getDate() === selectedDate.getDate() &&
+      currentDate.getMonth() === selectedDate.getMonth() &&
+      currentDate.getFullYear() === selectedDate.getFullYear()
+    
+    const isToday = currentDate.getDate() === today.getDate() &&
+      currentDate.getMonth() === today.getMonth() &&
+      currentDate.getFullYear() === today.getFullYear()
+    
+    dates.push({
+      key: `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`,
+      day: currentDate.getDate(),
+      date: new Date(currentDate),
+      otherMonth: currentDate.getMonth() !== picker.month,
+      selected: isSelected,
+      today: isToday
+    })
+  }
+  
+  return dates
+}
+
+const selectDate = (type: 'due' | 'available', dateObj: any) => {
+  if (dateObj.otherMonth) return
+  
+  const selectedDate = new Date(dateObj.date)
+  
+  if (type === 'due') {
+    assignmentData.value.dueDate = selectedDate.toISOString().split('T')[0]
+    showDueDatePicker.value = false
+  } else {
+    // For available from, preserve the selected time
+    selectedDate.setHours(availableTime.value.hour, availableTime.value.minute, 0, 0)
+    assignmentData.value.availableFrom = selectedDate.toISOString()
+  }
+}
+
+// Close dropdown when clicking outside
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  const dueDatePicker = document.querySelector('.custom-date-picker')
+  const availablePicker = document.querySelector('.custom-datetime-picker')
+  
+  if (showDueDatePicker.value && dueDatePicker && !dueDatePicker.contains(target)) {
+    showDueDatePicker.value = false
+  }
+  
+  if (showAvailablePicker.value && availablePicker && !availablePicker.contains(target)) {
+    showAvailablePicker.value = false
+  }
+}
+
+const selectToday = (type: 'due' | 'available') => {
+  const today = new Date()
+  
+  if (type === 'due') {
+    assignmentData.value.dueDate = today.toISOString().split('T')[0]
+    showDueDatePicker.value = false
+  } else {
+    // Convert 12-hour to 24-hour format
+    let hour24 = availableTime.value.hour
+    if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
+      hour24 = availableTime.value.hour + 12
+    } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
+      hour24 = 0
+    }
+    
+    today.setHours(hour24, availableTime.value.minute, 0, 0)
+    assignmentData.value.availableFrom = today.toISOString()
+  }
+}
+
+const clearDate = (type: 'due' | 'available') => {
+  if (type === 'due') {
+    assignmentData.value.dueDate = ''
+    showDueDatePicker.value = false
+  } else {
+    assignmentData.value.availableFrom = ''
+    showAvailablePicker.value = false
+  }
+}
+
+const updateAvailableTime = () => {
+  if (assignmentData.value.availableFrom) {
+    const date = new Date(assignmentData.value.availableFrom)
+    
+    // Convert 12-hour to 24-hour format for storage
+    let hour24 = availableTime.value.hour
+    if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
+      hour24 = availableTime.value.hour + 12
+    } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
+      hour24 = 0
+    }
+    
+    date.setHours(hour24, availableTime.value.minute, 0, 0)
+    assignmentData.value.availableFrom = date.toISOString()
+  }
+}
+
+const setQuickTime = (timeStr: string) => {
+  const [hour, minute] = timeStr.split(':').map(Number)
+  availableTime.value.hour = hour
+  availableTime.value.minute = minute
+  updateAvailableTime()
+}
+
+// New methods for 12-hour time picker
+const updateDisplayTime = () => {
+  updateAvailableTime()
+}
+
+const toggleAMPM = (period: 'AM' | 'PM') => {
+  availableTime.value.ampm = period
+  updateAvailableTime()
+}
+
+const setQuickTime12 = (timeStr: string) => {
+  // Parse time like "9:00 AM" or "3:00 PM"
+  const [time, period] = timeStr.split(' ')
+  const [hour, minute] = time.split(':').map(Number)
+  
+  // Convert to 24-hour format
+  let hour24 = hour
+  if (period === 'PM' && hour !== 12) {
+    hour24 = hour + 12
+  } else if (period === 'AM' && hour === 12) {
+    hour24 = 0
+  }
+  
+  availableTime.value.hour = hour24
+  availableTime.value.minute = minute
+  availableTime.value.ampm = period as 'AM' | 'PM'
+  updateAvailableTime()
+}
+
 // Lifecycle hooks
 onMounted(() => {
   fetchOnlineTestPapers()
+  // Add click outside listener for date pickers
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  // Remove click outside listener
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -1603,5 +2090,414 @@ input[type="text"] {
   min-width: 110px;
   text-align: left;
   display: inline-block;
+}
+
+/* Custom date input styling */
+.date-input-custom::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23212529' d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1H2zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5z'/%3e%3c/svg%3e");
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.datetime-input-custom::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23212529' d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1H2zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5z'/%3e%3c/svg%3e");
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Style the date input to show DD/MM/YYYY format hint */
+.date-input-custom:invalid,
+.datetime-input-custom:invalid {
+  background-color: #fff;
+}
+
+/* Modern Custom Date Picker Styles */
+.custom-date-picker,
+.custom-datetime-picker {
+  position: relative;
+}
+
+.date-input-modern,
+.datetime-input-modern {
+  cursor: pointer;
+  padding-right: 40px;
+  background-color: white;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+}
+
+.date-input-modern:focus,
+.datetime-input-modern:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.date-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-size: 1.1rem;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Date Picker Dropdown */
+.date-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 4px;
+  animation: fadeInDown 0.2s ease-out;
+}
+
+.datetime-dropdown {
+  min-width: 320px;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Date Picker Header */
+.date-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f3f4;
+  background-color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.month-year {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #212529;
+  min-width: 140px;
+  text-align: center;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  background-color: #e9ecef;
+  color: #212529;
+}
+
+/* Calendar Grid */
+.date-picker-calendar {
+  padding: 0.75rem;
+  background-color: white;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6c757d;
+  padding: 8px 4px;
+  text-transform: uppercase;
+}
+
+.dates {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-btn {
+  border: none;
+  background: none;
+  padding: 10px 4px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.date-btn:not(.other-month):hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.date-btn.other-month {
+  color: #c4c4c4;
+  cursor: not-allowed;
+}
+
+.date-btn.selected {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  font-weight: 600;
+  border: 1px solid #bbdefb;
+}
+
+.date-btn.today {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  font-weight: 600;
+  border: 1px solid #c8e6c9;
+}
+
+.date-btn.selected.today {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+/* Time Picker Section */
+.time-picker-section {
+  border-top: 1px solid #f1f3f4;
+  padding: 0.75rem 1rem;
+  
+}
+
+.time-picker-header {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.time-input {
+  width: 60px;
+  padding: 8px 4px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.time-input:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.time-input-group label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.time-separator {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #495057;
+  margin: 0 0.25rem;
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+.ampm-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 0.5rem;
+}
+
+.ampm-btn {
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 36px;
+  text-align: center;
+}
+
+.ampm-btn:hover {
+  border-color: #86b7fe;
+  background-color: #f8f9fa;
+}
+
+.ampm-btn.active {
+  background-color: #e3f2fd;
+  border-color: #bbdefb;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.quick-time-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.quick-time-buttons .btn {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+}
+
+/* Date Picker Footer */
+.date-picker-footer {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f1f3f4;
+  background-color: white;
+  border-radius: 0 0 8px 8px;
+}
+
+.date-picker-footer .btn {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .date-picker-modal {
+    margin: 1rem;
+    min-width: auto;
+    width: calc(100% - 2rem);
+    max-width: none;
+  }
+  
+  .datetime-modal {
+    min-width: auto;
+  }
+  
+  .date-picker-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .month-year {
+    font-size: 1rem;
+    min-width: 120px;
+  }
+  
+  .date-picker-calendar {
+    padding: 0.75rem;
+  }
+  
+  .time-picker-section {
+    padding: 0.75rem 1rem;
+  }
+  
+  .date-picker-footer {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .date-picker-footer .btn {
+    flex: 1;
+    min-width: auto;
+  }
+  
+  .quick-time-buttons {
+    gap: 0.25rem;
+  }
+  
+  .quick-time-buttons .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .date-picker-modal {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  .date-picker-header {
+    background-color: #4a5568;
+    border-bottom-color: #4a5568;
+  }
+  
+  .time-picker-section {
+    background-color: #4a5568;
+    border-top-color: #4a5568;
+  }
+  
+  .weekday {
+    color: #a0aec0;
+  }
+  
+  .date-btn:not(.other-month):hover {
+    background-color: #4299e1;
+    color: white;
+  }
+  
+  .date-btn.other-month {
+    color: #718096;
+  }
+  
+  .time-input {
+    background-color: #4a5568;
+    border-color: #718096;
+    color: #e2e8f0;
+  }
 }
 </style>

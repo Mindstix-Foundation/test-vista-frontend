@@ -5,12 +5,37 @@
       <router-link class="navbar-brand d-flex align-items-center" to="/">
         <img src="@/assets/Test.jpg" alt="Test Vista Logo" class="brand-logo" />
       </router-link>
+
+      <!-- Teacher/Admin Login Button -->
+      <div class="navbar-nav">
+        <router-link 
+          to="/teacher-admin-login" 
+          class="btn btn-outline-light"
+          v-if="!isTeacherAdminLoginPage"
+        >
+          Teacher/Admin Login
+        </router-link>
+        <router-link 
+          to="/login" 
+          class="btn btn-outline-light"
+          v-if="isTeacherAdminLoginPage"
+        >
+          Student Login
+        </router-link>
+      </div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-// No additional logic needed
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const isTeacherAdminLoginPage = computed(() => {
+  return route.path === '/teacher-admin-login'
+})
 </script>
 
 <style scoped>

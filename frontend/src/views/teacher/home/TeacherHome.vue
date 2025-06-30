@@ -14,8 +14,8 @@
     <div class="row justify-content-center">
       <div class="col-md-10">
         <div class="row row-cols-1 row-cols-md-3 g-4">
-          <!-- Syllabus Card -->
-          <div class="col">
+          <!-- Syllabus Card - Hidden for now -->
+          <div class="col hidden-card">
             <div class="card h-100 card-hover">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-book"></i> Syllabus</h5>
@@ -40,8 +40,8 @@
             </div>
           </div>
 
-          <!-- Test Papers Card -->
-          <div class="col">
+          <!-- Test Papers Card - Hidden for now -->
+          <div class="col hidden-card">
             <div class="card h-100 card-hover">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-file-earmark-text"></i> Test Papers</h5>
@@ -63,6 +63,11 @@
 </script>
 
 <style scoped>
+/* Hidden Cards */
+.hidden-card {
+  display: none !important;
+}
+
 .card-hover {
   transition: box-shadow 0.3s ease;
 }

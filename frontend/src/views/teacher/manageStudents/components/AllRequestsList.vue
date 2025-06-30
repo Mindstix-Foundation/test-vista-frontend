@@ -24,16 +24,32 @@
             <input 
               type="text" 
               class="form-control" 
-              placeholder="Search by student name or email..."
+              placeholder="Search by student name or roll number..."
               v-model="searchQuery"
             >
           </div>
         </div>
         <div class="col-md-6 mt-2 mt-md-0">
           <div class="d-flex gap-2">
+            <!-- Auto Refresh Button -->
+            <button 
+              type="button"
+              class="btn btn-sm position-relative"
+              :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
+              @click="toggleAutoRefresh"
+              :title="autoRefresh ? 'Auto-refresh ON (every 1 second)' : 'Auto-refresh OFF'"
+            >
+              <i class="bi bi-arrow-clockwise me-1" :class="{ 'spin-animation': autoRefresh && isRefreshing }"></i>
+              {{ autoRefresh ? 'Live' : 'Refresh' }}
+              <span v-if="autoRefresh" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle">
+                <span class="visually-hidden">Live updates</span>
+              </span>
+            </button>
+            
             <select class="form-select" v-model="sortBy" @change="sortRequests">
               <option value="requested_at">Sort by Request Date</option>
               <option value="student_name">Sort by Student Name</option>
+              <option value="roll_no">Sort by Roll Number</option>
               <option value="subject_name">Sort by Subject</option>
               <option value="status">Sort by Status</option>
             </select>
@@ -58,7 +74,7 @@
               <th scope="col">Status</th>
               <th scope="col">Request Date</th>
               <th scope="col">Response Date</th>
-              <th scope="col">Actions</th>
+              <th scope="col" class="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -69,14 +85,9 @@
             >
               <!-- Student Info -->
               <td>
-                <div class="d-flex align-items-center">
-                  <div class="avatar-circle me-3" :class="getAvatarClass(request.status)">
-                    <i class="bi bi-person-fill"></i>
-                  </div>
-                  <div>
-                    <div class="fw-semibold">{{ request.student.user.name }}</div>
-                    <small class="text-muted">{{ request.student.user.email_id }}</small>
-                  </div>
+                <div>
+                  <div class="fw-semibold">{{ request.student.user.name }}</div>
+                  <small class="text-muted">Roll: {{ request.student.student_id || 'N/A' }}</small>
                 </div>
               </td>
 
@@ -98,21 +109,24 @@
 
               <!-- Request Date -->
               <td>
-                <small class="text-muted">
-                  {{ formatDate(request.requested_at) }}
-                </small>
+                <div>
+                  <div class="fw-semibold">{{ formatDate(request.requested_at) }}</div>
+                  <small class="text-muted">{{ formatTime(request.requested_at) }}</small>
+                </div>
               </td>
 
               <!-- Response Date -->
               <td>
-                <small class="text-muted">
-                  {{ request.responded_at ? formatDate(request.responded_at) : '-' }}
-                </small>
+                <div v-if="request.responded_at">
+                  <div class="fw-semibold">{{ formatDate(request.responded_at) }}</div>
+                  <small class="text-muted">{{ formatTime(request.responded_at) }}</small>
+                </div>
+                <small v-else class="text-muted">-</small>
               </td>
 
               <!-- Actions -->
-              <td>
-                <div class="d-flex gap-1">
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
                   <button 
                     v-if="request.status === 'pending'"
                     class="btn btn-success btn-sm"
@@ -146,6 +160,16 @@
                     title="Deactivate Student"
                   >
                     <i class="bi bi-person-dash"></i>
+                  </button>
+                  <button 
+                    v-if="request.status === 'active' || request.status === 'approved'"
+                    class="btn btn-danger btn-sm"
+                    @click.stop="confirmRemoveStudent(request)"
+                    :disabled="processingRequestId === request.id"
+                    title="Remove Student"
+                    type="button"
+                  >
+                    <i class="bi bi-trash"></i>
                   </button>
                   <button 
                     class="btn btn-outline-secondary btn-sm"
@@ -212,7 +236,7 @@
               <div class="col-md-6">
                 <h6 class="fw-bold text-primary">Student Information</h6>
                 <p><strong>Name:</strong> {{ selectedRequest.student.user.name }}</p>
-                <p><strong>Email:</strong> {{ selectedRequest.student.user.email_id }}</p>
+                <p><strong>Roll Number:</strong> {{ selectedRequest.student.student_id || 'N/A' }}</p>
               </div>
               <div class="col-md-6">
                 <h6 class="fw-bold text-primary">Request Information</h6>
@@ -331,11 +355,78 @@
       </div>
     </div>
   </div>
+
+  <!-- Remove Student Confirmation Modal -->
+  <div 
+    class="modal fade" 
+    id="removeRequestStudentModal" 
+    tabindex="-1" 
+    aria-labelledby="removeRequestStudentModalLabel" 
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="removeRequestStudentModalLabel">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Remove Student
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div v-if="studentToRemove">
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              <strong>Warning:</strong> This action cannot be undone!
+            </div>
+            
+            <p><strong>Are you sure you want to remove this student?</strong></p>
+            
+            <div class="card">
+              <div class="card-body">
+                <div>
+                  <div class="fw-semibold">{{ studentToRemove.student.user.name }}</div>
+                  <small class="text-muted">Roll: {{ studentToRemove.student.student_id || 'N/A' }}</small>
+                  <br>
+                  <small class="text-muted">Subject: {{ studentToRemove.teacher_subject.subject.name }}</small>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-3">
+              <h6 class="text-danger">This will:</h6>
+              <ul class="text-danger">
+                <li>Permanently delete the student from the system</li>
+                <li>Remove all their enrollment records</li>
+                <li>Delete all their test attempts and results</li>
+                <li>Log them out immediately if currently logged in</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-danger"
+            @click="removeStudent"
+            :disabled="removing"
+          >
+            <span v-if="removing" class="spinner-border spinner-border-sm me-2"></span>
+            {{ removing ? 'Removing...' : 'Remove Student' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import axiosInstance from '@/config/axios'
+import { useToastStore } from '@/stores/toast'
 
 // Props & Emits
 interface EnrollmentRequest {
@@ -349,6 +440,7 @@ interface EnrollmentRequest {
   enrollment_date?: string
   student: {
     id: number
+    student_id?: string
     user: {
       id: number
       name: string
@@ -382,6 +474,16 @@ const itemsPerPage = 10
 const processingRequestId = ref<number | null>(null)
 const selectedRequest = ref<EnrollmentRequest | null>(null)
 const rejectReason = ref('')
+const toastStore = useToastStore()
+
+// State for remove functionality
+const removing = ref(false)
+const studentToRemove = ref<EnrollmentRequest | null>(null)
+
+// Auto-refresh state
+const autoRefresh = ref(false)
+const isRefreshing = ref(false)
+let refreshInterval: number | null = null
 
 // Computed properties
 const filteredRequests = computed(() => {
@@ -392,7 +494,7 @@ const filteredRequests = computed(() => {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(request => 
       request.student.user.name.toLowerCase().includes(query) ||
-      request.student.user.email_id.toLowerCase().includes(query) ||
+      (request.student.student_id && request.student.student_id.toLowerCase().includes(query)) ||
       request.teacher_subject.subject.name.toLowerCase().includes(query)
     )
   }
@@ -406,6 +508,10 @@ const filteredRequests = computed(() => {
       case 'student_name':
         aValue = a.student.user.name.toLowerCase()
         bValue = b.student.user.name.toLowerCase()
+        break
+      case 'roll_no':
+        aValue = parseInt(a.student.student_id || '0')
+        bValue = parseInt(b.student.student_id || '0')
         break
       case 'subject_name':
         aValue = a.teacher_subject.subject.name.toLowerCase()
@@ -437,7 +543,7 @@ const totalPages = computed(() => {
     const query = searchQuery.value.toLowerCase()
     total = props.requests.filter(request => 
       request.student.user.name.toLowerCase().includes(query) ||
-      request.student.user.email_id.toLowerCase().includes(query) ||
+      (request.student.student_id && request.student.student_id.toLowerCase().includes(query)) ||
       request.teacher_subject.subject.name.toLowerCase().includes(query)
     ).length
   }
@@ -457,10 +563,15 @@ const visiblePages = computed(() => {
 
 // Methods
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+const formatTime = (dateString: string) => {
+  return new Date(dateString).toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit'
   })
@@ -582,6 +693,152 @@ const submitReject = async () => {
   }
 }
 
+/**
+ * Confirm student removal
+ */
+const confirmRemoveStudent = (request: EnrollmentRequest) => {
+  studentToRemove.value = request
+  
+  // Use a more reliable way to show the modal
+  const modalElement = document.getElementById('removeRequestStudentModal')
+  if (modalElement) {
+    // Try to use Bootstrap's Modal class
+    try {
+      const modal = new (window as any).bootstrap.Modal(modalElement)
+      modal.show()
+    } catch (error) {
+      console.error('Bootstrap Modal error:', error)
+      // Fallback: manually add show class
+      modalElement.classList.add('show')
+      modalElement.style.display = 'block'
+      document.body.classList.add('modal-open')
+      
+      // Add backdrop
+      const backdrop = document.createElement('div')
+      backdrop.className = 'modal-backdrop fade show'
+      backdrop.id = 'request-modal-backdrop'
+      document.body.appendChild(backdrop)
+    }
+  }
+}
+
+/**
+ * Remove student from system
+ */
+const removeStudent = async () => {
+  if (!studentToRemove.value) return
+  
+  removing.value = true
+  
+  try {
+    await axiosInstance.delete(`/students/${studentToRemove.value.student.id}`)
+    
+    // Close modal
+    const modalElement = document.getElementById('removeRequestStudentModal')
+    if (modalElement) {
+      try {
+        const modal = (window as any).bootstrap.Modal.getInstance(modalElement)
+        if (modal) {
+          modal.hide()
+        } else {
+          // Fallback: manually hide modal
+          hideRequestModal()
+        }
+      } catch (error) {
+        console.error('Error closing modal:', error)
+        hideRequestModal()
+      }
+    }
+    
+    // Reset
+    studentToRemove.value = null
+    
+    // Emit request updated event to refresh the list
+    emit('request-updated')
+    
+    // Show success toast notification
+    toastStore.showToast({
+      title: 'Success',
+      message: `Student "${studentToRemove.value!.student.user.name}" has been removed successfully.`,
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('Error removing student:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to remove student. Please try again.',
+      type: 'error'
+    })
+  } finally {
+    removing.value = false
+  }
+}
+
+/**
+ * Manually hide modal (fallback)
+ */
+const hideRequestModal = () => {
+  const modalElement = document.getElementById('removeRequestStudentModal')
+  if (modalElement) {
+    modalElement.classList.remove('show')
+    modalElement.style.display = 'none'
+    document.body.classList.remove('modal-open')
+    
+    // Remove backdrop
+    const backdrop = document.getElementById('request-modal-backdrop')
+    if (backdrop) {
+      backdrop.remove()
+    }
+  }
+}
+
+/**
+ * Toggle auto-refresh functionality
+ */
+const toggleAutoRefresh = () => {
+  autoRefresh.value = !autoRefresh.value
+  
+  if (autoRefresh.value) {
+    startAutoRefresh()
+  } else {
+    stopAutoRefresh()
+  }
+}
+
+/**
+ * Start auto-refresh interval
+ */
+const startAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+  
+  refreshInterval = setInterval(async () => {
+    isRefreshing.value = true
+    emit('request-updated') // This will trigger a silent refresh in the parent component
+    // Add a small delay to show the spinning animation
+    setTimeout(() => {
+      isRefreshing.value = false
+    }, 200)
+  }, 1000) // Refresh every 1 second
+}
+
+/**
+ * Stop auto-refresh interval
+ */
+const stopAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+  isRefreshing.value = false
+}
+
+// Cleanup
+onUnmounted(() => {
+  stopAutoRefresh()
+})
+
 // Watchers
 watch(searchQuery, () => {
   currentPage.value = 1
@@ -664,5 +921,19 @@ watch(searchQuery, () => {
 
 .border-3 {
   border-width: 3px !important;
+}
+
+/* Auto-refresh animation */
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style> 

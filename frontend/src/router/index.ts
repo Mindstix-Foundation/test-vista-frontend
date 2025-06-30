@@ -10,12 +10,15 @@ import ForgetPassword from '@/views/login/ForgetPassword.vue'
 import ResetPassword from '@/views/login/ResetPassword.vue'
 import ChangePassword from '@/views/login/ChangePassword.vue'
 import StudentRegistration from '@/views/login/StudentRegistration.vue'
+import ItiStudentRegistration from '@/views/login/ItiStudentRegistration.vue'
+import ItiStudentLogin from '@/views/login/ItiStudentLogin.vue'
+import TeacherAdminLogin from '@/views/login/TeacherAdminLogin.vue'
 import AdminProfile from '@/views/admin/profile/AdminProfile.vue'
 import TeacherProfile from '@/views/teacher/profile/TeacherProfile.vue'
 import { useAuthStore } from '@/stores/auth'
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/change-password', '/student-registration']
+const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/change-password', '/student-registration', '/iti-student-registration', '/iti-student-login', '/teacher-admin-login']
 
 // Update the route meta type
 declare module 'vue-router' {
@@ -36,6 +39,24 @@ const routes: RouteRecordRaw[] = [
     path: '/student-registration',
     name: 'studentRegistration',
     component: StudentRegistration,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/iti-student-registration',
+    name: 'iti-student-registration',
+    component: ItiStudentRegistration,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/iti-student-login',
+    name: 'iti-student-login',
+    component: ItiStudentLogin,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/teacher-admin-login',
+    name: 'teacher-admin-login',
+    component: TeacherAdminLogin,
     meta: { requiresAuth: false },
   },
   {
@@ -240,9 +261,14 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/home/TeacherHome.vue'),
       },
       {
-        path: 'assign-online-test',
+        path: 'assign-test',
         name: 'assignOnlineTest',
         component: () => import('@/views/teacher/assignTest/assignTestDashboard.vue'),
+      },
+      {
+        path: 'assign-test/:testPaperId/students',
+        name: 'assignToStudents',
+        component: () => import('@/views/teacher/assignTest/assignToStudents.vue'),
       },
       {
         path: 'assign-test/create',
@@ -285,6 +311,16 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/manageStudents/ManageStudents.vue'),
       },
       {
+        path: 'manage-iti-students',
+        name: 'manageItiStudents',
+        component: () => import('@/views/teacher/manageItiStudents/ManageItiStudents.vue'),
+      },
+      {
+        path: 'iti-students/:standardId/:schoolId',
+        name: 'itiStudentsList',
+        component: () => import('@/views/teacher/manageItiStudents/ItiStudentsList.vue'),
+      },
+      {
         path: 'create-test-paper',
         name: 'createTestPaper',
         component: () => import('@/views/teacher/createTestPaper/createTestPaperDashboard.vue'),
@@ -320,6 +356,11 @@ const routes: RouteRecordRaw[] = [
         name: 'saveTestPaper',
         component: () => import('@/views/teacher/createTestPaper/saveTestPaper.vue'),
       },
+      {
+        path: 'result-dashboard/:testPaperId',
+        name: 'testResultDashboard',
+        component: () => import('@/views/teacher/resultDashboard/ResultDashboard.vue'),
+      },
     ],
   },
   // Student routes
@@ -330,7 +371,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        redirect: { name: 'studentHome' },
+        redirect: { name: 'studentExam' },
       },
       {
         path: 'home',
@@ -440,7 +481,7 @@ router.beforeEach(async (to, from, next) => {
       } else if (userRole === 'TEACHER') {
         next({ path: '/teacher/home' })
       } else if (userRole === 'STUDENT') {
-        next({ path: '/student/home' })
+        next({ path: '/student/exam' })
       } else {
         next({ path: '/admin/board' })
       }
