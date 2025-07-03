@@ -17,9 +17,22 @@
                   <span class="text-muted">{{ route.query.boardName }}</span>
                 </div>
               </div>
-              <button class="btn btn-outline-secondary" @click="goBack">
-                <i class="bi bi-arrow-left"></i> Back
-              </button>
+              <div class="d-flex gap-2">
+                <button 
+                  v-if="students.length > 0"
+                  class="btn btn-danger" 
+                  @click="confirmRemoveAllStudents"
+                  :disabled="removing"
+                  title="Remove All Students"
+                >
+                  <i class="bi bi-trash me-1"></i>
+                  <span class="d-none d-md-inline">Remove All</span>
+                </button>
+                <button class="btn btn-outline-secondary" @click="goBack">
+                  <i class="bi bi-arrow-left"></i> 
+                  <span class="d-none d-sm-inline">Back</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -89,15 +102,8 @@
             </div>
           </div>
 
-          <!-- No students message -->
-          <div v-if="students.length === 0" class="text-center py-5">
-            <i class="bi bi-person-x display-1 text-muted mb-3"></i>
-            <h5 class="text-muted">No ITI Students Found</h5>
-            <p class="text-muted">No students have registered for this standard yet.</p>
-          </div>
-
           <!-- Students Table -->
-          <div v-else class="card border-0 shadow-sm">
+          <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-bottom">
               <div class="d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">
@@ -142,7 +148,15 @@
               </div>
             </div>
             <div class="card-body p-0">
-              <div class="table-responsive">
+              <!-- No students message inside table -->
+              <div v-if="students.length === 0" class="text-center py-5">
+                <i class="bi bi-person-x display-1 text-muted mb-3"></i>
+                <h5 class="text-muted">No ITI Students Found</h5>
+                <p class="text-muted">No students have registered for this standard yet.</p>
+              </div>
+              
+              <!-- Students Table -->
+              <div v-else class="table-responsive">
                 <table class="table table-hover mb-0">
                   <thead class="table-light">
                     <tr>
@@ -257,6 +271,74 @@
       </div>
     </div>
   </div>
+
+  <!-- Remove All Students Confirmation Modal -->
+  <div 
+    class="modal fade" 
+    id="removeAllStudentsModal" 
+    tabindex="-1" 
+    aria-labelledby="removeAllStudentsModalLabel" 
+    aria-hidden="true"
+    data-bs-backdrop="static"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="removeAllStudentsModalLabel">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Remove All Students
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Warning:</strong> This action cannot be undone!
+          </div>
+          
+          <p class="mb-3">
+            <strong>Are you sure you want to remove ALL {{ students.length }} students?</strong>
+          </p>
+          
+          <div class="mb-3">
+            <h6 class="text-danger">This will:</h6>
+            <ul class="text-danger">
+              <li>Permanently delete all {{ students.length }} students from the system</li>
+              <li>Remove all their enrollment records</li>
+              <li>Delete all their test attempts and results</li>
+              <li>Log them out immediately if currently logged in</li>
+              <li>Clear the entire student list for this standard</li>
+            </ul>
+          </div>
+          
+          <div class="form-group">
+            <label for="confirmAllText" class="form-label">Type "sure" to confirm deletion of all students:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="confirmAllText"
+              v-model="confirmationText"
+              placeholder="Type 'sure' here"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-danger"
+            @click="removeAllStudents"
+            :disabled="confirmationText !== 'sure' || removingAll"
+          >
+            <span v-if="removingAll" class="spinner-border spinner-border-sm me-2"></span>
+            {{ removingAll ? 'Removing All...' : 'Remove All Students' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -293,9 +375,11 @@ const sortBy = ref('roll_no')
 const sortOrder = ref('asc')
 const removing = ref(false)
 const studentToRemove = ref<ItiStudent | null>(null)
+const confirmationText = ref('')
+const removingAll = ref(false)
 
 // Auto-refresh state
-const autoRefresh = ref(false)
+const autoRefresh = ref(true)
 const isRefreshing = ref(false)
 let refreshInterval: number | null = null
 
@@ -456,6 +540,33 @@ const confirmRemoveStudent = (student: ItiStudent) => {
 }
 
 /**
+ * Confirm removal of all students
+ */
+const confirmRemoveAllStudents = () => {
+  confirmationText.value = ''
+  
+  const modalElement = document.getElementById('removeAllStudentsModal')
+  if (modalElement) {
+    try {
+      const modal = new (window as any).bootstrap.Modal(modalElement)
+      modal.show()
+    } catch (error) {
+      console.error('Bootstrap Modal error:', error)
+      // Fallback: manually add show class
+      modalElement.classList.add('show')
+      modalElement.style.display = 'block'
+      document.body.classList.add('modal-open')
+      
+      // Add backdrop
+      const backdrop = document.createElement('div')
+      backdrop.className = 'modal-backdrop fade show'
+      backdrop.id = 'modal-backdrop-all'
+      document.body.appendChild(backdrop)
+    }
+  }
+}
+
+/**
  * Remove student from system
  */
 const removeStudent = async () => {
@@ -478,21 +589,22 @@ const removeStudent = async () => {
           modal.hide()
         } else {
           // Fallback: manually hide modal
-          hideModal()
+          hideModal('removeStudentModal', 'modal-backdrop')
         }
       } catch (error) {
         console.error('Error closing modal:', error)
-        hideModal()
+        hideModal('removeStudentModal', 'modal-backdrop')
       }
     }
     
+    const studentName = studentToRemove.value.user.name
     // Reset
     studentToRemove.value = null
     
     // Show success toast notification
     toastStore.showToast({
       title: 'Success',
-      message: `Student "${studentToRemove.value!.user.name}" has been removed successfully.`,
+      message: `Student "${studentName}" has been removed successfully.`,
       type: 'success'
     })
   } catch (error) {
@@ -508,17 +620,79 @@ const removeStudent = async () => {
 }
 
 /**
+ * Remove all students from system
+ */
+const removeAllStudents = async () => {
+  if (confirmationText.value !== 'sure') return
+  
+  removingAll.value = true
+  
+  try {
+    const standardId = route.params.standardId
+    const schoolId = route.params.schoolId
+    
+    // Call API to remove all students for this standard and school
+    await axiosInstance.delete('/iti-mocktest/students/all', {
+      params: {
+        schoolId: schoolId,
+        standardId: standardId
+      }
+    })
+    
+    const studentCount = students.value.length
+    
+    // Clear local list
+    students.value = []
+    
+    // Close modal
+    const modalElement = document.getElementById('removeAllStudentsModal')
+    if (modalElement) {
+      try {
+        const modal = (window as any).bootstrap.Modal.getInstance(modalElement)
+        if (modal) {
+          modal.hide()
+        } else {
+          hideModal('removeAllStudentsModal', 'modal-backdrop-all')
+        }
+      } catch (error) {
+        console.error('Error closing modal:', error)
+        hideModal('removeAllStudentsModal', 'modal-backdrop-all')
+      }
+    }
+    
+    // Reset confirmation text
+    confirmationText.value = ''
+    
+    // Show success toast notification
+    toastStore.showToast({
+      title: 'Success',
+      message: `All ${studentCount} students have been removed successfully.`,
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('Error removing all students:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to remove all students. Please try again.',
+      type: 'error'
+    })
+  } finally {
+    removingAll.value = false
+  }
+}
+
+/**
  * Manually hide modal (fallback)
  */
-const hideModal = () => {
-  const modalElement = document.getElementById('removeStudentModal')
+const hideModal = (modalId: string, backdropId: string) => {
+  const modalElement = document.getElementById(modalId)
   if (modalElement) {
     modalElement.classList.remove('show')
     modalElement.style.display = 'none'
     document.body.classList.remove('modal-open')
     
     // Remove backdrop
-    const backdrop = document.getElementById('modal-backdrop')
+    const backdrop = document.getElementById(backdropId)
     if (backdrop) {
       backdrop.remove()
     }
@@ -574,6 +748,11 @@ const goBack = () => {
 // Initialize
 onMounted(() => {
   fetchItiStudents()
+  
+  // Start auto-refresh by default
+  if (autoRefresh.value) {
+    startAutoRefresh()
+  }
 })
 
 // Cleanup

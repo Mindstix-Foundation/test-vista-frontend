@@ -5,7 +5,7 @@
   <!-- Page Content -->
   <div class="container">
     <div class="card p-4" style="max-width: 400px; width: 100%">
-      <h3 class="card-title text-center">Student Login</h3>
+      <h3 class="card-title text-center">Student Registration</h3>
       <p class="text-center">Student Portal</p>
 
       <!-- Student Options -->
@@ -13,11 +13,6 @@
         <!-- Primary Registration Button -->
         <button class="btn btn-success w-100 mb-3 btn-lg" @click="itiStudentRegistration">
           Student Registration
-        </button>
-        
-        <!-- Secondary Login Button - Smaller -->
-        <button class="btn btn-outline-success w-100 btn-sm" @click="itiStudentLogin">
-          Student Login
         </button>
       </div>
 
@@ -34,10 +29,6 @@ import LoginNavBar from '@/components/LoginNavBar.vue'
 
 const router = useRouter()
 const errorMessage = ref('')
-
-const itiStudentLogin = () => {
-  router.push({ name: 'iti-student-login' })
-}
 
 const itiStudentRegistration = () => {
   router.push({ name: 'iti-student-registration' })

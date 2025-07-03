@@ -30,7 +30,7 @@
               <router-link
                 class="nav-link pb-0"
                 id="navHome"
-                to="/student/exam"
+                to="/student/home"
                 @click="closeOffcanvas"
               >
                 <i class="bi bi-house-fill me-1"></i>HOME

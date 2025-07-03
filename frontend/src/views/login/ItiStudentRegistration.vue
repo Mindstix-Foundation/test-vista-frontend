@@ -63,7 +63,7 @@
                 v-model="formData.rollNo"
                 placeholder="Enter Roll Number"
                 @input="handleRollNoInput"
-                @keydown="handleKeyDown($event, 'board')"
+                @keydown="handleKeyDown($event, 'contactNumber')"
                 required
               />
               <label for="rollNo" class="form-label">Roll Number <span class="text-danger">*</span></label>
@@ -98,7 +98,7 @@
                 class="invalid-feedback"
                 v-if="!validationStates.contactNumber.valid && validationStates.contactNumber.touched"
               >
-                Please enter a valid contact number
+                Please enter a valid 10-digit contact number
               </div>
             </div>
           </div>
@@ -118,6 +118,7 @@
                 v-model="formData.email"
                 placeholder="Enter Email"
                 @input="handleEmailInput"
+                @keydown="handleKeyDown($event, 'board')"
               />
               <label for="email" class="form-label">Email</label>
               <div
@@ -331,13 +332,26 @@ const validateRollNo = (rollNo: string): boolean => {
 
 const formatRollNo = (rollNo: string): string => {
   // Remove all spaces and non-alphanumeric characters, then convert to uppercase
-  return rollNo.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+  let formatted = rollNo.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+  
+  // Remove leading zeros if the string contains only digits
+  if (/^\d+$/.test(formatted)) {
+    formatted = formatted.replace(/^0+/, '') || '0' // Keep at least one zero if all zeros
+  }
+  
+  return formatted
 }
 
 const validateContactNumber = (contactNumber: string): boolean => {
   if (!contactNumber.trim()) return true // Optional field
-  const phoneRegex = /^[+]?[\d\s\-\(\)]{10,15}$/
+  // Only allow exactly 10 digits
+  const phoneRegex = /^\d{10}$/
   return phoneRegex.test(contactNumber.trim())
+}
+
+const formatContactNumber = (contactNumber: string): string => {
+  // Remove all non-digit characters and limit to 10 digits
+  return contactNumber.replace(/\D/g, '').slice(0, 10)
 }
 
 const validateEmail = (email: string): boolean => {
@@ -380,6 +394,8 @@ const handleRollNoInput = async () => {
 }
 
 const handleContactNumberInput = () => {
+  // Format the contact number in real-time as user types
+  formData.contactNumber = formatContactNumber(formData.contactNumber)
   validationStates.contactNumber.touched = true
   validationStates.contactNumber.valid = validateContactNumber(formData.contactNumber)
 }
@@ -540,7 +556,7 @@ const handleSubmit = async () => {
     console.error('Registration error:', error)
     const axiosError = error as AxiosError
     if (axiosError.response?.status === 409) {
-      errorMessage.value = 'Roll number already exists in this college. Please use a different roll number.'
+      errorMessage.value = 'Roll number already exists in this class. Please use a different roll number.'
     } else if (axiosError.response?.status === 404) {
       errorMessage.value = 'College and standard combination not found. Please check your selections.'
     } else {

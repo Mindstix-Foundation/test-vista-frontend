@@ -13,7 +13,7 @@
     <!-- Main Content -->
     <div class="row gy-2 g-3 justify-content-center mt-2">
       <div class="col-12 col-sm-10">
-        <!-- Filter Tabs -->
+        <!-- Filter Tabs and Auto Refresh -->
         <div class="row mb-4">
           <div class="col-12">
             <div class="d-flex gap-2 mb-3">
@@ -59,6 +59,20 @@
                   Absent
                 </button>
               </div>
+              
+              <!-- Auto Refresh Button -->
+              <button 
+                @click="toggleAutoRefresh" 
+                class="btn refresh-btn"
+                :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
+                :title="autoRefresh ? 'Auto-refresh ON (every 2 sec)' : 'Auto-refresh OFF'"
+              >
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                <span class="d-none d-sm-inline">{{ autoRefresh ? 'Live' : 'Refresh' }}</span>
+                <span v-if="autoRefresh" class="spinner-border spinner-border-sm ms-2" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>
+              </button>
             </div>
             
             <h6 class="mb-3 d-flex justify-content-between align-items-center">
@@ -218,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 import testAssignmentService, { type StudentAssignedTest } from '@/services/testAssignmentService'
@@ -240,6 +254,10 @@ const showToast = ref(false)
 const toastTitle = ref('')
 const toastMessage = ref('')
 const toastType = ref('success')
+
+// Auto-refresh state
+const autoRefresh = ref(true)
+const refreshInterval = ref<number | null>(null)
 
 // Computed properties
 const filteredTests = computed(() => {
@@ -269,9 +287,11 @@ const getFilterTitle = () => {
   }
 }
 
-const fetchAssignedTests = async () => {
+const fetchAssignedTests = async (showLoading = true) => {
   try {
-    isLoading.value = true
+    if (showLoading) {
+      isLoading.value = true
+    }
     assignedTests.value = await testAssignmentService.getStudentAssignedTests()
   } catch (error) {
     console.error('Error fetching assigned tests:', error)
@@ -281,7 +301,9 @@ const fetchAssignedTests = async () => {
       'error'
     )
   } finally {
-    isLoading.value = false
+    if (showLoading) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -306,6 +328,23 @@ const showToastMessage = (title: string, message: string, type: 'success' | 'err
   showToast.value = true
 }
 
+const toggleAutoRefresh = () => {
+  autoRefresh.value = !autoRefresh.value
+  
+  if (autoRefresh.value) {
+    // Start auto-refresh every 2 seconds without showing loading state
+    refreshInterval.value = setInterval(async () => {
+      await fetchAssignedTests(false)
+    }, 2000)
+  } else {
+    // Stop auto-refresh
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value)
+      refreshInterval.value = null
+    }
+  }
+}
+
 // Utility methods using the service
 const getStatusBadgeClass = (status: string) => {
   return testAssignmentService.getStatusBadgeClass(status)
@@ -322,6 +361,21 @@ const formatRemainingTime = (remainingTime: string) => {
 // Lifecycle
 onMounted(() => {
   fetchAssignedTests()
+  
+  // Start auto-refresh by default
+  if (autoRefresh.value) {
+    refreshInterval.value = setInterval(async () => {
+      await fetchAssignedTests(false)
+    }, 2000)
+  }
+})
+
+onUnmounted(() => {
+  // Clean up auto-refresh interval when component is unmounted
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+    refreshInterval.value = null
+  }
 })
 </script>
 
@@ -515,6 +569,41 @@ onMounted(() => {
   color: white;
 }
 
+/* Refresh button styling */
+.refresh-btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.refresh-btn.btn-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-color: #28a745;
+}
+
+.refresh-btn.btn-success:hover {
+  background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+  border-color: #218838;
+}
+
+.refresh-btn.btn-outline-secondary {
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.refresh-btn.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
 /* Enhanced empty state styling */
 .empty-state {
   display: flex;
@@ -614,6 +703,27 @@ h6 {
   
   .btn-group .btn {
     flex: 1;
+  }
+  
+  /* Refresh button responsive styling */
+  .refresh-btn {
+    min-width: 60px;
+    margin-left: 0.5rem;
+  }
+  
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+  
+  .d-flex.gap-2 .btn-group {
+    flex: 1 1 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .d-flex.gap-2 .refresh-btn {
+    flex: 0 0 auto;
+    margin-left: 0;
+    width: 100%;
   }
 }
 

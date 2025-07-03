@@ -317,7 +317,14 @@ const handleNameInput = () => {
 
 const formatRollNo = (rollNo: string): string => {
   // Remove all spaces and non-alphanumeric characters, then convert to uppercase
-  return rollNo.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+  let formatted = rollNo.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+  
+  // Remove leading zeros if the string contains only digits
+  if (/^\d+$/.test(formatted)) {
+    formatted = formatted.replace(/^0+/, '') || '0' // Keep at least one zero if all zeros
+  }
+  
+  return formatted
 }
 
 const handleRollNoInput = () => {

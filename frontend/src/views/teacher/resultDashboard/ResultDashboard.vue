@@ -6,9 +6,21 @@
         <h5 class="m-0 fw-bolder text-uppercase">Result Dashboard</h5>
       </div>
       <div class="col-12 col-sm-6 text-end">
-        <router-link to="/teacher/assign-test" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left me-2"></i>Back to Tests
-        </router-link>
+        <div class="d-flex gap-2 justify-content-end">
+          <button 
+            v-if="completedCount > 0"
+            @click="downloadPDF" 
+            class="btn btn-primary"
+            :disabled="isGeneratingPDF"
+          >
+            <span v-if="isGeneratingPDF" class="spinner-border spinner-border-sm me-2"></span>
+            <i v-else class="bi bi-download me-2"></i>
+            {{ isGeneratingPDF ? 'Generating...' : 'Save PDF' }}
+          </button>
+          <router-link to="/teacher/assign-test" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Tests
+          </router-link>
+        </div>
       </div>
     </div>
     <hr class="mb-4">
@@ -295,8 +307,9 @@ const isLoading = ref(true)
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const error = ref<string | null>(null)
-const autoRefresh = ref(false)
+const autoRefresh = ref(true)
 const refreshInterval = ref<number | null>(null)
+const isGeneratingPDF = ref(false)
 
 // Test paper info
 const testPaperInfo = ref<TestPaperInfo | null>(null)
@@ -425,8 +438,6 @@ const fetchTestPaperResults = async () => {
       submittedAt: result.submitted_at || null
     }))
 
-
-
   } catch (err) {
     console.error('Error fetching test paper results:', err)
     error.value = 'Failed to load test results. Please try again.'
@@ -458,8 +469,6 @@ const toggleAutoRefresh = () => {
   }
 }
 
-
-
 const getRankClass = (rank: number | null) => {
   if (!rank || rank === 0) return 'rank-pending'
   if (rank === 1) return 'rank-gold'
@@ -467,8 +476,6 @@ const getRankClass = (rank: number | null) => {
   if (rank === 3) return 'rank-bronze'
   return 'rank-default'
 }
-
-
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
@@ -480,8 +487,6 @@ const getStatusBadgeClass = (status: string) => {
       return 'bg-secondary'
   }
 }
-
-
 
 const formatTime = (seconds: number | null) => {
   if (!seconds) return '-'
@@ -498,13 +503,223 @@ const formatTime = (seconds: number | null) => {
   }
 }
 
+const downloadPDF = () => {
+  if (!testPaperInfo.value) return
+  
+  isGeneratingPDF.value = true
+  
+  try {
+    // Create a new window with the printable content
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      throw new Error('Unable to open print window')
+    }
+    
+    // Generate HTML content for PDF
+    const htmlContent = generatePDFContent()
+    
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+    
+    // Wait for content to load, then trigger print
+    printWindow.onload = () => {
+      printWindow.print()
+      printWindow.close()
+    }
+    
+  } catch (error) {
+    console.error('Error generating PDF:', error)
+    alert('Failed to generate PDF. Please try again.')
+  } finally {
+    isGeneratingPDF.value = false
+  }
+}
 
+const generatePDFContent = () => {
+  if (!testPaperInfo.value) return ''
+  
+  const currentDate = new Date().toLocaleDateString('en-GB')
+  const currentTime = new Date().toLocaleTimeString('en-GB')
+  
+  // Filter only completed results for PDF
+  const completedResults = filteredResults.value.filter(result => result.status === 'completed')
+  
+  let tableRows = ''
+  completedResults.forEach((result, index) => {
+    tableRows += `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${index + 1}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${result.rollNumber}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${result.name}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${result.marksObtained}/${testPaperInfo.value?.totalMarks}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${result.percentage?.toFixed(1)}%</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${formatTime(result.timeTaken)}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${result.rank === 0 ? '-' : result.rank}</td>
+      </tr>
+    `
+  })
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Test Results - ${testPaperInfo.value.name}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #007bff;
+          padding-bottom: 20px;
+        }
+        .test-info {
+          background: #f8f9fa;
+          padding: 20px;
+          border-radius: 8px;
+          margin-bottom: 30px;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+        }
+        .info-item {
+          margin-bottom: 10px;
+        }
+        .stats-section {
+          background: #e9f4ff;
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 30px;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          text-align: center;
+        }
+        .stat-item {
+          padding: 10px;
+        }
+        .stat-value {
+          font-size: 1.5em;
+          font-weight: bold;
+          color: #007bff;
+        }
+        .stat-label {
+          font-size: 0.9em;
+          color: #666;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+        }
+        th {
+          background-color: #343a40;
+          color: white;
+          padding: 12px 8px;
+          text-align: center;
+          font-weight: bold;
+        }
+        .footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 0.9em;
+          color: #666;
+        }
+        @media print {
+          body { margin: 0; }
+          .header { margin-bottom: 20px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Test Results Report</h1>
+        <h2>${testPaperInfo.value.name}</h2>
+        <p>Generated on ${currentDate} at ${currentTime}</p>
+      </div>
+      
+      <div class="test-info">
+        <h3>Test Information</h3>
+        <div class="info-grid">
+          <div>
+            <div class="info-item"><strong>Subject:</strong> ${testPaperInfo.value.subject}</div>
+            <div class="info-item"><strong>Standard:</strong> ${testPaperInfo.value.standard}</div>
+          </div>
+          <div>
+            <div class="info-item"><strong>Total Marks:</strong> ${testPaperInfo.value.totalMarks}</div>
+            <div class="info-item"><strong>Duration:</strong> ${testPaperInfo.value.duration} minutes</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-section">
+        <h3>Test Statistics</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value">${completedResults.length}</div>
+            <div class="stat-label">Students Completed</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${calculatedStats.value.highest}</div>
+            <div class="stat-label">Highest Score</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${calculatedStats.value.average}</div>
+            <div class="stat-label">Average Score</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${calculatedStats.value.passRate}%</div>
+            <div class="stat-label">Pass Rate</div>
+          </div>
+        </div>
+      </div>
+      
+      <h3>Student Results (${completedResults.length} students)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>S.No.</th>
+            <th>Roll Number</th>
+            <th>Student Name</th>
+            <th>Marks</th>
+            <th>Percentage</th>
+            <th>Time Taken</th>
+            <th>Rank</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+      
+      <div class="footer">
+        <p>This report contains results for students who have completed the test.</p>
+        <p>Report generated from Vista Education System</p>
+      </div>
+    </body>
+    </html>
+  `
+}
 
 // Lifecycle
 onMounted(async () => {
   try {
     isLoading.value = true
     await fetchTestPaperResults()
+    
+    // Start auto-refresh by default
+    if (autoRefresh.value) {
+      refreshInterval.value = setInterval(async () => {
+        await fetchTestPaperResults()
+      }, 1000)
+    }
   } catch (err) {
     console.error('Error loading result dashboard:', err)
   } finally {
@@ -660,8 +875,6 @@ input[type="text"]:focus {
   vertical-align: middle;
 }
 
-
-
 .result-row:hover {
   background-color: #f8f9fa;
 }
@@ -688,8 +901,6 @@ input[type="text"]:focus {
   font-family: 'Courier New', monospace;
   font-weight: 500;
 }
-
-
 
 .rank-badge {
   display: inline-flex;
@@ -740,8 +951,6 @@ input[type="text"]:focus {
   width: 32px;
   height: 32px;
 }
-
-
 
 /* Statistics Card */
 .statistics-card {
@@ -832,6 +1041,17 @@ input[type="text"]:focus {
   
   .w-lg-auto {
     width: 100% !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+  
+  .d-flex.gap-2 > * {
+    width: 100%;
   }
 }
 

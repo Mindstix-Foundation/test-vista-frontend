@@ -211,80 +211,89 @@
 
     <!-- Modals -->
     <!-- Fullscreen Warning Modal -->
-    <div class="modal" :class="{ show: showFullscreenWarning }" tabindex="-1" style="display: block;" v-if="showFullscreenWarning">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-warning">
-            <h5 class="modal-title">
-              <i class="bi bi-exclamation-triangle"></i> Fullscreen Required
-            </h5>
-          </div>
-          <div class="modal-body">
-            <p>This exam must be taken in fullscreen mode for security purposes.</p>
-            <p>Please click "Enter Fullscreen" to continue with your exam.</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-warning" @click="enterFullscreen">
-              <i class="bi bi-arrows-fullscreen"></i> Enter Fullscreen
-            </button>
+    <div v-if="showFullscreenWarning">
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal fade show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title">
+                <i class="bi bi-exclamation-triangle"></i> Fullscreen Required
+              </h5>
+            </div>
+            <div class="modal-body">
+              <p>This exam must be taken in fullscreen mode for security purposes.</p>
+              <p>Please click "Enter Fullscreen" to continue with your exam.</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-warning" @click="enterFullscreen">
+                <i class="bi bi-arrows-fullscreen"></i> Enter Fullscreen
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Exit Warning Modal -->
-    <div class="modal" :class="{ show: showExitWarning }" tabindex="-1" style="display: block;" v-if="showExitWarning">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">
-              <i class="bi bi-exclamation-triangle"></i> Warning: Fullscreen Exited
-            </h5>
-          </div>
-          <div class="modal-body">
-            <p><strong>You have exited fullscreen mode!</strong></p>
-            <p>This action has been recorded. Please return to fullscreen mode immediately to continue your exam.</p>
-            <p class="text-danger">Multiple violations may result in automatic submission of your exam.</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-danger" @click="returnToFullscreen">
-              <i class="bi bi-arrows-fullscreen"></i> Return to Fullscreen
-            </button>
+    <div v-if="showExitWarning">
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal fade show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-exclamation-triangle"></i> Warning: Fullscreen Exited
+              </h5>
+            </div>
+            <div class="modal-body">
+              <p><strong>You have exited fullscreen mode!</strong></p>
+              <p>This action has been recorded. Please return to fullscreen mode immediately to continue your exam.</p>
+              <p class="text-danger">Multiple violations may result in automatic submission of your exam.</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-danger" @click="returnToFullscreen">
+                <i class="bi bi-arrows-fullscreen"></i> Return to Fullscreen
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Submit Confirmation Modal -->
-    <div class="modal" :class="{ show: showSubmitConfirmation }" tabindex="-1" style="display: block;" v-if="showSubmitConfirmation">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title">
-              <i class="bi bi-check-circle"></i> Submit Exam
-            </h5>
-          </div>
-          <div class="modal-body">
-            <p><strong>Are you sure you want to submit your exam?</strong></p>
-            <div class="submission-summary">
-              <p>Questions Answered: <strong>{{ answeredCount }} / {{ questions.length }}</strong></p>
-              <p>Questions Marked: <strong>{{ markedQuestions.size }}</strong></p>
-              <p>Time Remaining: <strong>{{ formattedTime }}</strong></p>
+    <div v-if="showSubmitConfirmation">
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal fade show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-check-circle"></i> Submit Exam
+              </h5>
             </div>
-            <p class="text-warning">
-              <i class="bi bi-exclamation-triangle"></i>
-              Once submitted, you cannot make any changes to your answers.
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" @click="cancelSubmitExam">
-              <i class="bi bi-x-circle"></i> Cancel
-            </button>
-            <button class="btn btn-primary" @click="confirmSubmitExam" :disabled="isSubmittingExam">
-              <span v-if="isSubmittingExam" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              <i class="bi bi-check-circle" v-else></i> 
-              {{ isSubmittingExam ? 'Submitting...' : 'Submit Exam' }}
-            </button>
+            <div class="modal-body">
+              <p><strong>Are you sure you want to submit your exam?</strong></p>
+              <div class="submission-summary">
+                <p>Questions Answered: <strong>{{ answeredCount }} / {{ questions.length }}</strong></p>
+                <p>Questions Marked: <strong>{{ markedQuestions.size }}</strong></p>
+                <p>Time Remaining: <strong>{{ formattedTime }}</strong></p>
+              </div>
+              <p class="text-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Once submitted, you cannot make any changes to your answers.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" @click="cancelSubmitExam">
+                <i class="bi bi-x-circle"></i> Cancel
+              </button>
+              <button class="btn btn-primary" @click="confirmSubmitExam" :disabled="isSubmittingExam">
+                <span v-if="isSubmittingExam" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <i class="bi bi-check-circle" v-else></i> 
+                {{ isSubmittingExam ? 'Submitting...' : 'Submit Exam' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1342,5 +1351,10 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+}
+
+/* Custom modal backdrop - darker than default */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.8) !important;
 }
 </style> 

@@ -5,7 +5,7 @@
       class="form-control"
       :class="$attrs.class"
       :id="id"
-      :placeholder="placeholder"
+      :placeholder="isSearchEnabled ? placeholder : 'Click to select'"
       v-model="searchText"
       @input="handleInput"
       @focus="handleClick"
@@ -27,8 +27,8 @@
       role="combobox"
       aria-expanded="false"
       aria-haspopup="listbox"
-      readonly
-      onfocus="this.removeAttribute('readonly')"
+      :readonly="!isSearchEnabled"
+      :onfocus="isSearchEnabled ? 'this.removeAttribute(\'readonly\')' : undefined"
       required
       :disabled="disabled"
       @keydown="handleKeydown"
@@ -215,7 +215,17 @@ const processedItems = computed(() => {
   return [] as Item[]
 })
 
+// Computed property to determine if search should be enabled
+const isSearchEnabled = computed(() => {
+  return processedItems.value.length >= 5
+})
+
 const filteredItems = computed(() => {
+  // If search is disabled, return all items
+  if (!isSearchEnabled.value) {
+    return processedItems.value
+  }
+
   const search = searchText.value.toLowerCase()
   if (!search) return processedItems.value
 
@@ -238,6 +248,11 @@ const filteredItems = computed(() => {
 })
 
 const handleInput = () => {
+  // If search is disabled, don't perform search operations
+  if (!isSearchEnabled.value) {
+    return
+  }
+
   showDropdown.value = true
   selectedIndex.value = -1
   emit('update:modelValue', null)
@@ -477,7 +492,9 @@ defineExpose({
 const handleClick = () => {
   // Show dropdown and update selectedIndex to first item if input is empty and there are items
   showDropdown.value = true
-  if (!searchText.value.trim() && filteredItems.value.length > 0) {
+  
+  // When search is disabled or input is empty, pre-select the first item
+  if ((!isSearchEnabled.value || !searchText.value.trim()) && filteredItems.value.length > 0) {
     selectedIndex.value = 0 // Pre-select the first item
     scrollToSelectedItem() // Ensure first item is visible
   }
