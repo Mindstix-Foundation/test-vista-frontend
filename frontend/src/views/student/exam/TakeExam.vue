@@ -595,11 +595,14 @@ const confirmSubmitExam = async () => {
       
       showSubmitConfirmation.value = false
       
-      // Navigate to result page
-      router.push({
-        path: '/student/exam/result',
-        query: { attemptId: attemptId.value }
-      })
+      // Add a small delay before navigating to give backend time to process
+      setTimeout(() => {
+        // Navigate to result page
+        router.push({
+          path: '/student/exam/result',
+          query: { attemptId: attemptId.value }
+        })
+      }, 500) // 500ms delay
     }
   } catch (err) {
     console.error('Failed to submit exam:', err)
@@ -625,11 +628,14 @@ const autoSubmitExam = async () => {
   
       await testAssignmentService.submitExam(submissionData)
   
-      // Navigate to result page
-      router.push({
-        path: '/student/exam/result',
-        query: { attemptId: attemptId.value }
-      })
+      // Add a small delay before navigating to give backend time to process
+      setTimeout(() => {
+        // Navigate to result page
+        router.push({
+          path: '/student/exam/result',
+          query: { attemptId: attemptId.value }
+        })
+      }, 500) // 500ms delay
     }
   } catch (err) {
     console.error('Failed to auto-submit exam:', err)
