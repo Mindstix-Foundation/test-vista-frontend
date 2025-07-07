@@ -1,10 +1,42 @@
 <template>
   <div class="iti-students-list">
-    <div class="container mt-4 mb-5">
+    <div class="container-fluid px-3 mt-4 mb-5">
       <!-- Header Section -->
-      <div class="row p-2 g-2 mb-1 mt-2">
-        <div class="row g-2 justify-content-center align-items-center mb-4">
-          <div class="col-12 col-sm-10">
+      <div class="row mb-4">
+        <div class="col-12">
+          <!-- Mobile Header Layout -->
+          <div class="d-block d-lg-none">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="flex-grow-1">
+                <h5 class="fw-bolder text-uppercase m-0 mb-2">ITI Students List</h5>
+                <div class="d-flex flex-column gap-1">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-mortarboard text-primary me-2"></i>
+                    <span class="fw-bold small">{{ route.query.standardName }}</span>
+                  </div>
+                  <div class="text-muted small">{{ route.query.schoolName }}</div>
+                  <div class="text-muted small">{{ route.query.boardName }}</div>
+                </div>
+              </div>
+              <div class="d-flex flex-column gap-2">
+                <button 
+                  v-if="students.length > 0"
+                  class="btn btn-danger btn-sm" 
+                  @click="confirmRemoveAllStudents"
+                  :disabled="removing"
+                  title="Remove All Students"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @click="goBack">
+                  <i class="bi bi-arrow-left"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Desktop Header Layout -->
+          <div class="d-none d-lg-block">
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <h5 class="text-left fw-bolder text-uppercase m-0">ITI Students List</h5>
@@ -35,8 +67,8 @@
               </div>
             </div>
           </div>
+          <hr />
         </div>
-        <hr />
       </div>
 
       <!-- Loading state -->
@@ -51,7 +83,7 @@
 
       <!-- Error state -->
       <div v-else-if="error" class="row justify-content-center my-4">
-        <div class="col-12 col-sm-10">
+        <div class="col-12">
           <div class="alert alert-danger" role="alert">
             {{ error }}
           </div>
@@ -59,42 +91,80 @@
       </div>
 
       <!-- Students List -->
-      <div v-else class="row justify-content-center">
-        <div class="col-12 col-sm-10">
+      <div v-else class="row">
+        <div class="col-12">
           <!-- Summary Card -->
           <div class="card mb-4 border-0 shadow-sm">
             <div class="card-body">
-              <div class="row text-center">
-                <div class="col-md-4">
-                  <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-circle bg-primary bg-opacity-10 me-3">
-                      <i class="bi bi-people-fill text-primary"></i>
-                    </div>
-                    <div>
-                      <h4 class="mb-0 fw-bold text-primary">{{ students.length }}</h4>
-                      <small class="text-muted">Total Students</small>
+              <!-- Mobile Summary Layout -->
+              <div class="d-block d-md-none">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-center">
+                      <div class="icon-circle bg-primary bg-opacity-10 me-3">
+                        <i class="bi bi-people-fill text-primary"></i>
+                      </div>
+                      <div class="text-center">
+                        <h4 class="mb-0 fw-bold text-primary">{{ students.length }}</h4>
+                        <small class="text-muted">Total Students</small>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-circle bg-success bg-opacity-10 me-3">
-                      <i class="bi bi-mortarboard-fill text-success"></i>
-                    </div>
-                    <div>
-                      <h5 class="mb-0 fw-bold">{{ route.query.standardName }}</h5>
+                  <div class="col-6">
+                    <div class="mobile-summary-item">
+                      <div class="icon-circle bg-success bg-opacity-10 mb-2">
+                        <i class="bi bi-mortarboard-fill text-success"></i>
+                      </div>
+                      <div class="fw-bold small text-truncate" title="{{ route.query.standardName }}">{{ route.query.standardName }}</div>
                       <small class="text-muted">Standard</small>
                     </div>
                   </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-circle bg-info bg-opacity-10 me-3">
-                      <i class="bi bi-building text-info"></i>
-                    </div>
-                    <div>
-                      <h6 class="mb-0 fw-bold">{{ route.query.schoolName }}</h6>
+                  <div class="col-6">
+                    <div class="mobile-summary-item">
+                      <div class="icon-circle bg-info bg-opacity-10 mb-2">
+                        <i class="bi bi-building text-info"></i>
+                      </div>
+                      <div class="fw-bold small text-truncate" title="{{ route.query.schoolName }}">{{ route.query.schoolName }}</div>
                       <small class="text-muted">College</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Desktop Summary Layout -->
+              <div class="d-none d-md-block">
+                <div class="row text-center">
+                  <div class="col-md-4">
+                    <div class="d-flex align-items-center justify-content-center">
+                      <div class="icon-circle bg-primary bg-opacity-10 me-3">
+                        <i class="bi bi-people-fill text-primary"></i>
+                      </div>
+                      <div>
+                        <h4 class="mb-0 fw-bold text-primary">{{ students.length }}</h4>
+                        <small class="text-muted">Total Students</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="d-flex align-items-center justify-content-center">
+                      <div class="icon-circle bg-success bg-opacity-10 me-3">
+                        <i class="bi bi-mortarboard-fill text-success"></i>
+                      </div>
+                      <div>
+                        <h5 class="mb-0 fw-bold">{{ route.query.standardName }}</h5>
+                        <small class="text-muted">Standard</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="d-flex align-items-center justify-content-center">
+                      <div class="icon-circle bg-info bg-opacity-10 me-3">
+                        <i class="bi bi-building text-info"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0 fw-bold">{{ route.query.schoolName }}</h6>
+                        <small class="text-muted">College</small>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -105,14 +175,53 @@
           <!-- Students Table -->
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-bottom">
-              <div class="d-flex justify-content-between align-items-center">
+              <!-- Mobile Controls -->
+              <div class="d-block d-lg-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-list-ul me-2"></i>
+                    Students ({{ sortedStudents.length }})
+                  </h6>
+                  <button 
+                    type="button"
+                    class="btn btn-sm position-relative"
+                    :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
+                    @click="toggleAutoRefresh"
+                    :title="autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'"
+                  >
+                    <i class="bi bi-arrow-clockwise" :class="{ 'spin-animation': autoRefresh && isRefreshing }"></i>
+                    <span v-if="autoRefresh" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle">
+                      <span class="visually-hidden">Live updates</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="d-flex gap-2">
+                  <select 
+                    v-model="sortBy" 
+                    @change="sortStudents"
+                    class="form-select form-select-sm flex-grow-1"
+                  >
+                    <option value="roll_no">Sort by Roll No.</option>
+                    <option value="name">Sort by Name</option>
+                    <option value="registration_date">Sort by Registration Date</option>
+                  </select>
+                  <button 
+                    class="btn btn-outline-secondary btn-sm"
+                    @click="toggleSortOrder"
+                    :title="sortOrder === 'desc' ? 'Descending' : 'Ascending'"
+                  >
+                    <i class="bi" :class="sortOrder === 'desc' ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Desktop Controls -->
+              <div class="d-none d-lg-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">
                   <i class="bi bi-list-ul me-2"></i>
                   Registered Students ({{ sortedStudents.length }})
                 </h6>
-                <!-- Auto Refresh and Sort Controls -->
                 <div class="d-flex align-items-center gap-2">
-                  <!-- Auto Refresh Button -->
                   <button 
                     type="button"
                     class="btn btn-sm position-relative"
@@ -148,15 +257,47 @@
               </div>
             </div>
             <div class="card-body p-0">
-              <!-- No students message inside table -->
+              <!-- No students message -->
               <div v-if="students.length === 0" class="text-center py-5">
                 <i class="bi bi-person-x display-1 text-muted mb-3"></i>
                 <h5 class="text-muted">No ITI Students Found</h5>
                 <p class="text-muted">No students have registered for this standard yet.</p>
               </div>
               
-              <!-- Students Table -->
-              <div v-else class="table-responsive">
+              <!-- Mobile Students Cards -->
+              <div v-if="students.length > 0" class="d-block d-lg-none">
+                <div 
+                  v-for="(student, index) in sortedStudents" 
+                  :key="student.id"
+                  class="student-card border-bottom p-3"
+                >
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary me-2">#{{ index + 1 }}</span>
+                        <span class="badge bg-dark">{{ student.student_id }}</span>
+                      </div>
+                      <h6 class="fw-semibold mb-1">{{ student.user.name }}</h6>
+                      <div class="text-muted small">
+                        <div>{{ formatDate(student.created_at) }}</div>
+                        <div>{{ formatTime(student.created_at) }}</div>
+                      </div>
+                    </div>
+                    <button 
+                      class="btn btn-danger btn-sm"
+                      @click.stop="confirmRemoveStudent(student)"
+                      :disabled="removing"
+                      title="Remove Student"
+                      type="button"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Desktop Students Table -->
+              <div v-if="students.length > 0" class="d-none d-lg-block table-responsive">
                 <table class="table table-hover mb-0">
                   <thead class="table-light">
                     <tr>
@@ -223,7 +364,7 @@
             <i class="bi bi-exclamation-triangle me-2"></i>
             Remove Student
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" @click="cancelRemoveStudent"></button>
         </div>
         <div class="modal-body">
           <div v-if="studentToRemove">
@@ -255,7 +396,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-secondary" @click="cancelRemoveStudent">
             Cancel
           </button>
           <button 
@@ -288,7 +429,7 @@
             <i class="bi bi-exclamation-triangle me-2"></i>
             Remove All Students
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" @click="cancelRemoveAllStudents"></button>
         </div>
         <div class="modal-body">
           <div class="alert alert-warning">
@@ -323,7 +464,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-secondary" @click="cancelRemoveAllStudents">
             Cancel
           </button>
           <button 
@@ -682,6 +823,54 @@ const removeAllStudents = async () => {
 }
 
 /**
+ * Cancel remove student modal
+ */
+const cancelRemoveStudent = () => {
+  // Reset student to remove
+  studentToRemove.value = null
+  
+  // Close modal
+  const modalElement = document.getElementById('removeStudentModal')
+  if (modalElement) {
+    try {
+      const modal = (window as any).bootstrap.Modal.getInstance(modalElement)
+      if (modal) {
+        modal.hide()
+      } else {
+        hideModal('removeStudentModal', 'modal-backdrop')
+      }
+    } catch (error) {
+      console.error('Error closing modal:', error)
+      hideModal('removeStudentModal', 'modal-backdrop')
+    }
+  }
+}
+
+/**
+ * Cancel remove all students modal
+ */
+const cancelRemoveAllStudents = () => {
+  // Reset confirmation text
+  confirmationText.value = ''
+  
+  // Close modal
+  const modalElement = document.getElementById('removeAllStudentsModal')
+  if (modalElement) {
+    try {
+      const modal = (window as any).bootstrap.Modal.getInstance(modalElement)
+      if (modal) {
+        modal.hide()
+      } else {
+        hideModal('removeAllStudentsModal', 'modal-backdrop-all')
+      }
+    } catch (error) {
+      console.error('Error closing modal:', error)
+      hideModal('removeAllStudentsModal', 'modal-backdrop-all')
+    }
+  }
+}
+
+/**
  * Manually hide modal (fallback)
  */
 const hideModal = (modalId: string, backdropId: string) => {
@@ -811,8 +1000,64 @@ onUnmounted(() => {
   padding: 0.375rem 0.75rem;
 }
 
+/* Mobile Student Cards */
+.student-card {
+  transition: background-color 0.2s ease;
+}
+
+.student-card:hover {
+  background-color: #f8f9fa;
+}
+
+.student-card:last-child {
+  border-bottom: none !important;
+}
+
+/* Mobile Summary Cards Alignment */
+.mobile-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 100px;
+  justify-content: center;
+}
+
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 1199.98px) {
+  .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .iti-students-list {
+    padding-top: 1rem;
+  }
+  
+  .icon-circle {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
+  
+  .card-body .row > div {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .iti-students-list {
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 60px);
+  }
+  
+  .container-fluid {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
   .icon-circle {
     width: 40px;
     height: 40px;
@@ -825,24 +1070,124 @@ onUnmounted(() => {
     font-size: 0.75rem;
   }
   
-  .table-responsive {
-    font-size: 0.875rem;
+  .card {
+    margin-bottom: 1rem;
+    border-radius: 8px;
   }
   
-  .card-body .row > div {
-    margin-bottom: 1rem;
+  .card-header {
+    padding: 0.75rem;
+  }
+  
+  .student-card {
+    padding: 1rem !important;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Mobile header improvements */
+  .fw-bolder {
+    font-size: 1.1rem;
+  }
+  
+  .small {
+    font-size: 0.8rem;
   }
 }
 
-@media (max-width: 576px) {
-  .d-flex.justify-content-between {
-    flex-direction: column;
-    align-items: flex-start !important;
+@media (max-width: 575.98px) {
+  .container-fluid {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
   
+  .mt-4 {
+    margin-top: 1rem !important;
+  }
+  
+  .mb-5 {
+    margin-bottom: 2rem !important;
+  }
+  
+  .icon-circle {
+    width: 35px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+  
+  .card-body {
+    padding: 0.75rem;
+  }
+  
+  .student-card {
+    padding: 0.75rem !important;
+  }
+  
+  .fw-bolder {
+    font-size: 1rem;
+  }
+  
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .form-select-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Improve text truncation on very small screens */
+  .text-truncate {
+    max-width: 100px;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
   .btn {
-    margin-top: 1rem;
-    align-self: flex-end;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .btn-sm {
+    min-height: 38px;
+    min-width: 38px;
+  }
+  
+  .student-card {
+    padding: 1.25rem !important;
+  }
+  
+  .form-select {
+    min-height: 44px;
+  }
+  
+  .form-select-sm {
+    min-height: 38px;
+  }
+}
+
+/* Landscape mobile improvements */
+@media (max-width: 767.98px) and (orientation: landscape) {
+  .iti-students-list {
+    min-height: calc(100vh - 40px);
+  }
+  
+  .mt-4 {
+    margin-top: 0.5rem !important;
+  }
+  
+  .mb-5 {
+    margin-bottom: 1rem !important;
   }
 }
 

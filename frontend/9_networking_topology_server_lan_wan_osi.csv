@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"Which of the following is a key component in setting up the physical infrastructure of a network?","Assigning IP addresses","Configuring routing tables","Testing network security","Installing cables switches and routers",d
+"Which of the following is a key component of setting up a network using Ethernet technology?","Installing wireless routers","Configuring IP addresses and subnet masks","Using only fiber optic cables","Installing software for file sharing",b
+"Which of the following is an example of communication on a local network?","Sending an email to someone across the world","Accessing a shared folder on another computer within the same building","Browsing a website hosted on a remote server","Streaming a video from a satellite service",b
+"Which of the following principles of communication in networking emphasizes the importance of using simple language and avoiding ambiguity?","Completeness","Consideration","Correctness","Clarity",d
+"____________ are networks that connect devices within a limited geographical area such as a home office or campus","WAN","HTTP","ISP","LAN",d
+"Which of the following protocols is used in Ethernet to manage the flow of data and handle collisions?","TCP/IP","HTTP","CSMA/CD","FTP",c
+"What is one of the primary functions of end devices in a network?","Consuming or generating data that is transmitted over the network","Transmitting data packets between devices","Managing network traffic","Configuring network devices",a
+"Which of the following end devices allows users to interact with the network through input/output mechanisms like keyboards and touchscreens?","Switch","Router","Desktop Computer","Firewall",c
+"The Wi-Fi security protocol commonly used to prevent unauthorized access and protect data privacy is","WPA2","WEP","TLS","HTTP",a
+"Which device in an Ethernet network is responsible for forwarding data packets to their intended destination based on MAC addresses?","Switch","Router","Hub","Modem",a
+"What does the MAC address in an Ethernet network identify?","The physical cable type used for the connection","The device's unique identifier for data transmission","The speed of data transmission","The IP address of the device",b
+"Which of the following is an example of an intermediary device that forwards data packets based on IP addresses?","Switch","Router","Firewall","Proxy Server",b
+"Which of the following steps in building a network involves determining the requirements goals and physical layout of the network?","Configuration","Addressing","Planning","Testing",c
+"An example of an end device in a local network is","Network Switch","Router","Smartphone","Hub",c
+"Which of the following is involved in the configuration phase of building a network?","Setting up routing tables and access control lists","Assigning unique IP and MAC addresses","Testing network bandwidth","Installing network cables",a
+"Which of the following intermediary devices is primarily responsible for forwarding data packets between devices within the same local area network (LAN) based on MAC addresses?","Switch","Router","Firewall","Wireless Access Point",a
+"Which of the following is responsible for defining the rules and conventions that govern how data is transmitted and received over a network?","Addressing","Routing","Protocols","Transmission Medium",c
+"The common physical medium for transmitting data over a network is","IP address","Data packets","Communication protocols","Ethernet cables",d
+"Which of the following is a common device found in a typical home network that allows multiple devices to share a single internet connection?","Switch","Modem","Router","Printer",c
+"Which of the following is responsible for transmitting and receiving data between wireless devices and the wired network infrastructure in a Wi-Fi network?","Router","Modem","Wireless Access Point (WAP)","Switch",c 

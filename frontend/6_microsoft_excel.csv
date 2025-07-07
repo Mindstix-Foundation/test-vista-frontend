@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"BI Stands for","Business Initiation","Business Insider","Business Intelligence","Business information",c
+"What is the maximum limit of rows in MS excel 2010?","1084576","1048567","1084567","1048576",d
+"What is the symbol use in a formula to make a cell reference absolute?","$","@","&","#",a
+"What is the first step for creating a pivot table?","Created or select data that needs to be analysed","Clicking on the insert tab and inserting a pivot table","Deciding on which fields (column and row labels) to use to analyze the data","None of the above",a
+"Which tab in excel is used when importing querying and subtotalling the data placed into a worksheet's data list","Insert","Review","Formula","Data",d
+"How Cells are named in MS Excel?","Alphabetically","Numerically","Alphanumerically","Special Character",c
+"Which tab in Excel is used for proofing protecting and marking up a spread sheet?","Formula","Data","Review","Insert",c
+"Which function key is used to open save as dialogue box in MS Excel?","F2","F5","F7","F12",d
+"Which view in Excel displays the pages exactly as they appear when printed?","Custom View","Full screen View","Page Break View","Page Layout view",d
+"Which tab is used for creating formatting and editing a spreadsheet?","Data","Home","Insert","Review",b
+"Which type of key should combine with ctrl key to create a macro key in Excel?","Numeric","Alphabetic","Alphanumeric","Special characters",b
+"Which bar is used to display the sheet information and insertion point location in MS Excel?","Ruler","Scroll Bar","Status Bar","Title Bar",c
+"Which function key is used to open save as dialogue box in MS Excel?","F2","F5","F7","F12",d
+"Which tab is used to change the display of worksheet area and the data it contains?","Page Layout","Data","Review","View",d
+"Which view in Excel displays the pages exactly as they appear when printed?","Custom View","Full screen View","Page Break View","Page Layout view",d
+"Which one of the following will starts with = sign in Excel 2010?","Data","Text","Numbers","Formulas",d
+"Which tab is used for creating formatting and editing a spreadsheet?","Data","Home","Insert","Review",b
+"Which function is used to count the number of cells that contain numbers in a range?","Count()","CountIf()","Sum()","Sumif()",a
+"Which function is used to add the values in a range?","Count()","Sum()","ABS()","Sumif()",b
+"Where does the result displays when a formula is entered in Excel?","Current Cell","Next Cell","Previous Cell","Formula Bar",a 

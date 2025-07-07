@@ -28,10 +28,10 @@
         <!-- Score Card -->
         <div class="score-card">
           <div class="score-circle" ref="scoreCircle">
-            {{ result.percentage }}%
+            {{ displayObtainedMarks }}/{{ result.total_marks }}
           </div>
           <h3 class="mb-2">{{ result.title }}</h3>
-          <p class="mb-3">{{ getPerformanceText(result.percentage) }}</p>
+          <p class="mb-3">{{ getPerformanceText(displayPercentage) }}</p>
           <div class="row">
             <div class="col-md-3 col-6 mb-2">
               <i class="bi bi-check-circle-fill d-block mb-1"></i>
@@ -50,8 +50,15 @@
             </div>
             <div class="col-md-3 col-6 mb-2">
               <i class="bi bi-award-fill d-block mb-1"></i>
-              <strong>{{ result.obtained_marks }}/{{ result.total_marks }}</strong>
-              <small class="d-block">Marks</small>
+              <strong>{{ displayPercentage }}%</strong>
+              <small class="d-block">Score</small>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <i class="bi bi-target d-block mb-1"></i>
+              <strong>{{ displayAccuracy }}%</strong>
+              <small class="d-block">Accuracy</small>
             </div>
           </div>
         </div>
@@ -80,7 +87,7 @@
                   <span class="stat-value">{{ analysis.correct }}/{{ analysis.total }}</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-label">Accuracy:</span>
+                  <span class="stat-label">Score:</span>
                   <span class="stat-value">{{ analysis.percentage }}%</span>
                 </div>
                 <div class="stat-item">
@@ -190,7 +197,12 @@
                   <i :class="getQuestionStatusIcon(question)"></i>
                   {{ getQuestionStatusText(question) }}
                 </span>
-                <span class="question-marks">{{ question.marks_obtained }} marks</span>
+                <div class="question-info">
+                  <span class="question-marks">{{ question.marks_obtained }} marks</span>
+                  <span class="question-time" v-if="question.time_spent_seconds !== undefined && question.time_spent_seconds !== null">
+                    <i class="bi bi-clock"></i> {{ formatTime(question.time_spent_seconds) }}
+                  </span>
+                </div>
               </div>
               <div class="question-content">
                 <p class="question-text">{{ question.question_text }}</p>
@@ -260,7 +272,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { testAssignmentService, type ExamResult, type DetailedReport } from '@/services/testAssignmentService'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -276,6 +288,22 @@ const detailedReport = ref<DetailedReport | null>(null)
 const showLeaveConfirmation = ref(false)
 const scoreCircle = ref<HTMLElement>()
 const isLoadingDetailedReport = ref(false)
+
+// Computed properties for display
+const displayObtainedMarks = computed(() => {
+  return result.value.obtained_marks
+})
+
+const displayPercentage = computed(() => {
+  return result.value.percentage || 0
+})
+
+const displayAccuracy = computed(() => {
+  if (result.value.attempted_questions && result.value.attempted_questions > 0) {
+    return ((result.value.correct_answers / result.value.attempted_questions) * 100).toFixed(1)
+  }
+  return '0.0'
+})
 
 // Methods
 const loadExamResult = async () => {
@@ -441,18 +469,19 @@ const getOptionClass = (optionIndex: number, correctOption: number, selectedOpti
 const animateScore = () => {
   if (!scoreCircle.value) return
   
-  let currentScore = 0
-  const targetScore = result.value.percentage || 0
-  const increment = targetScore / 50
+  let currentMarks = 0
+  const targetMarks = displayObtainedMarks.value || 0
+  const totalMarks = result.value.total_marks || 1
+  const increment = targetMarks / 50
   
   const timer = setInterval(() => {
-    currentScore += increment
-    if (currentScore >= targetScore) {
-      currentScore = targetScore
+    currentMarks += increment
+    if (currentMarks >= targetMarks) {
+      currentMarks = targetMarks
       clearInterval(timer)
     }
     if (scoreCircle.value) {
-      scoreCircle.value.textContent = Math.round(currentScore) + '%'
+      scoreCircle.value.textContent = Math.round(currentMarks) + '/' + totalMarks
     }
   }, 30)
 }
@@ -546,16 +575,18 @@ onUnmounted(() => {
 }
 
 .score-circle {
-  width: 150px;
-  height: 150px;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: bold;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .score-card h3 {
@@ -872,6 +903,30 @@ onUnmounted(() => {
   font-size: 1.1rem;
 }
 
+.question-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.question-marks {
+  font-weight: 600;
+  color: #333;
+}
+
+.question-time {
+  font-size: 0.85rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.question-time i {
+  font-size: 0.8rem;
+}
+
 .question-status {
   padding: 4px 12px;
   border-radius: 20px;
@@ -1073,9 +1128,9 @@ onUnmounted(() => {
   }
   
   .score-circle {
-    width: 100px;
-    height: 100px;
-    font-size: 1.8rem;
+    width: 130px;
+    height: 130px;
+    font-size: 1.3rem;
     margin-bottom: 15px;
   }
   
@@ -1258,9 +1313,18 @@ onUnmounted(() => {
     align-self: flex-start;
   }
   
+  .question-info {
+    align-items: flex-start;
+    align-self: flex-start;
+    gap: 2px;
+  }
+  
   .question-marks {
     font-size: 0.9rem;
-    align-self: flex-start;
+  }
+  
+  .question-time {
+    font-size: 0.8rem;
   }
   
   .question-text {
@@ -1356,9 +1420,9 @@ onUnmounted(() => {
   }
   
   .score-circle {
-    width: 85px;
-    height: 85px;
-    font-size: 1.5rem;
+    width: 100px;
+    height: 100px;
+    font-size: 1.1rem;
     margin-bottom: 12px;
   }
   

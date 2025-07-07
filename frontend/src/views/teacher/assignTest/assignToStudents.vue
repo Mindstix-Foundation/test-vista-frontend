@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid mt-3 mb-3 px-4">
+  <div class="container-fluid mt-3 mb-3 px-2 px-md-4">
     <!-- Header Section -->
     <div class="row mb-4">
       <div class="col-12">
@@ -12,34 +12,89 @@
         </div>
         
         <!-- Test paper loaded -->
-        <div v-else-if="selectedPaper" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <button @click="goBack" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left me-2"></i>Back
-            </button>
-            <div>
+        <div v-else-if="selectedPaper" class="header-section">
+          <!-- Mobile Header -->
+          <div class="d-block d-lg-none">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <div class="flex-grow-1">
+                <h5 class="m-0 fw-bold text-dark">Assign Test Paper</h5>
+                <p class="m-0 text-muted small text-truncate">{{ selectedPaper?.name }}</p>
+              </div>
+              <div class="d-flex gap-2">
+                <button @click="goToResultDashboard" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-graph-up"></i>
+                </button>
+                <button @click="goBack" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-arrow-left"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Mobile Test Info Cards -->
+            <div class="row g-2 mb-3">
+              <div class="col-4">
+                <div class="mobile-info-card">
+                  <i class="bi bi-clock text-primary"></i>
+                  <div class="info-text">
+                    <span class="info-value">{{ selectedPaper?.duration_minutes }}</span>
+                    <span class="info-label">min</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="mobile-info-card">
+                  <i class="bi bi-award text-success"></i>
+                  <div class="info-text">
+                    <span class="info-value">{{ selectedPaper?.pattern?.total_marks }}</span>
+                    <span class="info-label">marks</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="mobile-info-card">
+                  <i class="bi bi-question-circle text-info"></i>
+                  <div class="info-text">
+                    <span class="info-value">{{ selectedPaper?.question_count }}</span>
+                    <span class="info-label">questions</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Desktop Header -->
+          <div class="d-none d-lg-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="flex-grow-1">
               <h4 class="m-0 fw-bold text-dark">Assign Test Paper</h4>
               <p class="m-0 text-muted">{{ selectedPaper?.name }}</p>
             </div>
-          </div>
-          <div class="test-info-card">
-            <div class="row g-3">
-              <div class="col-auto">
-                <div class="info-item">
-                  <i class="bi bi-clock text-primary"></i>
-                  <span>{{ selectedPaper?.duration_minutes }} min</span>
+            <div class="d-flex gap-2">
+              <button @click="goToResultDashboard" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up me-2"></i>Results
+              </button>
+              <button @click="goBack" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back
+              </button>
+            </div>
+            <div class="test-info-card">
+              <div class="row g-3">
+                <div class="col-auto">
+                  <div class="info-item">
+                    <i class="bi bi-clock text-primary"></i>
+                    <span>{{ selectedPaper?.duration_minutes }} min</span>
+                  </div>
                 </div>
-              </div>
-              <div class="col-auto">
-                <div class="info-item">
-                  <i class="bi bi-award text-success"></i>
-                  <span>{{ selectedPaper?.pattern?.total_marks }} marks</span>
+                <div class="col-auto">
+                  <div class="info-item">
+                    <i class="bi bi-award text-success"></i>
+                    <span>{{ selectedPaper?.pattern?.total_marks }} marks</span>
+                  </div>
                 </div>
-              </div>
-              <div class="col-auto">
-                <div class="info-item">
-                  <i class="bi bi-question-circle text-info"></i>
-                  <span>{{ selectedPaper?.question_count }} questions</span>
+                <div class="col-auto">
+                  <div class="info-item">
+                    <i class="bi bi-question-circle text-info"></i>
+                    <span>{{ selectedPaper?.question_count }} questions</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -61,9 +116,9 @@
     </div>
 
     <!-- Main Content -->
-    <div v-if="selectedPaper" class="row g-4">
+    <div v-if="selectedPaper" class="row g-3 g-lg-4">
       <!-- Assignment Form -->
-      <div class="col-lg-4">
+      <div class="col-12 col-lg-4 order-1">
         <div class="card shadow-sm h-100">
           <div class="card-header bg-primary text-white">
             <h5 class="card-title m-0">
@@ -142,93 +197,93 @@
                 >
                 <i class="bi bi-calendar-event date-icon"></i>
                 
-                                  <!-- Custom DateTime Picker Dropdown -->
-                  <div v-if="showAvailablePicker" class="date-picker-dropdown datetime-dropdown">
-                    <div class="date-picker-header">
-                      <button @click="previousMonth('available')" class="nav-btn">&lt;</button>
-                      <span class="month-year">{{ currentMonthYear('available') }}</span>
-                      <button @click="nextMonth('available')" class="nav-btn">&gt;</button>
+                <!-- Custom DateTime Picker Dropdown -->
+                <div v-if="showAvailablePicker" class="date-picker-dropdown datetime-dropdown">
+                  <div class="date-picker-header">
+                    <button @click="previousMonth('available')" class="nav-btn">&lt;</button>
+                    <span class="month-year">{{ currentMonthYear('available') }}</span>
+                    <button @click="nextMonth('available')" class="nav-btn">&gt;</button>
+                  </div>
+                  <div class="datetime-content">
+                    <div class="date-picker-calendar">
+                      <div class="weekdays">
+                        <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
+                      </div>
+                      <div class="dates">
+                        <button 
+                          v-for="date in getCalendarDates('available')" 
+                          :key="date.key"
+                          @click="selectDate('available', date)"
+                          class="date-btn"
+                          :class="{
+                            'other-month': date.otherMonth,
+                            'selected': date.selected,
+                            'today': date.today
+                          }"
+                          :disabled="date.otherMonth"
+                        >
+                          {{ date.day }}
+                        </button>
+                      </div>
                     </div>
-                    <div class="datetime-content">
-                      <div class="date-picker-calendar">
-                        <div class="weekdays">
-                          <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
-                        </div>
-                        <div class="dates">
-                          <button 
-                            v-for="date in getCalendarDates('available')" 
-                            :key="date.key"
-                            @click="selectDate('available', date)"
-                            class="date-btn"
-                            :class="{
-                              'other-month': date.otherMonth,
-                              'selected': date.selected,
-                              'today': date.today
-                            }"
-                            :disabled="date.otherMonth"
+                    <div class="time-picker-section">
+                      <div class="time-picker-header">Select Time</div>
+                      <div class="time-inputs">
+                        <div class="time-input-group">
+                          <input 
+                            type="number" 
+                            v-model="displayHour" 
+                            min="1" 
+                            max="12" 
+                            class="time-input"
+                            placeholder="HH"
+                            @input="updateDisplayTime"
                           >
-                            {{ date.day }}
+                          <label>Hour</label>
+                        </div>
+                        <span class="time-separator">:</span>
+                        <div class="time-input-group">
+                          <input 
+                            type="number" 
+                            v-model="availableTime.minute" 
+                            min="0" 
+                            max="59" 
+                            class="time-input"
+                            placeholder="MM"
+                            @input="updateAvailableTime"
+                          >
+                          <label>Minute</label>
+                        </div>
+                        <div class="ampm-toggle">
+                          <button 
+                            @click="toggleAMPM('AM')" 
+                            class="ampm-btn"
+                            :class="{ active: availableTime.ampm === 'AM' }"
+                          >
+                            AM
+                          </button>
+                          <button 
+                            @click="toggleAMPM('PM')" 
+                            class="ampm-btn"
+                            :class="{ active: availableTime.ampm === 'PM' }"
+                          >
+                            PM
                           </button>
                         </div>
                       </div>
-                      <div class="time-picker-section">
-                        <div class="time-picker-header">Select Time</div>
-                        <div class="time-inputs">
-                          <div class="time-input-group">
-                            <input 
-                              type="number" 
-                              v-model="displayHour" 
-                              min="1" 
-                              max="12" 
-                              class="time-input"
-                              placeholder="HH"
-                              @input="updateDisplayTime"
-                            >
-                            <label>Hour</label>
-                          </div>
-                          <span class="time-separator">:</span>
-                          <div class="time-input-group">
-                            <input 
-                              type="number" 
-                              v-model="availableTime.minute" 
-                              min="0" 
-                              max="59" 
-                              class="time-input"
-                              placeholder="MM"
-                              @input="updateAvailableTime"
-                            >
-                            <label>Minute</label>
-                          </div>
-                          <div class="ampm-toggle">
-                            <button 
-                              @click="toggleAMPM('AM')" 
-                              class="ampm-btn"
-                              :class="{ active: availableTime.ampm === 'AM' }"
-                            >
-                              AM
-                            </button>
-                            <button 
-                              @click="toggleAMPM('PM')" 
-                              class="ampm-btn"
-                              :class="{ active: availableTime.ampm === 'PM' }"
-                            >
-                              PM
-                            </button>
-                          </div>
-                        </div>
-                        <div class="quick-time-buttons">
-                          <button @click="setQuickTime12('9:00 AM')" class="btn btn-sm btn-outline-secondary">9AM</button>
-                          <button @click="setQuickTime12('12:00 PM')" class="btn btn-sm btn-outline-secondary">12PM</button>
-                          <button @click="setQuickTime12('3:00 PM')" class="btn btn-sm btn-outline-secondary">3PM</button>
-                          <button @click="setQuickTime12('6:00 PM')" class="btn btn-sm btn-outline-secondary">6PM</button>
-                        </div>
+                      <div class="quick-time-buttons">
+                        <button @click="setQuickTime12('9:00 AM')" class="btn btn-sm btn-outline-secondary">9AM</button>
+                        <button @click="setQuickTime12('12:00 PM')" class="btn btn-sm btn-outline-secondary">12PM</button>
+                        <button @click="setQuickTime12('3:00 PM')" class="btn btn-sm btn-outline-secondary">3PM</button>
+                        <button @click="setQuickTime12('6:00 PM')" class="btn btn-sm btn-outline-secondary">6PM</button>
                       </div>
                     </div>
-                    <div class="date-picker-footer">
-                      <button @click="clearDate('available')" class="btn btn-sm btn-outline-secondary">Clear</button>
-                      <button @click="selectToday('available')" class="btn btn-sm btn-outline-primary">Today</button>
-                    </div>
                   </div>
+                  <div class="date-picker-footer">
+                    <button @click="clearDate('available')" class="btn btn-sm btn-outline-secondary">Clear</button>
+                    <button @click="selectToday('available')" class="btn btn-sm btn-outline-primary">Today</button>
+                  </div>
+                </div>
               </div>
               <small class="form-text text-muted">Format: DD-MM-YYYY HH:MM</small>
             </div>
@@ -242,7 +297,7 @@
               <div class="col-6">
                 <label for="timeLimitMinutes" class="form-label">Time Limit</label>
                 <input type="number" class="form-control" id="timeLimitMinutes" v-model="assignmentData.timeLimitMinutes" min="1" placeholder="Minutes">
-                <small class="form-text text-muted">Leave empty to use default</small>
+                <small class="form-text text-muted d-none d-md-block">Leave empty to use default</small>
               </div>
             </div>
 
@@ -255,7 +310,12 @@
               >
                 <span v-if="assigningTest" class="spinner-border spinner-border-sm me-2" role="status"></span>
                 <i v-else class="bi bi-person-plus me-2"></i>
-                {{ assigningTest ? 'Assigning...' : `Assign to ${selectedStudentsCount} Student(s)` }}
+                <span class="d-none d-sm-inline">
+                  {{ assigningTest ? 'Assigning...' : `Assign to ${selectedStudentsCount} Student(s)` }}
+                </span>
+                <span class="d-sm-none">
+                  {{ assigningTest ? 'Assigning...' : `Assign (${selectedStudentsCount})` }}
+                </span>
               </button>
             </div>
           </div>
@@ -263,18 +323,20 @@
       </div>
 
       <!-- Student Selection -->
-      <div class="col-lg-8">
+      <div class="col-12 col-lg-8 order-2">
         <div class="card shadow-sm h-100">
           <div class="card-header">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <h5 class="card-title m-0">
-                <i class="bi bi-people me-2"></i>Select Students
+                <i class="bi bi-people me-2"></i>
+                <span class="d-none d-sm-inline">Select Students</span>
+                <span class="d-sm-none">Students</span>
                 <span v-if="!loadingStudents" class="text-muted ms-2">({{ filteredStudents.length }} {{ assignedOnlyToggle ? 'assigned' : 'available' }})</span>
               </h5>
               
               <!-- Student Filter Toggle -->
               <div class="d-flex align-items-center">
-                <span class="me-2 small text-muted">Show:</span>
+                <span class="me-2 small text-muted d-none d-sm-inline">Show:</span>
                 <div class="form-check form-switch">
                   <input 
                     class="form-check-input" 
@@ -305,7 +367,8 @@
               <div class="form-check mb-3 p-3 border rounded bg-light">
                 <input class="form-check-input" type="checkbox" id="selectAllStudents" v-model="selectAllStudents" @change="toggleAllStudents">
                 <label class="form-check-label fw-semibold" for="selectAllStudents">
-                  Select All Visible Students ({{ filteredStudents.length }})
+                  <span class="d-none d-sm-inline">Select All Visible Students ({{ filteredStudents.length }})</span>
+                  <span class="d-sm-none">Select All ({{ filteredStudents.length }})</span>
                 </label>
               </div>
               
@@ -529,6 +592,12 @@ const showToast = (title: string, message: string, type: 'success' | 'error' | '
 // Navigation
 const goBack = () => {
   router.push('/teacher/assign-test')
+}
+
+const goToResultDashboard = () => {
+  if (selectedPaper.value) {
+    router.push(`/teacher/result-dashboard/${selectedPaper.value.id}`)
+  }
 }
 
 // API Methods
@@ -960,6 +1029,10 @@ onUnmounted(() => {
 
 <style scoped>
 /* Header Section */
+.header-section {
+  margin-bottom: 0;
+}
+
 .test-info-card {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 12px;
@@ -978,6 +1051,52 @@ onUnmounted(() => {
 
 .info-item i {
   font-size: 1.1rem;
+}
+
+/* Mobile Info Cards */
+.mobile-info-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.mobile-info-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.mobile-info-card i {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-info-card .info-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile-info-card .info-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #212529;
+  line-height: 1;
+}
+
+.mobile-info-card .info-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 /* Card Styling */
@@ -1479,12 +1598,14 @@ onUnmounted(() => {
 }
 
 /* Responsive Design */
-@media (max-width: 992px) {
+@media (max-width: 1199.98px) {
   .container-fluid {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+}
+
+@media (max-width: 991.98px) {
   .test-info-card {
     margin-top: 1rem;
     width: 100%;
@@ -1493,75 +1614,308 @@ onUnmounted(() => {
   .test-info-card .row {
     justify-content: center;
   }
+  
+  .student-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    max-height: 55vh;
+    min-height: 350px;
+  }
+  
+  .row.g-lg-4 {
+    row-gap: 1.5rem;
+  }
 }
 
-@media (max-width: 768px) {
-  .test-info-card .row {
-    flex-direction: column;
-    gap: 0.5rem;
+@media (max-width: 767.98px) {
+  .container-fluid {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .mobile-info-card {
+    padding: 0.5rem;
+    min-height: 70px;
+  }
+  
+  .mobile-info-card i {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .mobile-info-card .info-value {
+    font-size: 1rem;
+  }
+  
+  .mobile-info-card .info-label {
+    font-size: 0.7rem;
   }
   
   .student-grid {
     grid-template-columns: 1fr;
     max-height: 50vh;
     min-height: 300px;
+    gap: 0.75rem;
   }
   
-  .row.g-4 {
-    row-gap: 2rem;
-  }
-  
-  .d-flex.align-items-center.justify-content-between.flex-wrap {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 1rem;
-  }
-  
-  .date-picker-dropdown {
-    margin: 1rem;
-    min-width: auto;
-    width: calc(100% - 2rem);
-    max-width: none;
-  }
-  
-  .datetime-dropdown {
-    min-width: auto;
-  }
-  
-  .date-picker-header {
-    padding: 0.75rem 1rem;
-  }
-  
-  .month-year {
-    font-size: 1rem;
-    min-width: 120px;
-  }
-  
-  .date-picker-calendar {
+  .student-card {
     padding: 0.75rem;
   }
   
-  .time-picker-section {
+  .student-name {
+    font-size: 0.95rem;
+  }
+  
+  .student-roll {
+    font-size: 0.8rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .row.g-3 {
+    row-gap: 1rem;
+  }
+  
+  .card-header h5 {
+    font-size: 1rem;
+  }
+  
+  .form-label {
+    font-size: 0.9rem;
+  }
+  
+  .btn-lg {
+    font-size: 1rem;
     padding: 0.75rem 1rem;
   }
   
-  .date-picker-footer {
-    padding: 0.75rem 1rem;
-    flex-wrap: wrap;
+  /* Date/Time Picker Mobile Optimizations */
+  .date-picker-dropdown {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1050;
   }
   
-  .date-picker-footer .btn {
-    flex: 1;
+  .datetime-dropdown {
+    max-width: 500px;
+  }
+  
+  .datetime-content {
+    flex-direction: column;
+  }
+  
+  .datetime-content .date-picker-calendar {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
     min-width: auto;
+  }
+  
+  .datetime-content .time-picker-section {
+    flex: none;
+  }
+  
+  .date-picker-header {
+    padding: 0.75rem;
+  }
+  
+  .month-year {
+    font-size: 0.95rem;
+    min-width: 100px;
+  }
+  
+  .nav-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+  
+  .date-picker-calendar {
+    padding: 0.5rem;
+  }
+  
+  .weekday {
+    font-size: 0.7rem;
+    padding: 4px 2px;
+  }
+  
+  .date-btn {
+    min-height: 28px;
+    font-size: 0.8rem;
+    padding: 4px 2px;
+  }
+  
+  .time-picker-section {
+    padding: 0.75rem;
+  }
+  
+  .time-picker-header {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .time-input {
+    width: 45px;
+    padding: 6px 4px;
+    font-size: 0.8rem;
+  }
+  
+  .time-input-group label {
+    font-size: 0.7rem;
+  }
+  
+  .ampm-btn {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    min-width: 28px;
   }
   
   .quick-time-buttons {
     gap: 0.25rem;
+    grid-template-columns: 1fr 1fr;
   }
   
   .quick-time-buttons .btn {
     padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+  }
+  
+  .date-picker-footer {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .date-picker-footer .btn {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .container-fluid {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .mobile-info-card {
+    padding: 0.375rem;
+    min-height: 60px;
+  }
+  
+  .mobile-info-card i {
+    font-size: 1.1rem;
+    margin-bottom: 0.125rem;
+  }
+  
+  .mobile-info-card .info-value {
+    font-size: 0.9rem;
+  }
+  
+  .mobile-info-card .info-label {
+    font-size: 0.65rem;
+  }
+  
+  .student-grid {
+    min-height: 250px;
+    max-height: 45vh;
+  }
+  
+  .student-card {
+    padding: 0.5rem;
+  }
+  
+  .form-check-label {
+    font-size: 0.9rem;
+  }
+  
+  .card-header {
+    padding: 0.75rem;
+  }
+  
+  .card-body {
+    padding: 0.75rem;
+  }
+  
+  .btn-sm {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .date-picker-dropdown {
+    width: 95vw;
+    max-width: 350px;
+  }
+  
+  .time-inputs {
+    gap: 0.25rem;
+    justify-content: space-around;
+  }
+  
+  .quick-time-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .btn-sm {
+    min-height: 38px;
+    min-width: 38px;
+  }
+  
+  .form-check-input {
+    transform: scale(1.2);
+  }
+  
+  .date-btn {
+    min-height: 36px;
+  }
+  
+  .time-input {
+    min-height: 40px;
+  }
+  
+  .ampm-btn {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* Landscape mobile improvements */
+@media (max-width: 767.98px) and (orientation: landscape) {
+  .student-grid {
+    max-height: 35vh;
+    min-height: 200px;
+  }
+  
+  .date-picker-dropdown {
+    max-height: 70vh;
+  }
+  
+  .datetime-content {
+    flex-direction: row;
+  }
+  
+  .datetime-content .date-picker-calendar {
+    border-right: 1px solid #e9ecef;
+    border-bottom: none;
+    min-width: 60%;
+  }
+  
+  .datetime-content .time-picker-section {
+    flex: 0 0 40%;
   }
 }
 

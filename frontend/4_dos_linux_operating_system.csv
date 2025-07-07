@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"Routing is performed by which of the following layers","Transport layer","data link layer","network layer","session layer",c
+"The dialogue control and token management are responsible for","Session layers","Datalink layer","Transport layer","Network layer",a
+"The main Apache configuration file is","/etc/httpd/config.ini","/etc/apache.conf","/etc/httpd/conf/httpd.conf","/etc/srm.conf",c
+"Which of the following command can force all buffers to disk?","save","flush","edbuff","sync",d
+"What is the name of hierarchical file system in DOS?","Tree structure","Root structure","Hybrid structure","Directory structure",a
+"Which DOS command is used to delete a directory?","RD","REMOVE","DEL","DELETE",a
+"Which character is used to represent parent directory in Linux?",".","..","~","*",b
+"Which character is used to redirect output in to an existing file in Linux?",">",">>","<","<<",b
+"Which command is used to specify the location of files or folders in MSDOS?","dir","path","sub directories","tree",b
+"What the directories under the root directory are called?","dir","path","sub directories","tree",c
+"Which filename will match the command DIR????T.TXT in DOS?","TIME.TXT","TEXT.TXT","TEMP.TXT","TEMPT.TXT",d
+"What is the use of CD command in DOS?","creates a directory","change the device name","create root directory","change the path of current directory",d
+"What is the maximum number of characters allowed as file name in DOS?","3 characters","6 characters","7 characters","8 characters",d
+"Which one of the following is the wildcard character?","* and /","? and /","* and ?","? and @",c
+"Which DOS command is used to create a text file?","List","Type","Copycon","Dir",c
+"Which one of the following is the directory separator in Linux?","/","\\","//","\\\\",a
+"Which character is used to represent a range of values in Linux?","()","[]","{}","<>",b
+"Which character redirects the output of one command to another in Linux?",".Dot","| pipe",": colon","; semicolon",b
+"Which Linux command list the contents of all sub directory?","ls ~","ls */","ls /","ls ../",b
+"Which Linux command list the contents of parent directory?","ls ~","ls */","ls /","ls ../",d 

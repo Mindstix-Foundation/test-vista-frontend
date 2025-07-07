@@ -1,33 +1,40 @@
 <template>
-  <div class="container mt-4 mb-5">
-    <!-- Header Section -->
-    <div class="row p-2 g-2 mb-1">
-      <div class="row justify-content-center align-items-center g-2 mb-4" style="margin-left:4px">
-        <div class="col-12 col-sm-5">
-          <h5 class="text-left m-0 fw-bolder text-uppercase">assign online test</h5>
+  <!-- Mobile: container-fluid with responsive padding, Desktop: container -->
+  <div class="container-fluid container-md mt-4 mb-5 px-3 px-md-4">
+    <!-- Header Section - Mobile Responsive -->
+    <div class="row g-2 mb-3">
+      <!-- Mobile: Stack vertically, Desktop: Side by side -->
+      <div class="col-12">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
+          <div class="header-title-section flex-grow-1">
+            <h5 class="m-0 fw-bolder text-uppercase mobile-title">assign online test</h5>
         </div>
 
-        <div class="col-12 col-sm-5 dynamic-style text-end">
-          <router-link to="/teacher/assign-test/create" class="btn btn-dark">
-            <i class="bi bi-plus-circle me-2"></i>Create Test Paper
+          <!-- Desktop button - visible only on sm and up -->
+          <div class="header-button-section flex-shrink-0 align-self-end align-self-sm-center d-none d-sm-flex">
+            <router-link to="/teacher/assign-test/create" class="btn btn-dark btn-create-desktop">
+              <i class="bi bi-plus-circle me-2"></i>
+              Create Test Paper
           </router-link>
         </div>
       </div>
-      <hr>
+        <hr class="mobile-hr">
+      </div>
     </div>
 
-    <div class="row justify-content-center align-items-center g-2 mb-4">
-      <div class="col-md-10">
-        <!-- Search and Sorting Controls -->
-        <div class="row mb-4">
-          <!-- Search Container -->
-          <div class="col-12 col-md-8 mb-3">
-            <div class="search-container">
+    <!-- Main Content Container -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-11 col-xl-10">
+        <!-- Search and Sorting Controls - Mobile Responsive -->
+        <div class="row mb-4 g-3">
+          <!-- Search Container - Mobile: Full width, Desktop: 8 columns -->
+          <div class="col-12 col-md-8">
+            <div class="search-container-mobile">
               <i class="bi bi-search search-icon"></i>
               <input 
                 type="text" 
                 v-model="searchQuery" 
-                class="form-control" 
+                class="form-control search-input-mobile" 
                 placeholder="Search by Name, Subject, Standard, Marks"
                 @input="searchTestPapers"
               >
@@ -35,12 +42,12 @@
             </div>
           </div>
 
-          <!-- Sort Select -->
-          <div class="col-12 col-md-4 mb-3">
-            <div class="sort-field">
+          <!-- Sort Select - Mobile: Full width, Desktop: 4 columns -->
+          <div class="col-12 col-md-4">
+            <div class="sort-field-mobile">
               <select 
                 v-model="sortOption" 
-                class="form-select sort-select" 
+                class="form-select sort-select-mobile" 
                 @change="sortTestPapers"
               >
                 <option value="name-asc">Sort by Name (A-Z)</option>
@@ -55,7 +62,7 @@
           </div>
         </div>
 
-        <!-- Test Papers Cards -->
+        <!-- Test Papers Cards - Mobile Responsive -->
         <div id="testPaperCards">
           <!-- Loading indicator -->
           <div v-if="isLoading" class="text-center my-5">
@@ -72,8 +79,131 @@
             :key="paper.id"
             class="mb-4"
           >
-            <div class="card test-paper-card shadow-sm">
+            <div class="card test-paper-card-mobile shadow-sm">
               <div class="card-body">
+                <!-- Mobile Layout -->
+                <div class="d-md-none mobile-card-layout">
+                  <!-- Mobile Header -->
+                  <div class="mobile-card-header mb-3">
+                    <h5 class="card-title mb-2 mobile-card-title">
+                      {{ paper.name }}
+                    </h5>
+                    <!-- Mobile Summary Info - 2 columns -->
+                    <div class="row g-2 mobile-summary-row">
+                      <div class="col-6">
+                        <div class="mobile-summary-item">
+                          <i class="bi bi-book text-primary me-1"></i>
+                          <span class="mobile-summary-label">Subject:</span>
+                          <div class="mobile-summary-value">{{ formatSubject(paper) }}</div>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="mobile-summary-item">
+                          <i class="bi bi-mortarboard text-primary me-1"></i>
+                          <span class="mobile-summary-label">Standard:</span>
+                          <div class="mobile-summary-value">{{ formatStandard(paper) }}</div>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="mobile-summary-item">
+                          <i class="bi bi-award text-success me-1"></i>
+                          <span class="mobile-summary-label">Marks:</span>
+                          <div class="mobile-summary-value">{{ paper.pattern.total_marks }}</div>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="mobile-summary-item">
+                          <i class="bi bi-clock text-info me-1"></i>
+                          <span class="mobile-summary-label">Duration:</span>
+                          <div class="mobile-summary-value">{{ paper.duration_minutes }}m</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mobile Additional Details - Always Visible -->
+                  <div class="mobile-details-section-seamless">
+                    <div class="mobile-details-content-seamless">
+                      <div class="row g-2">
+                        <div class="col-6">
+                          <div class="mobile-detail-item">
+                            <span class="mobile-detail-label">Questions:</span>
+                            <span class="mobile-detail-value">{{ paper.question_count }}</span>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mobile-detail-item">
+                            <span class="mobile-detail-label">Per Question:</span>
+                            <span class="mobile-detail-value">{{ paper.marks_per_question }}</span>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mobile-detail-item">
+                            <span class="mobile-detail-label">Negative:</span>
+                            <span class="mobile-detail-value">{{ paper.negative_marking ? 'Yes' : 'No' }}</span>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mobile-detail-item">
+                            <span class="mobile-detail-label">Medium:</span>
+                            <span class="mobile-detail-value">
+                              <span v-for="(medium, idx) in formatMediums(paper)" :key="idx">{{ medium }}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mobile Action Buttons -->
+                  <div class="mobile-actions-section mt-3">
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <button 
+                          @click="assignToStudents(paper)" 
+                          class="btn btn-primary mobile-action-btn w-100"
+                        >
+                          <i class="bi bi-person-plus me-1"></i>
+                          <span class="d-none d-sm-inline">Assign Students</span>
+                          <span class="d-sm-none">Assign</span>
+                        </button>
+                      </div>
+                      <div class="col-6">
+                        <button 
+                          @click="viewQuestions(paper)" 
+                          class="btn btn-outline-dark mobile-action-btn w-100"
+                        >
+                          <i class="bi bi-eye me-1"></i>
+                          <span class="d-none d-sm-inline">View Questions</span>
+                          <span class="d-sm-none">Questions</span>
+                        </button>
+                      </div>
+                      <div class="col-6">
+                        <button 
+                          @click="viewResults(paper)" 
+                          class="btn btn-outline-success mobile-action-btn w-100"
+                        >
+                          <i class="bi bi-bar-chart me-1"></i>
+                          <span class="d-none d-sm-inline">Results</span>
+                          <span class="d-sm-none">Results</span>
+                        </button>
+                      </div>
+                      <div class="col-6">
+                        <button 
+                          @click="deleteTestPaper(paper)" 
+                          class="btn btn-outline-danger mobile-action-btn w-100"
+                        >
+                          <i class="bi bi-trash me-1"></i>
+                          <span class="d-none d-sm-inline">Delete</span>
+                          <span class="d-sm-none">Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Desktop Layout (unchanged) -->
+                <div class="d-none d-md-block desktop-card-layout">
                 <div class="row">
                   <!-- Paper Details -->
                   <div class="col-md-8">
@@ -149,6 +279,7 @@
                     >
                       <i class="bi bi-trash me-2"></i>Delete
                     </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -185,19 +316,23 @@
       </div>
     </div>
 
-    <!-- Assign Students Modal -->
+    <!-- Assign Students Modal - Mobile Responsive -->
     <div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="assignModalLabel">Assign Test Paper: {{ selectedPaper?.name }}</h5>
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-mobile-responsive">
+        <div class="modal-content modal-content-mobile">
+          <div class="modal-header modal-header-mobile">
+            <h5 class="modal-title mobile-modal-title" id="assignModalLabel">
+              <span class="d-none d-sm-inline">Assign Test Paper: {{ selectedPaper?.name }}</span>
+              <span class="d-sm-none">Assign Test</span>
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body modal-body-fixed">
-            <!-- Test Assignment Form -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="dueDate" class="form-label">Due Date *</label>
+          <div class="modal-body modal-body-mobile">
+            <!-- Test Assignment Form - Mobile Responsive -->
+            <div class="row mb-3 g-3">
+              <!-- Mobile: Stack vertically, Desktop: Side by side -->
+              <div class="col-12 col-md-6">
+                <label for="dueDate" class="form-label mobile-form-label">Due Date *</label>
                 <div class="custom-date-picker">
                   <input 
                     type="text" 
@@ -246,10 +381,10 @@
                     </div>
                   </div>
                 </div>
-                <small class="form-text text-muted">Format: DD-MM-YYYY</small>
+                <small class="form-text text-muted mobile-help-text">Format: DD-MM-YYYY</small>
               </div>
-              <div class="col-md-6">
-                <label for="availableFrom" class="form-label">Available From *</label>
+              <div class="col-12 col-md-6">
+                <label for="availableFrom" class="form-label mobile-form-label">Available From *</label>
                 <div class="custom-datetime-picker">
                   <input 
                     type="text" 
@@ -350,33 +485,33 @@
                     </div>
                   </div>
                 </div>
-                <small class="form-text text-muted">Format: DD-MM-YYYY HH:MM</small>
+                <small class="form-text text-muted mobile-help-text">Format: DD-MM-YYYY HH:MM</small>
               </div>
             </div>
             
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="maxAttempts" class="form-label">Max Attempts</label>
-                <input type="number" class="form-control" id="maxAttempts" v-model="assignmentData.maxAttempts" min="1" max="10">
+            <div class="row mb-3 g-3">
+              <div class="col-12 col-md-6">
+                <label for="maxAttempts" class="form-label mobile-form-label">Max Attempts</label>
+                <input type="number" class="form-control mobile-form-control" id="maxAttempts" v-model="assignmentData.maxAttempts" min="1" max="10">
               </div>
-              <div class="col-md-6">
-                <label for="timeLimitMinutes" class="form-label">Time Limit (Minutes)</label>
-                <input type="number" class="form-control" id="timeLimitMinutes" v-model="assignmentData.timeLimitMinutes" min="1">
-                <small class="form-text text-muted">Leave empty to use test paper's default time limit</small>
+              <div class="col-12 col-md-6">
+                <label for="timeLimitMinutes" class="form-label mobile-form-label">Time Limit (Minutes)</label>
+                <input type="number" class="form-control mobile-form-control" id="timeLimitMinutes" v-model="assignmentData.timeLimitMinutes" min="1">
+                <small class="form-text text-muted mobile-help-text">Leave empty to use test paper's default time limit</small>
               </div>
             </div>
 
-            <!-- Student Filter Toggle -->
+            <!-- Student Filter Toggle - Mobile Responsive -->
             <div class="mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <label class="form-label mb-0 fw-semibold">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                <label class="form-label mb-0 fw-semibold mobile-students-label">
                   Select Students 
-                  <span v-if="!loadingStudents" class="text-muted small">({{ filteredStudents.length }} {{ assignedOnlyToggle ? 'assigned' : 'available' }})</span>
+                  <span v-if="!loadingStudents" class="text-muted small mobile-student-count">({{ filteredStudents.length }} {{ assignedOnlyToggle ? 'assigned' : 'available' }})</span>
                 </label>
                 
-                <!-- Student Filter Toggle - Top Right -->
-                <div class="d-flex align-items-center">
-                  <span class="me-2 small text-muted">Show:</span>
+                <!-- Student Filter Toggle - Mobile: Below label, Desktop: Right side -->
+                <div class="d-flex align-items-center mobile-filter-toggle">
+                  <span class="me-2 small text-muted d-none d-sm-inline">Show:</span>
                   <div class="form-check form-switch">
                     <input 
                       class="form-check-input" 
@@ -385,17 +520,17 @@
                       v-model="assignedOnlyToggle" 
                       @change="filterStudents"
                     >
-                    <label class="form-check-label ms-2 fw-semibold toggle-label-fixed" for="assignedOnlyToggle">
+                    <label class="form-check-label ms-2 fw-semibold toggle-label-mobile" for="assignedOnlyToggle">
                       {{ assignedOnlyToggle ? 'Assigned' : 'Non-Assigned' }}
                     </label>
                   </div>
                 </div>
               </div>
               
-              <!-- Fixed height container for consistent modal sizing -->
-              <div class="students-container">
+              <!-- Mobile Responsive Students Container -->
+              <div class="students-container-mobile">
                 <!-- Loading indicator -->
-                <div v-if="loadingStudents" class="students-loading">
+                <div v-if="loadingStudents" class="students-loading-mobile">
                   <div class="text-center">
                     <div class="spinner-border spinner-border-sm text-primary" role="status">
                       <span class="visually-hidden">Loading...</span>
@@ -404,32 +539,34 @@
                   </div>
                 </div>
                 
-                <!-- Student selection -->
-                <div v-else-if="filteredStudents.length > 0" class="students-content">
-                  <div class="form-check select-all-container">
+                <!-- Student selection - Mobile Responsive -->
+                <div v-else-if="filteredStudents.length > 0" class="students-content-mobile">
+                  <div class="form-check select-all-container-mobile">
                     <input class="form-check-input" type="checkbox" id="selectAllStudents" v-model="selectAllStudents" @change="toggleAllStudents">
-                    <label class="form-check-label fw-semibold" for="selectAllStudents">
-                      Select All Visible Students ({{ filteredStudents.length }})
+                    <label class="form-check-label fw-semibold mobile-select-all-label" for="selectAllStudents">
+                      <span class="d-none d-sm-inline">Select All Visible Students ({{ filteredStudents.length }})</span>
+                      <span class="d-sm-none">Select All ({{ filteredStudents.length }})</span>
                     </label>
                   </div>
                   <hr class="my-2">
-                  <div class="student-list">
-                    <div v-for="student in filteredStudents" :key="student.id" class="student-item">
+                  <div class="student-list-mobile">
+                    <div v-for="student in filteredStudents" :key="student.id" class="student-item-mobile">
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" :id="`student-${student.id}`" v-model="student.selected">
                         <label class="form-check-label" :for="`student-${student.id}`">
-                          <div class="d-flex justify-content-between align-items-center w-100">
-                            <div class="student-info">
-                              <span class="student-name">{{ student.name }} <span class="student-roll text-muted">({{ student.rollNumber }})</span></span>
+                          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center w-100 gap-2">
+                            <div class="student-info-mobile">
+                              <span class="student-name-mobile">{{ student.name }}</span>
+                              <span class="student-roll-mobile text-muted d-block d-sm-inline">({{ student.rollNumber }})</span>
                             </div>
-                            <div class="student-actions">
-                              <span v-if="student.isAssigned" class="badge bg-success me-2">Assigned</span>
-                              <span v-else class="badge bg-secondary me-2">Not Assigned</span>
+                            <div class="student-actions-mobile d-flex align-items-center gap-2">
+                              <span v-if="student.isAssigned" class="badge bg-success mobile-badge">Assigned</span>
+                              <span v-else class="badge bg-secondary mobile-badge">Not Assigned</span>
                               <!-- Remove assignment button for assigned students -->
                               <button 
                                 v-if="student.isAssigned" 
                                 @click="removeAssignment(student)"
-                                class="btn btn-sm btn-outline-danger"
+                                class="btn btn-sm btn-outline-danger mobile-remove-btn"
                                 :disabled="removingAssignment"
                                 title="Remove Assignment"
                               >
@@ -443,14 +580,14 @@
                   </div>
                 </div>
                 
-                <!-- No students message -->
-                <div v-else class="students-empty">
+                <!-- No students message - Mobile Responsive -->
+                <div v-else class="students-empty-mobile">
                   <div class="text-center">
                     <i class="bi bi-person-x display-6 text-muted mb-3"></i>
-                    <h6 class="text-muted mb-2">
+                    <h6 class="text-muted mb-2 mobile-empty-title">
                       {{ assignedOnlyToggle ? 'No assigned students found for this test.' : 'No non-assigned students found for this test.' }}
                     </h6>
-                    <p class="text-muted small mb-0">
+                    <p class="text-muted small mb-0 mobile-empty-text">
                       Students need to request enrollment and be approved by you before they can be assigned tests.
                     </p>
                   </div>
@@ -458,32 +595,38 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <div class="modal-footer modal-footer-mobile">
+            <div class="d-flex flex-column flex-sm-row gap-2 w-100">
+              <button type="button" class="btn btn-secondary mobile-modal-btn order-2 order-sm-1" data-bs-dismiss="modal">Cancel</button>
             <button 
               type="button" 
-              class="btn btn-primary" 
+                class="btn btn-primary mobile-modal-btn order-1 order-sm-2" 
               @click="confirmAssignment"
               :disabled="loadingStudents || filteredStudents.length === 0 || assigningTest || !hasSelectedStudents"
             >
               <span v-if="assigningTest" class="spinner-border spinner-border-sm me-2" role="status"></span>
               <i v-else class="bi bi-person-plus me-2"></i>
-              {{ assigningTest ? 'Assigning...' : 'Assign Test' }}
+                <span class="d-none d-sm-inline">{{ assigningTest ? 'Assigning...' : 'Assign Test' }}</span>
+                <span class="d-sm-none">{{ assigningTest ? 'Assigning...' : 'Assign' }}</span>
             </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Questions Modal -->
+    <!-- Questions Modal - Mobile Responsive -->
     <div class="modal fade" id="questionsModal" tabindex="-1" aria-labelledby="questionsModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="questionsModalLabel">Test Questions</h5>
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-questions-mobile">
+        <div class="modal-content modal-content-questions">
+          <div class="modal-header modal-header-questions">
+            <h5 class="modal-title mobile-questions-title" id="questionsModalLabel">
+              <span class="d-none d-sm-inline">Test Questions</span>
+              <span class="d-sm-none">Questions</span>
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body modal-body-questions">
             <!-- Loading indicator -->
             <div v-if="loadingQuestions" class="text-center my-5">
               <div class="spinner-border" role="status">
@@ -494,8 +637,10 @@
 
             <!-- Display questions -->
             <div v-else-if="currentQuestions">
-              <div class="test-paper-info mb-4">
-                <h6 class="text-primary">{{ currentQuestions.test_paper.name }}</h6>
+              <div class="test-paper-info-mobile mb-4">
+                <h6 class="text-primary mobile-paper-title">{{ currentQuestions.test_paper.name }}</h6>
+                <!-- Mobile: Stack info vertically, Desktop: 3 columns -->
+                <div class="d-none d-md-block">
                 <div class="row">
                   <div class="col-md-4">
                     <small class="text-muted">Total Questions: {{ currentQuestions.test_paper.total_questions }}</small>
@@ -505,6 +650,33 @@
                   </div>
                   <div class="col-md-4">
                     <small class="text-muted">Duration: {{ currentQuestions.test_paper.duration_minutes }} mins</small>
+                    </div>
+                  </div>
+                </div>
+                <!-- Mobile Layout -->
+                <div class="d-md-none mobile-paper-info">
+                  <div class="row g-2">
+                    <div class="col-4">
+                      <div class="mobile-info-item">
+                        <i class="bi bi-question-circle text-primary me-1"></i>
+                        <div class="mobile-info-value">{{ currentQuestions.test_paper.total_questions }}</div>
+                        <div class="mobile-info-label">Questions</div>
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <div class="mobile-info-item">
+                        <i class="bi bi-award text-success me-1"></i>
+                        <div class="mobile-info-value">{{ currentQuestions.test_paper.total_marks }}</div>
+                        <div class="mobile-info-label">Marks</div>
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <div class="mobile-info-item">
+                        <i class="bi bi-clock text-info me-1"></i>
+                        <div class="mobile-info-value">{{ currentQuestions.test_paper.duration_minutes }}m</div>
+                        <div class="mobile-info-label">Duration</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -569,11 +741,19 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <div class="modal-footer modal-footer-questions">
+            <button type="button" class="btn btn-secondary mobile-close-btn w-100 w-sm-auto" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Mobile Fixed Bottom Button - Full width -->
+    <div class="mobile-bottom-button-container d-sm-none">
+      <router-link to="/teacher/assign-test/create" class="btn mobile-bottom-button">
+        <i class="bi bi-plus-circle me-2"></i>
+        Create Test Paper
+      </router-link>
     </div>
 
     <!-- Toast Notification Component -->
@@ -1508,6 +1688,8 @@ const setQuickTime12 = (timeStr: string) => {
   updateAvailableTime()
 }
 
+
+
 // Lifecycle hooks
 onMounted(() => {
   fetchOnlineTestPapers()
@@ -1735,16 +1917,705 @@ input[type="text"] {
   margin-bottom: 0.5rem;
 }
 
-/* Responsive adjustments */
+/* ===== MOBILE RESPONSIVE STYLES ===== */
+
+/* Mobile Header Styles */
+.mobile-title {
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.btn-create-desktop {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  min-height: 44px;
+}
+
+.header-button-section {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Mobile Fixed Bottom Button */
+.mobile-bottom-button-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  background-color: white;
+  border-top: 1px solid #e9ecef;
+  padding: 12px 16px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-bottom-button {
+  width: 100%;
+  background-color: white;
+  color: #212529;
+  border: 2px solid #212529;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.mobile-bottom-button:hover {
+  background-color: #212529;
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(33, 37, 41, 0.3);
+}
+
+.mobile-bottom-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(33, 37, 41, 0.2);
+}
+
+.mobile-bottom-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 575px) {
+  .mobile-title {
+    font-size: 1.1rem;
+  }
+  
+  .mobile-bottom-button-container {
+    padding: 10px 12px;
+  }
+  
+  .mobile-bottom-button {
+    font-size: 0.95rem;
+    padding: 10px 14px;
+    min-height: 44px;
+  }
+}
+
+.mobile-hr {
+  margin: 0.75rem 0;
+}
+
+/* Mobile Search and Filter Styles */
+.search-container-mobile {
+  position: relative;
+  width: 100%;
+}
+
+.search-input-mobile {
+  padding-left: 35px;
+  padding-right: 35px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  height: 48px;
+  font-size: 1rem;
+}
+
+.sort-field-mobile {
+  position: relative;
+  width: 100%;
+}
+
+.sort-select-mobile {
+  height: 48px;
+  padding-right: 40px;
+  border-radius: 8px;
+  appearance: none;
+  background-image: none;
+  font-size: 1rem;
+}
+
+@media (max-width: 575px) {
+  .search-input-mobile {
+    height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .sort-select-mobile {
+    height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Mobile Card Styles */
+.test-paper-card-mobile {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.test-paper-card-mobile:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.mobile-card-layout {
+  padding: 0.5rem;
+}
+
+.mobile-card-header {
+  border-bottom: 1px solid #f1f3f4;
+  padding-bottom: 1rem;
+}
+
+.mobile-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #212529;
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+}
+
+/* Mobile Summary Items */
+.mobile-summary-row {
+  margin-top: 0.75rem;
+}
+
+.mobile-summary-item {
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.mobile-summary-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-summary-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+/* Mobile Details Section */
+.mobile-details-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f3f4;
+}
+
+
+
+.mobile-details-content {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+/* Mobile Details Section - Seamless (No separators) */
+.mobile-details-section-seamless {
+  margin-top: 0.75rem;
+  padding-top: 0;
+  border-top: none;
+}
+
+.mobile-details-content-seamless {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+}
+
+.mobile-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.mobile-detail-item:last-child {
+  border-bottom: none;
+}
+
+.mobile-detail-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.mobile-detail-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+/* Mobile Action Buttons */
+.mobile-actions-section {
+  padding-top: 1rem;
+  border-top: 1px solid #f1f3f4;
+}
+
+.mobile-action-btn {
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  min-height: 44px;
+  transition: all 0.3s ease;
+  border-width: 2px;
+}
+
+.mobile-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 575px) {
+  .mobile-action-btn {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Mobile Modal Styles */
+.modal-mobile-responsive {
+  margin: 0.5rem;
+}
+
+.modal-content-mobile {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-mobile {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+  background-color: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.mobile-modal-title {
+  font-weight: 600;
+  color: #212529;
+  font-size: 1.1rem;
+}
+
+.modal-body-mobile {
+  padding: 1.25rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Mobile Form Styles */
+.mobile-form-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-form-control {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  min-height: 44px;
+}
+
+.mobile-help-text {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 575px) {
+  .mobile-form-control {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Mobile Student Filter */
+.mobile-students-label {
+  font-size: 0.95rem;
+}
+
+.mobile-student-count {
+  font-size: 0.8rem;
+}
+
+.mobile-filter-toggle {
+  min-width: auto;
+}
+
+.toggle-label-mobile {
+  min-width: 100px;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+/* Mobile Students Container */
+.students-container-mobile {
+  min-height: 250px;
+  max-height: 60vh;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem;
+  background-color: #fafafa;
+  position: relative;
+}
+
+.students-loading-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.students-content-mobile {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.students-empty-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  text-align: center;
+}
+
+.mobile-empty-title {
+  font-size: 0.95rem;
+}
+
+.mobile-empty-text {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Mobile Select All */
+.select-all-container-mobile {
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-select-all-label {
+  font-size: 0.9rem;
+}
+
+/* Mobile Student List */
+.student-list-mobile {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-right: -0.5rem;
+}
+
+.student-item-mobile {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.student-item-mobile:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.1);
+}
+
+.student-info-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.student-name-mobile {
+  font-weight: 500;
+  color: #212529;
+  font-size: 0.9rem;
+}
+
+.student-roll-mobile {
+  font-size: 0.8rem;
+}
+
+.student-actions-mobile {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mobile-badge {
+  font-size: 0.7rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.mobile-remove-btn {
+  padding: 0.25rem 0.5rem;
+  min-height: 32px;
+  border-radius: 6px;
+}
+
+/* Mobile Modal Footer */
+.modal-footer-mobile {
+  border-top: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+  background-color: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+.mobile-modal-btn {
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  min-height: 44px;
+  flex: 1;
+}
+
+/* Mobile Questions Modal */
+.modal-questions-mobile {
+  margin: 0.5rem;
+}
+
+.modal-content-questions {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-questions {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+  background-color: #f8f9fa;
+}
+
+.mobile-questions-title {
+  font-weight: 600;
+  color: #212529;
+  font-size: 1.1rem;
+}
+
+.modal-body-questions {
+  padding: 1.25rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Mobile Test Paper Info */
+.test-paper-info-mobile {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 12px;
+  border-left: 4px solid #007bff;
+}
+
+.mobile-paper-title {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.mobile-paper-info {
+  margin-top: 0.75rem;
+}
+
+.mobile-info-item {
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.mobile-info-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-info-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.modal-footer-questions {
+  border-top: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+  background-color: #f8f9fa;
+  text-align: center;
+}
+
+.mobile-close-btn {
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  min-height: 44px;
+}
+
+/* Mobile Date Picker Optimizations */
+@media (max-width: 768px) {
+  .date-picker-dropdown {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw !important;
+    max-width: 350px !important;
+    z-index: 1060 !important;
+    margin: 0 !important;
+  }
+  
+  .datetime-dropdown {
+    min-width: 90vw !important;
+    max-width: 350px !important;
+  }
+  
+  .date-picker-header {
+    padding: 0.75rem;
+  }
+  
+  .month-year {
+    font-size: 1rem;
+    min-width: 120px;
+  }
+  
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+  }
+  
+  .date-btn {
+    min-height: 40px;
+    font-size: 0.9rem;
+  }
+  
+  .time-picker-section {
+    padding: 0.75rem;
+  }
+  
+  .time-input {
+    width: 50px;
+    padding: 6px 4px;
+    font-size: 0.9rem;
+  }
+  
+  .ampm-btn {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+    min-width: 30px;
+  }
+  
+  .quick-time-buttons {
+    gap: 0.25rem;
+  }
+  
+  .quick-time-buttons .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .mobile-action-btn:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .test-paper-card-mobile:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .student-item-mobile:hover {
+    border-color: #e9ecef;
+    box-shadow: none;
+  }
+  
+  /* Larger touch targets */
+  .mobile-action-btn {
+    min-height: 48px;
+    padding: 0.75rem;
+  }
+  
+  .mobile-modal-btn {
+    min-height: 48px;
+    padding: 0.75rem 1.25rem;
+  }
+  
+  .mobile-remove-btn {
+    min-height: 40px;
+    padding: 0.5rem;
+  }
+}
+
+/* Landscape Mobile Optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal-body-mobile {
+    max-height: 60vh;
+  }
+  
+  .students-container-mobile {
+    max-height: 50vh;
+  }
+  
+  .mobile-card-layout {
+    padding: 0.75rem;
+  }
+  
+  .mobile-summary-item {
+    padding: 0.5rem;
+  }
+}
+
+/* Very Small Screens */
+@media (max-width: 375px) {
+  .mobile-card-title {
+    font-size: 1rem;
+  }
+  
+  .mobile-summary-label {
+    font-size: 0.7rem;
+  }
+  
+  .mobile-summary-value {
+    font-size: 0.85rem;
+  }
+  
+  .mobile-action-btn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.5rem;
+  }
+  
+  .mobile-modal-title {
+    font-size: 1rem;
+  }
+  
+  .modal-mobile-responsive {
+    margin: 0.25rem;
+  }
+}
+
+/* Legacy responsive adjustments */
 @media (max-width: 768px) {
   .action-btn {
     min-width: 100%;
     margin-bottom: 0.5rem;
-  }
-  
-  .dynamic-style {
-    text-align: left !important;
-    margin-top: 1rem;
   }
 }
 

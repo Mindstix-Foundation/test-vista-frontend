@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"What is the maximum number of characters allowed in text field is access?","255","256","64000","65000",a
+"What is the expansion of OLE in Access?","object linking and embedding","object linking and encrypting","object linking and editing","object linking and encapsulation",a
+"What is the maximum length of the field name in Access?","16 characters","32 characters","64 characters","128 characters",c
+"Which view is used to arrange table data in different graphical layouts to summarize data?","Table view","Design view","Data sheet view","Pivot chart view",d
+"Which view allows to modify table's structure in Access?","Design view","Datasheet view","Pivot table view","Pivot chart view",a
+"Which object stores information about related data?","Document","Table","Page","Screen",b
+"Which key stroke is used to move the active cell towards right in access table?","Ctrl + Tab","Alt + Tab","Tab","Shift + Tab",c
+"Which key stroke moves the active cell towards left in Access table?","F2","F5","Tab","Shift + Tab",d
+"Which combination of key zooms the content of active cell in Access table?","Ctrl + F2","Ctrl + F5","Shift + F2","Shift + F5",c
+"Which combination of key allows user to move to the first field in the first record in Access table?","Ctrl + Tab","Shift +Tab","Shift + Home","Ctrl + Home",d
+"Which command quickly locates the data is Access table?","Find","Locate","Search","Edit",a
+"Which technique prevents invalid data being saved in Access table?","Index","Filter","Validation rule","Input mark",c
+"Which validation rule accepts only a-z letters for fields in Access?","Is null or NOT like '*[! a - z]*'","Is null or NOT like '*[a - z ]*'","Is null or NOT like '*![a - z]*'","Is null or NOT like '[! a - z]'",a
+"Which validation rule allows only 0-9 for fields in Access?","Is Null or Not Like '*[ ! 0 - 9 ]*'","Is Null or Not Like '[! 0 - 9]'","Is Null or Not Like '*[0 - 9]*'","Is Null or Not Like '*[!0 9]*'",a
+"Which validation rule allows only positive numbers for fields in Access?","Is Null or >= 0","Is Null or Positive","Is Null or < 0","Is Null or = '+'",a
+"What is allowed the input mask symbol # in Access?","Letter or digit","Letter A through Z","A digit 0-9 with +/- sign","A digit 0-9 without +/- sign",d
+"What is the output when the data '1678.95' is set to the number format '###0.00' in Access?","1670","1670.95","1678","1678.95",d
+"Which of the following is a valid time format is Access?","hh:mm:ss AM/PM","hh.mm.ss AM/PM","hh-mm-ss AM/PM","hh/mm/ss AM/PM",a
+"Write the output when the data 'Primary Key' is set to the text < in Access?","Primary key","primary key","PRIMARY KEY","Primary Key",b
+"What is the output when the data 'FOREIGN key' is set to the text format > in Access?","foreign key","FOREIGN KEY","Foreign Key","Foreign key",b 

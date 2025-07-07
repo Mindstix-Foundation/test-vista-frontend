@@ -111,6 +111,53 @@
       </div>
     </div>
 
+    <!-- Chapter-wise Performance Analysis -->
+    <div class="row justify-content-center mb-4" v-if="chapterWiseAnalysis.length > 0">
+      <div class="col-md-10">
+        <div class="chapter-analysis-section">
+          <h4 class="section-title">
+            <i class="bi bi-bar-chart-fill"></i> Chapter-wise Class Performance
+          </h4>
+          <div class="chapter-cards">
+            <div 
+              v-for="analysis in chapterWiseAnalysis" 
+              :key="analysis.chapterName"
+              class="chapter-card"
+              :class="getChapterCardClass(analysis.performanceLevel)"
+            >
+              <div class="chapter-header">
+                <h5 class="chapter-name">{{ analysis.chapterName }}</h5>
+                <span class="performance-badge" :class="getPerformanceBadgeClass(analysis.performanceLevel)">
+                  {{ analysis.performanceLevel }}
+                </span>
+              </div>
+              <div class="chapter-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Questions:</span>
+                  <span class="stat-value">{{ formatDecimal(analysis.correct) }}/{{ Math.round(analysis.total) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Score:</span>
+                  <span class="stat-value">{{ formatDecimal(analysis.percentage) }}%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Marks:</span>
+                  <span class="stat-value">{{ formatDecimal(analysis.obtainedMarks) }}/{{ Math.round(analysis.totalMarks) }}</span>
+                </div>
+              </div>
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill" 
+                  :style="{ width: analysis.percentage + '%' }"
+                  :class="getProgressBarClass(analysis.performanceLevel)"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Search and Filter Controls -->
     <div class="row justify-content-center mb-4">
       <div class="col-md-10">
@@ -299,7 +346,21 @@ interface ApiTestPaperResultsResponse {
   average_score: number
   lowest_score: number
   pass_rate: number
+  chapter_wise_analysis?: ChapterAnalysis[]
   results: ApiTestPaperResult[]
+}
+
+interface ChapterAnalysis {
+  chapterName: string
+  total: number
+  correct: number
+  wrong: number
+  skipped: number
+  percentage: number
+  totalMarks: number
+  obtainedMarks: number
+  performanceLevel: string
+  studentsCount: number
 }
 
 // Reactive variables
@@ -316,6 +377,9 @@ const testPaperInfo = ref<TestPaperInfo | null>(null)
 
 // Student results
 const studentResults = ref<StudentResult[]>([])
+
+// Chapter-wise analysis
+const chapterWiseAnalysis = ref<ChapterAnalysis[]>([])
 
 // Computed properties
 const filteredResults = computed(() => {
@@ -438,6 +502,9 @@ const fetchTestPaperResults = async () => {
       submittedAt: result.submitted_at || null
     }))
 
+    // Set chapter-wise analysis
+    chapterWiseAnalysis.value = data.chapter_wise_analysis || []
+
   } catch (err) {
     console.error('Error fetching test paper results:', err)
     error.value = 'Failed to load test results. Please try again.'
@@ -533,6 +600,46 @@ const downloadPDF = () => {
   } finally {
     isGeneratingPDF.value = false
   }
+}
+
+const getChapterCardClass = (performanceLevel: string) => {
+  switch (performanceLevel) {
+    case 'excellent': return 'chapter-excellent'
+    case 'good': return 'chapter-good'
+    case 'average': return 'chapter-average'
+    default: return 'chapter-poor'
+  }
+}
+
+const getPerformanceBadgeClass = (performanceLevel: string) => {
+  switch (performanceLevel) {
+    case 'excellent': return 'badge-excellent'
+    case 'good': return 'badge-good'
+    case 'average': return 'badge-average'
+    default: return 'badge-poor'
+  }
+}
+
+const getProgressBarClass = (performanceLevel: string) => {
+  switch (performanceLevel) {
+    case 'excellent': return 'progress-excellent'
+    case 'good': return 'progress-good'
+    case 'average': return 'progress-average'
+    default: return 'progress-poor'
+  }
+}
+
+const formatDecimal = (value: number) => {
+  // Round to 2 decimal places
+  const rounded = Math.round(value * 100) / 100
+  
+  // If it's a whole number (like 1.0, 5.0), return without decimal
+  if (rounded === Math.floor(rounded)) {
+    return Math.floor(rounded).toString()
+  }
+  
+  // Otherwise return with up to 2 decimal places, removing trailing zeros
+  return rounded.toString()
 }
 
 const generatePDFContent = () => {
@@ -1032,6 +1139,64 @@ input[type="text"]:focus {
   .stat-label-small {
     font-size: 0.7rem;
   }
+
+  /* Mobile Chapter Analysis */
+  .chapter-cards {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .chapter-card {
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .chapter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .chapter-name {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+  
+  .performance-badge {
+    align-self: flex-start;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .chapter-stats {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .stat-item:last-child {
+    border-bottom: none;
+  }
+  
+  .stat-label {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+  }
+  
+  .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
 }
 
 @media (max-width: 992px) {
@@ -1053,6 +1218,151 @@ input[type="text"]:focus {
   .d-flex.gap-2 > * {
     width: 100%;
   }
+}
+
+/* Chapter Analysis Section */
+.chapter-analysis-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.chapter-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.chapter-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.chapter-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.chapter-excellent {
+  border-left-color: #28a745;
+}
+
+.chapter-good {
+  border-left-color: #17a2b8;
+}
+
+.chapter-average {
+  border-left-color: #ffc107;
+}
+
+.chapter-poor {
+  border-left-color: #dc3545;
+}
+
+.chapter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.chapter-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.performance-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-excellent {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-good {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.badge-average {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge-poor {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.chapter-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-excellent {
+  background-color: #28a745;
+}
+
+.progress-good {
+  background-color: #17a2b8;
+}
+
+.progress-average {
+  background-color: #ffc107;
+}
+
+.progress-poor {
+  background-color: #dc3545;
 }
 
 /* Custom scrollbar for table */

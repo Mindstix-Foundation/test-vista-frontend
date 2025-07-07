@@ -4,7 +4,7 @@
 
   <!-- Page Content -->
   <div class="container">
-    <div class="card p-4" style="max-width: 400px; width: 100%">
+    <div class="card p-4 login-card">
       <h3 class="card-title text-center">Student Registration</h3>
       <p class="text-center">Student Portal</p>
 
@@ -45,8 +45,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 100px); /* Adjusted for navbar height */
+  min-height: calc(100vh - 100px); /* Adjusted for navbar height */
   margin-top: 20px; /* Add some space below navbar */
+  padding: 1rem;
 }
 
 /* Styling the card */
@@ -54,6 +55,12 @@ body {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  transition: all 0.3s ease;
 }
 
 /* Styling form inputs */
@@ -70,6 +77,70 @@ body {
   font-size: 0.875rem;
   text-align: center;
   margin-top: 10px;
+}
+
+/* Button styling */
+.btn {
+  transition: all 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    min-height: calc(100vh - 80px);
+    margin-top: 15px;
+    padding: 0.5rem;
+  }
+  
+  .card {
+    max-width: 100%;
+    margin: 0 0.5rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    min-height: calc(100vh - 70px);
+    margin-top: 10px;
+    padding: 0.25rem;
+  }
+  
+  .card {
+    margin: 0 0.25rem;
+  }
+  
+  .card-title {
+    font-size: 1.5rem;
+  }
+  
+  .btn-lg {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+  .container {
+    padding: 0.1rem;
+  }
+  
+  .card {
+    margin: 0 0.1rem;
+  }
+  
+  .card-title {
+    font-size: 1.3rem;
+  }
+  
+  .btn-lg {
+    font-size: 0.95rem;
+  }
 }
 
 /* Password field styling */

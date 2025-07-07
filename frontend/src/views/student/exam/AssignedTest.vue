@@ -209,6 +209,14 @@
                   >
                     <i class="bi bi-x-circle me-2"></i>Deadline Passed
                   </button>
+
+                  <button 
+                    v-if="test.status === 'completed' && test.test_attempt_id"
+                    class="btn btn-view-result action-btn mb-2" 
+                    @click="viewResult(test.test_attempt_id)"
+                  >
+                    <i class="bi bi-clipboard-check me-2"></i>View Result
+                  </button>
                 </div>
               </div>
             </div>
@@ -319,6 +327,11 @@ const continueTest = (testId: number) => {
 const startTest = (testId: number) => {
   // Navigate to exam instructions page for starting test
   router.push(`/student/exam/instructions?test=${testId}&type=start`)
+}
+
+const viewResult = (testAttemptId: number) => {
+  // Navigate to view result page
+  router.push(`/student/exam/result?attemptId=${testAttemptId}`)
 }
 
 const closeToast = () => {
@@ -588,6 +601,16 @@ onUnmounted(() => {
 
 .btn-continue-test:hover {
   background: linear-gradient(135deg, #0056b3 0%, #520dc2 100%);
+  color: white;
+}
+
+.btn-view-result {
+  background: linear-gradient(135deg, #17a2b8 0%, #007bff 100%);
+  color: white;
+}
+
+.btn-view-result:hover {
+  background: linear-gradient(135deg, #138496 0%, #0056b3 100%);
   color: white;
 }
 
