@@ -25,13 +25,13 @@
       <div class="exam-header">
         <div class="container-fluid">
           <div class="row align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-4 col-12 text-center">
               <h1 class="exam-title">{{ examData.title }}</h1>
               <div class="exam-info">
                 <span>{{ examData.subject }}</span> • <span>{{ examData.total_marks }}</span> Marks • <span>{{ questions.length }}</span> Questions
               </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-12">
               <div class="progress-container">
                 <div class="d-flex justify-content-between mb-1">
                   <small>Progress</small>
@@ -42,16 +42,33 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-2">
-              <div class="timer-container" :class="timerClass">
-                <div class="timer-display">{{ formattedTime }}</div>
-                <div class="timer-label">Time Remaining</div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="student-info">
-                <div class="student-name">{{ studentName }}</div>
-                <div class="student-label">Student</div>
+            <div class="col-md-5 col-12">
+              <div class="row g-2 align-items-center">
+                <div class="col-6">
+                  <div class="timer-container" :class="timerClass">
+                    <div class="timer-display">{{ formattedTime }}</div>
+                    <div class="timer-label">Time Remaining</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="student-info">
+                    <div class="student-content">
+                      <div class="student-name">{{ studentName }}</div>
+                      <div class="student-label">Student</div>
+                    </div>
+                    <div class="nav-menu-wrapper">
+                      <button 
+                        class="btn btn-nav-menu" 
+                        @click="toggleNavigationPanel"
+                        :class="{ 'active': showNavigationPanel }"
+                        title="Question Navigation"
+                      >
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                        <span class="nav-count">{{ questions.length }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -97,13 +114,7 @@
 
           <!-- Navigation Buttons -->
           <div class="nav-buttons">
-            <button 
-              class="btn btn-nav btn-previous" 
-              @click="previousQuestion"
-              :disabled="currentQuestionIndex === 0"
-            >
-              <i class="bi bi-arrow-left"></i> Previous
-            </button>
+            <!-- Action buttons row -->
             <div class="action-buttons">
               <button 
                 class="btn btn-mark"
@@ -122,20 +133,38 @@
                 <i class="bi bi-x-circle"></i> Clear Response
               </button>
             </div>
-            <button 
-              class="btn btn-nav btn-next" 
-              @click="saveAndNext"
-              :disabled="isSubmittingAnswer"
-            >
-              <span v-if="isSubmittingAnswer" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              {{ currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next' }} 
-              <i class="bi bi-arrow-right" v-if="!isSubmittingAnswer"></i>
-            </button>
+            
+            <!-- Navigation buttons row (50-50) -->
+            <div class="nav-buttons-row">
+              <button 
+                class="btn btn-nav btn-previous" 
+                @click="previousQuestion"
+                :disabled="currentQuestionIndex === 0"
+              >
+                <i class="bi bi-arrow-left"></i> Previous
+              </button>
+              <button 
+                class="btn btn-nav btn-next" 
+                @click="saveAndNext"
+                :disabled="isSubmittingAnswer"
+              >
+                <span v-if="isSubmittingAnswer" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                {{ currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next' }} 
+                <i class="bi bi-arrow-right" v-if="!isSubmittingAnswer"></i>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Navigation Panel -->
-        <div class="navigation-panel">
+        <div class="navigation-panel" :class="{ 'panel-open': showNavigationPanel }">
+          <!-- Close Button -->
+          <div class="panel-header">
+            <button class="btn btn-close-panel" @click="toggleNavigationPanel">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          
           <!-- Question Status Legend -->
           <div class="nav-section">
             <div class="nav-title">Question Status</div>
@@ -298,6 +327,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Navigation Panel Backdrop -->
+    <div v-if="showNavigationPanel" class="navigation-backdrop" @click="toggleNavigationPanel"></div>
   </div>
 </template>
 
@@ -333,6 +365,7 @@ const showSubmitConfirmation = ref(false)
 const fullscreenChecker = ref<any>(null)
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
+const showNavigationPanel = ref(false)
 
 // Computed properties
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
@@ -459,6 +492,11 @@ const loadQuestion = async (index: number) => {
   questionTimer.value = setInterval(() => {
     currentQuestionTime.value++
   }, 1000)
+  
+  // Close navigation panel after question selection (mobile only)
+  if (window.innerWidth <= 768) {
+    showNavigationPanel.value = false
+  }
 }
 
 const selectOption = (optionIndex: number) => {
@@ -722,9 +760,59 @@ const testAddAnswers = () => {
   console.log('Test answers added:', answers)
 }
 
+const toggleNavigationPanel = () => {
+  showNavigationPanel.value = !showNavigationPanel.value
+}
+
+// Security functions to prevent cheating
+const blockBackNavigation = () => {
+  window.history.pushState(null, '', window.location.href)
+  
+  window.addEventListener('popstate', (event) => {
+    window.history.pushState(null, '', window.location.href)
+    // Don't show confirmation during exam, just block navigation
+    event.preventDefault()
+    return false
+  })
+  
+  // Block keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    if ((e.altKey && e.key === 'ArrowLeft') ||
+        (e.altKey && e.key === 'ArrowRight') ||
+        e.key === 'F5' ||
+        (e.ctrlKey && e.key === 'r') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        (e.ctrlKey && e.key === 'u') ||
+        e.key === 'F12') {
+      e.preventDefault()
+      return false
+    }
+  })
+  
+  // Block right-click context menu
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    return false
+  })
+  
+  // Block text selection
+  document.addEventListener('selectstart', (e) => {
+    e.preventDefault()
+    return false
+  })
+  
+  // Block drag and drop
+  document.addEventListener('dragstart', (e) => {
+    e.preventDefault()
+    return false
+  })
+}
+
 // Lifecycle hooks
 onMounted(() => {
   initializeExam()
+  blockBackNavigation()
   
   // Expose test function for debugging
   ;(window as any).testAddAnswers = testAddAnswers
@@ -794,6 +882,19 @@ body {
   z-index: 1000;
 }
 
+/* Header Layout Fix - Force horizontal layout */
+.exam-header .col-md-5 .row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+}
+
+.exam-header .col-md-5 .col-6 {
+  flex: 0 0 50% !important;
+  max-width: 50% !important;
+  padding: 0 4px;
+}
+
 .exam-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -811,17 +912,24 @@ body {
   border-radius: 10px;
   padding: 10px 15px;
   text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60px;
 }
 
 .timer-display {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
+  line-height: 1.2;
 }
 
 .timer-label {
   font-size: 0.8rem;
   opacity: 0.8;
+  margin-top: 2px;
 }
 
 .timer-warning {
@@ -834,23 +942,82 @@ body {
   background: rgba(220, 53, 69, 0.2) !important;
 }
 
-/* Student info styles */
+/* Student Info Styles */
 .student-info {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px 15px;
-  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 60px;
+}
+
+.student-content {
+  flex: 1;
 }
 
 .student-name {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+  line-height: 1.2;
 }
 
 .student-label {
-  font-size: 0.8rem;
-  opacity: 0.8;
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.nav-menu-wrapper {
+  margin-left: 8px;
+}
+
+/* Navigation Menu Button */
+.btn-nav-menu {
+  background: #007bff;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  padding: 8px 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 45px;
+  height: 45px;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+}
+
+.btn-nav-menu:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.btn-nav-menu.active {
+  background: #28a745;
+  box-shadow: 0 2px 4px rgba(40,167,69,0.3);
+}
+
+.btn-nav-menu i {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.nav-count {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.9;
 }
 
 /* Progress bar */
@@ -887,12 +1054,14 @@ body {
 }
 
 .question-header {
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 15px;
-  margin-bottom: 25px;
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .question-number {
@@ -1017,16 +1186,32 @@ body {
   width: 350px;
   background: white;
   border-radius: 15px;
-  padding: 15px 25px;
+  padding: 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-height: calc(100vh - 200px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: 0;
+  right: -350px;
+  height: 100vh;
+  z-index: 1001;
+  transition: right 0.3s ease-in-out;
+  border-radius: 0;
 }
 
-.nav-section {
+.navigation-panel.panel-open {
+  right: 0;
+}
+
+.navigation-panel .nav-section {
+  padding: 0 25px;
   margin-bottom: 15px;
+}
+
+.navigation-panel .nav-section:first-of-type {
+  padding-top: 15px;
 }
 
 /* Navigation header */
@@ -1245,41 +1430,34 @@ body {
 
 /* Navigation buttons */
 .nav-buttons {
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+}
+
+.action-buttons {
   display: flex;
-  justify-content: space-between;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e9ecef;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 
-.btn-nav {
-  padding: 12px 24px;
-  font-weight: 600;
-  border-radius: 8px;
+.action-buttons .btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.85rem;
 }
 
-.btn-previous {
-  background: #6c757d;
-  border-color: #6c757d;
-  color: white;
+.nav-buttons-row {
+  display: flex;
+  gap: 10px;
 }
 
-.btn-previous:hover {
-  background: #545b62;
-  border-color: #545b62;
-  color: white;
-}
-
-.btn-next {
-  background: #007bff;
-  border-color: #007bff;
-  color: white;
-}
-
-.btn-next:hover {
-  background: #0056b3;
-  border-color: #0056b3;
-  color: white;
+.nav-buttons-row .btn-nav {
+  flex: 1;
+  padding: 10px 20px;
+  font-size: 0.9rem;
 }
 
 /* Submit section */
@@ -1306,35 +1484,276 @@ body {
   color: white;
 }
 
-/* Responsive design */
+/* Mobile Responsive Design */
 @media (max-width: 768px) {
+  .exam-header {
+    padding: 8px 0;
+    margin-bottom: 12px;
+  }
+  
+  .exam-header .row {
+    margin: 0;
+  }
+  
+  .exam-header .col-12,
+  .exam-header .col-6 {
+    padding: 0 8px;
+    margin-bottom: 8px;
+  }
+  
+  /* Timer Container Mobile */
+  .timer-container {
+    padding: 10px;
+    min-height: 55px;
+  }
+  
+  .timer-display {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  
+  .timer-label {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+  
+  /* Student Info Mobile */
+  .student-info {
+    padding: 10px;
+    min-height: 55px;
+  }
+  
+  .student-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
+  .student-label {
+    font-size: 10px;
+  }
+  
+  /* Navigation Button Mobile */
+  .btn-nav-menu {
+    min-width: 40px;
+    height: 40px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .btn-nav-menu i {
+    font-size: 12px;
+    margin-bottom: 1px;
+  }
+  
+  .nav-count {
+    font-size: 8px;
+  }
+  
+  .nav-menu-wrapper {
+    margin-left: 6px;
+  }
+  
   .exam-content {
     flex-direction: column;
     padding: 10px;
+    gap: 15px;
   }
 
+  /* Mobile Navigation Panel */
   .navigation-panel {
+    position: fixed !important;
+    top: 0 !important;
+    right: -100% !important;
+    width: 100% !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    z-index: 1001 !important;
+    transition: right 0.3s ease-in-out !important;
+    transform: none !important;
+  }
+  
+  .navigation-panel.panel-open {
+    right: 0 !important;
+  }
+  
+  .navigation-panel .nav-section {
+    padding: 0 20px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .navigation-panel .nav-section:first-of-type {
+    padding-top: 15px !important;
+  }
+
+  .question-panel {
+    padding: 20px 15px;
+    max-height: none;
+    border-radius: 10px;
     width: 100%;
-    order: -1;
-  }
-
-  .question-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
-  .question-btn {
-    width: 40px;
-    height: 40px;
   }
 
   .question-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
   }
 
+  /* Question Timer Mobile */
   .question-timer {
-    align-self: flex-end;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .timer-icon {
+    font-size: 1rem;
+  }
+  
+  .timer-current {
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+  
+  .timer-label {
+    font-size: 0.6rem;
+  }
+  
+  .question-number {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .nav-buttons {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+  
+  .nav-buttons .btn-nav {
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    order: 1;
+  }
+  
+  .action-buttons .btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .btn-previous {
+    order: 2;
+  }
+  
+  .btn-next {
+    order: 3;
+  }
+}
+
+/* Desktop - restore original sidebar layout */
+@media (min-width: 769px) {
+  .exam-content {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .question-panel {
+    flex: 1;
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  .navigation-panel {
+    width: 350px !important;
+    background: white;
+    border-radius: 15px !important;
+    padding: 25px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    height: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  
+  .navigation-panel .nav-section {
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .navigation-panel .nav-section:first-of-type {
+    padding-top: 0 !important;
+  }
+  
+  .panel-header {
+    display: none !important;
+  }
+  
+  /* Hide navigation button on desktop */
+  .btn-nav-menu {
+    display: none !important;
+  }
+  
+  /* Hide navigation backdrop on desktop */
+  .navigation-backdrop {
+    display: none !important;
+  }
+  
+  /* Restore original navigation buttons layout for desktop */
+  .nav-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .action-buttons .btn {
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .nav-buttons-row {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .nav-buttons-row .btn-nav {
+    flex: 1;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
   }
 }
 
@@ -1362,5 +1781,59 @@ body {
 /* Custom modal backdrop - darker than default */
 .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Navigation Panel Backdrop */
+.navigation-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* Navigation Panel Styles */
+.panel-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-close-panel {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+}
+
+.btn-previous {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+.btn-previous:hover {
+  background: #545b62;
+  border-color: #545b62;
+  color: white;
+}
+
+.btn-next {
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.btn-next:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+  color: white;
 }
 </style> 

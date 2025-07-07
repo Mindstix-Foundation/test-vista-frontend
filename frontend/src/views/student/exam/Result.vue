@@ -1057,65 +1057,406 @@ onUnmounted(() => {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .result-page {
+    padding: 10px 0;
+  }
+  
   .result-container {
-    padding: 0 15px;
+    padding: 0 10px;
   }
   
+  /* Mobile Score Card */
   .score-card {
-    padding: 20px;
-  }
-  
-  .score-circle {
-    width: 120px;
-    height: 120px;
-    font-size: 2rem;
-  }
-  
-  .chapter-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .chapter-stats {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .stat-item {
-    text-align: left;
-  }
-  
-  .question-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .text-center .btn-lg {
-    font-size: 1rem;
-    padding: 12px 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .score-card {
-    padding: 15px;
+    padding: 20px 15px;
+    margin-bottom: 20px;
+    border-radius: 15px;
   }
   
   .score-circle {
     width: 100px;
     height: 100px;
     font-size: 1.8rem;
-  }
-  
-  .score-card .row .col-6 {
     margin-bottom: 15px;
   }
   
+  .score-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+  }
+  
+  .score-card p {
+    font-size: 1rem;
+    margin-bottom: 15px;
+  }
+  
+  .score-card .row .col-md-3 {
+    margin-bottom: 15px;
+  }
+  
+  .score-card .col-6 {
+    padding: 0 5px;
+  }
+  
+  .score-card i {
+    font-size: 1.2rem;
+    margin-bottom: 3px;
+  }
+  
+  .score-card strong {
+    font-size: 1rem;
+    margin-bottom: 3px;
+  }
+  
+  .score-card small {
+    font-size: 0.8rem;
+  }
+  
+  /* Mobile Section Titles */
+  .section-title {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    text-align: center;
+  }
+  
+  /* Mobile Chapter Cards */
+  .chapter-cards {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .chapter-card {
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .chapter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .chapter-name {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+  
+  .performance-badge {
+    align-self: flex-start;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .chapter-stats {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .stat-item:last-child {
+    border-bottom: none;
+  }
+  
+  .stat-label {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+  }
+  
+  .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  /* Mobile Strengths and Weaknesses */
+  .strengths-weaknesses-section .row {
+    margin: 0;
+  }
+  
+  .strengths-weaknesses-section .col-md-6 {
+    padding: 0;
+    margin-bottom: 15px;
+  }
+  
+  .strength-card,
+  .weakness-card {
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  
+  .strength-list li,
+  .weakness-list li {
+    padding: 6px 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  /* Mobile Recommendations */
+  .recommendations-section {
+    margin-bottom: 20px;
+  }
+  
+  .recommendations-card {
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .recommendation-item {
+    padding: 12px 15px;
+    border-radius: 8px;
+    gap: 10px;
+  }
+  
+  .recommendation-item i {
+    font-size: 1rem;
+  }
+  
+  .recommendation-item span {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  /* Mobile Question Cards */
+  .questions-container {
+    gap: 15px;
+  }
+  
+  .question-card {
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .question-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .question-number {
+    font-size: 1rem;
+  }
+  
+  .question-status {
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    align-self: flex-start;
+  }
+  
+  .question-marks {
+    font-size: 0.9rem;
+    align-self: flex-start;
+  }
+  
+  .question-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  
+  .question-image {
+    margin-bottom: 8px;
+  }
+  
+  .options-container {
+    gap: 8px;
+  }
+  
+  .option-item {
+    padding: 10px;
+    border-radius: 6px;
+    gap: 8px;
+  }
+  
+  .option-label {
+    min-width: 18px;
+    font-size: 0.9rem;
+  }
+  
+  .option-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  .not-attempted-message {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  
+  /* Mobile Action Buttons */
+  .text-center {
+    margin-top: 30px;
+  }
+  
+  .text-center .btn-lg {
+    font-size: 1rem;
+    padding: 12px 20px;
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  /* Mobile Modal */
+  .modal-dialog {
+    margin: 15px;
+    width: calc(100% - 30px);
+  }
+  
+  .modal-content {
+    border-radius: 10px;
+  }
+  
+  .modal-header,
+  .modal-body {
+    padding: 15px;
+  }
+  
+  .modal-footer {
+    padding: 10px 15px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Extra small devices (phones, 480px and down) */
+@media (max-width: 480px) {
+  .result-page {
+    padding: 5px 0;
+  }
+  
+  .result-container {
+    padding: 0 8px;
+  }
+  
+  /* Extra small score card */
+  .score-card {
+    padding: 15px 10px;
+    margin-bottom: 15px;
+  }
+  
+  .score-circle {
+    width: 85px;
+    height: 85px;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+  
+  .score-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+  
+  .score-card p {
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+  }
+  
+  .score-card .row .col-6 {
+    margin-bottom: 12px;
+    padding: 0 3px;
+  }
+  
+  .score-card i {
+    font-size: 1rem;
+  }
+  
+  .score-card strong {
+    font-size: 0.9rem;
+  }
+  
+  .score-card small {
+    font-size: 0.75rem;
+  }
+  
+  /* Extra small section titles */
+  .section-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+  }
+  
+  /* Extra small cards */
   .chapter-card,
   .strength-card,
   .weakness-card,
   .recommendations-card,
   .question-card {
-    padding: 15px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .chapter-name {
+    font-size: 0.95rem;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+  
+  .strength-list li,
+  .weakness-list li {
+    font-size: 0.85rem;
+    padding: 5px 0;
+  }
+  
+  .recommendation-item {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  
+  .recommendation-item span {
+    font-size: 0.85rem;
+  }
+  
+  .question-text {
+    font-size: 0.9rem;
+  }
+  
+  .option-item {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .option-label {
+    min-width: 16px;
+    font-size: 0.85rem;
+  }
+  
+  .option-text {
+    font-size: 0.85rem;
+  }
+  
+  .not-attempted-message {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+  
+  /* Extra small action buttons */
+  .text-center .btn-lg {
+    font-size: 0.95rem;
+    padding: 10px 16px;
   }
 }
 </style> 

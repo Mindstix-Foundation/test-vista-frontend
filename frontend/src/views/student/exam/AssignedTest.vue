@@ -1,10 +1,10 @@
 <template>
-  <div class="container mt-4 mb-5">
+  <div class="container mt-2 mt-md-4 mb-3 mb-md-5 px-3 px-md-4">
     <!-- Header Section -->
-    <div class="row p-2 g-2 mb-1 mt-2">
-      <div class="row g-2 justify-content-center align-items-center mb-4">
+    <div class="row p-2 g-2 mb-1 mt-1 mt-md-2">
+      <div class="row g-2 justify-content-center align-items-center mb-3 mb-md-4">
         <div class="col-12 col-sm-10">
-          <h5 class="text-left fw-bolder text-uppercase m-0 mb-3">Assigned Tests</h5>
+          <h5 class="text-left fw-bolder text-uppercase m-0 mb-2 mb-md-3">Assigned Tests</h5>
         </div>
       </div>
       <hr />
@@ -14,76 +14,80 @@
     <div class="row gy-2 g-3 justify-content-center mt-2">
       <div class="col-12 col-sm-10">
         <!-- Filter Tabs and Auto Refresh -->
-        <div class="row mb-4">
+        <div class="row mb-3 mb-md-4">
           <div class="col-12">
-            <div class="d-flex gap-2 mb-3">
-              <div class="btn-group flex-grow-1" role="group" aria-label="Assigned Test Filter">
-                <button 
-                  type="button" 
-                  class="btn btn-outline-dark"
-                  :class="{ active: activeFilter === 'all' }"
-                  @click="filterTests('all')"
-                >
-                  All Tests
-                </button>
-                <button 
-                  type="button" 
-                  class="btn btn-outline-dark"
-                  :class="{ active: activeFilter === 'active' }"
-                  @click="filterTests('active')"
-                >
-                  Active
-                </button>
-                <button 
-                  type="button" 
-                  class="btn btn-outline-dark"
-                  :class="{ active: activeFilter === 'upcoming' }"
-                  @click="filterTests('upcoming')"
-                >
-                  Upcoming
-                </button>
-                <button 
-                  type="button" 
-                  class="btn btn-outline-dark"
-                  :class="{ active: activeFilter === 'completed' }"
-                  @click="filterTests('completed')"
-                >
-                  Completed
-                </button>
-                <button 
-                  type="button" 
-                  class="btn btn-outline-dark"
-                  :class="{ active: activeFilter === 'absent' }"
-                  @click="filterTests('absent')"
-                >
-                  Absent
-                </button>
+            <div class="filter-controls mb-3">
+              <div class="btn-group-container mb-2 mb-md-0">
+                <div class="btn-group" role="group" aria-label="Assigned Test Filter">
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-dark btn-sm btn-md-normal"
+                    :class="{ active: activeFilter === 'all' }"
+                    @click="filterTests('all')"
+                  >
+                    All
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-dark btn-sm btn-md-normal"
+                    :class="{ active: activeFilter === 'active' }"
+                    @click="filterTests('active')"
+                  >
+                    Active
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-dark btn-sm btn-md-normal"
+                    :class="{ active: activeFilter === 'upcoming' }"
+                    @click="filterTests('upcoming')"
+                  >
+                    Upcoming
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-dark btn-sm btn-md-normal"
+                    :class="{ active: activeFilter === 'completed' }"
+                    @click="filterTests('completed')"
+                  >
+                    Completed
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-dark btn-sm btn-md-normal"
+                    :class="{ active: activeFilter === 'absent' }"
+                    @click="filterTests('absent')"
+                  >
+                    Absent
+                  </button>
+                </div>
               </div>
               
               <!-- Auto Refresh Button -->
-              <button 
-                @click="toggleAutoRefresh" 
-                class="btn refresh-btn"
-                :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
-                :title="autoRefresh ? 'Auto-refresh ON (every 2 sec)' : 'Auto-refresh OFF'"
-              >
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                <span class="d-none d-sm-inline">{{ autoRefresh ? 'Live' : 'Refresh' }}</span>
-                <span v-if="autoRefresh" class="spinner-border spinner-border-sm ms-2" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </span>
-              </button>
+              <div class="refresh-container">
+                <button 
+                  @click="toggleAutoRefresh" 
+                  class="btn refresh-btn btn-sm btn-md-normal"
+                  :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
+                  :title="autoRefresh ? 'Auto-refresh ON (every 2 sec)' : 'Auto-refresh OFF'"
+                >
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  <span class="d-none d-sm-inline">{{ autoRefresh ? 'Live' : 'Refresh' }}</span>
+                  <span v-if="autoRefresh" class="spinner-border spinner-border-sm ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </span>
+                </button>
+              </div>
             </div>
             
-            <h6 class="mb-3 d-flex justify-content-between align-items-center">
-              <span>{{ getFilterTitle() }}</span>
+            <h6 class="mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
+              <span class="mb-1 mb-sm-0">{{ getFilterTitle() }}</span>
               <span class="badge bg-secondary">{{ filteredTests.length }} found</span>
             </h6>
           </div>
         </div>
 
         <!-- Loading State -->
-        <div v-if="isLoading" class="text-center py-5">
+        <div v-if="isLoading" class="text-center py-4 py-md-5">
           <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
@@ -95,16 +99,16 @@
           <div 
             v-for="test in filteredTests" 
             :key="test.id"
-            class="card test-paper-card mb-4"
+            class="card test-paper-card mb-3 mb-md-4"
           >
             <div class="card-body">
               <div class="row">
                 <!-- Test Details -->
-                <div class="col-md-8">
-                  <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h5 class="card-title mb-0">{{ test.title }}</h5>
+                <div class="col-12 col-md-8 mb-3 mb-md-0">
+                  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-3">
+                    <h5 class="card-title mb-2 mb-sm-0 me-sm-3">{{ test.title }}</h5>
                     <span 
-                      class="badge"
+                      class="badge align-self-start"
                       :class="getStatusBadgeClass(test.status)"
                     >
                       {{ getStatusDisplayText(test.status) }}
@@ -112,7 +116,7 @@
                   </div>
                   
                   <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6 mb-2 mb-md-0">
                       <div class="paper-info-item">
                         <i class="bi bi-calendar text-dark me-2"></i>
                         <span class="fw-medium">
@@ -124,7 +128,7 @@
                         <span class="fw-medium">Duration: {{ test.duration }} minutes</span>
                       </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                       <div class="paper-info-item">
                         <i class="bi bi-question-circle text-dark me-2"></i>
                         <span class="fw-medium">Questions: {{ test.questions }}</span>
@@ -173,7 +177,7 @@
                 </div>
                 
                 <!-- Actions Section -->
-                <div class="col-md-4 d-flex flex-column justify-content-center align-items-md-end">
+                <div class="col-12 col-md-4 d-flex flex-column justify-content-center align-items-stretch align-items-md-end">
                   <button 
                     v-if="test.status === 'active' && test.progress > 0"
                     class="btn btn-continue-test action-btn mb-2" 
@@ -407,13 +411,13 @@ onUnmounted(() => {
 }
 
 .test-paper-card .card-body {
-  padding: 1.75rem;
+  padding: 1.5rem;
 }
 
 .test-paper-card .card-title {
   color: #2c3e50;
   font-weight: 700;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   margin-bottom: 1rem;
   line-height: 1.3;
 }
@@ -431,19 +435,20 @@ onUnmounted(() => {
 
 /* Paper info item styling with better spacing */
 .paper-info-item {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   color: #495057;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
 .paper-info-item i {
   color: #6c757d;
-  font-size: 1.1rem;
-  width: 24px;
+  font-size: 1rem;
+  width: 20px;
   margin-right: 0.5rem;
+  flex-shrink: 0;
 }
 
 .paper-info-item .fw-medium {
@@ -515,11 +520,27 @@ onUnmounted(() => {
   padding: 0.75rem 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: none;
+  min-height: 44px;
 }
 
 .action-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced filter controls layout */
+.filter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-group-container {
+  flex: 1;
+}
+
+.refresh-container {
+  align-self: stretch;
 }
 
 /* Filter button styles */
@@ -531,6 +552,7 @@ onUnmounted(() => {
   border-radius: 8px;
   transition: all 0.3s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  min-height: 44px;
 }
 
 .btn-outline-dark:hover:not(:disabled) {
@@ -574,8 +596,9 @@ onUnmounted(() => {
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.3s ease;
-  min-width: 120px;
+  min-width: 100px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 44px;
 }
 
 .refresh-btn:hover {
@@ -609,7 +632,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4rem 2rem;
+  padding: 3rem 2rem;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 15px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
@@ -667,8 +690,52 @@ h6 {
   background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
 }
 
-/* Responsive adjustments */
+/* Enhanced responsive adjustments */
+@media (min-width: 768px) {
+  .filter-controls {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .btn-group-container {
+    flex: 1;
+  }
+  
+  .refresh-container {
+    align-self: auto;
+    margin-left: 0.75rem;
+  }
+  
+  .btn-md-normal {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .test-paper-card .card-body {
+    padding: 1.75rem;
+  }
+  
+  .test-paper-card .card-title {
+    font-size: 1.35rem;
+  }
+  
+  .paper-info-item {
+    font-size: 0.95rem;
+    margin-bottom: 0.85rem;
+  }
+  
+  .paper-info-item i {
+    font-size: 1.1rem;
+    width: 24px;
+  }
+}
+
 @media (max-width: 767.98px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
   .action-btn {
     width: 100%;
     margin-bottom: 0.5rem;
@@ -680,20 +747,20 @@ h6 {
   }
   
   .test-paper-card .card-body {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
   
   .test-paper-card .card-title {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
   }
   
   h5 {
-    font-size: 1.2rem !important;
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
   }
   
   h6 {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
   }
   
   .btn-group {
@@ -703,54 +770,121 @@ h6 {
   
   .btn-group .btn {
     flex: 1;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.25rem;
   }
   
-  /* Refresh button responsive styling */
   .refresh-btn {
-    min-width: 60px;
-    margin-left: 0.5rem;
-  }
-  
-  .d-flex.gap-2 {
-    flex-wrap: wrap;
-  }
-  
-  .d-flex.gap-2 .btn-group {
-    flex: 1 1 100%;
-    margin-bottom: 0.5rem;
-  }
-  
-  .d-flex.gap-2 .refresh-btn {
-    flex: 0 0 auto;
-    margin-left: 0;
     width: 100%;
+    min-width: auto;
+  }
+  
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+  
+  .empty-state i {
+    font-size: 3rem;
   }
 }
 
 @media (max-width: 576px) {
-  h5 {
-    font-size: 1.15rem !important;
-  }
-  
-  h6 {
-    font-size: 0.95rem !important;
-  }
-  
   .container {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
   
+  h5 {
+    font-size: 1rem !important;
+  }
+  
+  h6 {
+    font-size: 0.9rem !important;
+  }
+  
   .test-paper-card .card-body {
-    padding: 1.25rem;
+    padding: 1rem;
   }
   
   .test-paper-card .card-title {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
   
   .paper-info-item {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+  }
+  
+  .btn-group .btn {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.2rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.7rem;
+  }
+  
+  .alert small {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .test-paper-card .card-body {
+    padding: 0.875rem;
+  }
+  
+  .test-paper-card .card-title {
+    font-size: 1rem;
+  }
+  
+  .paper-info-item {
+    font-size: 0.8rem;
+  }
+  
+  .btn-group .btn {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.15rem;
+  }
+  
+  .empty-state {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .empty-state i {
+    font-size: 2.5rem;
+  }
+  
+  .empty-state h5 {
+    font-size: 1rem;
+  }
+  
+  .empty-state p {
+    font-size: 0.85rem;
+  }
+}
+
+/* Improved touch targets and accessibility */
+@media (max-width: 768px) {
+  .btn {
+    touch-action: manipulation;
+  }
+  
+  .card:hover {
+    transform: none;
+  }
+  
+  .btn:hover {
+    transform: none;
+  }
+  
+  .test-paper-card:hover {
+    transform: none;
   }
 }
 </style> 
