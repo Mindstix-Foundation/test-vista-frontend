@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"Which of the following standards is commonly used for exchanging data in a structured format on the web?","HTML","XML","HTTP","JSON",d
+"Which of the following is used to define the relationships and properties of concepts or entities on the web enabling machines to understand and process information?","Data Interchange","Ontologies","Syntax","Rules",b
+"Which of the following actions should be taken after reviewing your email and ensuring it is accurate?","Click the Send button","Add more recipients in the Cc field","Add an additional attachment","Delete the email",a
+"The system that allows users to access and share documents and resources linked via hyperlinks on the internet is known as","World Wide Web (WWW)","Email","FTP","Cloud Storage",a
+"Which part of the email should you write to summarize the content of your email?","Body","Cc","Subject","Attachments",c
+"The component of the WWW that hosts websites and delivers web content is called a","Browser","Web Server","Search Engine","Router",b
+"__________ involves securing data transmission and storage on the web through encryption and decryption techniques to ensure confidentiality integrity and authenticity of information","Cryptography","Technology","Architecture","WWW Operation",a
+"The process of fetching web pages rendering content and executing web applications is part of the __________ operation","Cryptography","Architecture","WWW","Technology",c
+"What is the purpose of the Bcc field in an email?","To send the email to the primary recipient","To send a copy of the email to recipients without others knowing","To include a subject line","To attach files to the email",b
+"The unique names or addresses used to identify resources on the web are called","IP Addresses","DNS Records","Domain Names","URLs (Uniform Resource Locators)",d
+"Web applications are accessed through __________ for tasks like email social media and online shopping","Routers","Browsers","Web Servers","Modems",b
+"What should you do before sending your email to ensure it's clear and error-free?","Review the email for spelling grammatical errors and clarity","Add more recipients to the To field","Include more attachments","Leave out the subject line",a
+"Which term refers to hierarchical classification systems used to organize and categorize information on the web?","Ontologies","Proof","Taxonomies","Rules",c
+"Which field in an email allows you to send a copy to additional recipients for their information?","To","Cc","Subject","Bcc",b
+"__________ defines the structure and components of web systems including servers databases and clients and determines how these components interact to deliver web services","Architecture","User Interface","Cryptography","Technology",a
+"What should you do if you want to include files or documents with your email?","Add them in the subject line","Use the Bcc field","Attach them using the attachment icon","Write them in the body of the email",c
+"Which of the following is primarily responsible for defining the rules for writing and interpreting the structure and format of documents on the web?","Data Interchange","Syntax","Taxonomies","Ontologies",b
+"Which of the following ensures the accuracy reliability and authenticity of information on the web through methods like digital signatures and certificates?","Proof","Rules","Syntax","Data Interchange",a
+"The protocol used to transfer web pages from a server to a browser is","FTP","HTTP","SMTP","TCP",b
+"_________ refers to the tools languages and protocols used to build and operate web systems such as HTML CSS JavaScript and HTTP","Architecture","Technology","Cryptography","WWW Operation",b 

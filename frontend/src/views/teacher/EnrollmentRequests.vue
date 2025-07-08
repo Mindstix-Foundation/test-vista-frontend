@@ -363,7 +363,7 @@ const subjects = computed(() => {
 const stats = computed(() => {
   const pending = enrollmentRequests.value.filter(r => r.status === 'pending').length
   const approved = enrollmentRequests.value.filter(r => r.status === 'approved').length
-  const active = enrollmentRequests.value.filter(r => r.status === 'active').length
+  const active = enrollmentRequests.value.filter(r => r.status === 'active' || r.status === 'approved').length
   const total = enrollmentRequests.value.length
 
   return { pending, approved, active, total }

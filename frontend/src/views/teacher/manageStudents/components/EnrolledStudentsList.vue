@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-4">
+    <div v-if="loading || localLoading" class="text-center py-4">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -9,238 +9,175 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="students.length === 0" class="text-center py-5">
+    <div v-else-if="enrolledStudents.length === 0" class="text-center py-5">
       <i class="bi bi-people display-1 text-muted mb-3"></i>
       <h5 class="text-muted">No Enrolled Students</h5>
-      <p class="text-muted">No students are currently enrolled in your subjects.</p>
+      <p class="text-muted">No students are currently enrolled in this subject.</p>
     </div>
 
-    <!-- Students List -->
+    <!-- Students List with Table Format -->
     <div v-else>
-      <!-- Search and Filters -->
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <div class="input-group">
-            <span class="input-group-text">
-              <i class="bi bi-search"></i>
-            </span>
-            <input
-              type="text"
-              class="form-control"
-              placeholder="Search by student name or email..."
-              v-model="searchQuery"
-            >
-          </div>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select" v-model="statusFilter">
-            <option value="">All Statuses</option>
-            <option value="approved">Approved</option>
-            <option value="active">Active</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select" v-model="subjectFilter">
-            <option value="">All Subjects</option>
-            <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">
-              {{ subject }}
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Students Grid -->
-      <div class="row g-3">
-        <div 
-          v-for="student in filteredStudents" 
-          :key="student.id"
-          class="col-12 col-lg-6"
-        >
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-start justify-content-between">
-                <div class="flex-grow-1">
-                  <!-- Student Info -->
-                  <div class="d-flex align-items-center mb-2">
-                    <div 
-                      class="avatar-circle bg-primary text-white me-3"
-                      :title="student.student.user.name"
-                    >
-                      {{ getInitials(student.student.user.name) }}
-                    </div>
-                    <div>
-                      <h6 class="mb-0 fw-bold">{{ student.student.user.name }}</h6>
-                      <small class="text-muted">{{ student.student.user.email_id }}</small>
-                    </div>
-                  </div>
-
-                  <!-- Enrollment Details -->
-                  <div class="mb-2">
-                    <span class="badge bg-info me-2">
-                      {{ student.teacher_subject.subject.name }}
-                    </span>
-                    <span 
-                      class="badge"
-                      :class="getStatusBadgeClass(student.status)"
-                    >
-                      {{ getStatusText(student.status) }}
-                    </span>
-                  </div>
-
-                  <div class="small text-muted">
-                    <div class="mb-1">
-                      <i class="bi bi-calendar-event me-1"></i>
-                      Enrolled: {{ formatDate(student.enrollment_date || student.requested_at) }}
-                    </div>
-                    <div class="mb-1">
-                      <i class="bi bi-calendar3 me-1"></i>
-                      Academic Year: {{ student.academic_year }}
-                    </div>
-                    <div v-if="student.teacher_response" class="mb-1">
-                      <i class="bi bi-chat-dots me-1"></i>
-                      Response: {{ student.teacher_response }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Actions Dropdown -->
-                <div class="dropdown">
-                  <button 
-                    class="btn btn-outline-secondary btn-sm dropdown-toggle"
-                    type="button"
-                    :id="`dropdownMenuButton${student.id}`"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    :disabled="processingStudentId === student.id"
-                  >
-                    <span v-if="processingStudentId === student.id" class="spinner-border spinner-border-sm me-1"></span>
-                    <i v-else class="bi bi-three-dots-vertical"></i>
-                  </button>
-                  <ul class="dropdown-menu" :aria-labelledby="`dropdownMenuButton${student.id}`">
-                    <li>
-                      <button 
-                        class="dropdown-item"
-                        @click="activateStudent(student)"
-                        v-if="student.status === 'approved'"
-                      >
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        Activate Enrollment
-                      </button>
-                    </li>
-                    <li>
-                      <button 
-                        class="dropdown-item"
-                        @click="deactivateStudent(student)"
-                        v-if="student.status === 'active'"
-                      >
-                        <i class="bi bi-pause-circle text-warning me-2"></i>
-                        Deactivate
-                      </button>
-                    </li>
-                    <li>
-                      <button 
-                        class="dropdown-item"
-                        @click="completeEnrollment(student)"
-                        v-if="student.status === 'active'"
-                      >
-                        <i class="bi bi-check2-all text-info me-2"></i>
-                        Mark Completed
-                      </button>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                      <button 
-                        class="dropdown-item text-danger"
-                        @click="openRemoveModal(student)"
-                      >
-                        <i class="bi bi-trash text-danger me-2"></i>
-                        Remove Student
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pagination -->
-      <nav v-if="totalPages > 1" aria-label="Students pagination" class="mt-4">
-        <ul class="pagination justify-content-center">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <button class="page-link" @click="changePage(currentPage - 1)" :disabled="currentPage === 1">
-              Previous
-            </button>
-          </li>
-          <li 
-            v-for="page in visiblePages" 
-            :key="page" 
-            class="page-item" 
-            :class="{ active: page === currentPage }"
-          >
-            <button class="page-link" @click="changePage(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">
-              Next
-            </button>
-          </li>
-        </ul>
-      </nav>
-    </div>
-
-    <!-- Remove Student Confirmation Modal -->
-    <div class="modal fade" id="removeStudentModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">
-              <i class="bi bi-exclamation-triangle me-2"></i>
-              Remove Student
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div v-if="selectedStudent">
-              <p class="mb-3">
-                Are you sure you want to remove <strong>{{ selectedStudent.student.user.name }}</strong> 
-                from <strong>{{ selectedStudent.teacher_subject.subject.name }}</strong>?
-              </p>
+      <!-- Sort Controls -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">
+              <i class="bi bi-people-fill me-2"></i>
+              Enrolled Students ({{ sortedStudents.length }})
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+              <!-- Auto Refresh Button -->
+              <button 
+                type="button"
+                class="btn btn-sm position-relative"
+                :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
+                @click="toggleAutoRefresh"
+                :title="autoRefresh ? 'Auto-refresh ON (every 1 second)' : 'Auto-refresh OFF'"
+              >
+                <i class="bi bi-arrow-clockwise me-1" :class="{ 'spin-animation': autoRefresh && isRefreshing }"></i>
+                {{ autoRefresh ? 'Live' : 'Refresh' }}
+                <span v-if="autoRefresh" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle">
+                  <span class="visually-hidden">Live updates</span>
+                </span>
+              </button>
               
-              <div class="alert alert-warning">
-                <i class="bi bi-info-circle me-2"></i>
-                This action will set their enrollment status to "inactive" and they will no longer have access to this subject.
-              </div>
-
-              <div class="mb-3">
-                <label for="removalReason" class="form-label fw-bold">
-                  Reason for Removal (Optional):
-                </label>
-                <textarea 
-                  class="form-control" 
-                  id="removalReason" 
-                  rows="3"
-                  v-model="removalReason"
-                  placeholder="Provide a reason for removing this student..."
-                ></textarea>
-              </div>
+              <select 
+                v-model="sortBy" 
+                class="form-select form-select-sm"
+                style="width: auto;"
+              >
+                <option value="roll_no">Sort by Roll No.</option>
+                <option value="name">Sort by Name</option>
+                <option value="registration_date">Sort by Registration Date</option>
+              </select>
+              <button 
+                class="btn btn-outline-secondary btn-sm"
+                @click="toggleSortOrder"
+                :title="sortOrder === 'desc' ? 'Descending' : 'Ascending'"
+              >
+                <i class="bi" :class="sortOrder === 'desc' ? 'bi-sort-down' : 'bi-sort-up'"></i>
+              </button>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancel
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-danger"
-              @click="confirmRemoveStudent"
-              :disabled="processingStudentId !== null"
-            >
-              <span v-if="processingStudentId" class="spinner-border spinner-border-sm me-2"></span>
-              Remove Student
-            </button>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0">#</th>
+                  <th class="border-0">Roll Number</th>
+                  <th class="border-0">Student Name</th>
+                  <th class="border-0">Registration Date & Time</th>
+                  <th class="border-0">Academic Year</th>
+                  <th class="border-0 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="(student, index) in sortedStudents" 
+                  :key="student.id"
+                  class="student-row"
+                >
+                  <td class="fw-bold text-muted">{{ index + 1 }}</td>
+                  <td>
+                    <span class="badge bg-dark">{{ student.student_roll_number || 'N/A' }}</span>
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ student.student_name }}</div>
+                  </td>
+                  <td>
+                    <div>
+                      <div class="fw-semibold">{{ formatDate(student.student_registration_date) }}</div>
+                      <small class="text-muted">{{ formatTime(student.student_registration_date) }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">{{ student.academic_year }}</span>
+                  </td>
+                  <td class="text-center">
+                    <button 
+                      class="btn btn-danger btn-sm"
+                      @click.stop="confirmRemoveStudent(student)"
+                      :disabled="removing"
+                      title="Remove Student"
+                      type="button"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Student Confirmation Modal -->
+  <div 
+    class="modal fade" 
+    id="removeEnrolledStudentModal" 
+    tabindex="-1" 
+    aria-labelledby="removeEnrolledStudentModalLabel" 
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="removeEnrolledStudentModalLabel">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Remove Student
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div v-if="studentToRemove">
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              <strong>Warning:</strong> This action cannot be undone!
+            </div>
+            
+            <p><strong>Are you sure you want to remove this student?</strong></p>
+            
+                         <div class="card">
+               <div class="card-body">
+                 <div>
+                   <div class="fw-semibold">{{ studentToRemove.student_name }}</div>
+                   <small class="text-muted">Roll: {{ studentToRemove.student_roll_number || 'N/A' }}</small>
+                 </div>
+               </div>
+             </div>
+            
+            <div class="mt-3">
+              <h6 class="text-danger">This will:</h6>
+              <ul class="text-danger">
+                <li>Permanently delete the student from the system</li>
+                <li>Remove all their enrollment records</li>
+                <li>Delete all their test attempts and results</li>
+                <li>Log them out immediately if currently logged in</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-danger"
+            @click="removeStudent"
+            :disabled="removing"
+          >
+            <span v-if="removing" class="spinner-border spinner-border-sm me-2"></span>
+            {{ removing ? 'Removing...' : 'Remove Student' }}
+          </button>
         </div>
       </div>
     </div>
@@ -248,38 +185,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import axiosInstance from '@/config/axios'
+import { useToastStore } from '@/stores/toast'
 
 // Props
-interface EnrollmentRequest {
+interface EnrolledStudent {
   id: number
-  status: string
-  request_message?: string
-  teacher_response?: string
+  student_id: number
+  student_roll_number: string
+  student_name: string
+  student_email: string
   academic_year: string
-  requested_at: string
-  responded_at?: string
-  enrollment_date?: string
-  student: {
+  enrollment_date: string
+  student_registration_date: string
+  subject: {
     id: number
-    user: {
+    name: string
+  }
+  standard: {
       id: number
       name: string
-      email_id: string
-    }
   }
-  teacher_subject: {
-    id: number
-    subject: {
+  school: {
       id: number
       name: string
     }
   }
+
+interface Subject {
+  id: number
+  name: string
+  teacherSubjectId: number
+}
+
+interface Standard {
+  id: number
+  name: string
 }
 
 const props = defineProps<{
-  students: EnrollmentRequest[]
+  selectedStandard: Standard | null
+  selectedSubject: Subject | null
   loading: boolean
 }>()
 
@@ -288,225 +235,316 @@ const emit = defineEmits<{
   'student-updated': []
 }>()
 
-// Reactive data
-const searchQuery = ref('')
-const statusFilter = ref('')
-const subjectFilter = ref('')
-const currentPage = ref(1)
-const itemsPerPage = 8
-const processingStudentId = ref<number | null>(null)
-const selectedStudent = ref<EnrollmentRequest | null>(null)
-const removalReason = ref('')
+// Local state
+const enrolledStudents = ref<EnrolledStudent[]>([])
+const localLoading = ref(false)
+const error = ref<string | null>(null)
+const toastStore = useToastStore()
 
-// Computed properties
-const uniqueSubjects = computed(() => {
-  const subjects = [...new Set(props.students.map(s => s.teacher_subject.subject.name))]
-  return subjects.sort()
-})
+// Reactive state for sorting
+const sortBy = ref('roll_no')
+const sortOrder = ref('asc')
 
-const filteredStudents = computed(() => {
-  let filtered = props.students
+// State for remove functionality
+const removing = ref(false)
+const studentToRemove = ref<EnrolledStudent | null>(null)
 
-  // Search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(student => 
-      student.student.user.name.toLowerCase().includes(query) ||
-      student.student.user.email_id.toLowerCase().includes(query)
+// Auto-refresh state
+const autoRefresh = ref(false)
+const isRefreshing = ref(false)
+let refreshInterval: number | null = null
+
+// Computed property for sorted students
+const sortedStudents = computed(() => {
+  const sorted = [...enrolledStudents.value]
+  
+  if (sortBy.value === 'roll_no') {
+    sorted.sort((a: EnrolledStudent, b: EnrolledStudent) => {
+      const aRollNo = a.student_roll_number || '0'
+      const bRollNo = b.student_roll_number || '0'
+      return parseInt(aRollNo) - parseInt(bRollNo)
+    })
+  } else if (sortBy.value === 'name') {
+    sorted.sort((a: EnrolledStudent, b: EnrolledStudent) => 
+      a.student_name.localeCompare(b.student_name)
     )
+  } else if (sortBy.value === 'registration_date') {
+    sorted.sort((a: EnrolledStudent, b: EnrolledStudent) => {
+      const aDate = new Date(a.student_registration_date)
+      const bDate = new Date(b.student_registration_date)
+      return aDate.getTime() - bDate.getTime()
+    })
   }
 
-  // Status filter
-  if (statusFilter.value) {
-    filtered = filtered.filter(student => student.status === statusFilter.value)
+  if (sortOrder.value === 'desc') {
+    sorted.reverse()
   }
 
-  // Subject filter
-  if (subjectFilter.value) {
-    filtered = filtered.filter(student => student.teacher_subject.subject.name === subjectFilter.value)
-  }
-
-  // Pagination
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filtered.slice(start, end)
-})
-
-const totalPages = computed(() => {
-  let filtered = props.students
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(student => 
-      student.student.user.name.toLowerCase().includes(query) ||
-      student.student.user.email_id.toLowerCase().includes(query)
-    )
-  }
-
-  if (statusFilter.value) {
-    filtered = filtered.filter(student => student.status === statusFilter.value)
-  }
-
-  if (subjectFilter.value) {
-    filtered = filtered.filter(student => student.teacher_subject.subject.name === subjectFilter.value)
-  }
-
-  return Math.ceil(filtered.length / itemsPerPage)
-})
-
-const visiblePages = computed(() => {
-  const pages = []
-  const total = totalPages.value
-  const current = currentPage.value
-  
-  let start = Math.max(1, current - 2)
-  let end = Math.min(total, current + 2)
-  
-  if (end - start < 4) {
-    if (start === 1) {
-      end = Math.min(total, 5)
-    } else {
-      start = Math.max(1, total - 4)
-    }
-  }
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
+  return sorted
 })
 
 // Methods
-const getInitials = (name: string) => {
-  return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
-}
-
-const getStatusBadgeClass = (status: string) => {
-  switch (status) {
-    case 'approved': return 'bg-success'
-    case 'active': return 'bg-primary'
-    case 'inactive': return 'bg-secondary'
-    case 'completed': return 'bg-info'
-    default: return 'bg-secondary'
+const fetchEnrolledStudents = async (silent = false) => {
+  if (!props.selectedStandard || !props.selectedSubject) {
+    enrolledStudents.value = []
+    return
   }
-}
 
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'approved': return 'Approved'
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'completed': return 'Completed'
-    default: return status
+  if (!silent) {
+    localLoading.value = true
+  }
+  error.value = null
+  
+  try {
+    const params = new URLSearchParams()
+    params.append('standard_id', props.selectedStandard.id.toString())
+    params.append('subject_id', props.selectedSubject.id.toString())
+    
+    const response = await axiosInstance.get(`/student-subject-enrollments/teacher/enrolled-students?${params}`)
+    enrolledStudents.value = response.data || []
+  } catch (err) {
+    console.error('Error fetching enrolled students:', err)
+    if (!silent) {
+      error.value = 'Failed to load enrolled students'
+    }
+    enrolledStudents.value = []
+  } finally {
+    if (!silent) {
+      localLoading.value = false
+    }
   }
 }
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
   })
 }
 
-const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
+const formatTime = (dateString: string) => {
+  return new Date(dateString).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('')
+}
+
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+}
+
+/**
+ * Confirm student removal
+ */
+const confirmRemoveStudent = (student: EnrolledStudent) => {
+  studentToRemove.value = student
+  
+  // Use a more reliable way to show the modal
+  const modalElement = document.getElementById('removeEnrolledStudentModal')
+  if (modalElement) {
+    // Try to use Bootstrap's Modal class
+    try {
+      const modal = new (window as any).bootstrap.Modal(modalElement)
+      modal.show()
+    } catch (error) {
+      console.error('Bootstrap Modal error:', error)
+      // Fallback: manually add show class
+      modalElement.classList.add('show')
+      modalElement.style.display = 'block'
+      document.body.classList.add('modal-open')
+      
+      // Add backdrop
+      const backdrop = document.createElement('div')
+      backdrop.className = 'modal-backdrop fade show'
+      backdrop.id = 'enrolled-modal-backdrop'
+      document.body.appendChild(backdrop)
+    }
   }
 }
 
-const updateStudentStatus = async (student: EnrollmentRequest, status: string, response: string) => {
-  processingStudentId.value = student.id
+/**
+ * Remove student from system
+ */
+const removeStudent = async () => {
+  if (!studentToRemove.value) return
+  
+  removing.value = true
   
   try {
-    await axiosInstance.put(`/student-subject-enrollments/${student.id}/status`, {
-      status,
-      teacher_response: response
-    })
+    await axiosInstance.delete(`/students/${studentToRemove.value.student_id}`)
     
+    // Remove from local list
+    enrolledStudents.value = enrolledStudents.value.filter(s => s.id !== studentToRemove.value!.id)
+    
+    // Close modal
+    const modalElement = document.getElementById('removeEnrolledStudentModal')
+    if (modalElement) {
+      try {
+        const modal = (window as any).bootstrap.Modal.getInstance(modalElement)
+        if (modal) {
+          modal.hide()
+        } else {
+          // Fallback: manually hide modal
+          hideEnrolledModal()
+        }
+      } catch (error) {
+        console.error('Error closing modal:', error)
+        hideEnrolledModal()
+      }
+    }
+    
+    // Reset
+    studentToRemove.value = null
+    
+    // Emit student updated event
     emit('student-updated')
+    
+    // Show success toast notification
+    toastStore.showToast({
+      title: 'Success',
+      message: `Student "${studentToRemove.value!.student_name}" has been removed successfully.`,
+      type: 'success'
+    })
   } catch (error) {
-    console.error('Error updating student status:', error)
+    console.error('Error removing student:', error)
+    toastStore.showToast({
+      title: 'Error',
+      message: 'Failed to remove student. Please try again.',
+      type: 'error'
+    })
   } finally {
-    processingStudentId.value = null
+    removing.value = false
   }
 }
 
-const activateStudent = async (student: EnrollmentRequest) => {
-  await updateStudentStatus(student, 'active', 'Enrollment activated by teacher')
+/**
+ * Manually hide modal (fallback)
+ */
+const hideEnrolledModal = () => {
+  const modalElement = document.getElementById('removeEnrolledStudentModal')
+  if (modalElement) {
+    modalElement.classList.remove('show')
+    modalElement.style.display = 'none'
+    document.body.classList.remove('modal-open')
+    
+    // Remove backdrop
+    const backdrop = document.getElementById('enrolled-modal-backdrop')
+    if (backdrop) {
+      backdrop.remove()
+    }
+  }
 }
 
-const deactivateStudent = async (student: EnrollmentRequest) => {
-  await updateStudentStatus(student, 'inactive', 'Enrollment deactivated by teacher')
-}
-
-const completeEnrollment = async (student: EnrollmentRequest) => {
-  await updateStudentStatus(student, 'completed', 'Enrollment completed successfully')
-}
-
-const openRemoveModal = (student: EnrollmentRequest) => {
-  selectedStudent.value = student
-  removalReason.value = ''
-  const modal = new (window as any).bootstrap.Modal(document.getElementById('removeStudentModal'))
-  modal.show()
-}
-
-const confirmRemoveStudent = async () => {
-  if (!selectedStudent.value) return
+/**
+ * Toggle auto-refresh functionality
+ */
+const toggleAutoRefresh = () => {
+  autoRefresh.value = !autoRefresh.value
   
-  const response = removalReason.value || 'Student removed by teacher'
-  await updateStudentStatus(selectedStudent.value, 'inactive', response)
-  
-  const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('removeStudentModal'))
-  modal.hide()
+  if (autoRefresh.value) {
+    startAutoRefresh()
+  } else {
+    stopAutoRefresh()
+  }
 }
 
-// Watchers
-watch([searchQuery, statusFilter, subjectFilter], () => {
-  currentPage.value = 1
+/**
+ * Start auto-refresh interval
+ */
+const startAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+  
+  refreshInterval = setInterval(async () => {
+    isRefreshing.value = true
+    await fetchEnrolledStudents(true) // Silent refresh - no loading states
+    isRefreshing.value = false
+  }, 1000) // Refresh every 1 second
+}
+
+/**
+ * Stop auto-refresh interval
+ */
+const stopAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+  isRefreshing.value = false
+}
+
+// Watch for changes in selected standard/subject
+watch(
+  () => [props.selectedStandard, props.selectedSubject],
+  () => {
+    fetchEnrolledStudents()
+  },
+  { immediate: true }
+)
+
+// Cleanup
+onUnmounted(() => {
+  stopAutoRefresh()
+})
+
+// Expose the fetch function to parent
+defineExpose({
+  fetchEnrolledStudents
 })
 </script>
 
 <style scoped>
+.student-row:hover {
+  background-color: #f8f9fa;
+}
+
 .avatar-circle {
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 14px;
-  flex-shrink: 0;
+  font-size: 0.875rem;
 }
 
-.card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+  
+  .avatar-circle {
+    width: 35px;
+    height: 35px;
+    font-size: 0.75rem;
+  }
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+/* Auto-refresh animation */
+.spin-animation {
+  animation: spin 1s linear infinite;
 }
 
-.dropdown-toggle::after {
-  display: none;
-}
-
-.page-link {
-  color: #0d6efd;
-  border: 1px solid #dee2e6;
-}
-
-.page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-.page-link:hover {
-  color: #0a58ca;
-  background-color: #e9ecef;
-  border-color: #dee2e6;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style> 

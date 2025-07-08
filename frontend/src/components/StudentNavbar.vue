@@ -2,7 +2,7 @@
   <nav class="navbar navbar-expand-lg">
     <div class="container-fluid px-4">
       <!-- Project Heading -->
-      <router-link class="navbar-brand d-flex align-items-center" to="/student/home">
+      <router-link class="navbar-brand d-flex align-items-center" to="/student/exam">
         <img src="@/assets/Test.jpg" alt="Test Vista Logo" class="brand-logo" />
       </router-link>
 
@@ -36,7 +36,7 @@
                 <i class="bi bi-house-fill me-1"></i>HOME
               </router-link>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" v-if="false">
               <router-link
                 class="nav-link pb-0"
                 id="navEnroll"

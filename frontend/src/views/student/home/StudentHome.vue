@@ -1,131 +1,90 @@
 <template>
-  <div class="student-home">
+  <div class="foundation-home">
     <!-- Main Content -->
-    <div class="container mt-4 mb-5">
-      <!-- Welcome Section -->
-      <div class="row p-2 justify-content-center mb-4">
-        <div class="col-12 col-sm-10">
-          <div class="card bg-primary text-white">
-            <div class="card-body">
-              <h4 class="card-title mb-3">
-                <i class="bi bi-person-circle"></i> Welcome back, {{ studentName }}!
-              </h4>
-              <p class="card-text mb-0">Ready to continue your learning journey? Check out your latest progress and upcoming tests.</p>
+    <div class="container mt-2 mt-md-4 mb-3 mb-md-5 px-3 px-md-4">
+      <!-- Hero Section -->
+      <div class="row justify-content-center mb-4 mb-md-5">
+        <div class="col-12 col-lg-10">
+          <div class="hero-section text-center">
+            <h1 class="display-4 display-md-3 fw-bold text-dark mb-2 mb-md-3">Mindstix Foundation Trust</h1>
+            <h2 class="h5 h4-md text-secondary mb-3 mb-md-4">Technology Provider For A Social Change</h2>
+            <div class="hero-actions">
+              <button class="btn btn-outline-dark btn-lg btn-md-lg mb-2" @click="scrollToAbout">
+                More About Us
+              </button>
+            </div>
+            <div class="scroll-indicator mt-3 mt-md-4">
+              <p class="text-muted small mb-2">Scroll</p>
+              <i class="bi bi-chevron-down text-muted animate-bounce"></i>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Statistics Cards -->
-      <div class="row gy-2 g-3 justify-content-center mb-4">
-        <div class="col-6 col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <div class="text-primary mb-2">
-                <i class="bi bi-file-text" style="font-size: 2rem;"></i>
+      <!-- About Section -->
+      <div class="row justify-content-center" id="about-section">
+        <div class="col-12 col-lg-10">
+          <div class="about-section">
+            <h3 class="h3 h2-md fw-bold text-dark mb-3 mb-md-4 text-center">Who We Are</h3>
+            <div class="card border-0 shadow-sm">
+              <div class="card-body p-3 p-md-4 p-lg-5">
+                <p class="lead text-justify lh-lg mb-3">
+                  Mindstix Foundation Trust is a Pan-India Trust based in Mumbai, Maharashtra. 
+                  Primarily, we work for the economically constrained populace of the country 
+                  for the upliftment of the society by digital means. We strive for social 
+                  transformation and aim to serve the community with the goal of transformation 
+                  through digital intervention.
+                </p>
+                <p class="text-justify lh-lg mb-0">
+                  We believe that social transformation can be done on the anvil of technological 
+                  growth and development. We leverage all our activities through the use of 
+                  existing technology and find ways to upgrade the same with time. We believe 
+                  that education and technology are 2 prime fundamental rights that every 
+                  citizen deserves to have.
+                </p>
               </div>
-              <h5 class="card-title text-primary">{{ stats.testsCompleted }}</h5>
-              <p class="card-text text-muted small">Tests Completed</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <div class="text-success mb-2">
-                <i class="bi bi-trophy" style="font-size: 2rem;"></i>
-              </div>
-              <h5 class="card-title text-success">{{ stats.averageScore }}%</h5>
-              <p class="card-text text-muted small">Average Score</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <div class="text-warning mb-2">
-                <i class="bi bi-clock" style="font-size: 2rem;"></i>
-              </div>
-              <h5 class="card-title text-warning">{{ stats.pendingTests }}</h5>
-              <p class="card-text text-muted small">Pending Tests</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="row p-2 justify-content-center mb-4">
-        <div class="col-12 col-sm-10">
-          <h6 class="text-left fw-bold text-uppercase mb-3">
-            <i class="bi bi-lightning"></i> Quick Actions
-          </h6>
-          <div class="row g-3">
-            <div class="col-6 col-md-3">
-              <button class="btn btn-outline-primary w-100 h-100" @click="navigateTo('/student/practice')">
-                <i class="bi bi-pencil-square d-block mb-2" style="font-size: 1.5rem;"></i>
-                <span class="small">Practice Tests</span>
-              </button>
+      <!-- Values Section -->
+      <div class="row justify-content-center mt-4 mt-md-5">
+        <div class="col-12 col-lg-10">
+          <div class="row g-3 g-md-4">
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="card h-100 border-0 shadow-sm text-center">
+                <div class="card-body p-3 p-md-4">
+                  <div class="icon-circle bg-dark bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-people-fill text-dark"></i>
+                  </div>
+                  <h5 class="fw-bold mb-2">Social Transformation</h5>
+                  <p class="text-muted mb-0">Empowering communities through digital intervention and social change.</p>
+                </div>
+              </div>
             </div>
-            <div class="col-6 col-md-3">
-              <button class="btn btn-outline-success w-100 h-100" @click="navigateTo('/student/test-series')">
-                <i class="bi bi-collection d-block mb-2" style="font-size: 1.5rem;"></i>
-                <span class="small">Test Series</span>
-              </button>
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="card h-100 border-0 shadow-sm text-center">
+                <div class="card-body p-3 p-md-4">
+                  <div class="icon-circle bg-dark bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-laptop text-dark"></i>
+                  </div>
+                  <h5 class="fw-bold mb-2">Technology Access</h5>
+                  <p class="text-muted mb-0">Leveraging technology to bridge the digital divide and create opportunities.</p>
+                </div>
+              </div>
             </div>
-            <div class="col-6 col-md-3">
-              <button class="btn btn-outline-info w-100 h-100" @click="navigateTo('/student/results')">
-                <i class="bi bi-bar-chart d-block mb-2" style="font-size: 1.5rem;"></i>
-                <span class="small">Results</span>
-              </button>
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="card h-100 border-0 shadow-sm text-center">
+                <div class="card-body p-3 p-md-4">
+                  <div class="icon-circle bg-dark bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-mortarboard-fill text-dark"></i>
+                  </div>
+                  <h5 class="fw-bold mb-2">Education for All</h5>
+                  <p class="text-muted mb-0">Making quality education accessible to every citizen as a fundamental right.</p>
+                </div>
+              </div>
             </div>
-            <div class="col-6 col-md-3">
-              <button class="btn btn-outline-warning w-100 h-100" @click="navigateTo('/student/profile')">
-                <i class="bi bi-person-gear d-block mb-2" style="font-size: 1.5rem;"></i>
-                <span class="small">Profile</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Results -->
-      <div class="row p-2 justify-content-center mb-4">
-        <div class="col-12 col-sm-10">
-          <h6 class="text-left fw-bold text-uppercase mb-3">
-            <i class="bi bi-graph-up"></i> Recent Results
-          </h6>
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th>Test Name</th>
-                  <th>Subject</th>
-                  <th>Score</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="result in recentResults" :key="result.id">
-                  <td>{{ result.testName }}</td>
-                  <td>{{ result.subject }}</td>
-                  <td>{{ result.score }}%</td>
-                  <td>
-                    <span 
-                      :class="['badge', result.score >= 70 ? 'bg-success' : result.score >= 50 ? 'bg-warning' : 'bg-danger']"
-                    >
-                      {{ result.status }}
-                    </span>
-                  </td>
-                  <td>{{ formatDate(result.date) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="text-end mt-3">
-            <button class="btn btn-outline-primary" @click="navigateTo('/student/results')">
-              View All Results <i class="bi bi-arrow-right"></i>
-            </button>
           </div>
         </div>
       </div>
@@ -134,118 +93,247 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-// Reactive data
-const studentName = ref('John Doe')
-const stats = ref({
-  testsCompleted: 24,
-  averageScore: 85,
-  pendingTests: 3
-})
-
-const recentResults = ref([
-  {
-    id: 1,
-    testName: 'Algebra Fundamentals',
-    subject: 'Mathematics',
-    score: 85,
-    status: 'Passed',
-    date: new Date('2024-12-20')
-  },
-  {
-    id: 2,
-    testName: 'Physics Motion',
-    subject: 'Science',
-    score: 78,
-    status: 'Passed',
-    date: new Date('2024-12-18')
-  },
-  {
-    id: 3,
-    testName: 'Grammar Essentials',
-    subject: 'English',
-    score: 92,
-    status: 'Passed',
-    date: new Date('2024-12-15')
-  },
-  {
-    id: 4,
-    testName: 'World History',
-    subject: 'History',
-    score: 65,
-    status: 'Needs Improvement',
-    date: new Date('2024-12-12')
-  }
-])
-
 // Methods
-const navigateTo = (path: string) => {
-  router.push(path)
+const scrollToAbout = () => {
+  const element = document.getElementById('about-section')
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' })
+  }
 }
-
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
-
-const loadUserStats = () => {
-  // This would normally fetch data from server
-  // For demo, we're using static data
-  console.log('Loading user stats...')
-}
-
-const loadRecentActivity = () => {
-  // This would normally fetch recent activity from server
-  // For demo, we're using static data
-  console.log('Loading recent activity...')
-}
-
-// Lifecycle
-onMounted(() => {
-  loadUserStats()
-  loadRecentActivity()
-})
 </script>
 
 <style scoped>
-.student-home {
-  background-color: #f8f9fa;
-  min-height: calc(100vh - 76px); /* Adjust based on navbar height */
+.foundation-home {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: calc(100vh - 76px);
+}
+
+.hero-section {
+  padding: 3rem 0;
+}
+
+.hero-actions .btn {
+  min-width: 150px;
+  transition: all 0.3s ease;
+}
+
+.hero-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.scroll-indicator {
+  animation: fadeInUp 1s ease-out 0.5s both;
+}
+
+.animate-bounce {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.about-section {
+  padding: 2rem 0;
 }
 
 .card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
   transition: all 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
 }
 
-.btn {
-  transition: all 0.3s ease;
+.icon-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
+.text-justify {
+  text-align: justify;
 }
 
-.table-responsive {
-  border-radius: 8px;
-  overflow: hidden;
+.lead {
+  font-size: 1.1rem;
+  font-weight: 400;
 }
 
-.badge {
-  font-size: 0.75rem;
+/* Enhanced responsive adjustments */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 0;
+  }
+  
+  .display-4 {
+    font-size: 1.75rem;
+    line-height: 1.2;
+  }
+  
+  .hero-actions .btn {
+    min-width: 120px;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .icon-circle {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .about-section {
+    padding: 1.5rem 0;
+  }
+  
+  .lead {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-section {
+    padding: 1.5rem 0;
+  }
+  
+  .display-4 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+  
+  .hero-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .hero-actions .btn {
+    width: 100%;
+    max-width: 200px;
+    font-size: 0.9rem;
+  }
+  
+  .icon-circle {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+  
+  .card-body h5 {
+    font-size: 1.1rem;
+  }
+  
+  .card-body p {
+    font-size: 0.9rem;
+  }
+  
+  .about-section {
+    padding: 1rem 0;
+  }
+  
+  .lead {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 1rem 0;
+  }
+  
+  .display-4 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .h5 {
+    font-size: 1rem;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .icon-circle {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
+  
+  .card-body h5 {
+    font-size: 1rem;
+  }
+  
+  .card-body p {
+    font-size: 0.85rem;
+  }
+}
+
+/* Utility classes for responsive text sizing */
+@media (min-width: 768px) {
+  .h4-md {
+    font-size: 1.5rem;
+  }
+  
+  .h2-md {
+    font-size: 2rem;
+  }
+  
+  .display-md-3 {
+    font-size: 2.5rem;
+  }
+  
+  .btn-md-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+  }
+}
+
+/* Improved touch targets for mobile */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  .card:hover {
+    transform: none;
+  }
 }
 </style> 

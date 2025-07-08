@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"Why do we need programming languages?","To communicate with humans","To design user interfaces","To give precise instructions to computers","To create music",c
+"What is the primary function of the 'hasNext()' method in an iterator in Java?","To get the next element in the collection","To check if there are more elements to iterate over","To reset the iteration to the first element","To remove the current element from the collection",b
+"Python was first released in the year","1991","1994","2008","1989",a
+"Which of the following is a key feature of Java that helps in memory management?","Explicit pointers","Operator overloading","Automatic Garbage Collection","Dynamic method binding",c
+"Which of the following is a key feature of Python?","Static Typing","Interpreted language","Only supports object-oriented programming","Requires manual memory management",b
+"Python is a __________ language meaning that you can use it on different platforms without making changes to the code","Static","Restricted","Complex","Portable",d
+"Which of the following is a feature of Python?","It requires complex memory management","It has a small standard library","It is easy to debug due to clear error traces","It is not open source",c
+"Which of the following is a valid numeric data type in Python?","String","Integer","Boolean","Character",b
+"Which of the following is NOT a type of Java variable?","Local variable","Instance variable","Static variable","Dynamic variable",d
+"Which of the following sequence data types is mutable in Python?","String","Tuple","List","None of the above",c
+"What is the main purpose of the Java Virtual Machine (JVM)?","To provide a graphical interface for Java programs","To execute Java bytecode and provide a runtime environment","To compile Java source code into machine code","To perform memory management for Java applications",b
+"What is the main difference between a list and a tuple in Python?","Lists are immutable while tuples are mutable","Lists are ordered while tuples are unordered","Tuples are immutable while lists are mutable","Tuples are only used for integers while lists can store any type",c
+"Which of the following statements is true about a static variable in Java?","A static variable is specific to a single instance of a class","A static variable can be accessed without creating an object of the class","A static variable can be declared inside methods","A static variable's value is unique for each object of the class",b
+"Which of the following operators in Python is used to test if a value exists in a sequence (e.g. list tuple)?","in","==","is","not",a
+"What is the purpose of the 'continue' statement in Python?","To stop the execution of the current loop and move to the next iteration","To exit the loop completely","To skip the rest of the current iteration and proceed with the next iteration","To stop the program execution",c
+"Which of the following statements is used to terminate the loop prematurely in Python?","continue","pass","exit","break",d
+"What is the primary reason Java is considered a platform-independent language?","It is compiled into machine-specific code","It can be run on any hardware without modification","Java programs can only run on Windows","Java is platform dependent due to its unique architecture",b
+"Python's syntax is designed to be __________ making it easy for beginners to learn and understand","Complex","Simple and readable","Highly technical","Unclear",b
+"In Java which of the following data types is used to store true or false values?","int","char","Boolean","double",c
+"Who started the implementation of the Python programming language?","Guido Van Rossum","Dennis Ritchie","James Gosling","Bjarne Stroustrup",a 

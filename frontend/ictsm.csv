@@ -1,0 +1,31 @@
+question,a,b,c,d,correct_answer
+Which command used displays current terminal?,$ whoami,$ tty,: $ id,$ id root,b
+Which command used reveals the current logged in user?,$ tty,$ id,$ id root,$ whoami,d
+Which command used displays calendar of current month?,$ cal,$ data,$ id,$ date + %T,a
+Which command reports the full path to the current directory?,CD [option] [directory],CD / usr/sbin,PWD [option],Cd/,c
+Which one of the following is the directory separator in Linux?,/,\,//,\\,a
+Which Linux command list the content of all sub directory?,ls ~,ls * /,ls /,ls ../,d
+What is use of 'who' command in Linux?,login user,logout user,login password,logout password,a
+Write the Linux command to remove all the permission to the user and group on the directory 'software'?,chmod ug - rwx software,chmod ug - a software,chmod ug - A software,chmod ug - Rwx software,a
+What is the only editor available in virtually every unix installation?,Pine editor,VI editor,Joe editor,Cd editor,b
+Who is developed the VI editor?,Bill gates,Charles Babbage,Bill Joy,Simon Franklin,c
+Which is searching syntax?,/string,r filename,vi,vi apple.txt,a
+Which editor display oriented text editor based on the pine message composer?,Joe,Cd,Vi,Pico,d
+Which command is used to copy files and directories?,Cp,Cd,CC,Copy,a
+Which command is used to rename files and directories?,rn,mv,cp,rn- dir,b
+Which command is used to delete files and directories on Linux and Unix?,del,mv,cp,rm,d
+What is the character begins with the first line in any shell script?,&,!,$,#,d
+Which command should be run first before executing shell script?,Chmod + x,Chmod + r,Chmod + w,Chmod + rwx,a
+What is scripting?,File editor,To execute bunch of command,Image.editor,Vi editor,b
+Which printer is used to print only characters and symbols and cannot print graphics?,Ink-jet printer,Thermal printer,Daisy wheel printer,Laser printer,c
+Which printers are widely used in fax machines?,Thermal printers,Daisy wheel printer,Dot matrix printer,LED printer,a
+What is the print speed of line dot matrix printer?,10 to 75 cps,50 to 550 cps,More than 1000 cps,More than 1000 pps,c
+Which printer spraying fine drops of ink on the paper?,Daisy wheel,Dot matrix,Thermal,Ink-jet,d
+Which printer is used limited to one or a few fonts?,Laser printer,Dot matrix,Inkjet printer,Network printer,b
+Which test indicates that the motors laser scanners drive assemblies and sensors are working correctly?,Event log test,Printer configuration test,Self test,Engine test,d
+Which is must for network printers are connected directly to the local computer network?,File name,Printer serial number,DNS. host name,Printer cartridge,c
+Which port socket in the computer uses 25 pins?,Parallel port,Serial port,USB port,Network port,a
+Which cable data transfer rate goes up to 480 Mbps?,Serial printer cable,Parallel printer cable,Fast parallel cable,USB cable,d
+What is the full from of SSID in installation of wireless printer?,Serial Set Identity,Service Set Identifier,Sequence Set Identifier,Service Set in Devices,b
+Which device used to print graphical outputs by computer on a paper?,Input processing unit,Output processing unit,Printer,Plotter,d
+How is ink transferred to paper in inkjet printers?,Boiling ink,Crystal,Motorized pump,Screen deflect ink,b 

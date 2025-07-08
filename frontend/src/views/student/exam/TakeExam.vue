@@ -25,13 +25,13 @@
       <div class="exam-header">
         <div class="container-fluid">
           <div class="row align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-4 col-12 text-center">
               <h1 class="exam-title">{{ examData.title }}</h1>
               <div class="exam-info">
                 <span>{{ examData.subject }}</span> • <span>{{ examData.total_marks }}</span> Marks • <span>{{ questions.length }}</span> Questions
               </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-12">
               <div class="progress-container">
                 <div class="d-flex justify-content-between mb-1">
                   <small>Progress</small>
@@ -42,16 +42,33 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-2">
-              <div class="timer-container" :class="timerClass">
-                <div class="timer-display">{{ formattedTime }}</div>
-                <div class="timer-label">Time Remaining</div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="student-info">
-                <div class="student-name">{{ studentName }}</div>
-                <div class="student-label">Student</div>
+            <div class="col-md-5 col-12">
+              <div class="row g-2 align-items-center">
+                <div class="col-6">
+                  <div class="timer-container" :class="timerClass">
+                    <div class="timer-display">{{ formattedTime }}</div>
+                    <div class="timer-label">Time Remaining</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="student-info">
+                    <div class="student-content">
+                      <div class="student-name">{{ studentName }}</div>
+                      <div class="student-label">Student</div>
+                    </div>
+                    <div class="nav-menu-wrapper">
+                      <button 
+                        class="btn btn-nav-menu" 
+                        @click="toggleNavigationPanel"
+                        :class="{ 'active': showNavigationPanel }"
+                        title="Question Navigation"
+                      >
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                        <span class="nav-count">{{ questions.length }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -64,6 +81,15 @@
         <div class="question-panel">
           <div class="question-header">
             <div class="question-number">Question {{ currentQuestionIndex + 1 }}</div>
+            <div class="question-timer">
+              <div class="timer-icon">
+                <i class="bi bi-stopwatch"></i>
+              </div>
+              <div class="timer-info">
+                <div class="timer-current">{{ formatQuestionTime(currentQuestionTime) }}</div>
+                <div class="timer-label">Time on Question</div>
+              </div>
+            </div>
           </div>
           
           <div class="question-text" v-if="currentQuestion" v-html="currentQuestion.question_text"></div>
@@ -88,13 +114,7 @@
 
           <!-- Navigation Buttons -->
           <div class="nav-buttons">
-            <button 
-              class="btn btn-nav btn-previous" 
-              @click="previousQuestion"
-              :disabled="currentQuestionIndex === 0"
-            >
-              <i class="bi bi-arrow-left"></i> Previous
-            </button>
+            <!-- Action buttons row -->
             <div class="action-buttons">
               <button 
                 class="btn btn-mark"
@@ -113,20 +133,38 @@
                 <i class="bi bi-x-circle"></i> Clear Response
               </button>
             </div>
-            <button 
-              class="btn btn-nav btn-next" 
-              @click="saveAndNext"
-              :disabled="isSubmittingAnswer"
-            >
-              <span v-if="isSubmittingAnswer" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              {{ currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next' }} 
-              <i class="bi bi-arrow-right" v-if="!isSubmittingAnswer"></i>
-            </button>
+            
+            <!-- Navigation buttons row (50-50) -->
+            <div class="nav-buttons-row">
+              <button 
+                class="btn btn-nav btn-previous" 
+                @click="previousQuestion"
+                :disabled="currentQuestionIndex === 0"
+              >
+                <i class="bi bi-arrow-left"></i> Previous
+              </button>
+              <button 
+                class="btn btn-nav btn-next" 
+                @click="saveAndNext"
+                :disabled="isSubmittingAnswer"
+              >
+                <span v-if="isSubmittingAnswer" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                {{ currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next' }} 
+                <i class="bi bi-arrow-right" v-if="!isSubmittingAnswer"></i>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Navigation Panel -->
-        <div class="navigation-panel">
+        <div class="navigation-panel" :class="{ 'panel-open': showNavigationPanel }">
+          <!-- Close Button -->
+          <div class="panel-header">
+            <button class="btn btn-close-panel" @click="toggleNavigationPanel">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          
           <!-- Question Status Legend -->
           <div class="nav-section">
             <div class="nav-title">Question Status</div>
@@ -202,84 +240,96 @@
 
     <!-- Modals -->
     <!-- Fullscreen Warning Modal -->
-    <div class="modal" :class="{ show: showFullscreenWarning }" tabindex="-1" style="display: block;" v-if="showFullscreenWarning">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-warning">
-            <h5 class="modal-title">
-              <i class="bi bi-exclamation-triangle"></i> Fullscreen Required
-            </h5>
-          </div>
-          <div class="modal-body">
-            <p>This exam must be taken in fullscreen mode for security purposes.</p>
-            <p>Please click "Enter Fullscreen" to continue with your exam.</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-warning" @click="enterFullscreen">
-              <i class="bi bi-arrows-fullscreen"></i> Enter Fullscreen
-            </button>
+    <div v-if="showFullscreenWarning">
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal fade show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title">
+                <i class="bi bi-exclamation-triangle"></i> Fullscreen Required
+              </h5>
+            </div>
+            <div class="modal-body">
+              <p>This exam must be taken in fullscreen mode for security purposes.</p>
+              <p>Please click "Enter Fullscreen" to continue with your exam.</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-warning" @click="enterFullscreen">
+                <i class="bi bi-arrows-fullscreen"></i> Enter Fullscreen
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Exit Warning Modal -->
-    <div class="modal" :class="{ show: showExitWarning }" tabindex="-1" style="display: block;" v-if="showExitWarning">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">
-              <i class="bi bi-exclamation-triangle"></i> Warning: Fullscreen Exited
-            </h5>
-          </div>
-          <div class="modal-body">
-            <p><strong>You have exited fullscreen mode!</strong></p>
-            <p>This action has been recorded. Please return to fullscreen mode immediately to continue your exam.</p>
-            <p class="text-danger">Multiple violations may result in automatic submission of your exam.</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-danger" @click="returnToFullscreen">
-              <i class="bi bi-arrows-fullscreen"></i> Return to Fullscreen
-            </button>
+    <div v-if="showExitWarning">
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal fade show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-exclamation-triangle"></i> Warning: Fullscreen Exited
+              </h5>
+            </div>
+            <div class="modal-body">
+              <p><strong>You have exited fullscreen mode!</strong></p>
+              <p>This action has been recorded. Please return to fullscreen mode immediately to continue your exam.</p>
+              <p class="text-danger">Multiple violations may result in automatic submission of your exam.</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-danger" @click="returnToFullscreen">
+                <i class="bi bi-arrows-fullscreen"></i> Return to Fullscreen
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Submit Confirmation Modal -->
-    <div class="modal" :class="{ show: showSubmitConfirmation }" tabindex="-1" style="display: block;" v-if="showSubmitConfirmation">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title">
-              <i class="bi bi-check-circle"></i> Submit Exam
-            </h5>
-          </div>
-          <div class="modal-body">
-            <p><strong>Are you sure you want to submit your exam?</strong></p>
-            <div class="submission-summary">
-              <p>Questions Answered: <strong>{{ answeredCount }} / {{ questions.length }}</strong></p>
-              <p>Questions Marked: <strong>{{ markedQuestions.size }}</strong></p>
-              <p>Time Remaining: <strong>{{ formattedTime }}</strong></p>
+    <div v-if="showSubmitConfirmation">
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal fade show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-check-circle"></i> Submit Exam
+              </h5>
             </div>
-            <p class="text-warning">
-              <i class="bi bi-exclamation-triangle"></i>
-              Once submitted, you cannot make any changes to your answers.
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" @click="cancelSubmitExam">
-              <i class="bi bi-x-circle"></i> Cancel
-            </button>
-            <button class="btn btn-primary" @click="confirmSubmitExam" :disabled="isSubmittingExam">
-              <span v-if="isSubmittingExam" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              <i class="bi bi-check-circle" v-else></i> 
-              {{ isSubmittingExam ? 'Submitting...' : 'Submit Exam' }}
-            </button>
+            <div class="modal-body">
+              <p><strong>Are you sure you want to submit your exam?</strong></p>
+              <div class="submission-summary">
+                <p>Questions Answered: <strong>{{ answeredCount }} / {{ questions.length }}</strong></p>
+                <p>Questions Marked: <strong>{{ markedQuestions.size }}</strong></p>
+                <p>Time Remaining: <strong>{{ formattedTime }}</strong></p>
+              </div>
+              <p class="text-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Once submitted, you cannot make any changes to your answers.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" @click="cancelSubmitExam">
+                <i class="bi bi-x-circle"></i> Cancel
+              </button>
+              <button class="btn btn-primary" @click="confirmSubmitExam" :disabled="isSubmittingExam">
+                <span v-if="isSubmittingExam" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <i class="bi bi-check-circle" v-else></i> 
+                {{ isSubmittingExam ? 'Submitting...' : 'Submit Exam' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Navigation Panel Backdrop -->
+    <div v-if="showNavigationPanel" class="navigation-backdrop" @click="toggleNavigationPanel"></div>
   </div>
 </template>
 
@@ -305,13 +355,17 @@ const timeRemaining = ref(0)
 const timer = ref<any>(null)
 const questionStartTime = ref(0)
 const questionTimeSpent = ref<any>({})
+const currentQuestionTime = ref(0)
+const questionTimer = ref<any>(null)
+const autoSaveTimer = ref<any>(null)
 const showFullscreenWarning = ref(false)
 const studentName = ref('')
 const showExitWarning = ref(false)
 const showSubmitConfirmation = ref(false)
-const fullscreenChecker = ref<NodeJS.Timeout | null>(null)
+const fullscreenChecker = ref<any>(null)
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
+const showNavigationPanel = ref(false)
 
 // Computed properties
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
@@ -333,6 +387,13 @@ const timerClass = computed(() => {
   return ''
 })
 
+// Format question time in MM:SS format
+const formatQuestionTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
 // Methods
 const initializeExam = async () => {
   try {
@@ -352,11 +413,14 @@ const initializeExam = async () => {
     questions.value = examResponse.questions
     
     // Set up timer
-    if (examResponse.timeRemaining !== undefined) {
-      timeRemaining.value = examResponse.timeRemaining
-    } else {
+    if ((examResponse as any).timeRemaining !== undefined) {
+      timeRemaining.value = (examResponse as any).timeRemaining
+    } else if ((examResponse as any).duration_minutes) {
       // Calculate time remaining based on duration
-      timeRemaining.value = examResponse.duration_minutes * 60
+      timeRemaining.value = (examResponse as any).duration_minutes * 60
+    } else {
+      // Default to 1 hour if no duration specified
+      timeRemaining.value = 3600
     }
   
     // Get student info from localStorage or API
@@ -365,8 +429,20 @@ const initializeExam = async () => {
     // Start timer
     startTimer()
     
-    // Mark first question as visited
+    // Mark first question as visited and start question timer
     visitedQuestions.value.add(0)
+    questionStartTime.value = Date.now()
+    currentQuestionTime.value = 0
+    
+    // Start question timer
+    questionTimer.value = setInterval(() => {
+      currentQuestionTime.value++
+    }, 1000)
+    
+    // Start periodic auto-save (every 30 seconds)
+    autoSaveTimer.value = setInterval(async () => {
+      await saveCurrentAnswer()
+    }, 30000)
     
     // Check fullscreen
     checkFullscreen()
@@ -385,8 +461,11 @@ const retryLoadExam = () => {
   initializeExam()
 }
 
-const loadQuestion = (index: number) => {
+const loadQuestion = async (index: number) => {
   if (index < 0 || index >= questions.value.length) return
+  
+  // Save current answer before navigating away
+  await saveCurrentAnswer()
   
   // Record time spent on previous question
   if (questionStartTime.value > 0 && currentQuestionIndex.value >= 0) {
@@ -397,81 +476,109 @@ const loadQuestion = (index: number) => {
     questionTimeSpent.value[currentQuestionIndex.value] += timeSpent
   }
   
+  // Stop previous question timer
+  if (questionTimer.value) {
+    clearInterval(questionTimer.value)
+  }
+  
   currentQuestionIndex.value = index
   questionStartTime.value = Date.now()
   visitedQuestions.value.add(index)
+  
+  // Initialize current question time with previously spent time
+  currentQuestionTime.value = Math.floor((questionTimeSpent.value[index] || 0) / 1000)
+  
+  // Start new question timer
+  questionTimer.value = setInterval(() => {
+    currentQuestionTime.value++
+  }, 1000)
+  
+  // Close navigation panel after question selection (mobile only)
+  if (window.innerWidth <= 768) {
+    showNavigationPanel.value = false
+  }
 }
 
-const selectOption = async (optionIndex: number) => {
+const selectOption = (optionIndex: number) => {
   console.log('=== SELECT OPTION DEBUG ===')
   console.log('currentQuestionIndex.value:', currentQuestionIndex.value)
   console.log('optionIndex:', optionIndex)
   console.log('answers before:', answers)
   console.log('answers keys before:', Object.keys(answers))
   
-  // Store the answer
+  // Store the answer locally (no API call yet)
   answers[currentQuestionIndex.value] = optionIndex
   
   console.log('answers after:', answers)
   console.log('answers keys after:', Object.keys(answers))
   console.log('answers stringified:', JSON.stringify(answers))
   console.log('answers[currentQuestionIndex.value]:', answers[currentQuestionIndex.value])
+}
 
-  // Auto-save answer when option is selected
-  if (attemptId.value && currentQuestion.value) {
-    const question = currentQuestion.value
-    const questionTextId = question.question_text_id || question.question_id
-    const selectedOptionId = question.option_ids?.[optionIndex as number]
-    
-    if (!selectedOptionId) {
-      console.error('No option ID found for index:', optionIndex, 'in option_ids:', question.option_ids)
-      return
-    }
-    
-    const timeSpent = Math.floor((Date.now() - questionStartTime.value) / 1000)
-    
-    const submissionData = {
-      test_attempt_id: attemptId.value,
-      question_id: question.question_id,
-      question_text_id: questionTextId,
-      selected_option_id: selectedOptionId,
-      time_spent_seconds: timeSpent,
-      is_flagged: markedQuestions.value.has(currentQuestionIndex.value)
-    }
-    
-    console.log('Auto-saving answer:', submissionData)
-    
-    try {
-      await testAssignmentService.submitAnswer(submissionData)
-      console.log('Answer submitted successfully')
-    } catch (error) {
-      console.error('Error saving answer:', error)
-      // Don't block user interaction, just log the error
-    }
+// Save current answer to API
+const saveCurrentAnswer = async () => {
+  if (!attemptId.value || !currentQuestion.value || answers[currentQuestionIndex.value] === undefined) {
+    return // No answer to save
+  }
+  
+  const question = currentQuestion.value
+  const optionIndex = answers[currentQuestionIndex.value]
+  const questionTextId = question.question_text_id || question.question_id
+  const selectedOptionId = question.option_ids?.[optionIndex]
+  
+  if (!selectedOptionId) {
+    console.error('No option ID found for index:', optionIndex, 'in option_ids:', question.option_ids)
+    return
+  }
+  
+  const timeSpent = currentQuestionTime.value
+  
+  const submissionData = {
+    test_attempt_id: attemptId.value,
+    question_id: question.question_id,
+    question_text_id: questionTextId,
+    selected_option_id: selectedOptionId,
+    time_spent_seconds: timeSpent,
+    is_flagged: markedQuestions.value.has(currentQuestionIndex.value)
+  }
+  
+  console.log('Saving answer:', submissionData)
+  
+  try {
+    await testAssignmentService.submitAnswer(submissionData)
+    console.log('Answer saved successfully')
+  } catch (error) {
+    console.error('Error saving answer:', error)
+    // Don't block navigation, just log the error
   }
 }
 
 const saveAndNext = async () => {
   if (isSubmittingAnswer.value) return
   
-  // Simply move to next question without API call
-  // The answer is already saved when user selects an option
+  isSubmittingAnswer.value = true
+  
+  // Save current answer and move to next question
   if (currentQuestionIndex.value < questions.value.length - 1) {
-    nextQuestion()
+    await nextQuestion()
   } else {
+    // Save current answer before submitting exam
+    await saveCurrentAnswer()
     submitExam()
   }
+  
+  isSubmittingAnswer.value = false
 }
 
-const previousQuestion = () => {
+const previousQuestion = async () => {
   if (currentQuestionIndex.value > 0) {
-    loadQuestion(currentQuestionIndex.value - 1)
+    await loadQuestion(currentQuestionIndex.value - 1)
   }
 }
 
-const nextQuestion = () => {
+const nextQuestion = async () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
-    loadQuestion(currentQuestionIndex.value + 1)
+    await loadQuestion(currentQuestionIndex.value + 1)
   }
 }
 
@@ -507,6 +614,9 @@ const confirmSubmitExam = async () => {
   try {
     isSubmittingExam.value = true
     
+    // Save the current answer before submitting
+    await saveCurrentAnswer()
+    
     console.log('=== EXAM SUBMISSION DEBUG ===')
     console.log('attemptId.value:', attemptId.value)
     
@@ -523,11 +633,14 @@ const confirmSubmitExam = async () => {
       
       showSubmitConfirmation.value = false
       
-      // Navigate to result page
-      router.push({
-        path: '/student/exam/result',
-        query: { attemptId: attemptId.value }
-      })
+      // Add a small delay before navigating to give backend time to process
+      setTimeout(() => {
+        // Navigate to result page
+        router.push({
+          path: '/student/exam/result',
+          query: { attemptId: attemptId.value }
+        })
+      }, 500) // 500ms delay
     }
   } catch (err) {
     console.error('Failed to submit exam:', err)
@@ -553,11 +666,14 @@ const autoSubmitExam = async () => {
   
       await testAssignmentService.submitExam(submissionData)
   
-      // Navigate to result page
-      router.push({
-        path: '/student/exam/result',
-        query: { attemptId: attemptId.value }
-      })
+      // Add a small delay before navigating to give backend time to process
+      setTimeout(() => {
+        // Navigate to result page
+        router.push({
+          path: '/student/exam/result',
+          query: { attemptId: attemptId.value }
+        })
+      }, 500) // 500ms delay
     }
   } catch (err) {
     console.error('Failed to auto-submit exam:', err)
@@ -644,9 +760,59 @@ const testAddAnswers = () => {
   console.log('Test answers added:', answers)
 }
 
+const toggleNavigationPanel = () => {
+  showNavigationPanel.value = !showNavigationPanel.value
+}
+
+// Security functions to prevent cheating
+const blockBackNavigation = () => {
+  window.history.pushState(null, '', window.location.href)
+  
+  window.addEventListener('popstate', (event) => {
+    window.history.pushState(null, '', window.location.href)
+    // Don't show confirmation during exam, just block navigation
+    event.preventDefault()
+    return false
+  })
+  
+  // Block keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    if ((e.altKey && e.key === 'ArrowLeft') ||
+        (e.altKey && e.key === 'ArrowRight') ||
+        e.key === 'F5' ||
+        (e.ctrlKey && e.key === 'r') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        (e.ctrlKey && e.key === 'u') ||
+        e.key === 'F12') {
+      e.preventDefault()
+      return false
+    }
+  })
+  
+  // Block right-click context menu
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    return false
+  })
+  
+  // Block text selection
+  document.addEventListener('selectstart', (e) => {
+    e.preventDefault()
+    return false
+  })
+  
+  // Block drag and drop
+  document.addEventListener('dragstart', (e) => {
+    e.preventDefault()
+    return false
+  })
+}
+
 // Lifecycle hooks
 onMounted(() => {
   initializeExam()
+  blockBackNavigation()
   
   // Expose test function for debugging
   ;(window as any).testAddAnswers = testAddAnswers
@@ -660,6 +826,12 @@ onMounted(() => {
 onUnmounted(() => {
   if (timer.value) {
     clearInterval(timer.value)
+  }
+  if (questionTimer.value) {
+    clearInterval(questionTimer.value)
+  }
+  if (autoSaveTimer.value) {
+    clearInterval(autoSaveTimer.value)
   }
   if (fullscreenChecker.value) {
     clearInterval(fullscreenChecker.value)
@@ -710,6 +882,19 @@ body {
   z-index: 1000;
 }
 
+/* Header Layout Fix - Force horizontal layout */
+.exam-header .col-md-5 .row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+}
+
+.exam-header .col-md-5 .col-6 {
+  flex: 0 0 50% !important;
+  max-width: 50% !important;
+  padding: 0 4px;
+}
+
 .exam-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -727,17 +912,24 @@ body {
   border-radius: 10px;
   padding: 10px 15px;
   text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60px;
 }
 
 .timer-display {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
+  line-height: 1.2;
 }
 
 .timer-label {
   font-size: 0.8rem;
   opacity: 0.8;
+  margin-top: 2px;
 }
 
 .timer-warning {
@@ -750,23 +942,82 @@ body {
   background: rgba(220, 53, 69, 0.2) !important;
 }
 
-/* Student info styles */
+/* Student Info Styles */
 .student-info {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px 15px;
-  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 60px;
+}
+
+.student-content {
+  flex: 1;
 }
 
 .student-name {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+  line-height: 1.2;
 }
 
 .student-label {
-  font-size: 0.8rem;
-  opacity: 0.8;
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.nav-menu-wrapper {
+  margin-left: 8px;
+}
+
+/* Navigation Menu Button */
+.btn-nav-menu {
+  background: #007bff;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  padding: 8px 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 45px;
+  height: 45px;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+}
+
+.btn-nav-menu:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.btn-nav-menu.active {
+  background: #28a745;
+  box-shadow: 0 2px 4px rgba(40,167,69,0.3);
+}
+
+.btn-nav-menu i {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.nav-count {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.9;
 }
 
 /* Progress bar */
@@ -803,15 +1054,53 @@ body {
 }
 
 .question-header {
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 15px;
-  margin-bottom: 25px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .question-number {
   color: #dc3545;
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+/* Question Timer Styles */
+.question-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.timer-icon {
+  color: #28a745;
+  font-size: 1.2rem;
+}
+
+.timer-info {
+  text-align: center;
+}
+
+.timer-current {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #28a745;
+  line-height: 1;
+}
+
+.timer-label {
+  font-size: 0.7rem;
+  color: #6c757d;
+  margin-top: 2px;
 }
 
 .question-text {
@@ -897,16 +1186,32 @@ body {
   width: 350px;
   background: white;
   border-radius: 15px;
-  padding: 15px 25px;
+  padding: 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-height: calc(100vh - 200px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: 0;
+  right: -350px;
+  height: 100vh;
+  z-index: 1001;
+  transition: right 0.3s ease-in-out;
+  border-radius: 0;
 }
 
-.nav-section {
+.navigation-panel.panel-open {
+  right: 0;
+}
+
+.navigation-panel .nav-section {
+  padding: 0 25px;
   margin-bottom: 15px;
+}
+
+.navigation-panel .nav-section:first-of-type {
+  padding-top: 15px;
 }
 
 /* Navigation header */
@@ -1125,41 +1430,34 @@ body {
 
 /* Navigation buttons */
 .nav-buttons {
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+}
+
+.action-buttons {
   display: flex;
-  justify-content: space-between;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e9ecef;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 
-.btn-nav {
-  padding: 12px 24px;
-  font-weight: 600;
-  border-radius: 8px;
+.action-buttons .btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.85rem;
 }
 
-.btn-previous {
-  background: #6c757d;
-  border-color: #6c757d;
-  color: white;
+.nav-buttons-row {
+  display: flex;
+  gap: 10px;
 }
 
-.btn-previous:hover {
-  background: #545b62;
-  border-color: #545b62;
-  color: white;
-}
-
-.btn-next {
-  background: #007bff;
-  border-color: #007bff;
-  color: white;
-}
-
-.btn-next:hover {
-  background: #0056b3;
-  border-color: #0056b3;
-  color: white;
+.nav-buttons-row .btn-nav {
+  flex: 1;
+  padding: 10px 20px;
+  font-size: 0.9rem;
 }
 
 /* Submit section */
@@ -1186,25 +1484,276 @@ body {
   color: white;
 }
 
-/* Responsive design */
+/* Mobile Responsive Design */
 @media (max-width: 768px) {
+  .exam-header {
+    padding: 8px 0;
+    margin-bottom: 12px;
+  }
+  
+  .exam-header .row {
+    margin: 0;
+  }
+  
+  .exam-header .col-12,
+  .exam-header .col-6 {
+    padding: 0 8px;
+    margin-bottom: 8px;
+  }
+  
+  /* Timer Container Mobile */
+  .timer-container {
+    padding: 10px;
+    min-height: 55px;
+  }
+  
+  .timer-display {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  
+  .timer-label {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+  
+  /* Student Info Mobile */
+  .student-info {
+    padding: 10px;
+    min-height: 55px;
+  }
+  
+  .student-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
+  .student-label {
+    font-size: 10px;
+  }
+  
+  /* Navigation Button Mobile */
+  .btn-nav-menu {
+    min-width: 40px;
+    height: 40px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .btn-nav-menu i {
+    font-size: 12px;
+    margin-bottom: 1px;
+  }
+  
+  .nav-count {
+    font-size: 8px;
+  }
+  
+  .nav-menu-wrapper {
+    margin-left: 6px;
+  }
+  
   .exam-content {
     flex-direction: column;
     padding: 10px;
+    gap: 15px;
   }
 
+  /* Mobile Navigation Panel */
   .navigation-panel {
+    position: fixed !important;
+    top: 0 !important;
+    right: -100% !important;
+    width: 100% !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    z-index: 1001 !important;
+    transition: right 0.3s ease-in-out !important;
+    transform: none !important;
+  }
+  
+  .navigation-panel.panel-open {
+    right: 0 !important;
+  }
+  
+  .navigation-panel .nav-section {
+    padding: 0 20px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .navigation-panel .nav-section:first-of-type {
+    padding-top: 15px !important;
+  }
+
+  .question-panel {
+    padding: 20px 15px;
+    max-height: none;
+    border-radius: 10px;
     width: 100%;
-    order: -1;
   }
 
-  .question-grid {
-    grid-template-columns: repeat(6, 1fr);
+  .question-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
   }
 
-  .question-btn {
-    width: 40px;
-    height: 40px;
+  /* Question Timer Mobile */
+  .question-timer {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .timer-icon {
+    font-size: 1rem;
+  }
+  
+  .timer-current {
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+  
+  .timer-label {
+    font-size: 0.6rem;
+  }
+  
+  .question-number {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .nav-buttons {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+  
+  .nav-buttons .btn-nav {
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    order: 1;
+  }
+  
+  .action-buttons .btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .btn-previous {
+    order: 2;
+  }
+  
+  .btn-next {
+    order: 3;
+  }
+}
+
+/* Desktop - restore original sidebar layout */
+@media (min-width: 769px) {
+  .exam-content {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .question-panel {
+    flex: 1;
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  .navigation-panel {
+    width: 350px !important;
+    background: white;
+    border-radius: 15px !important;
+    padding: 25px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    height: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  
+  .navigation-panel .nav-section {
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .navigation-panel .nav-section:first-of-type {
+    padding-top: 0 !important;
+  }
+  
+  .panel-header {
+    display: none !important;
+  }
+  
+  /* Hide navigation button on desktop */
+  .btn-nav-menu {
+    display: none !important;
+  }
+  
+  /* Hide navigation backdrop on desktop */
+  .navigation-backdrop {
+    display: none !important;
+  }
+  
+  /* Restore original navigation buttons layout for desktop */
+  .nav-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .action-buttons .btn {
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .nav-buttons-row {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .nav-buttons-row .btn-nav {
+    flex: 1;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
   }
 }
 
@@ -1227,5 +1776,64 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+}
+
+/* Custom modal backdrop - darker than default */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Navigation Panel Backdrop */
+.navigation-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* Navigation Panel Styles */
+.panel-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-close-panel {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+}
+
+.btn-previous {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+.btn-previous:hover {
+  background: #545b62;
+  border-color: #545b62;
+  color: white;
+}
+
+.btn-next {
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.btn-next:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+  color: white;
 }
 </style> 

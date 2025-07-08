@@ -88,6 +88,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const handleAuthExpired = () => {
+    // Check if we should prevent auth expired redirect (e.g., during login forms)
+    if ((window as any).preventAuthExpiredRedirect) {
+      return
+    }
+    
     clearAuth()
     const currentPath = window.location.pathname
     if (currentPath !== '/login') {
@@ -115,8 +120,14 @@ export const useAuthStore = defineStore('auth', () => {
       // Set the token in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
 
-      // Verify token by calling the profile endpoint
-      const response = await axiosInstance.get('/auth/profile')
+      // Use different profile endpoints based on user role
+      let profileEndpoint = '/auth/profile'
+      if (userRole.value === 'STUDENT') {
+        profileEndpoint = '/iti-mocktest/profile'
+      }
+
+      // Verify token by calling the appropriate profile endpoint
+      const response = await axiosInstance.get(profileEndpoint)
 
       // Set user ID from profile response if not already set
       if (response?.data?.data?.id && !userId.value) {

@@ -615,7 +615,7 @@ const prepareQuestionsData = () => {
             question_id: chapter.question.id,
             question_text_id: chapter.question.question_texts?.[0]?.id,
             chapter_id: chapter.chapterId,
-            marks: chapter.marks || 1,
+            marks: section.marks_per_question || chapter.marks || 1,
             question_order: questionOrder++
           }
           subsectionData.questions.push(questionData)

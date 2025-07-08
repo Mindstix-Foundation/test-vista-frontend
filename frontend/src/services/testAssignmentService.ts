@@ -14,6 +14,7 @@ export interface StudentAssignedTest {
   subject: string
   standard: string
   assignedBy: string
+  test_attempt_id?: number
 }
 
 export interface ExamInstructions {
@@ -108,8 +109,10 @@ export interface DetailedReport {
     question_image?: string
     options: string[]
     option_images?: (string | null)[]
+    option_ids: number[]
     correct_option: number
     selected_option?: number
+    selected_option_index: number
     is_correct?: boolean
     marks_obtained: number
     time_spent_seconds?: number

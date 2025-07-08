@@ -3,34 +3,16 @@
     <div class="row justify-content-center">
       <div class="col-12 col-xl-11">
         <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h2 class="fw-bold text-dark mb-1">
-              <i class="bi bi-people-fill me-2 text-primary"></i>
-              Manage Students
-            </h2>
-            <p class="text-muted mb-0">Select a standard and subject to manage student enrollments</p>
+        <div class="row p-2 g-2 mb-1 mt-2">
+          <div class="row g-2 justify-content-center align-items-center mb-4">
+            <div class="col-12 col-sm-10">
+              <h5 class="text-left fw-bolder text-uppercase m-0">Manage Students</h5>
+            </div>
           </div>
-          <div class="d-flex gap-2">
-            <button 
-              v-if="selectedStandard && selectedSubject"
-              class="btn btn-outline-primary"
-              @click="refreshData"
-              :disabled="loading"
-            >
-              <i class="bi bi-arrow-clockwise me-1"></i>
-              Refresh
-            </button>
-            <button 
-              v-if="selectedStandard && selectedSubject"
-              class="btn btn-outline-secondary"
-              @click="resetSelection"
-            >
-              <i class="bi bi-arrow-left me-1"></i>
-              Change Selection
-            </button>
-          </div>
+          <hr />
         </div>
+
+
 
         <!-- Selection Cards -->
         <div v-if="!selectedStandard || !selectedSubject" class="selection-container">
@@ -165,11 +147,30 @@
             <div class="col-12 col-sm-10 col-md-8">
               <div class="card shadow-sm">
                 <div class="card-body p-3 p-md-4">
-                  <div class="row g-2 justify-content-center align-items-center mb-3">
-                    <div class="col-12">
+                  <div class="row g-2 justify-content-between align-items-center mb-3">
+                    <div class="col-12 col-sm-8 col-md-6">
                       <h5 class="text-left fw-bolder text-uppercase m-0">
                         <i class="bi bi-book me-2"></i>{{ selectedSubject.name }}
                       </h5>
+                    </div>
+                    <div class="col-12 col-sm-4 col-md-6">
+                      <div class="d-flex gap-2 justify-content-sm-end">
+                        <button 
+                          class="btn btn-outline-primary btn-sm"
+                          @click="() => refreshData()"
+                          :disabled="loading"
+                        >
+                          <i class="bi bi-arrow-clockwise me-1"></i>
+                          Refresh
+                        </button>
+                        <button 
+                          class="btn btn-outline-secondary btn-sm"
+                          @click="resetSelection"
+                        >
+                          <i class="bi bi-arrow-left me-1"></i>
+                          Change Selection
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <hr class="mb-3" />
@@ -290,7 +291,8 @@
                   <!-- Active Students Content -->
                   <div v-if="currentView === 'active'">
                     <EnrolledStudentsList 
-                      :students="activeStudents" 
+                      :selectedStandard="selectedStandard"
+                      :selectedSubject="selectedSubject"
                       :loading="loading"
                       @student-updated="handleStudentUpdate"
                     />
@@ -438,15 +440,15 @@ const approvedRequests = computed(() => {
 
 const activeStudents = computed(() => {
   return allRequests.value.filter(request => 
-    request.status === 'active' || 
-    (request.status === 'approved' && request.enrollment_date)
+    request.status === 'approved' || 
+    request.status === 'active'
   )
 })
 
 const subjectStats = computed(() => {
   const pending = allRequests.value.filter(r => r.status === 'pending').length
   const approved = allRequests.value.filter(r => r.status === 'approved').length
-  const active = allRequests.value.filter(r => r.status === 'active').length
+  const active = allRequests.value.filter(r => r.status === 'active' || r.status === 'approved').length
   const total = allRequests.value.length
 
   return { pending, approved, active, total }
@@ -461,83 +463,12 @@ const academicYears = computed(() => {
 const fetchTeacherStandardsAndSubjects = async () => {
   loadingStandards.value = true
   try {
-    // Get user ID from auth store
-    const userId = authStore.userId
-    if (!userId) {
-      throw new Error('User ID not found')
-    }
-
-    // Fetch teacher's assigned subjects using userId parameter - single API call
-    const response = await axiosInstance.get(`/teacher-subjects?userId=${userId}`)
-    const teacherSubjects = response.data
+    // Use the new efficient API that gets all subjects with stats in one call
+    const response = await axiosInstance.get('/student-subject-enrollments/teacher/subjects-summary')
+    const standards = response.data
     
-    // Group by standard and collect subjects with stats
-    const standardsMap = new Map<number, {
-      id: number
-      name: string
-      subjects: Array<{
-        id: number
-        name: string
-        teacherSubjectId: number
-        stats: { pending: number; approved: number; active: number; total: number }
-      }>
-    }>()
-
-    // First, collect all teacher subjects and group by standard
-    const subjectStatsPromises = teacherSubjects.map(async (ts: any) => {
-      const standardId = ts.school_standard.standard.id
-      const standardName = ts.school_standard.standard.name
-      
-      // Get enrollment stats for this specific teacher-subject
-      let stats = { pending: 0, approved: 0, active: 0, total: 0 }
-      try {
-        const statsResponse = await axiosInstance.get(`/student-subject-enrollments/teacher/my-requests?teacher_subject_id=${ts.id}`)
-        const requests = statsResponse.data
-        
-        stats = {
-          pending: requests.filter((r: any) => r.status === 'pending').length,
-          approved: requests.filter((r: any) => r.status === 'approved').length,
-          active: requests.filter((r: any) => r.status === 'active').length,
-          total: requests.length
-        }
-      } catch (error) {
-        console.error(`Error fetching stats for teacher subject ${ts.id}:`, error)
-      }
-
-      return {
-        standardId,
-        standardName,
-        subject: {
-          id: ts.subject.id,
-          name: ts.subject.name,
-          teacherSubjectId: ts.id,
-          stats
-        }
-      }
-    })
-
-    // Wait for all stats to be fetched
-    const subjectsWithStats = await Promise.all(subjectStatsPromises)
-
-    // Group subjects by standard
-    subjectsWithStats.forEach(({ standardId, standardName, subject }) => {
-      if (!standardsMap.has(standardId)) {
-        standardsMap.set(standardId, {
-          id: standardId,
-          name: standardName,
-          subjects: []
-        })
-      }
-      standardsMap.get(standardId)!.subjects.push(subject)
-    })
-
-    // Convert to final format with subject count
-    availableStandards.value = Array.from(standardsMap.values()).map(standard => ({
-      id: standard.id,
-      name: standard.name,
-      subjectCount: standard.subjects.length,
-      subjects: standard.subjects.sort((a, b) => a.name.localeCompare(b.name))
-    })).sort((a, b) => a.name.localeCompare(b.name))
+    // The API already returns the data in the format we need
+    availableStandards.value = standards.sort((a: any, b: any) => a.name.localeCompare(b.name))
 
   } catch (error) {
     console.error('Error fetching teacher standards and subjects:', error)
@@ -547,10 +478,12 @@ const fetchTeacherStandardsAndSubjects = async () => {
   }
 }
 
-const fetchSubjectRequests = async () => {
+const fetchSubjectRequests = async (silent = false) => {
   if (!selectedSubject.value) return
   
-  loading.value = true
+  if (!silent) {
+    loading.value = true
+  }
   try {
     const params = new URLSearchParams()
     params.append('teacher_subject_id', selectedSubject.value.teacherSubjectId.toString())
@@ -561,9 +494,13 @@ const fetchSubjectRequests = async () => {
     allRequests.value = response.data
   } catch (error) {
     console.error('Error fetching subject requests:', error)
-    showToast('Error', 'Failed to load enrollment requests', 'bi-exclamation-triangle text-danger')
+    if (!silent) {
+      showToast('Error', 'Failed to load enrollment requests', 'bi-exclamation-triangle text-danger')
+    }
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -605,33 +542,35 @@ const resetToStandardSelection = () => {
   }
 }
 
-const refreshData = async () => {
+const refreshData = async (silent = false) => {
   if (selectedSubject.value) {
-    await fetchSubjectRequests()
-    // Also refresh the standards and subjects data
-    await fetchTeacherStandardsAndSubjects()
-    // Update the selected standard and subject references
-    if (selectedStandard.value) {
-      const updatedStandard = availableStandards.value.find(s => s.id === selectedStandard.value!.id)
-      if (updatedStandard) {
-        selectedStandard.value = updatedStandard
-        availableSubjects.value = updatedStandard.subjects
-        
-        // Update selected subject reference
-        if (selectedSubject.value) {
-          const updatedSubject = updatedStandard.subjects.find(s => s.id === selectedSubject.value!.id)
-          if (updatedSubject) {
-            selectedSubject.value = updatedSubject
+    await fetchSubjectRequests(silent)
+    // Also refresh the standards and subjects data (but only if not silent)
+    if (!silent) {
+      await fetchTeacherStandardsAndSubjects()
+      // Update the selected standard and subject references
+      if (selectedStandard.value) {
+        const updatedStandard = availableStandards.value.find(s => s.id === selectedStandard.value!.id)
+        if (updatedStandard) {
+          selectedStandard.value = updatedStandard
+          availableSubjects.value = updatedStandard.subjects
+          
+          // Update selected subject reference
+          if (selectedSubject.value) {
+            const updatedSubject = updatedStandard.subjects.find(s => s.id === selectedSubject.value!.id)
+            if (updatedSubject) {
+              selectedSubject.value = updatedSubject
+            }
           }
         }
       }
+      showToast('Success', 'Data refreshed successfully', 'bi-check-circle text-success')
     }
-    showToast('Success', 'Data refreshed successfully', 'bi-check-circle text-success')
   }
 }
 
 const handleRequestUpdate = async () => {
-  await refreshData()
+  await refreshData(true) // Silent refresh for auto-refresh
 }
 
 const handleStudentUpdate = async () => {

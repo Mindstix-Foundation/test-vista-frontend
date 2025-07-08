@@ -48,8 +48,8 @@
                 </div>
               </div>
 
-              <!-- Email ID -->
-              <div class="row mb-2">
+              <!-- Email ID - Hidden -->
+              <div class="row mb-2" v-if="false">
                 <label for="emailId" class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
                 <div class="col-12 col-lg-9">
                   <input
@@ -62,8 +62,8 @@
                 </div>
               </div>
 
-              <!-- Date of Birth -->
-              <div class="row mb-2">
+              <!-- Date of Birth - Hidden -->
+              <div class="row mb-2" v-if="false">
                 <label for="dateOfBirth" class="col-12 col-lg-3 col-form-label fw-bold">Date of Birth:</label>
                 <div class="col-12 col-lg-9">
                   <input
@@ -76,8 +76,8 @@
                 </div>
               </div>
 
-              <!-- Contact Numbers -->
-              <div class="row mb-2">
+              <!-- Contact Numbers - Hidden -->
+              <div class="row mb-2" v-if="false">
                 <div class="col-12 col-lg-6">
                   <div class="row">
                     <label for="contactNumber" class="col-12 col-lg-6 col-form-label fw-bold"
@@ -286,7 +286,7 @@ const fetchProfileData = async () => {
     } else {
       throw new Error('Failed to fetch profile data')
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error fetching profile data:', err)
     error.value = 'Failed to load profile data. Please try again later.'
     

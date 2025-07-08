@@ -1,0 +1,21 @@
+question,a,b,c,d,correct_answer
+"Which one is an example for OS?","Antivirus","Windows","MS Office","Macromedia",b
+"Which acts as an intermediate between a user and a computer?","Macros","Antivirus","MS Office","Operating system",d
+"What is the function of OS?","Calculation","Word processing","Drawing pictures","Process and memory management",d
+"Where does the minimized application reside in windows?","Task bar","My computer","My Document","Recent documents",a
+"Which tool in control panel is used to adjust your computer setting to control computer with voice command?","System and security","Appearance and personalization","Hardware and sound","Ease of access",d
+"Which control panel applet gives the information of computer?","System and security","Hardware and sound","Programs","Appearance and personalization",a
+"What is the extension of applet files in control panel?",".Ctl",".Cpl",".Cal",".Cs",b
+"Which shortcut key is used to copy and paste a file folder?","Ctrl+X and Ctrl+V","Ctrl+A and Ctrl+V","Ctrl+Z and Ctrl+V","Ctrl+C and Ctrl+V",d
+"Which shortcut key is used to refresh windows desktop?","F1","F2","F5","F12",c
+"Which is the order of files and directories in Windows Explorer?","Serially","Sequentially","Hierarchically","Alphabetically",c
+"Where does the pinned application stay in Windows OS?","Desktop","Notification Area","Start Button","Task Bar",d
+"Microsoft Windows is a ____________ type of operating software.","disk defragmenter","freeware","shareware","Proprietary software",d
+"The windows sound file has the extension","wav","sit","wpd","dif",a
+"The process of starting an operating system when the user turns on a computer.","Starting","loading","Booting","Turn On",c
+"In windows we go to ____________ option in control panel to uninstall a program from our computer.","Default programs","Action center","Device manager","Programs and features",d
+"Which of the following is not an operating system?","Windows","Linux","Oracle","DOS",c
+"When was the first operating system developed?","1948","1949","1950","1951",c
+"What is the meaning of Booting in the operating system?","Restarting computer","install the program","To scan","To turn off",a
+"When were MS windows operating systems proposed?","1994","1990","1992","1985",d
+"Which of the following is a single-user operating system?","Windows","MAC","Ms-Dos","None of these",c 

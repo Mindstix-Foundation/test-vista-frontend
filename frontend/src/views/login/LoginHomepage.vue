@@ -4,51 +4,17 @@
 
   <!-- Page Content -->
   <div class="container">
-    <div class="card p-4" style="max-width: 400px; width: 100%">
-      <h3 class="card-title text-center">Log In</h3>
-      <p class="text-center">Enter your email and password to continue.</p>
+    <div class="card p-4 login-card">
+      <h3 class="card-title text-center">Student Registration</h3>
+      <p class="text-center">Student Portal</p>
 
-      <div class="mb-3">
-        <label for="email" class="form-label">Email address</label>
-        <input
-          type="email"
-          class="form-control"
-          id="email"
-          v-model="email"
-          placeholder="Enter email"
-          :class="{ 'is-invalid': emailError }"
-          @keyup.enter="focusPassword"
-          required
-        />
-        <div class="invalid-feedback">{{ VALIDATION_MESSAGES.EMAIL.INVALID }}</div>
+      <!-- Student Options -->
+      <div class="student-section">
+        <!-- Primary Registration Button -->
+        <button class="btn btn-success w-100 mb-3 btn-lg" @click="itiStudentRegistration">
+          Student Registration
+        </button>
       </div>
-
-      <div class="mb-3">
-        <label for="password" class="form-label">Password</label>
-        <div class="password-field">
-          <input
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control"
-            id="password"
-            v-model="password"
-            placeholder="Enter password"
-            @keyup.enter="login"
-            ref="passwordInput"
-            required
-          />
-          <span class="password-toggle" @click="togglePasswordVisibility">
-            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-          </span>
-        </div>
-      </div>
-
-      <button class="btn btn-primary w-100 mb-2" @click="login">Log In</button>
-      <button class="btn btn-link text-decoration-none w-100" @click="forgotPassword">
-        Forgot Password?
-      </button>
-      <button class="btn btn-outline-primary w-100 mt-2" @click="studentRegistration">
-        Student Registration
-      </button>
 
       <!-- Error message below login -->
       <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
@@ -60,95 +26,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import LoginNavBar from '@/components/LoginNavBar.vue'
-import { useAuthStore } from '@/stores/auth'
-import axiosInstance from '@/config/axios'
-import type { AxiosError } from 'axios'
-import { VALIDATION_MESSAGES } from '@/utils/validationConstants'
 
 const router = useRouter()
-const authStore = useAuthStore()
-const email = ref('')
-const password = ref('')
 const errorMessage = ref('')
-const emailError = ref(false)
-const showPassword = ref(false)
-const passwordInput = ref<HTMLInputElement | null>(null)
 
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
-
-const focusPassword = () => {
-  if (passwordInput.value) {
-    passwordInput.value.focus()
-  }
-}
-
-const validateEmail = (email: string) => {
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return regex.exec(String(email).toLowerCase())
-}
-
-interface LoginResponse {
-  statusCode: number
-  message: string
-  data: {
-    user: {
-      id: number
-      email_id: string
-      roles: string[]
-    }
-    access_token: string
-  }
-}
-
-const login = async () => {
-  // Reset error states
-  errorMessage.value = ''
-  emailError.value = false
-
-  // Validate email format
-  if (!validateEmail(email.value)) {
-    emailError.value = true
-    errorMessage.value = VALIDATION_MESSAGES.EMAIL.INVALID
-    return
-  }
-
-  try {
-    const response = await axiosInstance.post<LoginResponse>('/auth/login', {
-      email_id: email.value,
-      password: password.value,
-    })
-
-    const { data } = response.data
-
-    // Store auth data using the auth store
-    authStore.setAuth(data.access_token, data.user.roles[0], data.user.id)
-
-    // Redirect based on role
-    if (data.user.roles.includes('ADMIN')) {
-      router.push('/admin/board')
-    } else if (data.user.roles.includes('TEACHER')) {
-      router.push('/teacher/profile')
-    } else if (data.user.roles.includes('STUDENT')) {
-      router.push('/student/home')
-    }
-  } catch (error) {
-    console.error('Login error:', error)
-    if ((error as AxiosError)?.response?.status === 401) {
-      errorMessage.value = 'Invalid email or password. Please try again.'
-    } else {
-      errorMessage.value = 'An error occurred. Please try again.'
-    }
-  }
-}
-
-const forgotPassword = () => {
-  router.push({ name: 'forgotPassword' })
-}
-
-const studentRegistration = () => {
-  router.push({ name: 'studentRegistration' })
+const itiStudentRegistration = () => {
+  router.push({ name: 'iti-student-registration' })
 }
 </script>
 
@@ -162,8 +45,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 100px); /* Adjusted for navbar height */
+  min-height: calc(100vh - 100px); /* Adjusted for navbar height */
   margin-top: 20px; /* Add some space below navbar */
+  padding: 1rem;
 }
 
 /* Styling the card */
@@ -171,6 +55,12 @@ body {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  transition: all 0.3s ease;
 }
 
 /* Styling form inputs */
@@ -187,6 +77,70 @@ body {
   font-size: 0.875rem;
   text-align: center;
   margin-top: 10px;
+}
+
+/* Button styling */
+.btn {
+  transition: all 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    min-height: calc(100vh - 80px);
+    margin-top: 15px;
+    padding: 0.5rem;
+  }
+  
+  .card {
+    max-width: 100%;
+    margin: 0 0.5rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    min-height: calc(100vh - 70px);
+    margin-top: 10px;
+    padding: 0.25rem;
+  }
+  
+  .card {
+    margin: 0 0.25rem;
+  }
+  
+  .card-title {
+    font-size: 1.5rem;
+  }
+  
+  .btn-lg {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+  .container {
+    padding: 0.1rem;
+  }
+  
+  .card {
+    margin: 0 0.1rem;
+  }
+  
+  .card-title {
+    font-size: 1.3rem;
+  }
+  
+  .btn-lg {
+    font-size: 0.95rem;
+  }
 }
 
 /* Password field styling */

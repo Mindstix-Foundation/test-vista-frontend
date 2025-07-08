@@ -15,7 +15,19 @@
               Standard {{ questionBankData.standardName }}
               <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
             </h4>
-            <h4 class="fw-bolder text-uppercase mb-0" id="pageHeader">Add Question</h4>
+            <div class="d-flex align-items-center gap-3">
+              <!-- CSV Upload Button for MCQ -->
+              <button 
+                v-if="showCsvUploadButton"
+                type="button"
+                class="btn btn-outline-success d-flex align-items-center"
+                @click="openCsvUploadModal"
+              >
+                <i class="bi bi-upload me-2"></i>
+                Upload CSV (MCQ)
+              </button>
+              <h4 class="fw-bolder text-uppercase mb-0" id="pageHeader">Add Question</h4>
+            </div>
           </div>
         </div>
       </div>
@@ -36,6 +48,7 @@
         @openOptionImageModal="openOptionImageModal"
         :useSearchableDropdown="true"
         ref="questionFormComponent"
+        @typeChanged="handleQuestionTypeChanged"
       />
       <div v-else class="alert alert-danger text-center">
         Chapter ID is missing. Please go back to <router-link :to="{ name: 'questionBank' }">Question Bank</router-link> and try again.
@@ -47,6 +60,97 @@
       <output class="spinner-border text-light" style="width: 3rem; height: 3rem;">
         <span class="visually-hidden">Saving...</span>
       </output>
+    </div>
+
+    <!-- CSV Upload Modal -->
+    <div v-if="showCsvModal" class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Upload MCQ Questions from CSV</h5>
+            <button type="button" class="btn-close" @click="closeCsvUploadModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info">
+              <h6>CSV Format Requirements:</h6>
+              <p class="mb-2">Your CSV file should have the following columns (with headers):</p>
+              <ul class="mb-2">
+                <li><strong>question</strong> - The question text</li>
+                <li><strong>a</strong> - Option A</li>
+                <li><strong>b</strong> - Option B</li>
+                <li><strong>c</strong> - Option C</li>
+                <li><strong>d</strong> - Option D</li>
+                <li><strong>correct_answer</strong> - The correct option (a, b, c, or d)</li>
+              </ul>
+              <p class="text-muted mb-0">
+                <small>Note: All uploaded questions will be marked as unverified and will use the currently selected topic.</small>
+              </p>
+            </div>
+            
+            <div class="mb-3">
+              <label for="csvFile" class="form-label">Select CSV File</label>
+              <input 
+                type="file" 
+                class="form-control" 
+                id="csvFile" 
+                accept=".csv"
+                @change="handleCsvFileSelect"
+                ref="csvFileInput"
+              >
+            </div>
+
+            <div v-if="csvPreviewData.length > 0" class="mb-3">
+              <h6>Preview (First 3 rows):</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>A</th>
+                      <th>B</th>
+                      <th>C</th>
+                      <th>D</th>
+                      <th>Correct</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in csvPreviewData.slice(0, 3)" :key="index">
+                      <td class="text-truncate" style="max-width: 200px;">{{ row.question }}</td>
+                      <td>{{ row.a }}</td>
+                      <td>{{ row.b }}</td>
+                      <td>{{ row.c }}</td>
+                      <td>{{ row.d }}</td>
+                      <td>{{ row.correct_answer }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-muted">
+                <small>Total questions to upload: {{ csvPreviewData.length }}</small>
+              </p>
+            </div>
+
+            <div v-if="csvErrors.length > 0" class="alert alert-danger">
+              <h6>Validation Errors:</h6>
+              <ul class="mb-0">
+                <li v-for="error in csvErrors" :key="error">{{ error }}</li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeCsvUploadModal">Cancel</button>
+            <button 
+              type="button" 
+              class="btn btn-success" 
+              @click="uploadCsvQuestions"
+              :disabled="csvPreviewData.length === 0 || csvErrors.length > 0 || isCsvUploading"
+            >
+              <span v-if="isCsvUploading" class="spinner-border spinner-border-sm me-2"></span>
+              Upload {{ csvPreviewData.length }} Questions
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Enhanced Image Upload Modals -->
@@ -78,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axiosInstance from '@/config/axios'
 import QuestionFormComponent from '@/components/forms/QuestionFormComponent.vue'
@@ -96,6 +200,16 @@ interface AxiosErrorResponse {
   };
 }
 
+// Define CSV data interface
+interface CsvRowData {
+  question: string;
+  a: string;
+  b: string;
+  c: string;
+  d: string;
+  correct_answer: string;
+}
+
 // Define component name
 defineOptions({
   name: 'AddQuestion'
@@ -107,6 +221,14 @@ const imageUploadStore = useImageUploadStore()
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const questionFormComponent = ref<any>(null)
+
+// CSV Upload related refs
+const showCsvModal = ref(false)
+const csvFileInput = ref<HTMLInputElement | null>(null)
+const csvPreviewData = ref<CsvRowData[]>([])
+const csvErrors = ref<string[]>([])
+const isCsvUploading = ref(false)
+const selectedQuestionType = ref('')
 
 // Add new state for image upload modals
 const showQuestionImageModal = ref(false)
@@ -137,12 +259,237 @@ const questionBankData = ref({
   mediumStandardSubjectId: null
 })
 
+// Computed property to show CSV upload button only for MCQ type
+const showCsvUploadButton = computed(() => {
+  return selectedQuestionType.value === 'Multiple Choice Question (MCQ)'
+})
+
 // Debug function to validate chapter ID
 function validateChapterId() {
   if (!questionBankData.value.chapterId) {
     return false;
   }
   return true;
+}
+
+// Handle question type change from QuestionFormComponent
+function handleQuestionTypeChanged(questionType: string) {
+  selectedQuestionType.value = questionType
+}
+
+// CSV Upload Modal Methods
+function openCsvUploadModal() {
+  showCsvModal.value = true
+  csvPreviewData.value = []
+  csvErrors.value = []
+}
+
+function closeCsvUploadModal() {
+  showCsvModal.value = false
+  csvPreviewData.value = []
+  csvErrors.value = []
+  if (csvFileInput.value) {
+    csvFileInput.value.value = ''
+  }
+}
+
+function handleCsvFileSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file) return
+  
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    csvErrors.value = ['Please select a CSV file']
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const csv = e.target?.result as string
+    parseCsvData(csv)
+  }
+  reader.readAsText(file)
+}
+
+function parseCsvData(csvText: string) {
+  try {
+    const lines = csvText.trim().split('\n')
+    if (lines.length < 2) {
+      csvErrors.value = ['CSV file must contain at least a header row and one data row']
+      return
+    }
+
+    // Parse header
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const requiredHeaders = ['question', 'a', 'b', 'c', 'd', 'correct_answer']
+    
+    // Validate headers
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header))
+    if (missingHeaders.length > 0) {
+      csvErrors.value = [`Missing required columns: ${missingHeaders.join(', ')}`]
+      return
+    }
+
+    // Parse data rows
+    const data: CsvRowData[] = []
+    const errors: string[] = []
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim())
+      
+      if (values.length !== headers.length) {
+        errors.push(`Row ${i + 1}: Incorrect number of columns`)
+        continue
+      }
+
+      const row: any = {}
+      headers.forEach((header, index) => {
+        row[header] = values[index]
+      })
+
+      // Validate row data
+      const rowErrors = validateCsvRow(row, i + 1)
+      if (rowErrors.length > 0) {
+        errors.push(...rowErrors)
+      } else {
+        data.push(row as CsvRowData)
+      }
+    }
+
+    csvPreviewData.value = data
+    csvErrors.value = errors
+  } catch (error) {
+    csvErrors.value = ['Failed to parse CSV file. Please check the file format.']
+  }
+}
+
+function validateCsvRow(row: any, rowNumber: number): string[] {
+  const errors: string[] = []
+  
+  // Check required fields
+  if (!row.question?.trim()) {
+    errors.push(`Row ${rowNumber}: Question is required`)
+  }
+  if (!row.a?.trim()) {
+    errors.push(`Row ${rowNumber}: Option A is required`)
+  }
+  if (!row.b?.trim()) {
+    errors.push(`Row ${rowNumber}: Option B is required`)
+  }
+  
+  // Check correct answer
+  const correctAnswer = row.correct_answer?.toLowerCase()
+  if (!['a', 'b', 'c', 'd'].includes(correctAnswer)) {
+    errors.push(`Row ${rowNumber}: Correct answer must be a, b, c, or d`)
+  }
+
+  return errors
+}
+
+async function uploadCsvQuestions() {
+  if (csvPreviewData.value.length === 0) return
+
+  isCsvUploading.value = true
+
+  try {
+    let successCount = 0
+    let failedCount = 0
+    const failedQuestions: string[] = []
+
+    // Get topic ID from the question form component
+    const topicId = questionFormComponent.value?.getSelectedTopicId()
+    if (!topicId) {
+      throw new Error('Please select a topic first')
+    }
+
+    for (const row of csvPreviewData.value) {
+      try {
+        const questionRequest = createCsvQuestionRequest(row, topicId)
+        await axiosInstance.post('/questions/add', questionRequest)
+        successCount++
+      } catch (error) {
+        failedCount++
+        failedQuestions.push(`"${row.question.substring(0, 50)}..." - ${getErrorMessage(error)}`)
+      }
+    }
+
+    // Show results
+    if (successCount > 0) {
+      toastStore.showToast({
+        title: 'CSV Upload Complete',
+        message: `Successfully uploaded ${successCount} questions${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+        type: successCount === csvPreviewData.value.length ? 'success' : 'warning'
+      })
+    }
+
+    if (failedCount > 0 && failedQuestions.length > 0) {
+      console.error('Failed questions:', failedQuestions)
+      toastStore.showToast({
+        title: 'Some Questions Failed',
+        message: `${failedCount} questions failed to upload. Check console for details.`,
+        type: 'error'
+      })
+    }
+
+    closeCsvUploadModal()
+
+    // Redirect to question dashboard if any questions were uploaded
+    if (successCount > 0) {
+      router.push({
+        name: 'questionDashboard',
+        query: {
+          success: 'true',
+          message: `Uploaded ${successCount} MCQ questions from CSV`,
+          tab: 'unverified'
+        }
+      })
+    }
+
+  } catch (error) {
+    toastStore.showToast({
+      title: 'Upload Failed',
+      message: getErrorMessage(error),
+      type: 'error'
+    })
+  } finally {
+    isCsvUploading.value = false
+  }
+}
+
+function createCsvQuestionRequest(row: CsvRowData, topicId: number) {
+  // Map correct answer letter to index
+  const correctAnswerMap: { [key: string]: number } = {
+    'a': 0, 'b': 1, 'c': 2, 'd': 3
+  }
+
+  const options = [row.a, row.b, row.c, row.d].filter(opt => opt.trim() !== '')
+  const correctOptionIndex = correctAnswerMap[row.correct_answer.toLowerCase()]
+
+  const mcqOptions = options.map((optionText, index) => ({
+    option_text: optionText.trim(),
+    is_correct: index === correctOptionIndex
+  }))
+
+  return {
+    question_type_id: 1, // MCQ type ID
+    board_question: false, // CSV uploads are not marked as board questions by default
+    question_text_data: {
+      question_text: row.question.trim(),
+      mcq_options: mcqOptions
+    },
+    question_topic_data: {
+      topic_id: topicId
+    },
+    question_text_topic_medium_data: {
+      instruction_medium_id: parseInt(questionBankData.value.mediumId)
+    }
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  const axiosError = error as AxiosErrorResponse
+  return axiosError.response?.data?.message ?? 'An unknown error occurred'
 }
 
 // Helper functions for image upload and processing
@@ -572,5 +919,9 @@ onMounted(() => {
 #questionsSection {
   margin-top: 10px;
   margin-bottom: 90px;
+}
+
+.modal.show {
+  backdrop-filter: blur(2px);
 }
 </style>

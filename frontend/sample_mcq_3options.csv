@@ -1,0 +1,6 @@
+question,a,b,c,d,correct_answer
+"Which of the following is NOT a color?","Red","Blue","Sound","",c
+"What is the smallest prime number?","1","2","3","",b
+"Which shape has three sides?","Circle","Triangle","Square","",b
+"Is the Earth round or flat?","Round","Flat","","",a
+"Which number comes after 5?","4","6","7","",b 

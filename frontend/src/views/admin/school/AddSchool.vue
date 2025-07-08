@@ -16,6 +16,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { SchoolFormData } from '@/models/School'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
+import { formatContactNumberForAPI } from '@/utils/validationConstants'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 const router = useRouter()
@@ -62,8 +63,8 @@ const handleSchoolSubmit = async (schoolData: SchoolFormData) => {
       },
       principal_name: schoolData.principal_name,
       email: schoolData.email,
-      contact_number: schoolData.contact_number,
-      alternate_contact_number: schoolData.alternate_contact_number ?? null,
+      contact_number: formatContactNumberForAPI(schoolData.contact_number),
+      alternate_contact_number: schoolData.alternate_contact_number ? formatContactNumberForAPI(schoolData.alternate_contact_number) : null,
       instruction_medium_ids: schoolData.mediums,
       standard_ids: schoolData.standards,
     }

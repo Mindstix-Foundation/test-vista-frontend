@@ -510,6 +510,7 @@ const emit = defineEmits<{
   }): void
   (e: 'questionImageCancelled'): void
   (e: 'optionImageCancelled', optionIndex: number): void
+  (e: 'typeChanged', questionType: string): void
 }>()
 
 const router = useRouter()
@@ -561,8 +562,10 @@ function handleTypeChange(item: Item | null) {
   if (item) {
     selectedType.value = item.name as string
     toggleQuestionContainer()
+    emit('typeChanged', selectedType.value)
   } else {
     selectedType.value = ''
+    emit('typeChanged', '')
   }
 }
 
@@ -1145,6 +1148,9 @@ function toggleQuestionContainer() {
   // - mcqQuestion: Multiple Choice Question (MCQ)
   // - fillBlankQuestion: Fill in the Blanks
   // - matchPairQuestion: Match the Pairs
+  
+  // Emit the type change event
+  emit('typeChanged', selectedType.value)
 }
 
 function autoResize(event: Event) {
@@ -1811,10 +1817,19 @@ function clearQuestionImage() {
   })
 }
 
+// Method to get selected topic ID for CSV upload
+function getSelectedTopicId(): number | null {
+  if (selectedTopic.value && topicMap.value.has(selectedTopic.value)) {
+    return topicMap.value.get(selectedTopic.value) ?? null
+  }
+  return null
+}
+
 // Expose methods for parent component to call
 defineExpose({
   setUploadedQuestionImage,
-  setUploadedOptionImage
+  setUploadedOptionImage,
+  getSelectedTopicId
 })
 </script>
 

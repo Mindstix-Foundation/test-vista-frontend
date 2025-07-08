@@ -41,14 +41,14 @@
                 class="nav-link pb-0"
                 :class="{ 'custom-active': isAssignTestActive }"
                 id="navAssignOnlineTest"
-                to="/teacher/assign-online-test"
+                to="/teacher/assign-test"
                 :exact="false"
                 @click="closeOffcanvas"
               >
                 ASSIGN ONLINE TEST
               </router-link>
             </li>
-            <li class="nav-item">
+            <li class="nav-item nav-item-hidden">
               <router-link
                 class="nav-link pb-0"
                 :class="{ 'custom-active': isCreateTestPaperActive }"
@@ -60,7 +60,7 @@
                 CREATE TEST PAPER
               </router-link>
             </li>
-            <li class="nav-item">
+            <li class="nav-item nav-item-hidden">
               <router-link
                 class="nav-link pb-0"
                 id="navPreviousTestPaper"
@@ -70,7 +70,7 @@
                 PREVIOUS TEST PAPER
               </router-link>
             </li>
-            <li class="nav-item">
+            <li class="nav-item nav-item-hidden">
               <router-link
                 to="/teacher/syllabus"
                 class="nav-link pb-0"
@@ -80,7 +80,7 @@
                 SYLLABUS
               </router-link>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" v-if="false">
               <router-link
                 to="/teacher/manage-students"
                 class="nav-link pb-0"
@@ -88,6 +88,16 @@
                 @click="closeOffcanvas"
               >
                 MANAGE STUDENTS
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link
+                to="/teacher/manage-iti-students"
+                class="nav-link pb-0"
+                id="navManageItiStudents"
+                @click="closeOffcanvas"
+              >
+                MANAGE ITI STUDENTS
               </router-link>
             </li>
             <li class="nav-item">
@@ -162,7 +172,7 @@ let offcanvasInstance: Offcanvas | null = null
 // Computed properties for custom active states
 const isAssignTestActive = computed(() => {
   const path = route.path
-  return path === '/teacher/assign-online-test' || 
+        return path === '/teacher/assign-test' || 
          path.startsWith('/teacher/assign-test/')
 })
 
@@ -218,6 +228,11 @@ const closeOffcanvas = () => {
 </script>
 
 <style scoped>
+/* Hidden Navigation Items */
+.nav-item-hidden {
+  display: none !important;
+}
+
 /* General Styling */
 .navbar {
   background-color: black !important;
