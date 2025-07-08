@@ -16,7 +16,7 @@
               <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
             </h4>
             <div class="d-flex align-items-center gap-3">
-              <!-- CSV Upload Button for MCQ -->
+              <!-- CSV/Excel Upload Button for MCQ -->
               <button 
                 v-if="showCsvUploadButton"
                 type="button"
@@ -24,7 +24,7 @@
                 @click="openCsvUploadModal"
               >
                 <i class="bi bi-upload me-2"></i>
-                Upload CSV (MCQ)
+                Upload CSV/Excel (MCQ)
               </button>
               <h4 class="fw-bolder text-uppercase mb-0" id="pageHeader">Add Question</h4>
             </div>
@@ -62,18 +62,18 @@
       </output>
     </div>
 
-    <!-- CSV Upload Modal -->
+    <!-- CSV/Excel Upload Modal -->
     <div v-if="showCsvModal" class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Upload MCQ Questions from CSV</h5>
+            <h5 class="modal-title">Upload MCQ Questions from CSV/Excel</h5>
             <button type="button" class="btn-close" @click="closeCsvUploadModal"></button>
           </div>
           <div class="modal-body">
             <div class="alert alert-info">
-              <h6>CSV Format Requirements:</h6>
-              <p class="mb-2">Your CSV file should have the following columns (with headers):</p>
+              <h6>CSV/Excel Format Requirements:</h6>
+              <p class="mb-2">Your CSV or Excel file should have the following columns (with headers):</p>
               <ul class="mb-2">
                 <li><strong>question</strong> - The question text</li>
                 <li><strong>a</strong> - Option A</li>
@@ -88,13 +88,13 @@
             </div>
             
             <div class="mb-3">
-              <label for="csvFile" class="form-label">Select CSV File</label>
+              <label for="csvFile" class="form-label">Select CSV or Excel File</label>
               <input 
                 type="file" 
                 class="form-control" 
                 id="csvFile" 
-                accept=".csv"
-                @change="handleCsvFileSelect"
+                accept=".csv,.xlsx,.xls"
+                @change="handleFileSelect"
                 ref="csvFileInput"
               >
             </div>
@@ -190,6 +190,7 @@ import { useToastStore } from '@/store/toast'
 import ImageUploadEditor from '@/components/common/ImageUploadEditor.vue'
 import imageService from '@/services/imageService'
 import { useImageUploadStore } from '@/stores/imageUpload'
+import * as XLSX from 'xlsx'
 
 // Define custom error type for Axios errors
 interface AxiosErrorResponse {
@@ -293,23 +294,38 @@ function closeCsvUploadModal() {
   }
 }
 
-function handleCsvFileSelect(event: Event) {
+function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   
   if (!file) return
   
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    csvErrors.value = ['Please select a CSV file']
+  const fileName = file.name.toLowerCase()
+  const isCSV = fileName.endsWith('.csv')
+  const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls')
+  
+  if (!isCSV && !isExcel) {
+    csvErrors.value = ['Please select a CSV or Excel file']
     return
   }
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const csv = e.target?.result as string
-    parseCsvData(csv)
+  if (isCSV) {
+    // Handle CSV file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const csv = e.target?.result as string
+      parseCsvData(csv)
+    }
+    reader.readAsText(file)
+  } else {
+    // Handle Excel file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const data = e.target?.result as ArrayBuffer
+      parseExcelData(data)
+    }
+    reader.readAsArrayBuffer(file)
   }
-  reader.readAsText(file)
 }
 
 function parseCsvData(csvText: string) {
@@ -361,6 +377,61 @@ function parseCsvData(csvText: string) {
     csvErrors.value = errors
   } catch (error) {
     csvErrors.value = ['Failed to parse CSV file. Please check the file format.']
+  }
+}
+
+function parseExcelData(arrayBuffer: ArrayBuffer) {
+  try {
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+    const firstSheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[firstSheetName]
+    
+    // Convert to JSON
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+    
+    if (jsonData.length < 2) {
+      csvErrors.value = ['Excel file must contain at least a header row and one data row']
+      return
+    }
+
+    // Get headers and convert to lowercase
+    const headers = (jsonData[0] as string[]).map(h => String(h).trim().toLowerCase())
+    const requiredHeaders = ['question', 'a', 'b', 'c', 'd', 'correct_answer']
+    
+    // Validate headers
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header))
+    if (missingHeaders.length > 0) {
+      csvErrors.value = [`Missing required columns: ${missingHeaders.join(', ')}`]
+      return
+    }
+
+    // Parse data rows
+    const data: CsvRowData[] = []
+    const errors: string[] = []
+
+    for (let i = 1; i < jsonData.length; i++) {
+      const values = jsonData[i] as any[]
+      
+      if (!values || values.length === 0) continue // Skip empty rows
+      
+      const row: any = {}
+      headers.forEach((header, index) => {
+        row[header] = values[index] ? String(values[index]).trim() : ''
+      })
+
+      // Validate row data
+      const rowErrors = validateCsvRow(row, i + 1)
+      if (rowErrors.length > 0) {
+        errors.push(...rowErrors)
+      } else {
+        data.push(row as CsvRowData)
+      }
+    }
+
+    csvPreviewData.value = data
+    csvErrors.value = errors
+  } catch (error) {
+    csvErrors.value = ['Failed to parse Excel file. Please check the file format.']
   }
 }
 
@@ -417,7 +488,7 @@ async function uploadCsvQuestions() {
     // Show results
     if (successCount > 0) {
       toastStore.showToast({
-        title: 'CSV Upload Complete',
+        title: 'File Upload Complete',
         message: `Successfully uploaded ${successCount} questions${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
         type: successCount === csvPreviewData.value.length ? 'success' : 'warning'
       })
@@ -440,7 +511,7 @@ async function uploadCsvQuestions() {
         name: 'questionDashboard',
         query: {
           success: 'true',
-          message: `Uploaded ${successCount} MCQ questions from CSV`,
+          message: `Uploaded ${successCount} MCQ questions from file`,
           tab: 'unverified'
         }
       })
@@ -473,7 +544,7 @@ function createCsvQuestionRequest(row: CsvRowData, topicId: number) {
 
   return {
     question_type_id: 1, // MCQ type ID
-    board_question: false, // CSV uploads are not marked as board questions by default
+    board_question: false, // File uploads are not marked as board questions by default
     question_text_data: {
       question_text: row.question.trim(),
       mcq_options: mcqOptions
