@@ -185,6 +185,24 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import testAssignmentService, { type ExamInstructions } from '@/services/testAssignmentService'
 
+// Component name
+defineOptions({
+  name: 'ExamInstructions'
+})
+
+// Types
+interface FullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void>
+  msRequestFullscreen?: () => Promise<void>
+}
+
+interface FullscreenDocument extends Document {
+  webkitFullscreenElement?: Element
+  msFullscreenElement?: Element
+  webkitExitFullscreen?: () => Promise<void>
+  msExitFullscreen?: () => Promise<void>
+}
+
 const route = useRoute()
 const router = useRouter()
 
@@ -208,9 +226,10 @@ const loadExamInstructions = async () => {
     isLoading.value = true
     error.value = ''
     examInstructions.value = await testAssignmentService.getExamInstructions(assignmentId)
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error loading exam instructions:', err)
-    error.value = err.message || 'Failed to load exam instructions'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to load exam instructions'
+    error.value = errorMessage
   } finally {
     isLoading.value = false
   }
@@ -229,24 +248,25 @@ const toggleFullscreen = () => {
 }
 
 const enterFullscreen = () => {
-  const elem = document.documentElement
+  const elem = document.documentElement as FullscreenElement
   
   if (elem.requestFullscreen) {
     elem.requestFullscreen()
-  } else if ((elem as any).webkitRequestFullscreen) {
-    (elem as any).webkitRequestFullscreen()
-  } else if ((elem as any).msRequestFullscreen) {
-    (elem as any).msRequestFullscreen()
+  } else if (elem.webkitRequestFullscreen) {
+    elem.webkitRequestFullscreen()
+  } else if (elem.msRequestFullscreen) {
+    elem.msRequestFullscreen()
   }
 }
 
 const exitFullscreen = () => {
+  const doc = document as FullscreenDocument
   if (document.exitFullscreen) {
     document.exitFullscreen()
-  } else if ((document as any).webkitExitFullscreen) {
-    (document as any).webkitExitFullscreen()
-  } else if ((document as any).msExitFullscreen) {
-    (document as any).msExitFullscreen()
+  } else if (doc.webkitExitFullscreen) {
+    doc.webkitExitFullscreen()
+  } else if (doc.msExitFullscreen) {
+    doc.msExitFullscreen()
   }
 }
 
@@ -278,19 +298,21 @@ const startExam = async () => {
         attemptId: examData.attemptId
       }
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error starting exam:', err)
-    alert(err.message || 'Failed to start exam. Please try again.')
+    const errorMessage = err instanceof Error ? err.message : 'Failed to start exam. Please try again.'
+    alert(errorMessage)
   } finally {
     isStarting.value = false
   }
 }
 
 const handleFullscreenChange = () => {
+  const doc = document as FullscreenDocument
   isFullscreen.value = !!(
-    document.fullscreenElement || 
-    (document as any).webkitFullscreenElement || 
-    (document as any).msFullscreenElement
+    document.fullscreenElement ?? 
+    doc.webkitFullscreenElement ?? 
+    doc.msFullscreenElement
   )
 }
 

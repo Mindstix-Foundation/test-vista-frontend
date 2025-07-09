@@ -277,6 +277,41 @@ import { useRoute, useRouter } from 'vue-router'
 import { testAssignmentService, type ExamResult, type DetailedReport } from '@/services/testAssignmentService'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+// Component name
+defineOptions({
+  name: 'ExamResult'
+})
+
+// Types
+interface Question {
+  question_id: number
+  question_text: string
+  question_image?: string
+  options: string[]
+  correct_option: number
+  selected_option: string | null
+  selected_option_index: number
+  is_correct: boolean
+  marks_obtained: number
+  time_spent_seconds?: number
+}
+
+interface FullscreenDocument extends Document {
+  webkitFullscreenElement?: Element
+  msFullscreenElement?: Element
+  webkitExitFullscreen?: () => Promise<void>
+  msExitFullscreen?: () => Promise<void>
+}
+
+interface HttpError extends Error {
+  response?: {
+    status?: number
+    data?: {
+      message?: string
+    }
+  }
+}
+
 const route = useRoute()
 const router = useRouter()
 
@@ -334,9 +369,10 @@ const loadExamResult = async () => {
     // Load detailed report separately with retry mechanism
     await loadDetailedReportWithRetry(attemptIdNumber)
     
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error loading exam result:', err)
-    error.value = err.response?.data?.message || err.message || 'Failed to load exam results'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to load exam results'
+    error.value = errorMessage
   } finally {
     isLoading.value = false
   }
@@ -355,20 +391,24 @@ const loadDetailedReportWithRetry = async (attemptId: number, retryCount = 0) =>
     console.log('API Response - Detailed Report:', detailedReportData)
     detailedReport.value = detailedReportData
     isLoadingDetailedReport.value = false
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(`Error loading detailed report (attempt ${retryCount + 1}):`, err)
     
     // If we haven't reached max retries and it's a 400 error (likely processing delay), retry
-    if (retryCount < maxRetries && (err.response?.status === 400 || err.response?.status === 404)) {
+    if (retryCount < maxRetries && err instanceof Error && 'response' in err) {
+      const response = (err as HttpError).response
+      if (response?.status === 400 || response?.status === 404) {
       console.log(`Retrying detailed report in ${retryDelay}ms...`)
       setTimeout(() => {
         loadDetailedReportWithRetry(attemptId, retryCount + 1)
       }, retryDelay)
-    } else {
+        return
+      }
+    }
+    
       console.warn('Failed to load detailed report after retries, continuing without it')
       isLoadingDetailedReport.value = false
       // Don't throw error here, just log it - the basic result is already loaded
-    }
   }
 }
 
@@ -431,28 +471,28 @@ const getProgressBarClass = (performanceLevel: string): string => {
   }
 }
 
-const getQuestionCardClass = (question: any): string => {
+const getQuestionCardClass = (question: Question): string => {
   if (question.selected_option === null || question.selected_option === undefined) return 'question-skipped'
   if (question.is_correct === true) return 'question-correct'
   if (question.is_correct === false) return 'question-wrong'
   return 'question-skipped'
 }
 
-const getQuestionStatusClass = (question: any): string => {
+const getQuestionStatusClass = (question: Question): string => {
   if (question.selected_option === null || question.selected_option === undefined) return 'status-skipped'
   if (question.is_correct === true) return 'status-correct'
   if (question.is_correct === false) return 'status-wrong'
   return 'status-skipped'
 }
 
-const getQuestionStatusIcon = (question: any): string => {
+const getQuestionStatusIcon = (question: Question): string => {
   if (question.selected_option === null || question.selected_option === undefined) return 'bi bi-dash-circle-fill'
   if (question.is_correct === true) return 'bi bi-check-circle-fill'
   if (question.is_correct === false) return 'bi bi-x-circle-fill'
   return 'bi bi-dash-circle-fill'
 }
 
-const getQuestionStatusText = (question: any): string => {
+const getQuestionStatusText = (question: Question): string => {
   if (question.selected_option === null || question.selected_option === undefined) return 'Not Attempted'
   if (question.is_correct === true) return 'Correct'
   if (question.is_correct === false) return 'Wrong'
@@ -487,16 +527,17 @@ const animateScore = () => {
 }
 
 const exitFullscreen = () => {
+  const doc = document as FullscreenDocument
   if (document.fullscreenElement || 
-      (document as any).webkitFullscreenElement || 
-      (document as any).msFullscreenElement) {
+      doc.webkitFullscreenElement || 
+      doc.msFullscreenElement) {
     
     if (document.exitFullscreen) {
       document.exitFullscreen()
-    } else if ((document as any).webkitExitFullscreen) {
-      (document as any).webkitExitFullscreen()
-    } else if ((document as any).msExitFullscreen) {
-      (document as any).msExitFullscreen()
+    } else if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen()
+    } else if (doc.msExitFullscreen) {
+      doc.msExitFullscreen()
     }
   }
 }
@@ -504,7 +545,7 @@ const exitFullscreen = () => {
 const blockBackNavigation = () => {
   window.history.pushState(null, '', window.location.href)
   
-  window.addEventListener('popstate', (event) => {
+  window.addEventListener('popstate', () => {
     window.history.pushState(null, '', window.location.href)
     showLeaveConfirmation.value = true
   })
@@ -950,11 +991,6 @@ onUnmounted(() => {
 .status-skipped {
   background-color: #fff3cd;
   color: #856404;
-}
-
-.question-marks {
-  font-weight: 600;
-  color: #333;
 }
 
 .question-content {

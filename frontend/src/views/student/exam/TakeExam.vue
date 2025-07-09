@@ -334,9 +334,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import testAssignmentService from '@/services/testAssignmentService'
+
+// Types
+interface ExamData {
+  title: string
+  subject: string
+  total_marks: number
+  timeRemaining?: number
+  duration_minutes?: number
+  attemptId: number
+  questions: Question[]
+}
+
+interface Question {
+  id: number
+  question_id: number
+  question_text: string
+  question_text_id?: number
+  question_image?: string
+  options: string[]
+  option_ids?: number[]
+}
+
+interface FullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void>
+  msRequestFullscreen?: () => Promise<void>
+}
+
+interface FullscreenDocument extends Document {
+  webkitFullscreenElement?: Element
+  msFullscreenElement?: Element
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -344,25 +375,25 @@ const router = useRouter()
 // Reactive data
 const isLoading = ref(true)
 const error = ref('')
-const examData = ref<any>({})
+const examData = ref<ExamData>({} as ExamData)
 const attemptId = ref<number | null>(null)
 const currentQuestionIndex = ref(0)
-const questions = ref<any[]>([])
+const questions = ref<Question[]>([])
 const answers = reactive<{ [key: number]: number }>({})
 const markedQuestions = ref(new Set<number>())
 const visitedQuestions = ref(new Set<number>())
 const timeRemaining = ref(0)
-const timer = ref<any>(null)
+const timer = ref<NodeJS.Timeout | null>(null)
 const questionStartTime = ref(0)
-const questionTimeSpent = ref<any>({})
+const questionTimeSpent = ref<{ [key: number]: number }>({})
 const currentQuestionTime = ref(0)
-const questionTimer = ref<any>(null)
-const autoSaveTimer = ref<any>(null)
+const questionTimer = ref<NodeJS.Timeout | null>(null)
+const autoSaveTimer = ref<NodeJS.Timeout | null>(null)
 const showFullscreenWarning = ref(false)
 const studentName = ref('')
 const showExitWarning = ref(false)
 const showSubmitConfirmation = ref(false)
-const fullscreenChecker = ref<any>(null)
+const fullscreenChecker = ref<NodeJS.Timeout | null>(null)
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
 const showNavigationPanel = ref(false)
@@ -413,18 +444,18 @@ const initializeExam = async () => {
     questions.value = examResponse.questions
     
     // Set up timer
-    if ((examResponse as any).timeRemaining !== undefined) {
-      timeRemaining.value = (examResponse as any).timeRemaining
-    } else if ((examResponse as any).duration_minutes) {
+    if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
+      timeRemaining.value = examResponse.timeRemaining
+    } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
       // Calculate time remaining based on duration
-      timeRemaining.value = (examResponse as any).duration_minutes * 60
+      timeRemaining.value = examResponse.duration_minutes * 60
     } else {
       // Default to 1 hour if no duration specified
       timeRemaining.value = 3600
     }
   
     // Get student info from localStorage or API
-    studentName.value = localStorage.getItem('studentName') || 'Student'
+    studentName.value = localStorage.getItem('studentName') ?? 'Student'
   
     // Start timer
     startTimer()
@@ -451,8 +482,9 @@ const initializeExam = async () => {
     startFullscreenMonitoring()
     
     isLoading.value = false
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load exam'
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to load exam'
+    error.value = errorMessage
     isLoading.value = false
   }
 }
@@ -486,7 +518,7 @@ const loadQuestion = async (index: number) => {
   visitedQuestions.value.add(index)
   
   // Initialize current question time with previously spent time
-  currentQuestionTime.value = Math.floor((questionTimeSpent.value[index] || 0) / 1000)
+  currentQuestionTime.value = Math.floor((questionTimeSpent.value[index] ?? 0) / 1000)
   
   // Start new question timer
   questionTimer.value = setInterval(() => {
@@ -523,7 +555,7 @@ const saveCurrentAnswer = async () => {
   
   const question = currentQuestion.value
   const optionIndex = answers[currentQuestionIndex.value]
-  const questionTextId = question.question_text_id || question.question_id
+  const questionTextId = question.question_text_id ?? question.question_id
   const selectedOptionId = question.option_ids?.[optionIndex]
   
   if (!selectedOptionId) {
@@ -707,10 +739,11 @@ const getQuestionBtnClass = (index: number) => {
 }
 
 const checkFullscreen = () => {
+  const doc = document as FullscreenDocument
   const isFullscreen = !!(
-    document.fullscreenElement || 
-    (document as any).webkitFullscreenElement || 
-    (document as any).msFullscreenElement
+    document.fullscreenElement ?? 
+    doc.webkitFullscreenElement ?? 
+    doc.msFullscreenElement
   )
   
   if (!isFullscreen) {
@@ -719,14 +752,14 @@ const checkFullscreen = () => {
 }
 
 const enterFullscreen = () => {
-  const element = document.documentElement
+  const element = document.documentElement as FullscreenElement
   
   if (element.requestFullscreen) {
     element.requestFullscreen()
-  } else if ((element as any).webkitRequestFullscreen) {
-    (element as any).webkitRequestFullscreen()
-  } else if ((element as any).msRequestFullscreen) {
-    (element as any).msRequestFullscreen()
+  } else if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen()
+  } else if (element.msRequestFullscreen) {
+    element.msRequestFullscreen()
   }
   
   showFullscreenWarning.value = false
@@ -739,10 +772,11 @@ const returnToFullscreen = () => {
 
 const startFullscreenMonitoring = () => {
   fullscreenChecker.value = setInterval(() => {
+    const doc = document as FullscreenDocument
     const isFullscreen = !!(
-      document.fullscreenElement || 
-      (document as any).webkitFullscreenElement || 
-      (document as any).msFullscreenElement
+      document.fullscreenElement ?? 
+      doc.webkitFullscreenElement ?? 
+      doc.msFullscreenElement
     )
     
     if (!isFullscreen && !showExitWarning.value && !showFullscreenWarning.value && !showSubmitConfirmation.value) {
@@ -815,8 +849,8 @@ onMounted(() => {
   blockBackNavigation()
   
   // Expose test function for debugging
-  ;(window as any).testAddAnswers = testAddAnswers
-  ;(window as any).debugAnswers = () => {
+  ;(window as Window & { testAddAnswers?: () => void; debugAnswers?: () => void }).testAddAnswers = testAddAnswers
+  ;(window as Window & { testAddAnswers?: () => void; debugAnswers?: () => void }).debugAnswers = () => {
     console.log('Current answers:', answers)
     console.log('Current answers keys:', Object.keys(answers))
     console.log('Current answers stringified:', JSON.stringify(answers))
@@ -927,8 +961,8 @@ body {
 }
 
 .timer-label {
-  font-size: 0.8rem;
-  opacity: 0.8;
+  font-size: 0.7rem;
+  color: #6c757d;
   margin-top: 2px;
 }
 
@@ -1097,12 +1131,6 @@ body {
   line-height: 1;
 }
 
-.timer-label {
-  font-size: 0.7rem;
-  color: #6c757d;
-  margin-top: 2px;
-}
-
 .question-text {
   font-size: 1.1rem;
   line-height: 1.6;
@@ -1185,7 +1213,6 @@ body {
 .navigation-panel {
   width: 350px;
   background: white;
-  border-radius: 15px;
   padding: 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-height: calc(100vh - 200px);
@@ -1436,13 +1463,6 @@ body {
   padding-top: 15px;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
 .action-buttons .btn {
   flex: 1;
   padding: 8px 12px;
@@ -1617,7 +1637,8 @@ body {
     font-weight: bold;
   }
   
-  .timer-label {
+  /* Question timer label mobile - more specific than general timer label */
+  .question-timer .timer-label {
     font-size: 0.6rem;
   }
   
@@ -1639,16 +1660,12 @@ body {
     font-size: 0.9rem;
   }
   
+  /* Mobile specific action buttons styling */
   .action-buttons {
-    display: flex;
     gap: 8px;
+    justify-content: center;
+    margin-bottom: 10px;
     order: 1;
-  }
-  
-  .action-buttons .btn {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 0.85rem;
   }
   
   .btn-previous {
@@ -1731,14 +1748,12 @@ body {
     border-top: 1px solid #e9ecef;
   }
   
+  /* Desktop specific action buttons styling */
   .action-buttons {
-    display: flex;
-    gap: 10px;
     justify-content: center;
   }
   
   .action-buttons .btn {
-    flex: 1;
     padding: 10px 15px;
     font-size: 0.9rem;
     font-weight: 500;
