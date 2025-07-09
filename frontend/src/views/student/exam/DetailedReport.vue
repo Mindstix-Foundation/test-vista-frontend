@@ -203,13 +203,52 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import testAssignmentService from '@/services/testAssignmentService'
 
+// Types
+interface Question {
+  question_id: number
+  question_text: string
+  question_image?: string
+  options: string[]
+  option_images?: string[]
+  correct_option: number
+  selected_option?: string
+  selected_option_index?: number
+  is_correct: boolean
+  time_spent_seconds: number
+  explanation?: string
+}
+
+interface ExamResult {
+  title: string
+  total_questions: number
+  correct_answers: number
+  wrong_answers: number
+  attempted_questions: number
+  total_marks: number
+  obtained_marks: number
+  percentage: number
+  time_taken_seconds: number
+}
+
+interface DetailedReport {
+  result: ExamResult
+  questions: Question[]
+}
+
+interface FullscreenDocument extends Document {
+  webkitFullscreenElement?: Element
+  msFullscreenElement?: Element
+  webkitExitFullscreen?: () => Promise<void>
+  msExitFullscreen?: () => Promise<void>
+}
+
 const route = useRoute()
 const router = useRouter()
 
 // Reactive data
 const isLoading = ref(true)
 const error = ref('')
-const detailedReport = ref<any>({})
+const detailedReport = ref<DetailedReport>({} as DetailedReport)
 const showLeaveConfirmation = ref(false)
 
 // Computed properties
@@ -251,9 +290,11 @@ const loadDetailedReport = async () => {
     detailedReport.value = report
     console.log('Detailed report data mapped:', detailedReport.value)
     
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error loading detailed report:', err)
-    error.value = err.response?.data?.message || err.message || 'Failed to load detailed report'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to load detailed report'
+    const axiosError = err as { response?: { data?: { message?: string } } }
+    error.value = axiosError.response?.data?.message ?? errorMessage
   } finally {
     isLoading.value = false
   }
@@ -277,22 +318,22 @@ const formatTime = (seconds: number): string => {
   }
 }
 
-const getQuestionCardClass = (question: any): string => {
+const getQuestionCardClass = (question: Question): string => {
   if (!question.selected_option) return 'unanswered'
   return question.is_correct ? 'correct' : 'incorrect'
 }
 
-const getStatusIcon = (question: any): string => {
+const getStatusIcon = (question: Question): string => {
   if (!question.selected_option) return 'bi bi-dash-circle text-warning'
   return question.is_correct ? 'bi bi-check-circle text-success' : 'bi bi-x-circle text-danger'
 }
 
-const getStatusText = (question: any): string => {
+const getStatusText = (question: Question): string => {
   if (!question.selected_option) return 'Not Answered'
   return question.is_correct ? 'Correct' : 'Incorrect'
 }
 
-const getSelectedOptionIndex = (question: any): number => {
+const getSelectedOptionIndex = (question: Question): number => {
   // Use the selected_option_index from the API response if available
   if (question.selected_option_index !== undefined && question.selected_option_index !== -1) {
     return question.selected_option_index;
@@ -302,7 +343,7 @@ const getSelectedOptionIndex = (question: any): number => {
   return -1;
 }
 
-const getOptionClass = (question: any, optionIndex: number): string => {
+const getOptionClass = (question: Question, optionIndex: number): string => {
   const correctOptionIndex = question.correct_option
   const selectedOptionIndex = getSelectedOptionIndex(question)
   
@@ -314,7 +355,7 @@ const getOptionClass = (question: any, optionIndex: number): string => {
   return ''
 }
 
-const getOptionIcon = (question: any, optionIndex: number): string => {
+const getOptionIcon = (question: Question, optionIndex: number): string => {
   const correctOptionIndex = question.correct_option
   const selectedOptionIndex = getSelectedOptionIndex(question)
   
@@ -334,16 +375,17 @@ const goBack = () => {
 }
 
 const exitFullscreen = () => {
+  const doc = document as FullscreenDocument
   if (document.fullscreenElement || 
-      (document as any).webkitFullscreenElement || 
-      (document as any).msFullscreenElement) {
+      doc.webkitFullscreenElement || 
+      doc.msFullscreenElement) {
     
     if (document.exitFullscreen) {
       document.exitFullscreen()
-    } else if ((document as any).webkitExitFullscreen) {
-      (document as any).webkitExitFullscreen()
-    } else if ((document as any).msExitFullscreen) {
-      (document as any).msExitFullscreen()
+    } else if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen()
+    } else if (doc.msExitFullscreen) {
+      doc.msExitFullscreen()
     }
   }
 }
@@ -351,7 +393,7 @@ const exitFullscreen = () => {
 const blockBackNavigation = () => {
   window.history.pushState(null, '', window.location.href)
   
-  window.addEventListener('popstate', (event) => {
+  window.addEventListener('popstate', () => {
     window.history.pushState(null, '', window.location.href)
     showLeaveConfirmation.value = true
   })

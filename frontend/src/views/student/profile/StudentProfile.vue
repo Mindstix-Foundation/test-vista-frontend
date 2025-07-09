@@ -247,6 +247,13 @@ interface Profile {
   roles: Role[]
 }
 
+interface HttpError extends Error {
+  response?: {
+    status?: number
+    data?: unknown
+  }
+}
+
 // State variables
 const profile = ref<Profile>({} as Profile)
 const loading = ref(true)
@@ -286,14 +293,17 @@ const fetchProfileData = async () => {
     } else {
       throw new Error('Failed to fetch profile data')
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error fetching profile data:', err)
     error.value = 'Failed to load profile data. Please try again later.'
     
     // If unauthorized, redirect to login
-    if (err.response?.status === 401) {
+    if (err instanceof Error && 'response' in err) {
+      const response = (err as HttpError).response
+      if (response?.status === 401) {
       await authStore.logout()
       router.push('/login')
+      }
     }
   } finally {
     loading.value = false
