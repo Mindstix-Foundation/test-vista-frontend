@@ -412,7 +412,7 @@ const fetchBoardData = async (boardId: number) => {
         name: s.name,
         board_id: Number(boardId),
         sequence_number: Number(s.sequence_number) // Ensure it's a number
-      })).sort((a, b) => Number(a.sequence_number ?? 0) - Number(b.sequence_number ?? 0)),
+      })).sort((a: { sequence_number?: number }, b: { sequence_number?: number }) => Number(a.sequence_number ?? 0) - Number(b.sequence_number ?? 0)),
       subjects: transformedData.subjects.map((s: { id: number; name: string }) => ({
         id: s.id,
         name: s.name,
@@ -869,24 +869,28 @@ const prepareFormData = (addressId: number, formattedAddress: {
       abbreviation: form.value.abbreviation.trim(),
       address_id: addressId ?? 0,
     },
+    // 🛡️ FIX: Include IDs for mediums when they exist
     mediums: form.value.mediums
       .filter((m) => m.name.trim())
       .map((m) => ({
+        id: m.id, // ✅ Include ID for existing mediums
         name: m.name.trim(),
         board_id: boardId,
       })),
+    // 🛡️ FIX: Include IDs for standards when they exist
     standards: form.value.standards
       .filter((s) => s.name.trim())
       .map((s, index) => ({
-        id: s.id,
+        id: s.id, // ✅ Include ID for existing standards
         name: s.name.trim(),
         board_id: boardId,
         sequence_number: index + 1,
       })),
+    // 🛡️ FIX: Include IDs for subjects when they exist
     subjects: form.value.subjects
       .filter((s) => s.name.trim())
       .map((s) => ({
-        id: s.id,
+        id: s.id, // ✅ Include ID for existing subjects
         name: s.name.trim(),
         board_id: boardId,
       })),
