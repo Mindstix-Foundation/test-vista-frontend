@@ -353,12 +353,10 @@ const toggleAutoRefresh = () => {
     refreshInterval.value = setInterval(async () => {
       await fetchAssignedTests(false)
     }, 2000)
-  } else {
+  } else if (refreshInterval.value) {
     // Stop auto-refresh
-    if (refreshInterval.value) {
-      clearInterval(refreshInterval.value)
-      refreshInterval.value = null
-    }
+    clearInterval(refreshInterval.value)
+    refreshInterval.value = null
   }
 }
 
