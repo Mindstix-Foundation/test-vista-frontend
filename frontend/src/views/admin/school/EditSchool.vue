@@ -1,3 +1,18 @@
+<!--
+🚀 OPTIMIZED SCHOOL UPDATE:
+This component now uses an optimized approach similar to EditBoard.vue:
+
+1. Change Detection: Only sends data that has actually changed
+2. Efficient API Usage: Uses the /schools/upsert endpoint with minimal payload
+3. Comprehensive Debugging: Logs exactly what changes are being sent
+4. No Redundant Updates: Skips API call if no changes detected
+
+Benefits:
+- Reduced network traffic
+- Faster response times
+- Better debugging capabilities
+- Prevents unnecessary database operations
+-->
 <template>
   <div class="container-fluid">
     <SchoolFormComponent
@@ -173,6 +188,160 @@ let operationResultModal: bootstrap.Modal | null = null
 // Update the ref type to use our custom type
 const schoolFormRef = ref<SchoolFormComponentType | null>(null)
 
+// Store current school data for change detection
+const currentSchoolData = ref<School | null>(null)
+
+// Enhanced interfaces for the school update endpoint
+interface UpdateSchoolDto {
+  id: number
+  name?: string
+  board_id?: number
+  address?: AddressData
+  principal_name?: string
+  email?: string
+  contact_number?: string
+  alternate_contact_number?: string | null
+  instruction_medium_ids?: number[]
+  standard_ids?: number[]
+}
+
+const buildUpdatePayload = (
+  formData: SchoolFormData,
+  currentSchool: School
+): UpdateSchoolDto => {
+  const payload: UpdateSchoolDto = {
+    id: parseInt(schoolId.value)
+  }
+
+  // Check if basic school details changed
+  if (
+    currentSchool.name !== formData.name ||
+    currentSchool.board.id !== formData.board_id ||
+    currentSchool.principal_name !== formData.principal_name ||
+    currentSchool.email !== formData.email ||
+    currentSchool.contact_number !== formData.contact_number ||
+    currentSchool.alternate_contact_number !== (formData.alternate_contact_number || null)
+  ) {
+    payload.name = formData.name
+    payload.board_id = formData.board_id
+    payload.principal_name = formData.principal_name
+    payload.email = formData.email
+    payload.contact_number = formatContactNumberForAPI(formData.contact_number)
+    payload.alternate_contact_number = formData.alternate_contact_number 
+      ? formatContactNumberForAPI(formData.alternate_contact_number)
+      : null
+  }
+
+  // Check if address changed
+  const currentAddress = currentSchool.address
+  if (
+    currentAddress.street !== formData.address.street ||
+    currentAddress.postal_code !== formData.address.postal_code ||
+    currentAddress.city.id !== formData.address.city_id
+  ) {
+    payload.address = {
+      street: formData.address.street,
+      postal_code: formData.address.postal_code,
+      city_id: formData.address.city_id
+    }
+  }
+
+  // Check if mediums changed
+  const currentMediumIds = currentSchool.instruction_mediums.map(m => m.id).sort()
+  const formMediumIds = [...formData.mediums].sort()
+  
+  if (JSON.stringify(currentMediumIds) !== JSON.stringify(formMediumIds)) {
+    payload.instruction_medium_ids = formData.mediums
+  }
+
+  // Check if standards changed
+  const currentStandardIds = currentSchool.standards.map(s => s.id).sort()
+  const formStandardIds = [...formData.standards].sort()
+  
+  if (JSON.stringify(currentStandardIds) !== JSON.stringify(formStandardIds)) {
+    payload.standard_ids = formData.standards
+  }
+
+  return payload
+}
+
+// Debug function to log changes
+const debugFormData = (formData: SchoolFormData, currentSchool: School) => {
+  console.log('🧪 SCHOOL UPDATE DEBUG - CHANGE ANALYSIS:')
+  
+  // Debug basic details
+  const basicDetailsChanged = 
+    currentSchool.name !== formData.name ||
+    currentSchool.board.id !== formData.board_id ||
+    currentSchool.principal_name !== formData.principal_name ||
+    currentSchool.email !== formData.email ||
+    currentSchool.contact_number !== formData.contact_number ||
+    currentSchool.alternate_contact_number !== (formData.alternate_contact_number || null)
+    
+  console.log('📝 Basic Details Changes:', {
+    hasChanges: basicDetailsChanged,
+    changes: {
+      name: { current: currentSchool.name, form: formData.name, changed: currentSchool.name !== formData.name },
+      board_id: { current: currentSchool.board.id, form: formData.board_id, changed: currentSchool.board.id !== formData.board_id },
+      principal_name: { current: currentSchool.principal_name, form: formData.principal_name, changed: currentSchool.principal_name !== formData.principal_name },
+      email: { current: currentSchool.email, form: formData.email, changed: currentSchool.email !== formData.email },
+      contact_number: { current: currentSchool.contact_number, form: formData.contact_number, changed: currentSchool.contact_number !== formData.contact_number },
+      alternate_contact_number: { current: currentSchool.alternate_contact_number, form: formData.alternate_contact_number, changed: currentSchool.alternate_contact_number !== (formData.alternate_contact_number || null) }
+    }
+  })
+  
+  // Debug address
+  const addressChanged = 
+    currentSchool.address.street !== formData.address.street ||
+    currentSchool.address.postal_code !== formData.address.postal_code ||
+    currentSchool.address.city.id !== formData.address.city_id
+    
+  console.log('🏠 Address Changes:', {
+    hasChanges: addressChanged,
+    changes: {
+      street: { current: currentSchool.address.street, form: formData.address.street, changed: currentSchool.address.street !== formData.address.street },
+      postal_code: { current: currentSchool.address.postal_code, form: formData.address.postal_code, changed: currentSchool.address.postal_code !== formData.address.postal_code },
+      city_id: { current: currentSchool.address.city.id, form: formData.address.city_id, changed: currentSchool.address.city.id !== formData.address.city_id }
+    }
+  })
+  
+  // Debug mediums
+  const currentMediumIds = currentSchool.instruction_mediums.map(m => m.id).sort()
+  const formMediumIds = [...formData.mediums].sort()
+  const mediumsChanged = JSON.stringify(currentMediumIds) !== JSON.stringify(formMediumIds)
+  
+  console.log('📚 Medium Changes:', {
+    hasChanges: mediumsChanged,
+    current: currentMediumIds,
+    form: formMediumIds,
+    added: formMediumIds.filter(id => !currentMediumIds.includes(id)),
+    removed: currentMediumIds.filter(id => !formMediumIds.includes(id))
+  })
+  
+  // Debug standards
+  const currentStandardIds = currentSchool.standards.map(s => s.id).sort()
+  const formStandardIds = [...formData.standards].sort()
+  const standardsChanged = JSON.stringify(currentStandardIds) !== JSON.stringify(formStandardIds)
+  
+  console.log('📖 Standard Changes:', {
+    hasChanges: standardsChanged,
+    current: currentStandardIds,
+    form: formStandardIds,
+    added: formStandardIds.filter(id => !currentStandardIds.includes(id)),
+    removed: currentStandardIds.filter(id => !formStandardIds.includes(id))
+  })
+  
+  // Summary
+  const hasAnyChanges = basicDetailsChanged || addressChanged || mediumsChanged || standardsChanged
+  console.log('📊 Summary:', {
+    hasAnyChanges,
+    basicDetailsChanged,
+    addressChanged,
+    mediumsChanged,
+    standardsChanged
+  })
+}
+
 onMounted(() => {
   operationResultModal = new bootstrap.Modal(document.getElementById('operationResultModal')!)
 })
@@ -266,6 +435,9 @@ onMounted(async () => {
         console.log("Set form mediums and standards:", mappedBoardMediums, mappedBoardStandards);
       }
     }, 100);
+
+    // Store current school data for change detection
+    currentSchoolData.value = school
   } catch (error) {
     console.error('Error fetching school data:', error)
     const toastStore = useToastStore()
@@ -279,272 +451,66 @@ onMounted(async () => {
   }
 })
 
-// Helper functions for school update
-const addOperationResult = (operation: string, status: 'success' | 'error', message?: string) => {
-  operationResults.value.push({
-    operation,
-    status,
-    ...(message && { message }),
-  })
-}
+// Removed old helper functions - now using optimized approach similar to EditBoard.vue
 
-const formatErrorMessage = (error: unknown): string => {
-  return error instanceof Error ? error.message : 'Unknown error occurred'
-}
-
-const updateSchoolAddress = async (addressData: AddressData, addressId: number) => {
+const handleSchoolUpdate = async (formData: SchoolFormData) => {
   try {
-    console.log('Updating address with:', {
-      street: addressData.street,
-      postal_code: addressData.postal_code,
-      city_id: addressData.city_id,
-    })
-
-    await axiosInstance.put(`/addresses/${addressId}`, {
-      street: addressData.street,
-      postal_code: addressData.postal_code,
-      city_id: addressData.city_id,
-    })
-
-    addOperationResult('Update School Address', 'success')
-  } catch (error) {
-    console.error('Error updating address:', error)
-    addOperationResult('Update School Address', 'error', formatErrorMessage(error))
-  }
-}
-
-const updateSchoolDetails = async (schoolData: SchoolDetailsData, id: string) => {
-  try {
-    console.log('Updating school details with:', schoolData)
-
-    await axiosInstance.put(`/schools/${id}`, {
-      name: schoolData.name,
-      board_id: schoolData.board_id,
-      address_id: schoolData.address_id,
-      principal_name: schoolData.principal_name,
-      email: schoolData.email,
-      contact_number: schoolData.contact_number,
-      alternate_contact_number: schoolData.alternate_contact_number ?? null,
-    })
-
-    addOperationResult('Update School Details', 'success')
-  } catch (error) {
-    console.error('Error updating school details:', error)
-    addOperationResult('Update School Details', 'error', formatErrorMessage(error))
-  }
-}
-
-const processMediumAddition = async (mediumId: number, schoolId: string) => {
-  try {
-    console.log(`Adding medium ${mediumId}`)
-    await axiosInstance.post('/school-instruction-mediums', {
-      school_id: parseInt(schoolId),
-      instruction_medium_id: mediumId,
-    })
+    console.log('🔍 handleSchoolUpdate called - received data:', formData)
+    console.log('🔍 School ID:', schoolId.value)
     
-    const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === mediumId)
-    addOperationResult(`Add Medium: ${mediumInfo?.name ?? 'Unknown Medium'}`, 'success')
-  } catch (error) {
-    console.error(`Error adding medium ${mediumId}:`, error)
-    const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === mediumId)
-    addOperationResult(`Add Medium: ${mediumInfo?.name ?? 'Unknown Medium'}`, 'error', formatErrorMessage(error))
-  }
-}
-
-const processMediumRemoval = async (medium: Medium, mappings: MediumMapping[]) => {
-  try {
-    const mapping = mappings.find(
-      (m: MediumMapping) => m.instruction_medium.id === medium.id
-    )
-
-    if (!mapping) {
-      throw new Error(`School-medium mapping not found for medium ID ${medium.id}`)
-    }
-
-    console.log(`Removing school-medium mapping with ID ${mapping.id}`)
-    await axiosInstance.delete(`/school-instruction-mediums/${mapping.id}`)
-    
-    const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === medium.id)
-    const mediumName = mediumInfo?.name ?? medium.instruction_medium ?? 'Unknown Medium'
-    addOperationResult(`Remove Medium: ${mediumName}`, 'success')
-  } catch (error) {
-    console.error(`Error removing medium ${medium.id}:`, error)
-    const mediumInfo = schoolFormRef.value?.availableMediums.find(m => m.id === medium.id)
-    const mediumName = mediumInfo?.name ?? medium.instruction_medium ?? 'Unknown Medium'
-    addOperationResult(`Remove Medium: ${mediumName}`, 'error', formatErrorMessage(error))
-  }
-}
-
-const updateMediums = async (currentSchool: School, updatedMediums: number[], schoolId: string) => {
-  try {
-    const currentMediumIds = currentSchool.instruction_mediums.map((m: Medium) => m.id)
-    console.log('Current medium IDs:', currentMediumIds)
-    console.log('Updated medium IDs:', updatedMediums)
-
-    const mediumsToAdd = updatedMediums.filter(id => !currentMediumIds.includes(id))
-    const mediumsToRemove = currentSchool.instruction_mediums.filter(
-      (medium: Medium) => !updatedMediums.includes(medium.id)
-    )
-    
-    if (mediumsToAdd.length === 0 && mediumsToRemove.length === 0) return
-
-    const { data: schoolMediumMappings } = await axiosInstance.get(
-      `/school-instruction-mediums/school/${schoolId}`
-    )
-
-    // Process removals
-    for (const medium of mediumsToRemove) {
-      await processMediumRemoval(medium, schoolMediumMappings)
-    }
-
-    // Process additions
-    for (const mediumId of mediumsToAdd) {
-      await processMediumAddition(mediumId, schoolId)
-    }
-  } catch (error) {
-    console.error('Error updating instruction mediums:', error)
-    addOperationResult('Update Instruction Mediums', 'error', formatErrorMessage(error))
-  }
-}
-
-const processStandardAddition = async (standardId: number, schoolId: string) => {
-  try {
-    console.log(`Adding standard ${standardId}`)
-    await axiosInstance.post('/school-standards', {
-      school_id: parseInt(schoolId),
-      standard_id: standardId,
-    })
-    
-    const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standardId)
-    addOperationResult(`Add Standard: ${standardInfo?.name ?? 'Unknown Standard'}`, 'success')
-  } catch (error) {
-    console.error(`Error adding standard ${standardId}:`, error)
-    const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standardId)
-    addOperationResult(`Add Standard: ${standardInfo?.name ?? 'Unknown Standard'}`, 'error', formatErrorMessage(error))
-  }
-}
-
-const processStandardRemoval = async (standard: Standard, mappings: StandardMapping[]) => {
-  try {
-    const mapping = mappings.find(
-      (m: StandardMapping) => m.standard.id === standard.id
-    )
-
-    if (!mapping) {
-      throw new Error(`School-standard mapping not found for standard ID ${standard.id}`)
-    }
-
-    console.log(`Removing school-standard mapping with ID ${mapping.id}`)
-    await axiosInstance.delete(`/school-standards/${mapping.id}`)
-    
-    const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standard.id)
-    const standardName = standardInfo?.name ?? standard.name ?? 'Unknown Standard'
-    addOperationResult(`Remove Standard: ${standardName}`, 'success')
-  } catch (error) {
-    console.error(`Error removing standard ${standard.id}:`, error)
-    const standardInfo = schoolFormRef.value?.availableStandards.find(s => s.id === standard.id)
-    const standardName = standardInfo?.name ?? standard.name ?? 'Unknown Standard'
-    addOperationResult(`Remove Standard: ${standardName}`, 'error', formatErrorMessage(error))
-  }
-}
-
-const updateStandards = async (currentSchool: School, updatedStandards: number[], schoolId: string) => {
-  try {
-    const currentStandardIds = currentSchool.standards.map((s: Standard) => s.id)
-    console.log('Current standard IDs:', currentStandardIds)
-    console.log('Updated standard IDs:', updatedStandards)
-
-    const standardsToAdd = updatedStandards.filter(id => !currentStandardIds.includes(id))
-    const standardsToRemove = currentSchool.standards.filter(
-      (standard: Standard) => !updatedStandards.includes(standard.id)
-    )
-    
-    if (standardsToAdd.length === 0 && standardsToRemove.length === 0) return
-
-    const { data: schoolStandardMappings } = await axiosInstance.get(
-      `/school-standards/school/${schoolId}`
-    )
-
-    // Process removals
-    for (const standard of standardsToRemove) {
-      await processStandardRemoval(standard, schoolStandardMappings)
-    }
-
-    // Process additions
-    for (const standardId of standardsToAdd) {
-      await processStandardAddition(standardId, schoolId)
-    }
-  } catch (error) {
-    console.error('Error updating standards:', error)
-    addOperationResult('Update Standards', 'error', formatErrorMessage(error))
-  }
-}
-
-const checkChanges = (currentSchool: School, updatedData: SchoolDetailsData) => {
-  // Check address changes
-  const hasAddressChanged =
-    currentSchool.address.street !== updatedData.address.street ||
-    currentSchool.address.postal_code !== updatedData.address.postal_code ||
-    currentSchool.address.city.id !== updatedData.address.city_id
-
-  // Check school details changes
-  const hasSchoolDetailsChanged =
-    currentSchool.name !== updatedData.name ||
-    currentSchool.board.id !== updatedData.board_id ||
-    currentSchool.principal_name !== updatedData.principal_name ||
-    currentSchool.email !== updatedData.email ||
-    currentSchool.contact_number !== updatedData.contact_number ||
-    currentSchool.alternate_contact_number !== (updatedData.alternate_contact_number ?? null)
-
-  return { hasAddressChanged, hasSchoolDetailsChanged }
-}
-
-const handleSchoolUpdate = async (updatedData: SchoolFormData) => {
-  try {
-    console.log('Starting school update with data:', updatedData)
     isSubmitting.value = true
-    operationResults.value = []
 
-    // Use the new unified upsert API endpoint
-    const upsertPayload = {
-      id: parseInt(schoolId.value), // Include the school ID for update operation
-      name: updatedData.name,
-      board_id: updatedData.board_id,
-      address: {
-        street: updatedData.address.street,
-        postal_code: updatedData.address.postal_code,
-        city_id: updatedData.address.city_id,
-      },
-      principal_name: updatedData.principal_name,
-      email: updatedData.email,
-      contact_number: formatContactNumberForAPI(updatedData.contact_number),
-      alternate_contact_number: updatedData.alternate_contact_number ? formatContactNumberForAPI(updatedData.alternate_contact_number) : null,
-      instruction_medium_ids: updatedData.mediums,
-      standard_ids: updatedData.standards,
+    // Use cached school data for change detection
+    if (!currentSchoolData.value) {
+      throw new Error('School data not available. Please refresh the page.')
     }
 
-    const { data: updatedSchool } = await axiosInstance.post('/schools/upsert', upsertPayload)
-    console.log('School updated successfully:', updatedSchool)
+    const currentSchool = currentSchoolData.value
+    
+    // Debug form data and changes
+    debugFormData(formData, currentSchool)
+    
+    // Build optimized update payload
+    const updatePayload = buildUpdatePayload(formData, currentSchool)
+
+    console.log('🚀 Optimized update payload:', updatePayload)
+
+    // Check if there are any changes
+    const hasChanges = Object.keys(updatePayload).length > 1 // More than just the ID
+    
+    if (!hasChanges) {
+      const toastStore = useToastStore()
+      toastStore.showToast({
+        type: 'info',
+        title: 'No Changes',
+        message: 'No changes detected. Redirecting to school list.'
+      })
+      router.push('/admin/school')
+      return
+    }
+
+    // Use the new partial update endpoint for efficiency
+    const { data: updatedSchool } = await axiosInstance.post('/schools/upsert-partial', updatePayload)
+    console.log('✅ School updated successfully:', updatedSchool)
 
     const toastStore = useToastStore()
     toastStore.showToast({
       type: 'success',
       title: 'Success',
-      message: `School "${updatedData.name}" has been updated successfully.`,
+      message: `School "${formData.name}" has been updated successfully.`
     })
     
     router.push('/admin/school')
   } catch (error) {
-    console.error('Error updating school:', error)
+    console.error('❌ Error updating school:', error)
     const toastStore = useToastStore()
     toastStore.showToast({
       type: 'error',
       title: 'Error',
-      message: 'Failed to update school. Please try again.',
+      message: 'Failed to update school. Please try again.'
     })
   } finally {
     isSubmitting.value = false
-    isLoading.value = false
   }
 }
 </script>
