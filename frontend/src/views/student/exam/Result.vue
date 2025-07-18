@@ -715,6 +715,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Bootstrap Icons */
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
+
 .result-page {
   background-color: #f8f9fa;
   min-height: 100vh;
@@ -1534,9 +1537,6 @@ onUnmounted(() => {
   font-size: 1.1rem;
   padding: 15px 30px;
 }
-
-/* Bootstrap Icons */
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
 
 /* Modal Styles */
 .modal {
