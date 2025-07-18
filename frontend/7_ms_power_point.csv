@@ -1,21 +1,21 @@
 question,a,b,c,d,correct_answer
-"Which item contains text graphics charts sound video etc in power point?","Slides","Folder","Handout","Desktop screen",a
-"Which contains miniature representation of slides?","Slides","Handout","Template","Slide master",b
-"Which button is used to add instant animation to the presentation and helps interactive presentation?","Add button","Start button","Insert button","Action button",d
-"What type of software program is power point?","Word Processor","Spread Sheet","Presentation Graphics","Database Management",c
-"Which tool allows user to select different layout for slide?","Apply design","Bullets","New slide","Slide Layout",d
-"Which key is used to stop a power point presentation?","ESC","Tab","Ctrl","Enter",a
-"Which shortcut key is used to create new presentation in power point?","Ctrl + P","Ctrl + N","Ctrl + M","Ctrl + X",b
-"How many panes are there in backstage view in power point 2010?","3","5","7","9",a
-"Which menu is used to apply various effects to the text in a slide?","Animation","Design","Transitions","Slide show",a
-"Which menu is used to apply various visual effects to the slide in power point?","Animation","Design","Slide","Transitions",d
-"Which menu is used to select a predefined chart style?","Animation","Design","Slide show","Transitions",b
-"Which template makes specify common design elements in all slides in the presentation?","Fax template","User template","Data template","Master template",d
-"Which dialog box in Power Point allows to change slides automatically in a period of time?","Action setting","Slide transition","Slide animation","Custom animation",b
-"Which shortcut key is used to invoke thesaurus dialog box in Power Point?","Shift+F7","Ctrl+F7","Alt+F7","Ctrl+Alt+F7",a
-"Which option is used to create a presentation automatically in Power Point?","Template","Blank Presentation","Auto content wizard","Standard test bar",c
-"Which option offers a built in design through a dialog box?","Auto content wizard","Blank Presentation","Standard tool bar","Template",d
-"Which function key is used to run a power point presentation?","F3","F5","F7","F9",b
-"Which shortcut key is used to create a new slide in power point?","Ctrl + C","Ctrl + N","Ctrl + M","Ctrl + S",c
-"Which holder holds text title and picture in power point?","Content Holder","Image Holder","Place Holder","Slide Holder",c
-"Which one of the following is extension of power point 2010 presentation file?",".potx",".pptx",".ppsx",".thmx",b 
+Which item contains text graphics charts sound video etc in power point?,Slides,Folder,Handout,Desktop screen,a
+Which contains miniature representation of slides?,Slides,Handout,Template,Slide master,b
+Which button is used to add instant animation to the presentation and helps interactive presentation?,Add button,Start button,Insert button,Action button,d
+What type of software program is power point?,Word Processor,Spread Sheet,Presentation Graphics,Database Management,c
+Which tool allows user to select different layout for slide?,Apply design,Bullets,New slide,Slide Layout,d
+Which key is used to stop a power point presentation?,ESC,Tab,Ctrl,Enter,a
+Which shortcut key is used to create new presentation in power point?,Ctrl + P,Ctrl + N,Ctrl + M,Ctrl + X,b
+How many panes are there in backstage view in power point 2010?,3,5,7,9,a
+Which menu is used to apply various effects to the text in a slide?,Animation,Design,Transitions,Slide show,a
+Which menu is used to apply various visual effects to the slide in power point?,Animation,Design,Slide,Transitions,d
+Which menu is used to select a predefined chart style?,Animation,Design,Slide show,Transitions,b
+Which template makes specify common design elements in all slides in the presentation?,Fax template,User template,Data template,Master template,d
+Which dialog box in Power Point allows to change slides automatically in a period of time?,Action setting,Slide transition,Slide animation,Custom animation,b
+Which shortcut key is used to invoke thesaurus dialog box in Power Point?,Shift+F7,Ctrl+F7,Alt+F7,Ctrl+Alt+F7,a
+Which option is used to create a presentation automatically in Power Point?,Template,Blank Presentation,Auto content wizard,Standard test bar,c
+Which option offers a built in design through a dialog box?,Auto content wizard,Blank Presentation,Standard tool bar,Template,d
+Which function key is used to run a power point presentation?,F3,F5,F7,F9,b
+Which shortcut key is used to create a new slide in power point?,Ctrl + C,Ctrl + N,Ctrl + M,Ctrl + S,c
+Which holder holds text title and picture in power point?,Content Holder,Image Holder,Place Holder,Slide Holder,c
+Which one of the following is extension of power point 2010 presentation file?,.potx,.pptx,.ppsx,.thmx,b
