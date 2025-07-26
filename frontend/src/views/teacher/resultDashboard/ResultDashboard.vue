@@ -469,7 +469,7 @@ const classAverageAreas = ref<string[]>([])
 const classRecommendations = ref<string[]>([])
 
 // Sorting state
-const sortBy = ref<'sequence' | 'score'>('sequence')
+const sortBy = ref<'sequence' | 'score'>('score')
 
 // Computed properties
 const filteredResults = computed(() => {
@@ -801,62 +801,85 @@ const generatePDFContent = () => {
   if (!testPaperInfo.value) return ''
   
   const currentDate = new Date().toLocaleDateString('en-GB')
-  const currentTime = new Date().toLocaleTimeString('en-GB')
+  const currentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   
   // Filter only completed results for PDF
   const completedResults = filteredResults.value.filter(result => result.status === 'completed')
   
   let tableRows = ''
   completedResults.forEach((result, index) => {
-    const rowClass = index % 2 === 0 ? 'even-row' : 'odd-row'
     tableRows += `
-      <tr class="${rowClass}">
-        <td style="padding: 8px; text-align: center; font-weight: bold;">${index + 1}</td>
-        <td style="padding: 8px;">${result.rollNumber}</td>
-        <td style="padding: 8px; font-weight: bold;">${result.name}</td>
-        <td style="padding: 8px; text-align: center; font-weight: bold;">${result.marksObtained}/${testPaperInfo.value?.totalMarks}</td>
-                          <td style="padding: 8px; text-align: center; font-weight: bold;">${result.percentage?.toFixed(1) || '0.0'}%</td>
-         <td style="padding: 8px; text-align: center;">${formatTime(result.timeTaken)}</td>
-         <td style="padding: 8px; text-align: center; font-weight: bold;">${result.rank === 0 ? '-' : result.rank}</td>
+      <tr>
+        <td>${index + 1}</td>
+        <td>${result.rollNumber}</td>
+        <td>${result.name}</td>
+        <td>${result.marksObtained}/${testPaperInfo.value?.totalMarks}</td>
+        <td>${result.percentage?.toFixed(1) || '0.0'}%</td>
+        <td>${formatTime(result.timeTaken)}</td>
+        <td>${result.rank === 0 ? '-' : result.rank}</td>
       </tr>
     `
   })
 
-  // Generate chapter-wise analysis table
-  let chapterAnalysisRows = ''
-  sortedChapters.value.forEach((chapter, index) => {
-    const rowClass = index % 2 === 0 ? 'even-row' : 'odd-row'
-    
-    chapterAnalysisRows += `
-      <tr class="${rowClass}">
-        <td style="padding: 8px; font-weight: bold;">${chapter.chapterName}</td>
-        <td style="padding: 8px; text-align: center;">${formatDecimal(chapter.total)}</td>
-        <td style="padding: 8px; text-align: center;">${formatDecimal(chapter.total - chapter.skipped)}</td>
-        <td style="padding: 8px; text-align: center; font-weight: bold;">${formatDecimal(chapter.correct)}</td>
-        <td style="padding: 8px; text-align: center; font-weight: bold;">${formatDecimal(chapter.wrong)}</td>
-        <td style="padding: 8px; text-align: center; text-transform: capitalize; font-weight: bold;">${chapter.performanceLevel}</td>
-        <td style="padding: 8px; text-align: center; font-weight: bold;">${formatDecimal(chapter.percentage)}%</td>
-      </tr>
-    `
-  })
+  // Generate chapter-wise analysis table (only if data exists)
+  let chapterAnalysisSection = ''
+  if (sortedChapters.value.length > 0) {
+    let chapterAnalysisRows = ''
+    sortedChapters.value.forEach((chapter) => {
+      chapterAnalysisRows += `
+        <tr>
+          <td>${chapter.chapterName}</td>
+          <td>${formatDecimal(chapter.total)}</td>
+          <td>${formatDecimal(chapter.correct)}</td>
+          <td>${formatDecimal(chapter.wrong)}</td>
+          <td>${formatDecimal(chapter.percentage)}%</td>
+        </tr>
+      `
+    })
 
-  // Generate recommendations
-  let recommendationsHtml = ''
-  classRecommendations.value.forEach((recommendation) => {
-    const type = getRecommendationType(recommendation)
-    const chapters = getRecommendationChapters(recommendation)
-    const message = getRecommendationMessage(recommendation)
-    
-    recommendationsHtml += `
-      <div style="background: white; border: 1px solid #dee2e6; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
-        <h4 style="color: #333; margin-bottom: 10px; font-size: 1em; font-weight: bold;">${type}</h4>
-        <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-          <strong style="color: #333;">${chapters}</strong>
-        </div>
-        <p style="color: #666; line-height: 1.5; margin: 0; font-size: 0.9em;">${message}</p>
+    chapterAnalysisSection = `
+      <div class="section">
+        <h3>Chapter-wise Performance</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Chapter</th>
+              <th>Total Questions</th>
+              <th>Correct</th>
+              <th>Wrong</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${chapterAnalysisRows}
+          </tbody>
+        </table>
       </div>
     `
-  })
+  }
+
+  // Generate key recommendations (only top 3)
+  let recommendationsSection = ''
+  if (classRecommendations.value.length > 0) {
+    let recommendationsHtml = ''
+    classRecommendations.value.slice(0, 3).forEach((recommendation) => {
+      const chapters = getRecommendationChapters(recommendation)
+      const message = getRecommendationMessage(recommendation)
+      
+      recommendationsHtml += `
+        <div class="recommendation">
+          <strong>${chapters}</strong> - ${message}
+        </div>
+      `
+    })
+
+    recommendationsSection = `
+      <div class="section">
+        <h3>Key Recommendations</h3>
+        ${recommendationsHtml}
+      </div>
+    `
+  }
   
   return `
     <!DOCTYPE html>
@@ -864,164 +887,155 @@ const generatePDFContent = () => {
     <head>
       <title>Test Results - ${testPaperInfo.value.name}</title>
       <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
         body {
-          font-family: Arial, sans-serif;
-          margin: 20px;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
           color: #333;
-          line-height: 1.5;
           background: #fff;
+          padding: 15px;
         }
         .header {
           text-align: center;
-          margin-bottom: 30px;
-          padding: 20px;
-          border-bottom: 2px solid #007bff;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #2c3e50;
+          padding-bottom: 10px;
         }
         .header h1 {
-          margin: 0 0 10px 0;
-          font-size: 1.8em;
+          font-size: 18px;
           font-weight: bold;
-          color: #333;
+          color: #2c3e50;
+          margin-bottom: 5px;
         }
         .header h2 {
-          margin: 0 0 10px 0;
-          font-size: 1.2em;
-          font-weight: normal;
-          color: #007bff;
+          font-size: 14px;
+          color: #3498db;
+          margin-bottom: 3px;
         }
         .header p {
-          margin: 0;
-          color: #666;
-          font-size: 0.9em;
+          font-size: 10px;
+          color: #7f8c8d;
         }
         .test-info {
           background: #f8f9fa;
-          padding: 20px;
-          border-radius: 6px;
-          margin-bottom: 25px;
-          border: 1px solid #dee2e6;
-        }
-        .test-info h3 {
-          color: #333;
-          margin-top: 0;
-          margin-bottom: 15px;
-          font-size: 1.1em;
-          border-bottom: 1px solid #dee2e6;
-          padding-bottom: 5px;
-        }
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-        }
-        .info-item {
-          margin-bottom: 8px;
-        }
-        .info-item strong {
-          color: #333;
-        }
-        .stats-section {
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 6px;
-          margin-bottom: 25px;
-          border: 1px solid #dee2e6;
-        }
-        .stats-section h3 {
-          color: #333;
-          margin-top: 0;
-          margin-bottom: 15px;
-          font-size: 1.1em;
-          border-bottom: 1px solid #dee2e6;
-          padding-bottom: 5px;
-        }
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-          text-align: center;
-        }
-        .stat-item {
-          background: white;
           padding: 12px;
           border-radius: 4px;
-          border: 1px solid #dee2e6;
+          margin-bottom: 15px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .info-left, .info-right {
+          flex: 1;
+        }
+        .info-item {
+          margin-bottom: 4px;
+          font-size: 11px;
+        }
+        .info-item strong {
+          color: #2c3e50;
+        }
+        .stats {
+          background: #ecf0f1;
+          padding: 10px;
+          border-radius: 4px;
+          margin-bottom: 15px;
+          display: flex;
+          justify-content: space-around;
+          text-align: center;
+        }
+        .stat {
+          flex: 1;
         }
         .stat-value {
-          font-size: 1.4em;
+          font-size: 16px;
           font-weight: bold;
-          color: #007bff;
+          color: #3498db;
           display: block;
-          margin-bottom: 5px;
         }
         .stat-label {
-          font-size: 0.85em;
-          color: #666;
+          font-size: 9px;
+          color: #7f8c8d;
+          text-transform: uppercase;
         }
-        .section-title {
-          color: #333;
-          font-size: 1.2em;
-          margin: 25px 0 15px 0;
-          padding-bottom: 5px;
-          border-bottom: 2px solid #007bff;
-          font-weight: bold;
+        .section {
+          margin-bottom: 20px;
+        }
+        .section h3 {
+          font-size: 14px;
+          color: #2c3e50;
+          margin-bottom: 8px;
+          padding-bottom: 4px;
+          border-bottom: 1px solid #bdc3c7;
         }
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 10px;
-          border: 1px solid #dee2e6;
+          font-size: 11px;
+          margin-bottom: 10px;
         }
         th {
-          background: #f8f9fa;
-          color: #333;
-          padding: 12px 8px;
+          background: #34495e;
+          color: white;
+          padding: 8px 6px;
           text-align: center;
-          font-weight: bold;
-          border-bottom: 2px solid #dee2e6;
+          font-weight: 600;
+          font-size: 10px;
         }
         td {
-          padding: 8px;
-          border-bottom: 1px solid #dee2e6;
+          padding: 6px;
+          border-bottom: 1px solid #ecf0f1;
+          text-align: center;
         }
-        .even-row {
+        td:first-child, td:nth-child(3) {
+          text-align: left;
+        }
+        tr:nth-child(even) {
           background: #f8f9fa;
         }
-        .odd-row {
-          background: white;
+        tr:hover {
+          background: #e8f4f8;
         }
-        .chapter-analysis {
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 6px;
-          margin: 25px 0;
-          border: 1px solid #dee2e6;
+        .recommendation {
+          background: #fff;
+          border-left: 3px solid #3498db;
+          padding: 8px 10px;
+          margin-bottom: 6px;
+          font-size: 11px;
+          line-height: 1.3;
         }
-        .recommendations {
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 6px;
-          margin: 25px 0;
-          border: 1px solid #dee2e6;
+        .recommendation strong {
+          color: #2c3e50;
         }
         .footer {
-          margin-top: 30px;
+          margin-top: 20px;
           text-align: center;
-          font-size: 0.9em;
-          color: #666;
-          padding: 15px;
+          padding: 10px;
           background: #f8f9fa;
           border-radius: 4px;
-          border-top: 2px solid #007bff;
-        }
-        .footer p {
-          margin: 5px 0;
+          font-size: 10px;
+          color: #7f8c8d;
         }
         @media print {
-          body { margin: 0; }
-          .header { margin-bottom: 20px; }
-          .section-title { page-break-after: avoid; }
-          table { page-break-inside: avoid; }
+          body { 
+            padding: 10px;
+            font-size: 11px;
+          }
+          .section {
+            page-break-inside: avoid;
+            margin-bottom: 15px;
+          }
+          table {
+            page-break-inside: avoid;
+          }
+          .header {
+            margin-bottom: 15px;
+          }
         }
       </style>
     </head>
@@ -1033,91 +1047,61 @@ const generatePDFContent = () => {
       </div>
       
       <div class="test-info">
-        <h3>Test Information</h3>
-        <div class="info-grid">
-          <div>
-            <div class="info-item"><strong>Subject:</strong> ${testPaperInfo.value.subject}</div>
-            <div class="info-item"><strong>Standard:</strong> ${testPaperInfo.value.standard}</div>
-          </div>
-          <div>
-            <div class="info-item"><strong>Total Marks:</strong> ${testPaperInfo.value.totalMarks}</div>
-            <div class="info-item"><strong>Duration:</strong> ${testPaperInfo.value.duration} minutes</div>
-          </div>
+        <div class="info-left">
+          <div class="info-item"><strong>Subject:</strong> ${testPaperInfo.value.subject}</div>
+          <div class="info-item"><strong>Standard:</strong> ${testPaperInfo.value.standard}</div>
+        </div>
+        <div class="info-right">
+          <div class="info-item"><strong>Total Marks:</strong> ${testPaperInfo.value.totalMarks}</div>
+          <div class="info-item"><strong>Duration:</strong> ${testPaperInfo.value.duration} minutes</div>
         </div>
       </div>
       
-      <div class="stats-section">
-        <h3>Test Statistics</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-value">${completedResults.length}</div>
-            <div class="stat-label">Students Completed</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">${calculatedStats.value.highest}</div>
-            <div class="stat-label">Highest Score</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">${calculatedStats.value.average}</div>
-            <div class="stat-label">Average Score</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">${calculatedStats.value.passRate}%</div>
-            <div class="stat-label">Pass Rate</div>
-          </div>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value">${completedResults.length}</span>
+          <span class="stat-label">Completed</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">${calculatedStats.value.highest}</span>
+          <span class="stat-label">Highest</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">${calculatedStats.value.average}</span>
+          <span class="stat-label">Average</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">${calculatedStats.value.passRate}%</span>
+          <span class="stat-label">Pass Rate</span>
         </div>
       </div>
 
-      ${chapterWiseAnalysis.value.length > 0 ? `
-      <div class="chapter-analysis">
-        <h3 class="section-title">Chapter-wise Class Performance</h3>
+      ${chapterAnalysisSection}
+
+      ${recommendationsSection}
+      
+      <div class="section">
+        <h3>Student Results (${completedResults.length} students)</h3>
         <table>
           <thead>
             <tr>
-              <th>Chapter</th>
-              <th>Total Questions</th>
-              <th>Attempted</th>
-              <th>Correct</th>
-              <th>Wrong</th>
-              <th>Performance</th>
-              <th>Score</th>
+              <th>S.No.</th>
+              <th>Roll No.</th>
+              <th>Student Name</th>
+              <th>Marks</th>
+              <th>%</th>
+              <th>Time</th>
+              <th>Rank</th>
             </tr>
           </thead>
           <tbody>
-            ${chapterAnalysisRows}
+            ${tableRows}
           </tbody>
         </table>
       </div>
-      ` : ''}
-
-      ${classRecommendations.value.length > 0 ? `
-      <div class="recommendations">
-        <h3 class="section-title">Teaching Recommendations</h3>
-        ${recommendationsHtml}
-      </div>
-      ` : ''}
-      
-      <h3 class="section-title">Student Results (${completedResults.length} students)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>S.No.</th>
-            <th>Roll Number</th>
-            <th>Student Name</th>
-            <th>Marks</th>
-            <th>Percentage</th>
-            <th>Time Taken</th>
-            <th>Rank</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-      </table>
       
       <div class="footer">
-        <p><strong>📄 Report Summary:</strong> This comprehensive report includes individual student results, chapter-wise performance analysis, and teaching recommendations.</p>
-        <p><strong>🏫 Generated by:</strong> Vista Education System</p>
+        <p><strong>Vista Education System</strong> - Comprehensive Test Results Report</p>
       </div>
     </body>
     </html>

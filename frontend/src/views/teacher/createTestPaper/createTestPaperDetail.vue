@@ -445,13 +445,6 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 
-// API Configuration
-const apiBaseUrl = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3000' // Development API URL
-
-const authToken = localStorage.getItem('access_token')
-
 // User profile and school data interfaces
 interface UserProfile {
   id: number;

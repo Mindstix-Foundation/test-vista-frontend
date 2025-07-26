@@ -195,8 +195,8 @@
                     <span class="stat-number wrong-count">{{ student.wrong }}</span>
                   </td>
                   <td class="badge-cell">
-                    <span class="performance-badge" :class="getPerformanceBadgeClass(student.performanceLevel)">
-                      {{ student.performanceLevel }}
+                    <span class="performance-badge" :class="getPerformanceBadgeClass(student.status === 'pending' ? 'pending' : student.performanceLevel)">
+                      {{ student.status === 'pending' ? 'Pending' : student.performanceLevel }}
                     </span>
                   </td>
                   <td class="score-cell">
@@ -374,6 +374,7 @@ const clearSearch = () => {
 
 const getPerformanceBadgeClass = (performanceLevel: string) => {
   switch (performanceLevel) {
+    case 'pending': return 'badge-pending'
     case 'excellent': return 'badge-excellent'
     case 'good': return 'badge-good'
     case 'average': return 'badge-average'
@@ -595,6 +596,11 @@ input[type="text"]:focus {
 .badge-excellent {
   background-color: #d4edda;
   color: #155724;
+}
+
+.badge-pending {
+  background-color: #e2e3e5;
+  color: #6c757d;
 }
 
 .badge-good {

@@ -263,12 +263,13 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 
-// API Configuration
-const apiBaseUrl = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3000' // Development API URL
+// Remove the hardcoded API configuration - we'll use axiosInstance instead
+// const apiBaseUrl = import.meta.env.PROD
+//   ? import.meta.env.VITE_API_URL
+//   : 'http://localhost:3000' // Development API URL
 
-const authToken = localStorage.getItem('access_token')
+// Remove unused authToken - axiosInstance handles authentication automatically
+// const authToken = localStorage.getItem('access_token')
 
 // Pattern section interface
 interface PatternSection {
@@ -781,26 +782,21 @@ const generateEquallyMarksDistribution = async () => {
     const mediumIds = [parseInt(mediumId)];
     
     // Call the test-paper allocation API
-    const response = await fetch(
-      `${apiBaseUrl}/create-test-paper/allocation?` + 
-      `patternId=${patternIdNum}&` +
-      `${chapterIds.map(id => `chapterIds=${id}`).join('&')}&` +
-      `${mediumIds.map(id => `mediumIds=${id}`).join('&')}&` +
-      `questionOrigin=both`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
+    const response = await axiosInstance.get('/create-test-paper/allocation', {
+      params: {
+        patternId: patternIdNum,
+        chapterIds: chapterIds,
+        mediumIds: mediumIds,
+        questionOrigin: 'both'
       }
-    );
+    })
 
-    if (!response.ok) {
-      throw new Error(`API request failed with status: ${response.status}`);
+    if (response.status !== 200) {
+      console.error(`Auto allocation API request failed with status: ${response.status}`)
+      return
     }
 
-    const allocationData = await response.json();
+    const allocationData = response.data
     console.log('Generate Equally API response:', allocationData)
     
     // Update chapter marks from API response
@@ -962,27 +958,21 @@ const autoGenerateAllocation = async () => {
     const mediumIds = [parseInt(mediumId)]
     
     // Call the test-paper allocation API
-    const response = await fetch(
-      `${apiBaseUrl}/create-test-paper/allocation?` + 
-      `patternId=${patternIdNum}&` +
-      `${chapterIds.map(id => `chapterIds=${id}`).join('&')}&` +
-      `${mediumIds.map(id => `mediumIds=${id}`).join('&')}&` +
-      `questionOrigin=both`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
+    const response = await axiosInstance.get('/create-test-paper/allocation', {
+      params: {
+        patternId: patternIdNum,
+        chapterIds: chapterIds,
+        mediumIds: mediumIds,
+        questionOrigin: 'both'
       }
-    )
+    })
 
-    if (!response.ok) {
+    if (response.status !== 200) {
       console.error(`Auto allocation API request failed with status: ${response.status}`)
       return
     }
 
-    const allocationData = await response.json()
+    const allocationData = response.data
     
     // Update chapter marks from API response
     if (allocationData.chapterMarks && Array.isArray(allocationData.chapterMarks)) {
