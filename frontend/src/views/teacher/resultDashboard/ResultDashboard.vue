@@ -894,7 +894,7 @@ const generatePDFContent = () => {
         }
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 12px;
+          font-size: 14px;
           line-height: 1.4;
           color: #333;
           background: #fff;
@@ -907,18 +907,18 @@ const generatePDFContent = () => {
           padding-bottom: 10px;
         }
         .header h1 {
-          font-size: 18px;
+          font-size: 22px;
           font-weight: bold;
           color: #2c3e50;
           margin-bottom: 5px;
         }
         .header h2 {
-          font-size: 14px;
+          font-size: 16px;
           color: #3498db;
           margin-bottom: 3px;
         }
         .header p {
-          font-size: 10px;
+          font-size: 12px;
           color: #7f8c8d;
         }
         .test-info {
@@ -935,7 +935,7 @@ const generatePDFContent = () => {
         }
         .info-item {
           margin-bottom: 4px;
-          font-size: 11px;
+          font-size: 13px;
         }
         .info-item strong {
           color: #2c3e50;
@@ -953,13 +953,13 @@ const generatePDFContent = () => {
           flex: 1;
         }
         .stat-value {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: bold;
           color: #3498db;
           display: block;
         }
         .stat-label {
-          font-size: 9px;
+          font-size: 11px;
           color: #7f8c8d;
           text-transform: uppercase;
         }
@@ -967,7 +967,7 @@ const generatePDFContent = () => {
           margin-bottom: 20px;
         }
         .section h3 {
-          font-size: 14px;
+          font-size: 16px;
           color: #2c3e50;
           margin-bottom: 8px;
           padding-bottom: 4px;
@@ -976,7 +976,7 @@ const generatePDFContent = () => {
         table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 11px;
+          font-size: 13px;
           margin-bottom: 10px;
         }
         th {
@@ -985,7 +985,7 @@ const generatePDFContent = () => {
           padding: 8px 6px;
           text-align: center;
           font-weight: 600;
-          font-size: 10px;
+          font-size: 12px;
         }
         td {
           padding: 6px;
@@ -1006,7 +1006,7 @@ const generatePDFContent = () => {
           border-left: 3px solid #3498db;
           padding: 8px 10px;
           margin-bottom: 6px;
-          font-size: 11px;
+          font-size: 13px;
           line-height: 1.3;
         }
         .recommendation strong {
@@ -1018,13 +1018,13 @@ const generatePDFContent = () => {
           padding: 10px;
           background: #f8f9fa;
           border-radius: 4px;
-          font-size: 10px;
+          font-size: 12px;
           color: #7f8c8d;
         }
         @media print {
           body { 
             padding: 10px;
-            font-size: 11px;
+            font-size: 13px;
           }
           .section {
             page-break-inside: avoid;
