@@ -313,7 +313,6 @@
             type="button"
             class="btn btn-dark"
             @click="confirmAndSubmit"
-            :disabled="changes.length === 0"
           >
             Confirm & Save
           </button>
@@ -596,6 +595,7 @@ const validatePrincipalName = (name: string): boolean => {
 
 // Update isFormValid computed
 const isFormValid = computed(() => {
+  console.log('🔍 isFormValid - Checking form validity...')
   console.log('Form values:', {
     name: form.value.name,
     board_id: form.value.board_id,
@@ -607,13 +607,13 @@ const isFormValid = computed(() => {
     standards: form.value.standards,
   })
 
-  // Check address fields from addressValidationStates
+  // 🛡️ FIX: Use the main validationStates instead of separate addressValidationStates
   const addressValid =
-    addressValidationStates.value.country.valid &&
-    addressValidationStates.value.state.valid &&
-    addressValidationStates.value.city.valid &&
-    addressValidationStates.value.address.valid &&
-    addressValidationStates.value.postalCode.valid
+    validationStates.value.country.valid &&
+    validationStates.value.state.valid &&
+    validationStates.value.city.valid &&
+    validationStates.value.address.valid &&
+    validationStates.value.postalCode.valid
 
   const contactValid = validateContactNumber(form.value.contact_number)
 
@@ -622,18 +622,42 @@ const isFormValid = computed(() => {
     (validateContactNumber(form.value.alternate_contact_number) &&
      form.value.alternate_contact_number !== form.value.contact_number)
 
-  const isValid =
-    form.value.name.trim() !== '' &&
-    form.value.board_id !== 0 &&
-    addressValid &&
-    validatePrincipalName(form.value.principal_name) &&
-    contactValid &&
-    alternateContactValid &&
-    validateEmail(form.value.email) &&
-    form.value.mediums.length > 0 &&
-    form.value.standards.length > 0
+  // Individual validation checks with debugging
+  const checks = {
+    name: form.value.name.trim() !== '',
+    board_id: form.value.board_id !== 0,
+    addressValid,
+    principalName: validatePrincipalName(form.value.principal_name),
+    contactValid,
+    alternateContactValid,
+    email: validateEmail(form.value.email),
+    mediums: form.value.mediums.length > 0,
+    standards: form.value.standards.length > 0
+  }
 
-  console.log('Form validity result:', isValid)
+  console.log('🔍 Individual validation checks:', checks)
+  console.log('🔍 Contact validation details:', {
+    primaryContact: form.value.contact_number,
+    alternateContact: form.value.alternate_contact_number,
+    contactValid: contactValid,
+    alternateContactValid: alternateContactValid,
+    alternateContactValidation: form.value.alternate_contact_number ? validateContactNumber(form.value.alternate_contact_number) : 'N/A',
+    contactsAreDifferent: form.value.alternate_contact_number !== form.value.contact_number
+  })
+  console.log('🔍 Address validation breakdown:', {
+    country: validationStates.value.country.valid,
+    state: validationStates.value.state.valid,
+    city: validationStates.value.city.valid,
+    address: validationStates.value.address.valid,
+    postalCode: validationStates.value.postalCode.valid,
+    addressValid
+  })
+
+  const isValid = Object.values(checks).every(check => check === true)
+
+  console.log('🔍 Form validity result:', isValid)
+  console.log('🔍 Failed checks:', Object.entries(checks).filter(([key, value]) => !value))
+  
   return isValid
 })
 
@@ -956,6 +980,7 @@ const calculateChanges = async () => {
 // Update confirmAndSubmit to format contact numbers for API
 const confirmAndSubmit = async () => {
   try {
+    console.log('🔍 confirmAndSubmit called - starting submission process')
     isSubmitting.value = true
 
     if (props.isEditMode) {
@@ -981,10 +1006,15 @@ const confirmAndSubmit = async () => {
         : ''
     }
 
+    console.log('🔍 About to emit submit event with data:', formDataForAPI)
+    console.log('🔍 Changes detected:', changes.value)
+
     // Emit the formatted form data to the parent component
     emit('submit', formDataForAPI)
+    
+    console.log('🔍 Submit event emitted successfully')
   } catch (error) {
-    console.error('Error submitting form:', error)
+    console.error('❌ Error in confirmAndSubmit:', error)
   } finally {
     isSubmitting.value = false
   }
@@ -1138,7 +1168,9 @@ const handleCheckboxKeydown = (event: KeyboardEvent, type: 'medium' | 'standard'
 
 // Rename handleSubmit to onSubmit for clarity
 const onSubmit = async () => {
-  console.log('Form submission started')
+  console.log('🔍 onSubmit called - Form submission started')
+  console.log('🔍 isEditMode:', props.isEditMode)
+  console.log('🔍 Form data:', form.value)
 
   // Mark all fields as touched to trigger validation display
   Object.keys(validationStates.value).forEach((key) => {
@@ -1149,9 +1181,12 @@ const onSubmit = async () => {
   validationStates.value.mediums.valid = form.value.mediums.length > 0
   validationStates.value.standards.valid = form.value.standards.length > 0
 
+  console.log('🔍 Form validation states:', validationStates.value)
+  console.log('🔍 isFormValid:', isFormValid.value)
+
   // Check if form is valid
   if (!isFormValid.value) {
-    console.log('Form validation failed', validationStates.value)
+    console.log('❌ Form validation failed', validationStates.value)
     const firstInvalidField = document.querySelector('.is-invalid') as HTMLElement
     if (firstInvalidField) {
       firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -1160,24 +1195,34 @@ const onSubmit = async () => {
     return
   }
 
-  console.log('Form is valid, proceeding with submission')
+  console.log('✅ Form is valid, proceeding with submission')
 
   try {
     isSubmitting.value = true
 
     if (props.isEditMode) {
+      console.log('🔍 Edit mode - calculating changes and showing modal')
       // Calculate changes and show confirmation modal only in edit mode
       await calculateChanges()
+      console.log('🔍 Changes calculated:', changes.value)
       const modal = new Modal(document.getElementById('saveConfirmationModal') as HTMLElement)
       modal.show()
+      console.log('🔍 Modal shown')
     } else {
-      // In add mode, directly submit the form
-      console.log('Submitting form data in add mode:', form.value)
-      emit('submit', form.value)
-      console.log('Submit event emitted')
+      // In add mode, format contact numbers and submit the form
+      const formDataForAPI = {
+        ...form.value,
+        contact_number: formatContactNumberForAPI(form.value.contact_number),
+        alternate_contact_number: form.value.alternate_contact_number 
+          ? formatContactNumberForAPI(form.value.alternate_contact_number)
+          : ''
+      }
+      console.log('🔍 Add mode - submitting formatted form data:', formDataForAPI)
+      emit('submit', formDataForAPI)
+      console.log('🔍 Submit event emitted in add mode')
     }
   } catch (error) {
-    console.error('Error in form submission:', error)
+    console.error('❌ Error in form submission:', error)
   } finally {
     isSubmitting.value = false
   }
@@ -1215,11 +1260,19 @@ const onCityChange = (city: { id: number; name: string } | null) => {
 watch(
   addressValidationStates,
   (newVal) => {
+    console.log('🔄 Syncing addressValidationStates to validationStates:', newVal)
     validationStates.value.country = newVal.country
     validationStates.value.state = newVal.state
     validationStates.value.city = newVal.city
     validationStates.value.address = newVal.address
     validationStates.value.postalCode = newVal.postalCode
+    console.log('✅ Synced validationStates:', {
+      country: validationStates.value.country,
+      state: validationStates.value.state,
+      city: validationStates.value.city,
+      address: validationStates.value.address,
+      postalCode: validationStates.value.postalCode
+    })
   },
   { deep: true }
 )

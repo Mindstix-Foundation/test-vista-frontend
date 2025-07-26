@@ -361,6 +361,11 @@ const routes: RouteRecordRaw[] = [
         name: 'testResultDashboard',
         component: () => import('@/views/teacher/resultDashboard/ResultDashboard.vue'),
       },
+      {
+        path: 'result-dashboard/:testPaperId/chapter/:chapterName',
+        name: 'chapterStudentDetails',
+        component: () => import('@/views/teacher/resultDashboard/ChapterStudentDetails.vue'),
+      },
     ],
   },
   // Student routes

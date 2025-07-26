@@ -1,6 +1,6 @@
 <template>
   <div class="iti-students-list">
-    <div class="container-fluid px-3 mt-4 mb-5">
+    <div class="container mt-4 mb-5">
       <!-- Header Section -->
       <div class="row mb-4">
         <div class="col-12">
@@ -1024,13 +1024,6 @@ onUnmounted(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 1199.98px) {
-  .container-fluid {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
-
 @media (max-width: 991.98px) {
   .iti-students-list {
     padding-top: 1rem;
@@ -1051,11 +1044,6 @@ onUnmounted(() => {
   .iti-students-list {
     background-color: #f8f9fa;
     min-height: calc(100vh - 60px);
-  }
-  
-  .container-fluid {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
   }
   
   .icon-circle {
@@ -1104,11 +1092,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 575.98px) {
-  .container-fluid {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-  
   .mt-4 {
     margin-top: 1rem !important;
   }

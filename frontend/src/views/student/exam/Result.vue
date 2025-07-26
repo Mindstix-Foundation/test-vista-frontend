@@ -27,11 +27,36 @@
 
         <!-- Score Card -->
         <div class="score-card">
-          <div class="score-circle" ref="scoreCircle">
-            {{ displayObtainedMarks }}/{{ result.total_marks }}
+          <div class="score-header">
+            <h3 class="exam-title">{{ result.title }}</h3>
+            <p class="performance-text">{{ getPerformanceText(displayPercentage) }}</p>
           </div>
-          <h3 class="mb-2">{{ result.title }}</h3>
-          <p class="mb-3">{{ getPerformanceText(displayPercentage) }}</p>
+          
+          <div class="score-metrics">
+            <div class="metric-card marks-card" ref="scoreCircle">
+              <div class="metric-icon">
+                <i class="bi bi-award-fill"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-value">
+                  <span class="obtained-marks">{{ displayObtainedMarks }}</span>
+                  <span class="total-marks">/{{ result.total_marks }}</span>
+                </div>
+                <div class="metric-label">Marks Obtained</div>
+              </div>
+            </div>
+            
+            <div class="metric-card percentage-card">
+              <div class="metric-icon">
+                <i class="bi bi-percent"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-value percentage-value">{{ displayPercentage }}%</div>
+                <div class="metric-label">Score Percentage</div>
+              </div>
+                         </div>
+           </div>
+           
           <div class="row stats-row">
             <div class="col-lg col-md-4 col-6 mb-3">
               <i class="bi bi-list-ul d-block mb-2"></i>
@@ -80,33 +105,27 @@
             
             <!-- Sorting Controls -->
             <div class="sorting-controls">
-              <div class="sort-selector">
-                <div class="sort-label">
-                  <i class="bi bi-funnel"></i>
-                  <span>Sort by</span>
-                </div>
-                <div class="sort-options">
-                  <div 
-                    class="sort-option"
-                    :class="{ active: sortBy === 'sequence' }"
-                    @click="sortChapters('sequence')"
-                  >
-                    <div class="option-icon">
-                      <i class="bi bi-list-ol"></i>
-                    </div>
-                    <span class="option-title">Chapter Order</span>
-                  </div>
-                  <div 
-                    class="sort-option"
-                    :class="{ active: sortBy === 'score' }"
-                    @click="sortChapters('score')"
-                  >
-                    <div class="option-icon">
-                      <i class="bi bi-trophy"></i>
-                    </div>
-                    <span class="option-title">Performance</span>
-                  </div>
-                </div>
+              <div class="sort-label">
+                <i class="bi bi-funnel me-2"></i>
+                <span>Sort by:</span>
+              </div>
+              <div class="sort-options">
+                <button 
+                  class="sort-option"
+                  :class="{ active: sortBy === 'sequence' }"
+                  @click="sortChapters('sequence')"
+                >
+                  <i class="bi bi-list-ol me-2"></i>
+                  <span>Chapter Order</span>
+                </button>
+                <button 
+                  class="sort-option"
+                  :class="{ active: sortBy === 'score' }"
+                  @click="sortChapters('score')"
+                >
+                  <i class="bi bi-trophy me-2"></i>
+                  <span>Performance</span>
+                </button>
               </div>
             </div>
           </div>
@@ -638,18 +657,31 @@ const animateScore = () => {
   if (!scoreCircle.value) return
   
   let currentMarks = 0
+  let currentPercentage = 0
   const targetMarks = displayObtainedMarks.value || 0
-  const totalMarks = result.value.total_marks || 1
-  const increment = targetMarks / 50
+  const targetPercentage = parseFloat(displayPercentage.value) || 0
+  const marksIncrement = targetMarks / 50
+  const percentageIncrement = targetPercentage / 50
   
   const timer = setInterval(() => {
-    currentMarks += increment
+    currentMarks += marksIncrement
+    currentPercentage += percentageIncrement
+    
     if (currentMarks >= targetMarks) {
       currentMarks = targetMarks
+      currentPercentage = targetPercentage
       clearInterval(timer)
     }
-    if (scoreCircle.value) {
-      scoreCircle.value.textContent = Math.round(currentMarks) + '/' + totalMarks
+    
+    // Update the marks display
+    const obtainedMarksEl = document.querySelector('.obtained-marks')
+    const percentageValueEl = document.querySelector('.percentage-value')
+    
+    if (obtainedMarksEl) {
+      obtainedMarksEl.textContent = Math.round(currentMarks).toString()
+    }
+    if (percentageValueEl) {
+      percentageValueEl.textContent = Math.round(currentPercentage * 100) / 100 + '%'
     }
   }, 30)
 }
@@ -738,57 +770,196 @@ onUnmounted(() => {
 }
 
 .score-card {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-radius: 20px;
-  padding: 30px;
-  text-align: center;
-  margin-bottom: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
 }
 
-.score-circle {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+.score-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.exam-title {
+  color: #2c3e50;
+  font-weight: 700;
+  font-size: 1.75rem;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.performance-text {
+  color: #6c757d;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.score-metrics {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.metric-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 320px;
+  border: 3px solid #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.marks-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.2);
+}
+
+.percentage-card:hover {
+  border-color: #28a745;
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.2);
+}
+
+.marks-card::before {
+  background: linear-gradient(90deg, #007bff, #17a2b8);
+}
+
+.percentage-card::before {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.metric-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #007bff, #17a2b8);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: center;
-  line-height: 1.2;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.3);
 }
 
-.score-card h3 {
-  color: white;
-  font-weight: 600;
+.percentage-card .metric-icon {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
 }
 
-.score-card p {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.1rem;
-}
-
-.score-card .row .col-md-3 {
-  margin-bottom: 10px;
-}
-
-.score-card i {
+.metric-icon i {
   font-size: 1.5rem;
-  margin-bottom: 5px;
+  color: white;
 }
 
-.score-card strong {
-  display: block;
-  font-size: 1.2rem;
-  margin-bottom: 2px;
+.metric-content {
+  flex: 1;
+  text-align: left;
 }
 
-.score-card small {
-  color: rgba(255, 255, 255, 0.8);
+.metric-value {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.obtained-marks {
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #1a365d;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.total-marks {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #4a5568;
+}
+
+.percentage-value {
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #1a365d;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.metric-label {
   font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Stats Row Styling */
+.stats-row {
+  justify-content: center;
+  align-items: stretch;
+  padding-top: 24px;
+  border-top: 2px solid #f8f9fa;
+  background: transparent !important;
+}
+
+.stats-row .col-lg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.stats-row i {
+  font-size: 1.8rem !important;
+  margin-bottom: 8px !important;
+  color: #6c757d !important;
+}
+
+.stats-row .stat-number {
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 4px !important;
+  color: #2c3e50 !important;
+  line-height: 1.2;
+  display: block !important;
+}
+
+.stats-row .stat-label {
+  font-size: 1rem !important;
+  color: #6c757d !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block !important;
 }
 
 /* Stats Row Styling */
@@ -834,6 +1005,19 @@ onUnmounted(() => {
   color: #dc3545 !important;
 }
 
+/* Fix stats row visibility - ensure proper colors */
+.score-card .stats-row i {
+  color: #6c757d !important;
+}
+
+.score-card .stat-number {
+  color: #2c3e50 !important;
+}
+
+.score-card .stat-label {
+  color: #6c757d !important;
+}
+
 .stat-label {
   font-size: 1rem !important;
   color: rgba(255, 255, 255, 0.85) !important;
@@ -866,139 +1050,64 @@ onUnmounted(() => {
   border-bottom: none;
 }
 
-/* Sorting Controls - New Creative Design */
+/* Sorting Controls - Clean Design */
 .sorting-controls {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 15px;
   margin-bottom: 0;
-}
-
-.sort-selector {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 6px;
-  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.25);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .sort-label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: white;
-  font-weight: 600;
-  font-size: 0.8rem;
-  margin-bottom: 6px;
-  padding: 0 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.sort-label i {
   font-size: 0.9rem;
-  opacity: 0.9;
+  color: #6c757d;
+  font-weight: 500;
 }
 
 .sort-options {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .sort-option {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  min-width: 110px;
-  position: relative;
-  overflow: hidden;
-}
-
-.sort-option::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.sort-option:hover::before {
-  left: 100%;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  color: #495057;
+  font-weight: 500;
+  outline: none;
 }
 
 .sort-option:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: #e9ecef;
+  border-color: #dee2e6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sort-option.active {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.sort-option.active:hover {
+  background: #0056b3;
+  border-color: #0056b3;
   transform: translateY(-1px);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
 }
 
-.sort-option.active::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border-radius: 14px;
-  pointer-events: none;
-}
-
-.option-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-
-.option-icon i {
-  font-size: 1rem;
-  color: white;
-  transition: all 0.3s ease;
-}
-
-.sort-option:hover .option-icon {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.1);
-}
-
-.sort-option.active .option-icon {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-}
-
-.sort-option.active .option-icon i {
-  color: #fff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-}
-
-.option-title {
-  color: white;
-  font-weight: 600;
-  font-size: 0.8rem;
-  line-height: 1.2;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+.sort-option i {
+  font-size: 0.9rem;
 }
 
 .chapter-table-container {
@@ -1602,51 +1711,67 @@ onUnmounted(() => {
   
   /* Mobile Score Card */
   .score-card {
-    padding: 20px 15px;
-    margin-bottom: 20px;
-    border-radius: 15px;
+    padding: 24px 16px;
+    margin-bottom: 24px;
+    border-radius: 12px;
   }
   
-  .score-circle {
-    width: 130px;
-    height: 130px;
-    font-size: 1.3rem;
-    margin-bottom: 15px;
+  .score-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
   }
   
-  .score-card h3 {
-    font-size: 1.3rem;
-    margin-bottom: 10px;
+  .exam-title {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
   }
   
-  .score-card p {
+  .performance-text {
     font-size: 1rem;
-    margin-bottom: 15px;
   }
   
-  .score-card .row .col-md-3 {
-    margin-bottom: 15px;
+  .score-metrics {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
   }
   
-  .score-card .col-6 {
-    padding: 0 5px;
+  .metric-card {
+    min-width: auto;
+    padding: 20px;
+    gap: 12px;
   }
   
-  .score-card i {
-    font-size: 1.2rem;
-    margin-bottom: 3px;
+  .metric-icon {
+    width: 48px;
+    height: 48px;
   }
   
-  .score-card strong {
-    font-size: 1rem;
-    margin-bottom: 3px;
+  .metric-icon i {
+    font-size: 1.3rem;
   }
   
-  .score-card small {
+  .obtained-marks {
+    font-size: 2.6rem;
+  }
+  
+  .total-marks {
+    font-size: 1.8rem;
+  }
+  
+  .percentage-value {
+    font-size: 2.6rem;
+  }
+  
+  .metric-label {
     font-size: 0.8rem;
   }
-
+  
   /* Mobile Stats Row */
+  .stats-row {
+    padding-top: 20px;
+  }
+  
   .stats-row .col-lg {
     margin-bottom: 20px;
   }
@@ -1685,44 +1810,32 @@ onUnmounted(() => {
 
   /* Mobile Sorting Controls */
   .sorting-controls {
-    margin-bottom: 0;
-  }
-  
-  .sort-selector {
-    padding: 5px;
-    border-radius: 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 15px;
   }
   
   .sort-label {
-    font-size: 0.75rem;
-    margin-bottom: 5px;
-    padding: 0 5px;
+    font-size: 0.85rem;
   }
   
   .sort-options {
-    flex-direction: column;
-    gap: 3px;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
   }
   
   .sort-option {
-    padding: 8px 10px;
-    min-width: auto;
-    border-radius: 10px;
-    gap: 6px;
+    flex: 1;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    text-align: center;
+    justify-content: center;
   }
   
-  .option-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-  }
-  
-  .option-icon i {
-    font-size: 0.9rem;
-  }
-  
-  .option-title {
-    font-size: 0.75rem;
+  .sort-option i {
+    font-size: 0.85rem;
   }
 
   /* Mobile Chapter Cards */
@@ -1997,45 +2110,64 @@ onUnmounted(() => {
   
   /* Extra small score card */
   .score-card {
-    padding: 15px 10px;
-    margin-bottom: 15px;
+    padding: 20px 12px;
+    margin-bottom: 20px;
   }
   
-  .score-circle {
-    width: 100px;
-    height: 100px;
+  .score-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+  
+  .exam-title {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+  }
+  
+  .performance-text {
+    font-size: 0.95rem;
+  }
+  
+  .score-metrics {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .metric-card {
+    padding: 16px;
+    gap: 10px;
+  }
+  
+  .metric-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .metric-icon i {
     font-size: 1.1rem;
-    margin-bottom: 12px;
   }
   
-  .score-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
+  .obtained-marks {
+    font-size: 2.2rem;
   }
   
-  .score-card p {
-    font-size: 0.9rem;
-    margin-bottom: 12px;
+  .total-marks {
+    font-size: 1.6rem;
   }
   
-  .score-card .row .col-6 {
-    margin-bottom: 12px;
-    padding: 0 3px;
+  .percentage-value {
+    font-size: 2.2rem;
   }
   
-  .score-card i {
-    font-size: 1rem;
-  }
-  
-  .score-card strong {
-    font-size: 0.9rem;
-  }
-  
-  .score-card small {
+  .metric-label {
     font-size: 0.75rem;
   }
-
+  
   /* Extra Small Stats Row */
+  .stats-row {
+    padding-top: 16px;
+  }
+  
   .stats-row .col-lg {
     margin-bottom: 15px;
   }

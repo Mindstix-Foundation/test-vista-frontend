@@ -282,6 +282,7 @@
                   <div class="date-picker-footer">
                     <button @click="clearDate('available')" class="btn btn-sm btn-outline-secondary">Clear</button>
                     <button @click="selectToday('available')" class="btn btn-sm btn-outline-primary">Today</button>
+                    <button @click="confirmAvailableDateTime" class="btn btn-sm btn-success">Select</button>
                   </div>
                 </div>
               </div>
@@ -829,6 +830,41 @@ const clearDate = (type: 'due' | 'available') => {
     assignmentData.value.availableFrom = ''
     showAvailablePicker.value = false
   }
+}
+
+const confirmAvailableDateTime = () => {
+  // If no date is selected yet, select today
+  if (!assignmentData.value.availableFrom) {
+    const today = new Date()
+    
+    // Convert 12-hour to 24-hour format
+    let hour24 = availableTime.value.hour
+    if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
+      hour24 = availableTime.value.hour + 12
+    } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
+      hour24 = 0
+    }
+    
+    today.setHours(hour24, availableTime.value.minute, 0, 0)
+    assignmentData.value.availableFrom = today.toISOString()
+  } else {
+    // Update the existing date with current time selection
+    const date = new Date(assignmentData.value.availableFrom)
+    
+    // Convert 12-hour to 24-hour format
+    let hour24 = availableTime.value.hour
+    if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
+      hour24 = availableTime.value.hour + 12
+    } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
+      hour24 = 0
+    }
+    
+    date.setHours(hour24, availableTime.value.minute, 0, 0)
+    assignmentData.value.availableFrom = date.toISOString()
+  }
+  
+  // Close the picker
+  showAvailablePicker.value = false
 }
 
 const updateAvailableTime = () => {
@@ -1551,11 +1587,13 @@ onUnmounted(() => {
 .date-picker-footer {
   display: flex;
   gap: 0.75rem;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.75rem 1rem;
   border-top: 1px solid #e9ecef;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   border-radius: 0 0 8px 8px;
+  flex-wrap: wrap;
 }
 
 .date-picker-footer .btn {
@@ -1564,10 +1602,24 @@ onUnmounted(() => {
   border-radius: 6px;
   font-weight: 600;
   transition: all 0.3s ease;
+  min-width: 70px;
 }
 
 .date-picker-footer .btn:hover {
   transform: translateY(-1px);
+}
+
+.date-picker-footer .btn-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.date-picker-footer .btn-success:hover {
+  background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
 }
 
 /* Button Enhancements */
@@ -1790,11 +1842,15 @@ onUnmounted(() => {
   .date-picker-footer {
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
+    justify-content: space-between;
   }
   
   .date-picker-footer .btn {
     font-size: 0.8rem;
     padding: 0.375rem 0.75rem;
+    min-width: 60px;
+    flex: 1;
+    max-width: 80px;
   }
 }
 
