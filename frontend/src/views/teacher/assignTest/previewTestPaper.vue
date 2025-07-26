@@ -1,5 +1,5 @@
 <template>
-  <div class="container my-4">
+  <div class="container my-4" :class="{ 'page-leaving': isPageLeaving }">
     <!-- Header Section -->
     <div class="container mb-3">
       <div class="row g-2 justify-content-end">
@@ -31,7 +31,7 @@
     <!-- Test Paper Preview Form -->
     <div class="row p-2 justify-content-center mb-3">
       <div class="col-12 col-sm-10">
-        <form @submit.prevent="handleFormSubmit" class="test-paper-form">
+        <form @submit.prevent class="test-paper-form">
           <h6 class="fw-semibold mb-3">Test Paper Details</h6>
           
           <!-- Test Paper Name -->
@@ -45,6 +45,7 @@
               placeholder="Enter test paper name"
               required
               maxlength="100"
+              :disabled="isSubmitting"
             />
             <div class="form-text">
               {{ form.testPaperName.length }}/100 characters
@@ -63,6 +64,7 @@
               min="1"
               max="300"
               required
+              :disabled="isSubmitting"
             />
             <div class="form-text">
               Duration should be between 1 and 300 minutes
@@ -79,6 +81,7 @@
               rows="4"
               placeholder="Enter test instructions (optional)"
               maxlength="1000"
+              :disabled="isSubmitting"
             ></textarea>
             <div class="form-text">
               {{ form.instructions.length }}/1000 characters
@@ -93,6 +96,7 @@
                 type="checkbox"
                 id="negativeMarking"
                 v-model="form.negativeMarking"
+                :disabled="isSubmitting"
               />
               <label class="form-check-label fw-semibold" for="negativeMarking">
                 Enable Negative Marking
@@ -109,6 +113,7 @@
                 min="0"
                 max="10"
                 step="0.25"
+                :disabled="isSubmitting"
               />
             </div>
           </div>
@@ -121,6 +126,7 @@
                 type="checkbox"
                 id="randomizeQuestions"
                 v-model="form.randomizeQuestions"
+                :disabled="isSubmitting"
               />
               <label class="form-check-label fw-semibold" for="randomizeQuestions">
                 Randomize Question Order
@@ -136,6 +142,7 @@
                 type="checkbox"
                 id="randomizeOptions"
                 v-model="form.randomizeOptions"
+                :disabled="isSubmitting"
               />
               <label class="form-check-label fw-semibold" for="randomizeOptions">
                 Randomize Option Order
@@ -232,21 +239,48 @@
 
           <!-- Action Buttons -->
           <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary" @click="goBack">
+            <button type="button" class="btn btn-secondary" @click="goBack" :disabled="isSubmitting">
               <i class="bi bi-arrow-left me-1"></i>
               Back to Chapter Distribution
             </button>
             <button
               type="submit"
-              class="btn btn-primary"
+              class="btn btn-primary btn-create-test"
               :disabled="isSubmitting || !isFormValid"
+              :class="{ 'loading': isSubmitting }"
+              @click="handleButtonClick"
             >
-              <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status">
-                <span class="visually-hidden">Loading...</span>
+              <span v-if="isSubmitting" class="loading-content">
+                <span class="spinner-border spinner-border-sm me-2" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>
+                <span class="loading-text">Creating Test Paper...</span>
               </span>
-              <i v-else class="bi bi-plus-circle me-1"></i>
-              Create Test Paper
+              <span v-else class="normal-content">
+                <i class="bi bi-plus-circle me-2"></i>
+                Create Test Paper
+              </span>
             </button>
+          </div>
+
+          <!-- Loading Overlay -->
+          <div v-if="isSubmitting" class="form-loading-overlay" :class="{ 'success': isSuccess }">
+            <div class="loading-spinner-container">
+              <div v-if="!isSuccess" class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+              </div>
+              <div v-else class="success-icon">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+              <h5 class="loading-title">{{ loadingMessage }}</h5>
+              <p class="loading-message">{{ loadingSubMessage }}</p>
+              <div class="loading-progress">
+                <div class="progress-bar"></div>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -486,6 +520,10 @@ const form = ref<TestPaperForm>({
 })
 
 const isSubmitting = ref(false)
+const loadingMessage = ref('Creating Your Test Paper')
+const loadingSubMessage = ref('Please wait while we process your test paper...')
+const isSuccess = ref(false)
+const isPageLeaving = ref(false)
 
 // Questions distribution data
 const questionsDistribution = ref<any>(null)
@@ -518,6 +556,25 @@ const isFormValid = computed(() => {
          (!form.value.negativeMarking || form.value.negativeMarkingValue >= 0)
 })
 
+// Handle button click with immediate feedback
+const handleButtonClick = (event: Event) => {
+  event.preventDefault()
+  
+  // Prevent double clicks
+  if (isSubmitting.value) {
+    return
+  }
+  
+  // Add a small visual feedback delay
+  const button = event.target as HTMLButtonElement
+  button.style.transform = 'scale(0.95)'
+  
+  setTimeout(() => {
+    button.style.transform = ''
+    handleFormSubmit()
+  }, 150)
+}
+
 // Handle form submission (using API from createTestPaperDetail.vue)
 const handleFormSubmit = async () => {
   if (!isFormValid.value) {
@@ -526,10 +583,20 @@ const handleFormSubmit = async () => {
   }
 
   try {
+    // Set loading state immediately when button is clicked
     isSubmitting.value = true
+    loadingMessage.value = 'Preparing Test Paper'
+    loadingSubMessage.value = 'Setting up your test configuration...'
+    
+    // Add a small delay to ensure the loading UI is visible
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     // Prepare the questions data from the distribution
     const questionsData = prepareQuestionsData()
+    
+    // Update loading message
+    loadingMessage.value = 'Creating Test Paper'
+    loadingSubMessage.value = 'Processing questions and generating test paper...'
     
     // Prepare the test paper data
     const testPaperData = {
@@ -557,18 +624,34 @@ const handleFormSubmit = async () => {
     const response = await axiosInstance.post('/create-test-paper/online', testPaperData)
     
     if (response.data?.message || response.status === 201) {
+      // Update loading message to indicate success
+      loadingMessage.value = 'Test Paper Created Successfully!'
+      loadingSubMessage.value = 'Redirecting to dashboard...'
+      isSuccess.value = true
+      
       showSuccessToast('Online test paper created successfully!')
       
-      // Navigate to success page or test paper list after a delay
+      // Trigger smooth page transition
       setTimeout(() => {
-        router.push({ 
-          name: 'assignOnlineTest',
-          query: { created: 'true' }
-        })
-      }, 2000)
+        isPageLeaving.value = true
+        
+        // Navigate after transition starts
+        setTimeout(() => {
+          router.push({ 
+            name: 'assignOnlineTest',
+            query: { created: 'true' }
+          })
+        }, 150)
+      }, 200)
     } else {
       console.error('Unexpected API response:', response.data)
       showErrorToast('Failed to create test paper. Please try again.')
+      isSubmitting.value = false
+      // Reset loading messages
+      loadingMessage.value = 'Creating Your Test Paper'
+      loadingSubMessage.value = 'Please wait while we process your test paper...'
+      isSuccess.value = false
+      isPageLeaving.value = false
     }
   } catch (error: any) {
     console.error('Error creating test paper:', error)
@@ -583,9 +666,16 @@ const handleFormSubmit = async () => {
     } else {
       showErrorToast('Failed to create test paper. Please try again.')
     }
-  } finally {
+    
+    // Reset loading state on error
     isSubmitting.value = false
+    // Reset loading messages
+    loadingMessage.value = 'Creating Your Test Paper'
+    loadingSubMessage.value = 'Please wait while we process your test paper...'
+    isSuccess.value = false
+    isPageLeaving.value = false
   }
+  // Note: Don't reset isSubmitting.value on success since we're navigating away
 }
 
 // New function to prepare questions data from the distribution
@@ -1211,6 +1301,20 @@ h5 {
   border-color: #198754;
 }
 
+/* Disabled form controls during loading */
+.form-control:disabled,
+.form-check-input:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.7;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
+
+.form-check-input:disabled + .form-check-label {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* Animation for form elements */
 .form-control, .form-select, .btn {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1506,6 +1610,445 @@ pre code {
   .questions-container {
     max-height: 400px;
     padding: 0.75rem;
+  }
+}
+
+/* ===== ENHANCED LOADING DESIGN ===== */
+
+/* Create Test Paper Button Loading States */
+.btn-create-test {
+  position: relative;
+  min-width: 200px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.btn-create-test:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+.btn-create-test.loading {
+  background: linear-gradient(45deg, #0d6efd, #0b5ed7, #0d6efd);
+  background-size: 200% 200%;
+  animation: gradientShift 2s ease-in-out infinite;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-create-test .loading-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-create-test .loading-text {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.btn-create-test .normal-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Form Loading Overlay */
+.form-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInOverlay 0.2s ease-out;
+  transition: opacity 0.3s ease-out;
+}
+
+.form-loading-overlay.success {
+  background: rgba(240, 253, 244, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* Loading Spinner Container */
+.loading-spinner-container {
+  text-align: center;
+  max-width: 400px;
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  animation: slideInUp 0.4s ease-out, subtlePulse 3s ease-in-out infinite 0.5s;
+  transition: all 0.3s ease-out;
+}
+
+.form-loading-overlay.success .loading-spinner-container {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-color: rgba(25, 135, 84, 0.2);
+  box-shadow: 0 20px 60px rgba(25, 135, 84, 0.15);
+  animation: slideInUp 0.4s ease-out, successPulse 1s ease-in-out;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 20px 60px rgba(25, 135, 84, 0.15);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 25px 70px rgba(25, 135, 84, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 20px 60px rgba(25, 135, 84, 0.15);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Custom Loading Spinner */
+.loading-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+}
+
+.spinner-ring:nth-child(1) {
+  border-top-color: #0d6efd;
+  animation-delay: 0s;
+}
+
+.spinner-ring:nth-child(2) {
+  border-right-color: #6610f2;
+  animation-delay: 0.3s;
+  width: 90%;
+  height: 90%;
+  top: 5%;
+  left: 5%;
+}
+
+.spinner-ring:nth-child(3) {
+  border-bottom-color: #20c997;
+  animation-delay: 0.6s;
+  width: 80%;
+  height: 80%;
+  top: 10%;
+  left: 10%;
+}
+
+.spinner-ring:nth-child(4) {
+  border-left-color: #fd7e14;
+  animation-delay: 0.9s;
+  width: 70%;
+  height: 70%;
+  top: 15%;
+  left: 15%;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Success Icon */
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: successIconAppear 0.5s ease-out;
+}
+
+.success-icon i {
+  font-size: 4rem;
+  color: #198754;
+  animation: successIconScale 0.6s ease-out;
+}
+
+@keyframes successIconAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes successIconScale {
+  0% {
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Loading Text */
+.loading-title {
+  color: #212529;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  transition: color 0.3s ease-out;
+}
+
+.loading-message {
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  transition: color 0.3s ease-out;
+}
+
+.form-loading-overlay.success .loading-title {
+  color: #198754;
+}
+
+.form-loading-overlay.success .loading-message {
+  color: #146c43;
+}
+
+/* Loading Progress Bar */
+.loading-progress {
+  width: 100%;
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  transition: opacity 0.3s ease-out;
+}
+
+.form-loading-overlay.success .loading-progress {
+  opacity: 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0d6efd, #6610f2, #20c997, #fd7e14);
+  background-size: 200% 100%;
+  border-radius: 3px;
+  animation: progressMove 2s ease-in-out infinite;
+}
+
+@keyframes progressMove {
+  0% {
+    width: 0%;
+    background-position: 0% 50%;
+  }
+  25% {
+    width: 30%;
+    background-position: 50% 50%;
+  }
+  50% {
+    width: 60%;
+    background-position: 100% 50%;
+  }
+  75% {
+    width: 85%;
+    background-position: 50% 50%;
+  }
+  100% {
+    width: 100%;
+    background-position: 0% 50%;
+  }
+}
+
+/* Mobile Responsive Loading Design */
+@media (max-width: 768px) {
+  .loading-spinner-container {
+    margin: 1rem;
+    padding: 1.5rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .loading-spinner {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+  
+  .loading-title {
+    font-size: 1.1rem;
+  }
+  
+  .loading-message {
+    font-size: 0.9rem;
+  }
+  
+  .btn-create-test {
+    min-width: 180px;
+  }
+  
+  .btn-create-test .loading-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .loading-title {
+    font-size: 1rem;
+  }
+  
+  .btn-create-test {
+    min-width: 160px;
+    padding: 0.6rem 1rem;
+  }
+  
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .d-flex.justify-content-between .btn {
+    width: 100%;
+  }
+}
+
+/* Loading Animation for Button Text */
+.loading-text {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Enhanced Focus States During Loading */
+.btn-create-test:focus:not(:disabled) {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-create-test.loading:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.4);
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .spinner-ring,
+  .progress-bar,
+  .btn-create-test.loading,
+  .loading-text {
+    animation: none;
+  }
+  
+  .form-loading-overlay {
+    animation: none;
+  }
+  
+  .loading-spinner-container {
+    animation: none;
+  }
+}
+
+/* Page transition animations */
+.container {
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.container.page-leaving {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Enhanced loading overlay with faster transitions */
+.form-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInOverlay 0.2s ease-out;
+  transition: opacity 0.3s ease-out;
+}
+
+.form-loading-overlay.success {
+  background: rgba(240, 253, 244, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
   }
 }
 </style> 
