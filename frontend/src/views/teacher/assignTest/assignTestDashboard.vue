@@ -1,300 +1,200 @@
 <template>
   <!-- Mobile: container-fluid with responsive padding, Desktop: container -->
   <div class="container-fluid container-md mt-4 mb-5 px-3 px-md-4">
-    <!-- Header Section - Mobile Responsive -->
-    <div class="row g-2 mb-3">
-      <!-- Mobile: Stack vertically, Desktop: Side by side -->
+    <!-- Header Section -->
+    <div class="row mb-4">
       <div class="col-12">
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
-          <div class="header-title-section flex-grow-1">
-            <h5 class="m-0 fw-bolder text-uppercase mobile-title">assign online test</h5>
-        </div>
-
-          <!-- Desktop button - visible only on sm and up -->
-          <div class="header-button-section flex-shrink-0 align-self-end align-self-sm-center d-none d-sm-flex">
-            <router-link to="/teacher/assign-test/create" class="btn btn-dark btn-create-desktop">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+          <div class="header-title-section">
+            <h4 class="m-0 fw-bold text-dark">Assign Online Test</h4>
+            <p class="text-muted mb-0 small">Manage and assign test papers to students</p>
+          </div>
+          <!-- Desktop create button -->
+          <div class="d-none d-sm-block">
+            <router-link to="/teacher/assign-test/create" class="btn btn-primary btn-create">
               <i class="bi bi-plus-circle me-2"></i>
               Create Test Paper
-          </router-link>
+            </router-link>
+          </div>
         </div>
-      </div>
-        <hr class="mobile-hr">
       </div>
     </div>
 
-    <!-- Main Content Container -->
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-11 col-xl-10">
-        <!-- Search and Sorting Controls - Mobile Responsive -->
-        <div class="row mb-4 g-3">
-          <!-- Search Container - Mobile: Full width, Desktop: 8 columns -->
-          <div class="col-12 col-md-8">
-            <div class="search-container-mobile">
-              <i class="bi bi-search search-icon"></i>
-              <input 
-                type="text" 
-                v-model="searchQuery" 
-                class="form-control search-input-mobile" 
-                placeholder="Search by Name, Subject, Standard, Marks"
-                @input="searchTestPapers"
-              >
-              <i v-if="searchQuery" class="bi bi-x-circle clear-search-icon" @click="clearSearch"></i>
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="search-filter-card">
+          <div class="row g-3">
+            <!-- Search -->
+            <div class="col-12 col-md-8">
+              <div class="search-container">
+                <i class="bi bi-search search-icon"></i>
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  class="form-control search-input" 
+                  placeholder="Search by name, subject, standard, or marks..."
+                  @input="searchTestPapers"
+                >
+                <i v-if="searchQuery" class="bi bi-x-circle clear-icon" @click="clearSearch"></i>
+              </div>
             </div>
-          </div>
-
-          <!-- Sort Select - Mobile: Full width, Desktop: 4 columns -->
-          <div class="col-12 col-md-4">
-            <div class="sort-field-mobile">
+            <!-- Sort -->
+            <div class="col-12 col-md-4">
               <select 
                 v-model="sortOption" 
-                class="form-select sort-select-mobile" 
+                class="form-select sort-select" 
                 @change="sortTestPapers"
               >
+                <option value="date-desc">Sort by Date (Newest First)</option>
+                <option value="date-asc">Sort by Date (Oldest First)</option>
                 <option value="name-asc">Sort by Name (A-Z)</option>
                 <option value="name-desc">Sort by Name (Z-A)</option>
-                <option value="date-asc">Sort by Date (Oldest First)</option>
-                <option value="date-desc">Sort by Date (Newest First)</option>
                 <option value="marks-asc">Sort by Marks (Low to High)</option>
                 <option value="marks-desc">Sort by Marks (High to Low)</option>
               </select>
-              <i class="bi bi-filter sort-icon"></i>
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Test Papers Cards - Mobile Responsive -->
-        <div id="testPaperCards">
-          <!-- Loading indicator -->
-          <div v-if="isLoading" class="text-center my-5">
-            <div class="spinner-border" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3">Loading test papers...</p>
+    <!-- Test Papers Section -->
+    <div class="row">
+      <div class="col-12">
+        <!-- Loading State -->
+        <div v-if="isLoading" class="loading-state">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
           </div>
+          <p class="mt-3 text-muted">Loading test papers...</p>
+        </div>
 
-          <!-- Display filtered test papers -->
+        <!-- Test Papers Grid -->
+        <div v-else-if="filteredTestPapers.length > 0" class="test-papers-grid">
           <div 
-            v-else-if="filteredTestPapers.length > 0"
-            v-for="(paper, index) in filteredTestPapers" 
+            v-for="paper in filteredTestPapers" 
             :key="paper.id"
-            class="mb-4"
+            class="test-paper-card"
           >
-            <div class="card test-paper-card-mobile shadow-sm">
-              <div class="card-body">
-                <!-- Mobile Layout -->
-                <div class="d-md-none mobile-card-layout">
-                  <!-- Mobile Header -->
-                  <div class="mobile-card-header mb-3">
-                    <h5 class="card-title mb-2 mobile-card-title">
-                      {{ paper.name }}
-                    </h5>
-                    <!-- Mobile Summary Info - 2 columns -->
-                    <div class="row g-2 mobile-summary-row">
-                      <div class="col-6">
-                        <div class="mobile-summary-item">
-                          <i class="bi bi-book text-primary me-1"></i>
-                          <span class="mobile-summary-label">Subject:</span>
-                          <div class="mobile-summary-value">{{ formatSubject(paper) }}</div>
-                        </div>
-                      </div>
-                      <div class="col-6">
-                        <div class="mobile-summary-item">
-                          <i class="bi bi-mortarboard text-primary me-1"></i>
-                          <span class="mobile-summary-label">Standard:</span>
-                          <div class="mobile-summary-value">{{ formatStandard(paper) }}</div>
-                        </div>
-                      </div>
-                      <div class="col-6">
-                        <div class="mobile-summary-item">
-                          <i class="bi bi-award text-success me-1"></i>
-                          <span class="mobile-summary-label">Marks:</span>
-                          <div class="mobile-summary-value">{{ paper.pattern.total_marks }}</div>
-                        </div>
-                      </div>
-                      <div class="col-6">
-                        <div class="mobile-summary-item">
-                          <i class="bi bi-clock text-info me-1"></i>
-                          <span class="mobile-summary-label">Duration:</span>
-                          <div class="mobile-summary-value">{{ paper.duration_minutes }}m</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            <!-- Card Header -->
+            <div class="card-header">
+              <h5 class="card-title">{{ paper.name }}</h5>
+              <div class="card-meta">
+                <span class="standard-badge">{{ formatStandard(paper) }}</span>
+                <span class="subject-badge">{{ formatSubject(paper) }}</span>
+              </div>
+            </div>
 
-                  <!-- Mobile Additional Details - Always Visible -->
-                  <div class="mobile-details-section-seamless">
-                    <div class="mobile-details-content-seamless">
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <div class="mobile-detail-item">
-                            <span class="mobile-detail-label">Questions:</span>
-                            <span class="mobile-detail-value">{{ paper.question_count }}</span>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <div class="mobile-detail-item">
-                            <span class="mobile-detail-label">Per Question:</span>
-                            <span class="mobile-detail-value">{{ paper.marks_per_question }}</span>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <div class="mobile-detail-item">
-                            <span class="mobile-detail-label">Negative:</span>
-                            <span class="mobile-detail-value">{{ paper.negative_marking ? 'Yes' : 'No' }}</span>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <div class="mobile-detail-item">
-                            <span class="mobile-detail-label">Medium:</span>
-                            <span class="mobile-detail-value">
-                              <span v-for="(medium, idx) in formatMediums(paper)" :key="idx">{{ medium }}</span>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Mobile Action Buttons -->
-                  <div class="mobile-actions-section mt-3">
-                    <div class="row g-2">
-                      <div class="col-6">
-                        <button 
-                          @click="assignToStudents(paper)" 
-                          class="btn btn-primary mobile-action-btn w-100"
-                        >
-                          <i class="bi bi-person-plus me-1"></i>
-                          <span class="d-none d-sm-inline">Assign Students</span>
-                          <span class="d-sm-none">Assign</span>
-                        </button>
-                      </div>
-                      <div class="col-6">
-                        <button 
-                          @click="viewQuestions(paper)" 
-                          class="btn btn-outline-dark mobile-action-btn w-100"
-                        >
-                          <i class="bi bi-eye me-1"></i>
-                          <span class="d-none d-sm-inline">View Questions</span>
-                          <span class="d-sm-none">Questions</span>
-                        </button>
-                      </div>
-                      <div class="col-6">
-                        <button 
-                          @click="viewResults(paper)" 
-                          class="btn btn-outline-success mobile-action-btn w-100"
-                        >
-                          <i class="bi bi-bar-chart me-1"></i>
-                          <span class="d-none d-sm-inline">Results</span>
-                          <span class="d-sm-none">Results</span>
-                        </button>
-                      </div>
-                      <div class="col-6">
-                        <button 
-                          @click="deleteTestPaper(paper)" 
-                          class="btn btn-outline-danger mobile-action-btn w-100"
-                        >
-                          <i class="bi bi-trash me-1"></i>
-                          <span class="d-none d-sm-inline">Delete</span>
-                          <span class="d-sm-none">Delete</span>
-                        </button>
-                      </div>
-                    </div>
+            <!-- Card Body -->
+            <div class="card-body">
+              <div class="info-grid">
+                <div class="info-item">
+                  <i class="bi bi-award text-success"></i>
+                  <div class="info-content">
+                    <span class="info-label">Total Marks</span>
+                    <span class="info-value">{{ paper.pattern.total_marks }}</span>
                   </div>
                 </div>
-
-                <!-- Desktop Layout (unchanged) -->
-                <div class="d-none d-md-block desktop-card-layout">
-                <div class="row">
-                  <!-- Paper Details -->
-                  <div class="col-md-8">
-                    <h5 class="card-title mb-3">
-                      {{ paper.name }}
-                    </h5>
-                    
-                    <div class="row mb-3">
-                      <div class="col-md-6">
-                        <div class="paper-info-item">
-                          <i class="bi bi-book text-dark me-2"></i>
-                          <span class="fw-medium">Subject: <span class="fw-bold">{{ formatSubject(paper) }}</span></span>
-                        </div>
-                        <div class="paper-info-item">
-                          <i class="bi bi-mortarboard text-dark me-2"></i>
-                          <span class="fw-medium">Standard: <span class="fw-bold">{{ formatStandard(paper) }}</span></span>
-                        </div>
-                        <div class="paper-info-item">
-                          <i class="bi bi-award text-dark me-2"></i>
-                          <span class="fw-medium">Total Marks: <span class="fw-bold">{{ paper.pattern.total_marks }}</span></span>
-                        </div>
-                        <div class="paper-info-item">
-                          <i class="bi bi-calculator text-dark me-2"></i>
-                          <span class="fw-medium">Marks per Question: <span class="fw-bold">{{ paper.marks_per_question }}</span></span>
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="paper-info-item">
-                          <i class="bi bi-exclamation-triangle text-dark me-2"></i>
-                          <span class="fw-medium">Negative Marking: <span class="fw-bold">{{ paper.negative_marking ? 'Yes' : 'No' }}</span></span>
-                        </div>
-                        <div class="paper-info-item">
-                          <i class="bi bi-translate text-dark me-2"></i>
-                          <span class="fw-medium">Mediums: 
-                            <span v-for="(medium, idx) in formatMediums(paper)" :key="idx" class="fw-bold">{{ medium }}</span>
-                          </span>
-                        </div>
-                        <div class="paper-info-item">
-                          <i class="bi bi-question-circle text-dark me-2"></i>
-                          <span class="fw-medium">Total Questions: <span class="fw-bold">{{ paper.question_count }}</span></span>
-                        </div>
-                        <div class="paper-info-item">
-                          <i class="bi bi-clock text-dark me-2"></i>
-                          <span class="fw-medium">Duration: <span class="fw-bold">{{ paper.duration_minutes }} minutes</span></span>
-                        </div>
-                      </div>
-                    </div>
+                <div class="info-item">
+                  <i class="bi bi-question-circle text-info"></i>
+                  <div class="info-content">
+                    <span class="info-label">Questions</span>
+                    <span class="info-value">{{ paper.question_count }}</span>
                   </div>
-                  
-                  <!-- Actions Section -->
-                  <div class="col-md-4 d-flex flex-column justify-content-center align-items-md-end gap-2">
-                    <button 
-                      @click="assignToStudents(paper)" 
-                      class="btn btn-primary action-btn w-100"
-                    >
-                      <i class="bi bi-person-plus me-2"></i>Assign to Students
-                    </button>
-                    <button 
-                      @click="viewQuestions(paper)" 
-                      class="btn btn-outline-dark action-btn w-100"
-                    >
-                      <i class="bi bi-eye me-2"></i>View Questions
-                    </button>
-                    <button 
-                      @click="viewResults(paper)" 
-                      class="btn btn-outline-success action-btn w-100"
-                    >
-                      <i class="bi bi-bar-chart me-2"></i>Result Dashboard
-                    </button>
-                    <button 
-                      @click="deleteTestPaper(paper)" 
-                      class="btn btn-outline-danger action-btn w-100"
-                    >
-                      <i class="bi bi-trash me-2"></i>Delete
-                    </button>
-                    </div>
+                </div>
+                <div class="info-item">
+                  <i class="bi bi-clock text-warning"></i>
+                  <div class="info-content">
+                    <span class="info-label">Duration</span>
+                    <span class="info-value">{{ paper.duration_minutes }}m</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <i class="bi bi-calculator text-secondary"></i>
+                  <div class="info-content">
+                    <span class="info-label">Per Question</span>
+                    <span class="info-value">{{ paper.marks_per_question }}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <i class="bi bi-shield-check text-danger"></i>
+                  <div class="info-content">
+                    <span class="info-label">Negative</span>
+                    <span class="info-value">{{ paper.negative_marking ? 'Yes' : 'No' }}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <i class="bi bi-translate text-primary"></i>
+                  <div class="info-content">
+                    <span class="info-label">Medium</span>
+                    <span class="info-value">{{ formatMediums(paper).join(', ') }}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- No results message -->
-          <div v-else-if="!isLoading && filteredTestPapers.length === 0" class="text-center mt-4">
-            <div class="empty-state">
-              <i class="bi bi-file-earmark-x display-1 text-muted"></i>
-              <p class="mt-3 text-muted">No test papers found. Try adjusting your search or create a new test paper.</p>
+            <!-- Card Actions -->
+            <div class="card-actions">
+              <button 
+                @click="assignToStudents(paper)" 
+                class="btn btn-primary btn-action"
+                title="Assign to Students"
+              >
+                <i class="bi bi-person-plus"></i>
+                <span class="ms-2">Assign Students</span>
+              </button>
+              <button 
+                @click="viewQuestions(paper)" 
+                class="btn btn-outline-secondary btn-action"
+                title="View Questions"
+              >
+                <i class="bi bi-eye"></i>
+                <span class="ms-2">Questions</span>
+              </button>
+              <button 
+                @click="viewResults(paper)" 
+                class="btn btn-outline-success btn-action"
+                title="View Results"
+              >
+                <i class="bi bi-bar-chart"></i>
+                <span class="ms-2">Results</span>
+              </button>
+              <button 
+                @click="deleteTestPaper(paper)" 
+                class="btn btn-outline-danger btn-action"
+                title="Delete Test Paper"
+              >
+                <i class="bi bi-trash"></i>
+                <span class="ms-2">Delete</span>
+              </button>
             </div>
           </div>
         </div>
+
+        <!-- Empty State -->
+        <div v-else class="empty-state">
+          <div class="empty-content">
+            <i class="bi bi-file-earmark-text empty-icon"></i>
+            <h5 class="empty-title">No Test Papers Found</h5>
+            <p class="empty-text">
+              {{ searchQuery ? 'Try adjusting your search terms or create a new test paper.' : 'Create your first test paper to get started.' }}
+            </p>
+            <router-link to="/teacher/assign-test/create" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-2"></i>
+              Create Test Paper
+            </router-link>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <!-- Mobile Create Button -->
+    <div class="mobile-create-btn d-sm-none">
+      <router-link to="/teacher/assign-test/create" class="btn btn-primary btn-create-mobile">
+        <i class="bi bi-plus-circle me-2"></i>
+        Create Test Paper
+      </router-link>
     </div>
 
     <!-- Delete Confirmation Modal -->
@@ -316,23 +216,21 @@
       </div>
     </div>
 
-    <!-- Assign Students Modal - Mobile Responsive -->
+    <!-- Assign Students Modal -->
     <div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-mobile-responsive">
-        <div class="modal-content modal-content-mobile">
-          <div class="modal-header modal-header-mobile">
-            <h5 class="modal-title mobile-modal-title" id="assignModalLabel">
-              <span class="d-none d-sm-inline">Assign Test Paper: {{ selectedPaper?.name }}</span>
-              <span class="d-sm-none">Assign Test</span>
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="assignModalLabel">
+              Assign Test Paper: {{ selectedPaper?.name }}
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body modal-body-mobile">
-            <!-- Test Assignment Form - Mobile Responsive -->
-            <div class="row mb-3 g-3">
-              <!-- Mobile: Stack vertically, Desktop: Side by side -->
+          <div class="modal-body">
+            <!-- Assignment Form -->
+            <div class="row mb-4 g-3">
               <div class="col-12 col-md-6">
-                <label for="dueDate" class="form-label mobile-form-label">Due Date *</label>
+                <label for="dueDate" class="form-label">Due Date *</label>
                 <div class="custom-date-picker">
                   <input 
                     type="text" 
@@ -381,10 +279,9 @@
                     </div>
                   </div>
                 </div>
-                <small class="form-text text-muted mobile-help-text">Format: DD-MM-YYYY</small>
               </div>
               <div class="col-12 col-md-6">
-                <label for="availableFrom" class="form-label mobile-form-label">Available From *</label>
+                <label for="availableFrom" class="form-label">Available From *</label>
                 <div class="custom-datetime-picker">
                   <input 
                     type="text" 
@@ -427,146 +324,135 @@
                         </button>
                       </div>
                     </div>
-                                          <div class="time-picker-section">
-                        <div class="time-picker-header">Select Time</div>
-                        <div class="time-inputs">
-                          <div class="time-input-group">
-                            <input 
-                              type="number" 
-                              v-model="displayHour" 
-                              min="1" 
-                              max="12" 
-                              class="time-input"
-                              placeholder="HH"
-                              @input="updateDisplayTime"
-                            >
-                            <label>Hour</label>
-                          </div>
-                          <span class="time-separator">:</span>
-                          <div class="time-input-group">
-                            <input 
-                              type="number" 
-                              v-model="availableTime.minute" 
-                              min="0" 
-                              max="59" 
-                              class="time-input"
-                              placeholder="MM"
-                              @input="updateAvailableTime"
-                            >
-                            <label>Minute</label>
-                          </div>
-                          <div class="ampm-toggle">
-                            <button 
-                              @click="toggleAMPM('AM')" 
-                              class="ampm-btn"
-                              :class="{ active: availableTime.ampm === 'AM' }"
-                            >
-                              AM
-                            </button>
-                            <button 
-                              @click="toggleAMPM('PM')" 
-                              class="ampm-btn"
-                              :class="{ active: availableTime.ampm === 'PM' }"
-                            >
-                              PM
-                            </button>
-                          </div>
+                    <div class="time-picker-section">
+                      <div class="time-picker-header">Select Time</div>
+                      <div class="time-inputs">
+                        <div class="time-input-group">
+                          <input 
+                            type="number" 
+                            v-model="displayHour" 
+                            min="1" 
+                            max="12" 
+                            class="time-input"
+                            placeholder="HH"
+                            @input="updateDisplayTime"
+                          >
+                          <label>Hour</label>
                         </div>
-                        <div class="quick-time-buttons">
-                          <button @click="setQuickTime12('9:00 AM')" class="btn btn-sm btn-outline-secondary">9:00 AM</button>
-                          <button @click="setQuickTime12('12:00 PM')" class="btn btn-sm btn-outline-secondary">12:00 PM</button>
-                          <button @click="setQuickTime12('3:00 PM')" class="btn btn-sm btn-outline-secondary">3:00 PM</button>
-                          <button @click="setQuickTime12('6:00 PM')" class="btn btn-sm btn-outline-secondary">6:00 PM</button>
+                        <span class="time-separator">:</span>
+                        <div class="time-input-group">
+                          <input 
+                            type="number" 
+                            v-model="availableTime.minute" 
+                            min="0" 
+                            max="59" 
+                            class="time-input"
+                            placeholder="MM"
+                            @input="updateAvailableTime"
+                          >
+                          <label>Minute</label>
+                        </div>
+                        <div class="ampm-toggle">
+                          <button 
+                            @click="toggleAMPM('AM')" 
+                            class="ampm-btn"
+                            :class="{ active: availableTime.ampm === 'AM' }"
+                          >
+                            AM
+                          </button>
+                          <button 
+                            @click="toggleAMPM('PM')" 
+                            class="ampm-btn"
+                            :class="{ active: availableTime.ampm === 'PM' }"
+                          >
+                            PM
+                          </button>
                         </div>
                       </div>
+                      <div class="quick-time-buttons">
+                        <button @click="setQuickTime12('9:00 AM')" class="btn btn-sm btn-outline-secondary">9:00 AM</button>
+                        <button @click="setQuickTime12('12:00 PM')" class="btn btn-sm btn-outline-secondary">12:00 PM</button>
+                        <button @click="setQuickTime12('3:00 PM')" class="btn btn-sm btn-outline-secondary">3:00 PM</button>
+                        <button @click="setQuickTime12('6:00 PM')" class="btn btn-sm btn-outline-secondary">6:00 PM</button>
+                      </div>
+                    </div>
                     <div class="date-picker-footer">
                       <button @click="clearDate('available')" class="btn btn-sm btn-outline-secondary">Clear</button>
                       <button @click="selectToday('available')" class="btn btn-sm btn-outline-primary">Today</button>
                     </div>
                   </div>
                 </div>
-                <small class="form-text text-muted mobile-help-text">Format: DD-MM-YYYY HH:MM</small>
               </div>
             </div>
             
-            <div class="row mb-3 g-3">
+            <div class="row mb-4 g-3">
               <div class="col-12 col-md-6">
-                <label for="maxAttempts" class="form-label mobile-form-label">Max Attempts</label>
-                <input type="number" class="form-control mobile-form-control" id="maxAttempts" v-model="assignmentData.maxAttempts" min="1" max="10">
+                <label for="maxAttempts" class="form-label">Max Attempts</label>
+                <input type="number" class="form-control" id="maxAttempts" v-model="assignmentData.maxAttempts" min="1" max="10">
               </div>
               <div class="col-12 col-md-6">
-                <label for="timeLimitMinutes" class="form-label mobile-form-label">Time Limit (Minutes)</label>
-                <input type="number" class="form-control mobile-form-control" id="timeLimitMinutes" v-model="assignmentData.timeLimitMinutes" min="1">
-                <small class="form-text text-muted mobile-help-text">Leave empty to use test paper's default time limit</small>
+                <label for="timeLimitMinutes" class="form-label">Time Limit (Minutes)</label>
+                <input type="number" class="form-control" id="timeLimitMinutes" v-model="assignmentData.timeLimitMinutes" min="1">
+                <small class="form-text text-muted">Leave empty to use test paper's default time limit</small>
               </div>
             </div>
 
-            <!-- Student Filter Toggle - Mobile Responsive -->
+            <!-- Student Selection -->
             <div class="mb-3">
-              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
-                <label class="form-label mb-0 fw-semibold mobile-students-label">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <label class="form-label mb-0 fw-semibold">
                   Select Students 
-                  <span v-if="!loadingStudents" class="text-muted small mobile-student-count">({{ filteredStudents.length }} {{ assignedOnlyToggle ? 'assigned' : 'available' }})</span>
+                  <span v-if="!loadingStudents" class="text-muted small">({{ filteredStudents.length }} {{ assignedOnlyToggle ? 'assigned' : 'available' }})</span>
                 </label>
-                
-                <!-- Student Filter Toggle - Mobile: Below label, Desktop: Right side -->
-                <div class="d-flex align-items-center mobile-filter-toggle">
-                  <span class="me-2 small text-muted d-none d-sm-inline">Show:</span>
-                  <div class="form-check form-switch">
-                    <input 
-                      class="form-check-input" 
-                      type="checkbox" 
-                      id="assignedOnlyToggle" 
-                      v-model="assignedOnlyToggle" 
-                      @change="filterStudents"
-                    >
-                    <label class="form-check-label ms-2 fw-semibold toggle-label-mobile" for="assignedOnlyToggle">
-                      {{ assignedOnlyToggle ? 'Assigned' : 'Non-Assigned' }}
-                    </label>
-                  </div>
+                <div class="form-check form-switch">
+                  <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    id="assignedOnlyToggle" 
+                    v-model="assignedOnlyToggle" 
+                    @change="filterStudents"
+                  >
+                  <label class="form-check-label fw-semibold" for="assignedOnlyToggle">
+                    {{ assignedOnlyToggle ? 'Assigned' : 'Non-Assigned' }}
+                  </label>
                 </div>
               </div>
               
-              <!-- Mobile Responsive Students Container -->
-              <div class="students-container-mobile">
-                <!-- Loading indicator -->
-                <div v-if="loadingStudents" class="students-loading-mobile">
-                  <div class="text-center">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                      <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2 mb-0 text-muted small">Loading ITI students...</p>
+              <div class="students-container">
+                <!-- Loading -->
+                <div v-if="loadingStudents" class="students-loading">
+                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                   </div>
+                  <p class="mt-2 mb-0 text-muted small">Loading ITI students...</p>
                 </div>
                 
-                <!-- Student selection - Mobile Responsive -->
-                <div v-else-if="filteredStudents.length > 0" class="students-content-mobile">
-                  <div class="form-check select-all-container-mobile">
+                <!-- Students List -->
+                <div v-else-if="filteredStudents.length > 0" class="students-content">
+                  <div class="form-check select-all-container">
                     <input class="form-check-input" type="checkbox" id="selectAllStudents" v-model="selectAllStudents" @change="toggleAllStudents">
-                    <label class="form-check-label fw-semibold mobile-select-all-label" for="selectAllStudents">
-                      <span class="d-none d-sm-inline">Select All Visible Students ({{ filteredStudents.length }})</span>
-                      <span class="d-sm-none">Select All ({{ filteredStudents.length }})</span>
+                    <label class="form-check-label fw-semibold" for="selectAllStudents">
+                      Select All Visible Students ({{ filteredStudents.length }})
                     </label>
                   </div>
                   <hr class="my-2">
-                  <div class="student-list-mobile">
-                    <div v-for="student in filteredStudents" :key="student.id" class="student-item-mobile">
+                  <div class="student-list">
+                    <div v-for="student in filteredStudents" :key="student.id" class="student-item">
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" :id="`student-${student.id}`" v-model="student.selected">
                         <label class="form-check-label" :for="`student-${student.id}`">
-                          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center w-100 gap-2">
-                            <div class="student-info-mobile">
-                              <span class="student-name-mobile">{{ student.name }}</span>
-                              <span class="student-roll-mobile text-muted d-block d-sm-inline">({{ student.rollNumber }})</span>
+                          <div class="d-flex justify-content-between align-items-center w-100">
+                            <div class="student-info">
+                              <span class="student-name">{{ student.name }}</span>
+                              <span class="student-roll text-muted">({{ student.rollNumber }})</span>
                             </div>
-                            <div class="student-actions-mobile d-flex align-items-center gap-2">
-                              <span v-if="student.isAssigned" class="badge bg-success mobile-badge">Assigned</span>
-                              <span v-else class="badge bg-secondary mobile-badge">Not Assigned</span>
-                              <!-- Remove assignment button for assigned students -->
+                            <div class="student-actions d-flex align-items-center gap-2">
+                              <span v-if="student.isAssigned" class="badge bg-success">Assigned</span>
+                              <span v-else class="badge bg-secondary">Not Assigned</span>
                               <button 
                                 v-if="student.isAssigned" 
                                 @click="removeAssignment(student)"
-                                class="btn btn-sm btn-outline-danger mobile-remove-btn"
+                                class="btn btn-sm btn-outline-danger"
                                 :disabled="removingAssignment"
                                 title="Remove Assignment"
                               >
@@ -580,54 +466,46 @@
                   </div>
                 </div>
                 
-                <!-- No students message - Mobile Responsive -->
-                <div v-else class="students-empty-mobile">
-                  <div class="text-center">
-                    <i class="bi bi-person-x display-6 text-muted mb-3"></i>
-                    <h6 class="text-muted mb-2 mobile-empty-title">
-                      {{ assignedOnlyToggle ? 'No assigned students found for this test.' : 'No non-assigned students found for this test.' }}
-                    </h6>
-                    <p class="text-muted small mb-0 mobile-empty-text">
-                      Students need to request enrollment and be approved by you before they can be assigned tests.
-                    </p>
-                  </div>
+                <!-- Empty State -->
+                <div v-else class="students-empty">
+                  <i class="bi bi-person-x display-6 text-muted mb-3"></i>
+                  <h6 class="text-muted mb-2">
+                    {{ assignedOnlyToggle ? 'No assigned students found for this test.' : 'No non-assigned students found for this test.' }}
+                  </h6>
+                  <p class="text-muted small mb-0">
+                    Students need to request enrollment and be approved by you before they can be assigned tests.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer modal-footer-mobile">
-            <div class="d-flex flex-column flex-sm-row gap-2 w-100">
-              <button type="button" class="btn btn-secondary mobile-modal-btn order-2 order-sm-1" data-bs-dismiss="modal">Cancel</button>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button 
               type="button" 
-                class="btn btn-primary mobile-modal-btn order-1 order-sm-2" 
+              class="btn btn-primary" 
               @click="confirmAssignment"
               :disabled="loadingStudents || filteredStudents.length === 0 || assigningTest || !hasSelectedStudents"
             >
               <span v-if="assigningTest" class="spinner-border spinner-border-sm me-2" role="status"></span>
               <i v-else class="bi bi-person-plus me-2"></i>
-                <span class="d-none d-sm-inline">{{ assigningTest ? 'Assigning...' : 'Assign Test' }}</span>
-                <span class="d-sm-none">{{ assigningTest ? 'Assigning...' : 'Assign' }}</span>
+              {{ assigningTest ? 'Assigning...' : 'Assign Test' }}
             </button>
-            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Questions Modal - Mobile Responsive -->
+    <!-- Questions Modal -->
     <div class="modal fade" id="questionsModal" tabindex="-1" aria-labelledby="questionsModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-questions-mobile">
-        <div class="modal-content modal-content-questions">
-          <div class="modal-header modal-header-questions">
-            <h5 class="modal-title mobile-questions-title" id="questionsModalLabel">
-              <span class="d-none d-sm-inline">Test Questions</span>
-              <span class="d-sm-none">Questions</span>
-            </h5>
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="questionsModalLabel">Test Questions</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body modal-body-questions">
-            <!-- Loading indicator -->
+          <div class="modal-body">
+            <!-- Loading -->
             <div v-if="loadingQuestions" class="text-center my-5">
               <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -635,12 +513,10 @@
               <p class="mt-3">Loading questions...</p>
             </div>
 
-            <!-- Display questions -->
+            <!-- Questions -->
             <div v-else-if="currentQuestions">
-              <div class="test-paper-info-mobile mb-4">
-                <h6 class="text-primary mobile-paper-title">{{ currentQuestions.test_paper.name }}</h6>
-                <!-- Mobile: Stack info vertically, Desktop: 3 columns -->
-                <div class="d-none d-md-block">
+              <div class="test-paper-info mb-4">
+                <h6 class="text-primary">{{ currentQuestions.test_paper.name }}</h6>
                 <div class="row">
                   <div class="col-md-4">
                     <small class="text-muted">Total Questions: {{ currentQuestions.test_paper.total_questions }}</small>
@@ -650,33 +526,6 @@
                   </div>
                   <div class="col-md-4">
                     <small class="text-muted">Duration: {{ currentQuestions.test_paper.duration_minutes }} mins</small>
-                    </div>
-                  </div>
-                </div>
-                <!-- Mobile Layout -->
-                <div class="d-md-none mobile-paper-info">
-                  <div class="row g-2">
-                    <div class="col-4">
-                      <div class="mobile-info-item">
-                        <i class="bi bi-question-circle text-primary me-1"></i>
-                        <div class="mobile-info-value">{{ currentQuestions.test_paper.total_questions }}</div>
-                        <div class="mobile-info-label">Questions</div>
-                      </div>
-                    </div>
-                    <div class="col-4">
-                      <div class="mobile-info-item">
-                        <i class="bi bi-award text-success me-1"></i>
-                        <div class="mobile-info-value">{{ currentQuestions.test_paper.total_marks }}</div>
-                        <div class="mobile-info-label">Marks</div>
-                      </div>
-                    </div>
-                    <div class="col-4">
-                      <div class="mobile-info-item">
-                        <i class="bi bi-clock text-info me-1"></i>
-                        <div class="mobile-info-value">{{ currentQuestions.test_paper.duration_minutes }}m</div>
-                        <div class="mobile-info-label">Duration</div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -689,7 +538,6 @@
                 >
                   <div class="question-wrapper">
                     <div class="d-flex w-100">
-                      <!-- Question Content -->
                       <div class="question-content">
                         <div class="question-text">
                           {{ questionIndex + 1 }}. {{ question.question_text }}
@@ -698,7 +546,6 @@
                           </span>
                         </div>
                         
-                        <!-- MCQ Options -->
                         <div v-if="question.mcq_options && question.mcq_options.length > 0" class="options-container">
                           <div class="options-column">
                             <div 
@@ -723,7 +570,6 @@
                         </div>
                       </div>
                       
-                      <!-- Marks -->
                       <div class="question-marks">
                         <div class="marks-row">
                           <span class="marks fw-bold">{{ question.marks }}</span>
@@ -741,22 +587,14 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer modal-footer-questions">
-            <button type="button" class="btn btn-secondary mobile-close-btn w-100 w-sm-auto" data-bs-dismiss="modal">Close</button>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Mobile Fixed Bottom Button - Full width -->
-    <div class="mobile-bottom-button-container d-sm-none">
-      <router-link to="/teacher/assign-test/create" class="btn mobile-bottom-button">
-        <i class="bi bi-plus-circle me-2"></i>
-        Create Test Paper
-      </router-link>
-    </div>
-
-    <!-- Toast Notification Component -->
+    <!-- Toast Notification -->
     <ToastNotification />
   </div>
 </template>
@@ -1704,1086 +1542,409 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Search field styling */
+/* ===== GENERAL STYLES ===== */
+.container-fluid {
+  padding-bottom: 80px; /* Space for mobile button */
+}
+
+/* ===== HEADER STYLES ===== */
+.header-title-section h4 {
+  color: #212529;
+  font-weight: 700;
+}
+
+.header-title-section p {
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.btn-create {
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-create:hover {
+  /* Remove transform to prevent position change */
+  /* transform: translateY(-1px); */
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* ===== SEARCH AND FILTER STYLES ===== */
+.search-filter-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
 .search-container {
   position: relative;
 }
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  left: 18px; /* Adjusted to work with 50px left padding */
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10;
   color: #6c757d;
+  z-index: 5;
 }
 
-.clear-search-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  color: #6c757d;
-  cursor: pointer;
-}
-
-.clear-search-icon:hover {
-  color: #212529;
-}
-
-input[type="text"] {
-  padding-left: 30px;
+.search-input {
+  padding-left: 50px !important; /* Increased to 50px with !important to override Bootstrap */
+  padding-right: 50px !important; /* Increased for consistency */
   border-radius: 8px;
   border: 1px solid #ced4da;
   height: 48px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
 }
 
-/* Sort field styling */
-.sort-field {
-  position: relative;
+.search-input:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.clear-icon {
+  position: absolute;
+  right: 18px; /* Adjusted to work with 50px right padding */
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 5;
+  transition: color 0.3s ease;
+}
+
+.clear-icon:hover {
+  color: #495057;
 }
 
 .sort-select {
   height: 48px;
-  padding-right: 40px;
   border-radius: 8px;
-  appearance: none;
-  background-image: none;
+  border: 1px solid #ced4da;
+  font-size: 1rem;
   transition: all 0.3s ease;
 }
 
-.sort-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6c757d;
-  pointer-events: none;
-  z-index: 10;
+.sort-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-/* Questions Modal Styling */
-.question-card {
-  background-color: #f8f9fa;
-  transition: all 0.2s ease;
+/* ===== LOADING STATE ===== */
+.loading-state {
+  text-align: center;
+  padding: 4rem 2rem;
 }
 
-.question-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.loading-state .spinner-border {
+  width: 3rem;
+  height: 3rem;
 }
 
-.section-header {
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 0.5rem;
+/* ===== TEST PAPERS GRID ===== */
+.test-papers-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Always single column */
+  gap: 1.5rem;
 }
 
-.question-number {
-  font-size: 0.8rem;
-  min-width: 40px;
-}
+/* Remove the responsive grid that creates multiple columns */
+/* @media (min-width: 768px) {
+  .test-papers-grid {
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  }
+} */
 
-.question-type {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-}
-
-.question-marks {
-  font-size: 0.75rem;
-}
-
-.question-text {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #212529;
-}
-
-.option-item {
-  transition: all 0.2s ease;
-  min-height: 50px;
-}
-
-.option-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.option-label {
-  font-size: 0.9rem;
-  min-width: 25px;
-}
-
-.option-content {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.test-paper-info {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #007bff;
-}
-
-#questionsModal .modal-dialog {
-  max-width: 900px;
-}
-
-#questionsModal .modal-body {
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.subsection-type {
-  margin-bottom: 0.5rem;
-}
-
-.subsection-type .badge {
-  font-size: 0.8rem;
-  padding: 0.4rem 0.8rem;
-}
-
-.chapter-topic-info {
-  margin-top: 0.5rem;
-}
-
-.chapter-topic-info .badge {
-  font-size: 0.75rem;
-  margin-right: 0.25rem;
-}
-
-.match-pairs-container {
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #dee2e6;
-}
-
-/* Card styling aligned with project design */
+/* ===== TEST PAPER CARD ===== */
 .test-paper-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  background: white;
   border: 1px solid #e9ecef;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
 
 .test-paper-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  /* Remove transform to prevent position change */
+  /* transform: translateY(-2px); */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
-.test-paper-card .card-title {
-  color: #212529;
+/* Card Header */
+.card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e9ecef;
+  padding: 1.25rem;
+}
+
+.card-title {
+  font-size: 1.2rem;
   font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
 }
 
-.paper-info-item {
-  margin-bottom: 0.75rem;
+.card-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.standard-badge,
+.subject-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.standard-badge {
+  background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+  color: #ffffff;
+  border: 1px solid #6c757d;
+}
+
+.subject-badge {
+  background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+  color: #ffffff;
+  border: 1px solid #6c757d;
+}
+
+/* Card Body */
+.card-body {
+  padding: 1.25rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
   display: flex;
   align-items: center;
-}
-
-.medium-badge {
-  background-color: #f0f0f0;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #555;
-  margin-right: 0.5rem;
-}
-
-.action-btn {
-  min-width: 180px;
-  font-weight: 500;
-  border-radius: 6px;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid transparent;
   transition: all 0.3s ease;
 }
 
-.action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.info-item:hover {
+  background: #e9ecef;
 }
 
-.empty-state {
-  padding: 3rem 1rem;
+.info-item i {
+  font-size: 1.2rem;
+  width: 20px;
+  text-align: center;
 }
 
-.student-list {
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  padding: 1rem;
-}
-
-.form-check {
-  margin-bottom: 0.5rem;
-}
-
-/* ===== MOBILE RESPONSIVE STYLES ===== */
-
-/* Mobile Header Styles */
-.mobile-title {
-  font-size: 1.25rem;
-  line-height: 1.3;
-}
-
-.btn-create-desktop {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  min-height: 44px;
-}
-
-.header-button-section {
+.info-content {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
-/* Mobile Fixed Bottom Button */
-.mobile-bottom-button-container {
+.info-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: #fafafa;
+  border-top: 1px solid #f1f3f4;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  flex: 1;
+  min-width: 100px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border-width: 1px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-action:hover {
+  /* Remove transform to prevent position change */
+  /* transform: translateY(-1px); */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-action i {
+  font-size: 1rem;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+}
+
+.empty-title {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.empty-text {
+  color: #6c757d;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* ===== MOBILE CREATE BUTTON ===== */
+.mobile-create-btn {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1050;
-  background-color: white;
+  background: white;
   border-top: 1px solid #e9ecef;
-  padding: 12px 16px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.mobile-bottom-button {
-  width: 100%;
-  background-color: white;
-  color: #212529;
-  border: 2px solid #212529;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 1rem;
-  font-weight: 600;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: all 0.3s ease;
-}
-
-.mobile-bottom-button:hover {
-  background-color: #212529;
-  color: white;
-  text-decoration: none;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(33, 37, 41, 0.3);
-}
-
-.mobile-bottom-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(33, 37, 41, 0.2);
-}
-
-.mobile-bottom-button:active {
-  transform: translateY(0);
-}
-
-@media (max-width: 575px) {
-  .mobile-title {
-    font-size: 1.1rem;
-  }
-  
-  .mobile-bottom-button-container {
-    padding: 10px 12px;
-  }
-  
-  .mobile-bottom-button {
-    font-size: 0.95rem;
-    padding: 10px 14px;
-    min-height: 44px;
-  }
-}
-
-.mobile-hr {
-  margin: 0.75rem 0;
-}
-
-/* Mobile Search and Filter Styles */
-.search-container-mobile {
-  position: relative;
-  width: 100%;
-}
-
-.search-input-mobile {
-  padding-left: 35px;
-  padding-right: 35px;
-  border-radius: 8px;
-  border: 1px solid #ced4da;
-  height: 48px;
-  font-size: 1rem;
-}
-
-.sort-field-mobile {
-  position: relative;
-  width: 100%;
-}
-
-.sort-select-mobile {
-  height: 48px;
-  padding-right: 40px;
-  border-radius: 8px;
-  appearance: none;
-  background-image: none;
-  font-size: 1rem;
-}
-
-@media (max-width: 575px) {
-  .search-input-mobile {
-    height: 44px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-  
-  .sort-select-mobile {
-    height: 44px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-}
-
-/* Mobile Card Styles */
-.test-paper-card-mobile {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-  margin-bottom: 1rem;
-}
-
-.test-paper-card-mobile:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-.mobile-card-layout {
-  padding: 0.5rem;
-}
-
-.mobile-card-header {
-  border-bottom: 1px solid #f1f3f4;
-  padding-bottom: 1rem;
-}
-
-.mobile-card-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #212529;
-  line-height: 1.4;
-  margin-bottom: 0.75rem;
-}
-
-/* Mobile Summary Items */
-.mobile-summary-row {
-  margin-top: 0.75rem;
-}
-
-.mobile-summary-item {
-  text-align: center;
-  padding: 0.75rem 0.5rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.mobile-summary-label {
-  font-size: 0.75rem;
-  color: #6c757d;
-  font-weight: 500;
-  display: block;
-  margin-bottom: 0.25rem;
-}
-
-.mobile-summary-value {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #212529;
-}
-
-/* Mobile Details Section */
-.mobile-details-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f1f3f4;
-}
-
-
-
-.mobile-details-content {
-  background-color: #f8f9fa;
   padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Mobile Details Section - Seamless (No separators) */
-.mobile-details-section-seamless {
-  margin-top: 0.75rem;
-  padding-top: 0;
-  border-top: none;
-}
-
-.mobile-details-content-seamless {
-  background-color: transparent;
-  padding: 0;
-  border-radius: 0;
-  border: none;
-}
-
-.mobile-detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.mobile-detail-item:last-child {
-  border-bottom: none;
-}
-
-.mobile-detail-label {
-  font-size: 0.85rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.mobile-detail-value {
-  font-size: 0.85rem;
+.btn-create-mobile {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #212529;
-}
-
-/* Mobile Action Buttons */
-.mobile-actions-section {
-  padding-top: 1rem;
-  border-top: 1px solid #f1f3f4;
-}
-
-.mobile-action-btn {
-  font-size: 0.85rem;
-  font-weight: 500;
   border-radius: 8px;
-  padding: 0.6rem 0.75rem;
-  min-height: 44px;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
   transition: all 0.3s ease;
-  border-width: 2px;
 }
 
-.mobile-action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.btn-create-mobile:hover {
+  /* Remove transform to prevent position change */
+  /* transform: translateY(-1px); */
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
 }
 
-@media (max-width: 575px) {
-  .mobile-action-btn {
-    font-size: 0.8rem;
-    padding: 0.5rem;
-  }
-}
-
-/* Mobile Modal Styles */
-.modal-mobile-responsive {
-  margin: 0.5rem;
-}
-
-.modal-content-mobile {
-  border-radius: 12px;
+/* ===== MODAL STYLES ===== */
+.modal-content {
+  border-radius: 16px;
   border: none;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
-.modal-header-mobile {
+.modal-header {
+  background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
-  padding: 1rem 1.25rem;
-  background-color: #f8f9fa;
-  border-radius: 12px 12px 0 0;
+  border-radius: 16px 16px 0 0;
+  padding: 1.25rem 1.5rem;
 }
 
-.mobile-modal-title {
+.modal-title {
   font-weight: 600;
   color: #212529;
-  font-size: 1.1rem;
 }
 
-.modal-body-mobile {
-  padding: 1.25rem;
-  max-height: 70vh;
-  overflow-y: auto;
+.modal-body {
+  padding: 1.5rem;
 }
 
-/* Mobile Form Styles */
-.mobile-form-label {
+.modal-footer {
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  border-radius: 0 0 16px 16px;
+  padding: 1rem 1.5rem;
+}
+
+/* ===== FORM STYLES ===== */
+.form-label {
   font-weight: 600;
   color: #495057;
-  font-size: 0.9rem;
   margin-bottom: 0.5rem;
 }
 
-.mobile-form-control {
+.form-control {
   border-radius: 8px;
   border: 1px solid #ced4da;
   padding: 0.6rem 0.75rem;
   font-size: 1rem;
-  min-height: 44px;
+  transition: all 0.3s ease;
 }
 
-.mobile-help-text {
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin-top: 0.25rem;
+.form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-@media (max-width: 575px) {
-  .mobile-form-control {
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-}
-
-/* Mobile Student Filter */
-.mobile-students-label {
-  font-size: 0.95rem;
-}
-
-.mobile-student-count {
-  font-size: 0.8rem;
-}
-
-.mobile-filter-toggle {
-  min-width: auto;
-}
-
-.toggle-label-mobile {
-  min-width: 100px;
-  text-align: left;
-  font-size: 0.85rem;
-}
-
-/* Mobile Students Container */
-.students-container-mobile {
-  min-height: 250px;
-  max-height: 60vh;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 1rem;
-  background-color: #fafafa;
-  position: relative;
-}
-
-.students-loading-mobile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-}
-
-.students-content-mobile {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.students-empty-mobile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  text-align: center;
-}
-
-.mobile-empty-title {
-  font-size: 0.95rem;
-}
-
-.mobile-empty-text {
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-
-/* Mobile Select All */
-.select-all-container-mobile {
-  flex-shrink: 0;
-  margin-bottom: 0.5rem;
-}
-
-.mobile-select-all-label {
-  font-size: 0.9rem;
-}
-
-/* Mobile Student List */
-.student-list-mobile {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  margin-right: -0.5rem;
-}
-
-.student-item-mobile {
-  margin-bottom: 0.75rem;
-  padding: 0.75rem;
-  background-color: white;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
-  transition: all 0.2s ease;
-}
-
-.student-item-mobile:hover {
-  border-color: #007bff;
-  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.1);
-}
-
-.student-info-mobile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.student-name-mobile {
-  font-weight: 500;
-  color: #212529;
-  font-size: 0.9rem;
-}
-
-.student-roll-mobile {
-  font-size: 0.8rem;
-}
-
-.student-actions-mobile {
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.mobile-badge {
-  font-size: 0.7rem;
-  padding: 0.3rem 0.6rem;
-}
-
-.mobile-remove-btn {
-  padding: 0.25rem 0.5rem;
-  min-height: 32px;
-  border-radius: 6px;
-}
-
-/* Mobile Modal Footer */
-.modal-footer-mobile {
-  border-top: 1px solid #e9ecef;
-  padding: 1rem 1.25rem;
-  background-color: #f8f9fa;
-  border-radius: 0 0 12px 12px;
-}
-
-.mobile-modal-btn {
-  font-size: 0.9rem;
-  font-weight: 500;
+.form-select {
   border-radius: 8px;
-  padding: 0.6rem 1.25rem;
-  min-height: 44px;
-  flex: 1;
-}
-
-/* Mobile Questions Modal */
-.modal-questions-mobile {
-  margin: 0.5rem;
-}
-
-.modal-content-questions {
-  border-radius: 12px;
-  border: none;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header-questions {
-  border-bottom: 1px solid #e9ecef;
-  padding: 1rem 1.25rem;
-  background-color: #f8f9fa;
-}
-
-.mobile-questions-title {
-  font-weight: 600;
-  color: #212529;
-  font-size: 1.1rem;
-}
-
-.modal-body-questions {
-  padding: 1.25rem;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-/* Mobile Test Paper Info */
-.test-paper-info-mobile {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 12px;
-  border-left: 4px solid #007bff;
-}
-
-.mobile-paper-title {
+  border: 1px solid #ced4da;
   font-size: 1rem;
-  margin-bottom: 0.75rem;
+  transition: all 0.3s ease;
 }
 
-.mobile-paper-info {
-  margin-top: 0.75rem;
+.form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-.mobile-info-item {
-  text-align: center;
-  padding: 0.75rem 0.5rem;
-  background-color: white;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.mobile-info-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #212529;
-  margin-bottom: 0.25rem;
-}
-
-.mobile-info-label {
-  font-size: 0.75rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.modal-footer-questions {
-  border-top: 1px solid #e9ecef;
-  padding: 1rem 1.25rem;
-  background-color: #f8f9fa;
-  text-align: center;
-}
-
-.mobile-close-btn {
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 8px;
-  padding: 0.6rem 1.25rem;
-  min-height: 44px;
-}
-
-/* Mobile Date Picker Optimizations */
-@media (max-width: 768px) {
-  .date-picker-dropdown {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 90vw !important;
-    max-width: 350px !important;
-    z-index: 1060 !important;
-    margin: 0 !important;
-  }
-  
-  .datetime-dropdown {
-    min-width: 90vw !important;
-    max-width: 350px !important;
-  }
-  
-  .date-picker-header {
-    padding: 0.75rem;
-  }
-  
-  .month-year {
-    font-size: 1rem;
-    min-width: 120px;
-  }
-  
-  .nav-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 1.1rem;
-  }
-  
-  .date-btn {
-    min-height: 40px;
-    font-size: 0.9rem;
-  }
-  
-  .time-picker-section {
-    padding: 0.75rem;
-  }
-  
-  .time-input {
-    width: 50px;
-    padding: 6px 4px;
-    font-size: 0.9rem;
-  }
-  
-  .ampm-btn {
-    padding: 3px 6px;
-    font-size: 0.7rem;
-    min-width: 30px;
-  }
-  
-  .quick-time-buttons {
-    gap: 0.25rem;
-  }
-  
-  .quick-time-buttons .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
-}
-
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .mobile-action-btn:hover {
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .test-paper-card-mobile:hover {
-    transform: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-  
-  .student-item-mobile:hover {
-    border-color: #e9ecef;
-    box-shadow: none;
-  }
-  
-  /* Larger touch targets */
-  .mobile-action-btn {
-    min-height: 48px;
-    padding: 0.75rem;
-  }
-  
-  .mobile-modal-btn {
-    min-height: 48px;
-    padding: 0.75rem 1.25rem;
-  }
-  
-  .mobile-remove-btn {
-    min-height: 40px;
-    padding: 0.5rem;
-  }
-}
-
-/* Landscape Mobile Optimizations */
-@media (max-width: 768px) and (orientation: landscape) {
-  .modal-body-mobile {
-    max-height: 60vh;
-  }
-  
-  .students-container-mobile {
-    max-height: 50vh;
-  }
-  
-  .mobile-card-layout {
-    padding: 0.75rem;
-  }
-  
-  .mobile-summary-item {
-    padding: 0.5rem;
-  }
-}
-
-/* Very Small Screens */
-@media (max-width: 375px) {
-  .mobile-card-title {
-    font-size: 1rem;
-  }
-  
-  .mobile-summary-label {
-    font-size: 0.7rem;
-  }
-  
-  .mobile-summary-value {
-    font-size: 0.85rem;
-  }
-  
-  .mobile-action-btn {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.5rem;
-  }
-  
-  .mobile-modal-title {
-    font-size: 1rem;
-  }
-  
-  .modal-mobile-responsive {
-    margin: 0.25rem;
-  }
-}
-
-/* Legacy responsive adjustments */
-@media (max-width: 768px) {
-  .action-btn {
-    min-width: 100%;
-    margin-bottom: 0.5rem;
-  }
-}
-
-/* Questions Display Styling (matching previewTestPaper.vue) */
-.questions-container {
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  padding: 0.75rem;
-  background-color: #fafafa;
-}
-
-.question-item {
-  background-color: transparent;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  transition: none;
-  margin: 0;
-  padding: 0;
-}
-
-.question-item:hover {
-  box-shadow: none;
-  transform: none;
-}
-
-.question-wrapper {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
-
-.question-content {
-  flex: 1;
-}
-
-.question-text {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #212529;
-  line-height: 1.4;
-  margin-bottom: 0.15rem;
-}
-
-.chapter-badge {
-  background-color: #6c757d;
-  color: white;
-  padding: 0.15rem 0.35rem;
-  border-radius: 3px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  margin-left: 0.5rem;
-}
-
-.options-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.options-column {
-  flex: 1;
-}
-
-.option-item-column {
-  display: flex;
-  align-items: center;
-  border-radius: 0;
-  border: none;
-  background: none;
-  transition: background-color 0.3s ease;
-}
-
-.option-item-column:hover {
-  background-color: transparent;
-}
-
-.option-item-column.correct-option {
-  background-color: transparent !important;
-  color: #1e7e34;
-}
-
-.option-item-column.correct-option:hover {
-  background-color: transparent !important;
-}
-
-.option-item-column.correct-option .option-label,
-.option-item-column.correct-option .option-text {
-  color: #1e7e34;
-  font-weight: 600;
-}
-
-.option-prefix {
-  width: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.correct-tick {
-  color: #1e7e34;
-  font-size: 0.9rem;
-}
-
-.tick-placeholder {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-}
-
-.option-label {
-  font-weight: 600;
-  margin-right: 0.5rem;
-  min-width: 20px;
-  color: #495057;
-  font-size: 0.9rem;
-}
-
-.option-text {
-  flex: 1;
-  color: #212529;
-  font-size: 0.9rem;
-}
-
-.question-marks {
-  text-align: right;
-}
-
-.marks-row {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.marks {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.question-divider {
-  color: inherit;
-  border: 0;
-  border-top: var(--bs-border-width) solid;
-  opacity: .25;
-}
-
-/* Assignment Modal Specific Styling */
-.modal-body-fixed {
-  min-height: 500px;
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
+/* ===== STUDENTS CONTAINER ===== */
 .students-container {
   min-height: 300px;
-  max-height: 350px;
+  max-height: 400px;
   border: 1px solid #e9ecef;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1rem;
-  background-color: #fafafa;
-  position: relative;
+  background: #fafafa;
 }
 
 .students-loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 250px;
@@ -2797,6 +1958,7 @@ input[type="text"] {
 
 .students-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 250px;
@@ -2817,16 +1979,16 @@ input[type="text"] {
 
 .student-item {
   margin-bottom: 0.75rem;
-  padding: 0.5rem;
-  background-color: white;
-  border-radius: 6px;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
   border: 1px solid #e9ecef;
   transition: all 0.2s ease;
 }
 
 .student-item:hover {
-  border-color: #007bff;
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+  border-color: #e9ecef;
+  box-shadow: none;
 }
 
 .student-item .form-check {
@@ -2859,132 +2021,126 @@ input[type="text"] {
   gap: 0.5rem;
 }
 
-/* Modal Dialog Adjustments */
-#assignModal .modal-dialog {
-  max-width: 800px;
+/* ===== QUESTIONS DISPLAY ===== */
+.test-paper-info {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
 }
 
-#assignModal .modal-content {
-  border-radius: 12px;
-  border: none;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+.questions-container {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafafa;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
-#assignModal .modal-header {
-  border-bottom: 1px solid #e9ecef;
-  padding: 1.25rem 1.5rem;
-  background-color: #f8f9fa;
-  border-radius: 12px 12px 0 0;
+.question-item {
+  margin-bottom: 1.5rem;
 }
 
-#assignModal .modal-title {
-  font-weight: 600;
+.question-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+}
+
+.question-content {
+  flex: 1;
+}
+
+.question-text {
+  font-size: 1rem;
+  font-weight: 500;
   color: #212529;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
 }
 
-#assignModal .modal-body {
-  padding: 1.5rem;
-}
-
-#assignModal .modal-footer {
-  border-top: 1px solid #e9ecef;
-  padding: 1rem 1.5rem;
-  background-color: #f8f9fa;
-}
-
-/* Custom scrollbar for student list */
-.student-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.student-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.student-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.student-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Form styling improvements */
-.form-label.fw-semibold {
-  font-weight: 600;
-  color: #495057;
-}
-
-.form-check-label.fw-semibold {
-  font-weight: 600;
-}
-
-/* Toggle switch styling */
-.form-check-input:checked {
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.form-check-input:focus {
-  border-color: #86b7fe;
-  outline: 0;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-/* Badge improvements */
-.badge {
+.chapter-badge {
+  background: #6c757d;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
-  padding: 0.35em 0.65em;
+  margin-left: 0.5rem;
 }
 
-/* Button improvements */
-.btn-sm {
-  --bs-btn-padding-y: 0.25rem;
-  --bs-btn-padding-x: 0.5rem;
-  --bs-btn-font-size: 0.875rem;
+.options-container {
+  margin-top: 0.75rem;
 }
 
-.btn-outline-danger:hover {
-  transform: translateY(-1px);
+.option-item-column {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
 }
 
-/* Loading spinner color */
-.text-primary .spinner-border {
-  color: #007bff !important;
+.option-item-column.correct-option {
+  background: #d4edda;
+  color: #155724;
 }
 
-/* Fix toggle label position jumping */
-.toggle-label-fixed {
-  min-width: 110px;
-  text-align: left;
+.option-prefix {
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.correct-tick {
+  color: #28a745;
+  font-size: 0.9rem;
+}
+
+.tick-placeholder {
+  width: 16px;
+  height: 16px;
   display: inline-block;
 }
 
-/* Custom date input styling */
-.date-input-custom::-webkit-calendar-picker-indicator {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23212529' d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1H2zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5z'/%3e%3c/svg%3e");
-  background-size: 16px 16px;
-  background-repeat: no-repeat;
-  background-position: center;
+.option-label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  min-width: 20px;
+  color: #495057;
+  font-size: 0.9rem;
 }
 
-.datetime-input-custom::-webkit-calendar-picker-indicator {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23212529' d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1H2zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5z'/%3e%3c/svg%3e");
-  background-size: 16px 16px;
-  background-repeat: no-repeat;
-  background-position: center;
+.option-text {
+  flex: 1;
+  color: #212529;
+  font-size: 0.9rem;
 }
 
-/* Style the date input to show DD/MM/YYYY format hint */
-.date-input-custom:invalid,
-.datetime-input-custom:invalid {
-  background-color: #fff;
+.question-marks {
+  text-align: right;
+  min-width: 60px;
 }
 
-/* Modern Custom Date Picker Styles */
+.marks {
+  background: #007bff;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.question-divider {
+  border-color: #e9ecef;
+  margin: 1rem 0;
+}
+
+/* ===== CUSTOM DATE PICKER ===== */
 .custom-date-picker,
 .custom-datetime-picker {
   position: relative;
@@ -2994,18 +2150,16 @@ input[type="text"] {
 .datetime-input-modern {
   cursor: pointer;
   padding-right: 40px;
-  background-color: white;
+  background: white;
   border: 1px solid #ced4da;
   border-radius: 8px;
   font-size: 1rem;
-  line-height: 1.5;
   transition: all 0.3s ease;
 }
 
 .date-input-modern:focus,
 .datetime-input-modern:focus {
   border-color: #86b7fe;
-  outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
@@ -3020,7 +2174,6 @@ input[type="text"] {
   z-index: 5;
 }
 
-/* Date Picker Dropdown */
 .date-picker-dropdown {
   position: absolute;
   top: 100%;
@@ -3029,7 +2182,7 @@ input[type="text"] {
   background: white;
   border: 1px solid #e9ecef;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   margin-top: 4px;
   animation: fadeInDown 0.2s ease-out;
@@ -3050,14 +2203,13 @@ input[type="text"] {
   }
 }
 
-/* Date Picker Header */
 .date-picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #f1f3f4;
-  background-color: white;
+  background: white;
   border-radius: 8px 8px 0 0;
 }
 
@@ -3086,14 +2238,13 @@ input[type="text"] {
 }
 
 .nav-btn:hover {
-  background-color: #e9ecef;
+  background: #e9ecef;
   color: #212529;
 }
 
-/* Calendar Grid */
 .date-picker-calendar {
   padding: 0.75rem;
-  background-color: white;
+  background: white;
 }
 
 .weekdays {
@@ -3134,7 +2285,7 @@ input[type="text"] {
 }
 
 .date-btn:not(.other-month):hover {
-  background-color: #e3f2fd;
+  background: #e3f2fd;
   color: #1976d2;
 }
 
@@ -3144,30 +2295,20 @@ input[type="text"] {
 }
 
 .date-btn.selected {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background: #007bff;
+  color: white;
   font-weight: 600;
-  border: 1px solid #bbdefb;
 }
 
 .date-btn.today {
-  background-color: #e8f5e8;
+  background: #e8f5e8;
   color: #2e7d32;
   font-weight: 600;
-  border: 1px solid #c8e6c9;
 }
 
-.date-btn.selected.today {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #bbdefb;
-}
-
-/* Time Picker Section */
 .time-picker-section {
   border-top: 1px solid #f1f3f4;
   padding: 0.75rem 1rem;
-  
 }
 
 .time-picker-header {
@@ -3247,13 +2388,13 @@ input[type="text"] {
 
 .ampm-btn:hover {
   border-color: #86b7fe;
-  background-color: #f8f9fa;
+  background: #f8f9fa;
 }
 
 .ampm-btn.active {
-  background-color: #e3f2fd;
-  border-color: #bbdefb;
-  color: #1976d2;
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
   font-weight: 600;
 }
 
@@ -3269,14 +2410,13 @@ input[type="text"] {
   padding: 0.25rem 0.75rem;
 }
 
-/* Date Picker Footer */
 .date-picker-footer {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
   padding: 0.75rem 1rem;
   border-top: 1px solid #f1f3f4;
-  background-color: white;
+  background: white;
   border-radius: 0 0 8px 8px;
 }
 
@@ -3285,90 +2425,304 @@ input[type="text"] {
   padding: 0.5rem 1rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .date-picker-modal {
-    margin: 1rem;
-    min-width: auto;
-    width: calc(100% - 2rem);
-    max-width: none;
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 767px) {
+  .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 100px; /* Increased space for mobile button */
   }
-  
-  .datetime-modal {
-    min-width: auto;
+
+  .search-filter-card {
+    padding: 1rem;
+    margin-bottom: 1rem; /* Reduced margin */
   }
-  
-  .date-picker-header {
-    padding: 0.75rem 1rem;
+
+  .test-paper-card {
+    margin-bottom: 1rem;
+    border-radius: 12px; /* Slightly smaller radius */
   }
-  
-  .month-year {
-    font-size: 1rem;
-    min-width: 120px;
+
+  /* Compact card header for mobile */
+  .card-header {
+    padding: 1rem; /* Reduced padding */
   }
-  
-  .date-picker-calendar {
-    padding: 0.75rem;
+
+  .card-title {
+    font-size: 1.1rem; /* Slightly smaller */
+    margin-bottom: 0.5rem; /* Reduced margin */
+    line-height: 1.3;
   }
-  
-  .time-picker-section {
-    padding: 0.75rem 1rem;
+
+  .card-meta {
+    gap: 0.4rem; /* Reduced gap */
   }
-  
-  .date-picker-footer {
-    padding: 0.75rem 1rem;
+
+  .subject-badge,
+  .standard-badge {
+    padding: 0.25rem 0.65rem; /* Smaller badges for mobile */
+    font-size: 0.7rem;
+    border-radius: 4px; /* Smaller radius on mobile */
+  }
+
+  /* Compact card body for mobile */
+  .card-body {
+    padding: 1rem; /* Reduced padding */
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr 1fr; /* 2 columns on mobile */
+    gap: 0.6rem; /* Reduced gap */
+  }
+
+  .info-item {
+    padding: 0.6rem; /* Reduced padding */
+    gap: 0.6rem;
+  }
+
+  .info-item i {
+    font-size: 1.1rem; /* Slightly smaller icons */
+  }
+
+  .info-label {
+    font-size: 0.75rem; /* Smaller label */
+  }
+
+  .info-value {
+    font-size: 0.9rem; /* Smaller value */
+  }
+
+  /* Compact action buttons for mobile */
+  .card-actions {
+    padding: 0.8rem 1rem; /* Reduced padding */
+    gap: 0.4rem; /* Reduced gap */
+    flex-direction: row; /* Keep horizontal on mobile */
     flex-wrap: wrap;
   }
-  
-  .date-picker-footer .btn {
+
+  .btn-action {
     flex: 1;
-    min-width: auto;
+    min-width: calc(50% - 0.2rem); /* 2 buttons per row */
+    padding: 0.5rem 0.4rem; /* Compact padding */
+    font-size: 0.85rem; /* Slightly smaller text */
+    margin-bottom: 0.4rem;
   }
-  
-  .quick-time-buttons {
-    gap: 0.25rem;
+
+  .btn-action:nth-child(odd) {
+    margin-right: 0.2rem;
   }
-  
-  .quick-time-buttons .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+
+  .btn-action:nth-child(even) {
+    margin-left: 0.2rem;
+  }
+
+  .btn-action:nth-last-child(-n+2) {
+    margin-bottom: 0; /* Remove margin from last row */
+  }
+
+  .btn-action i {
+    font-size: 0.9rem;
+  }
+
+  /* Ensure mobile create button doesn't overlap */
+  .mobile-create-btn {
+    padding: 0.8rem; /* Reduced padding */
+  }
+
+  .btn-create-mobile {
+    padding: 0.6rem 1rem; /* Reduced padding */
+  }
+
+  /* Modal optimizations for mobile */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .students-container {
+    max-height: 300px;
+  }
+
+  .date-picker-dropdown {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw !important;
+    max-width: 350px !important;
+    z-index: 1060 !important;
+    margin: 0 !important;
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  .date-picker-modal {
-    background: #2d3748;
-    color: #e2e8f0;
+@media (max-width: 575px) {
+  .header-title-section h4 {
+    font-size: 1.25rem;
   }
-  
-  .date-picker-header {
-    background-color: #4a5568;
-    border-bottom-color: #4a5568;
+
+  /* Even more compact for very small screens */
+  .container-fluid {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
   }
-  
-  .time-picker-section {
-    background-color: #4a5568;
-    border-top-color: #4a5568;
+
+  .search-filter-card {
+    padding: 0.8rem;
   }
-  
-  .weekday {
-    color: #a0aec0;
+
+  .card-header {
+    padding: 0.8rem;
   }
-  
-  .date-btn:not(.other-month):hover {
-    background-color: #4299e1;
-    color: white;
+
+  .card-title {
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
   }
-  
-  .date-btn.other-month {
-    color: #718096;
+
+  .card-body {
+    padding: 0.8rem;
   }
-  
-  .time-input {
-    background-color: #4a5568;
-    border-color: #718096;
-    color: #e2e8f0;
+
+  .info-grid {
+    grid-template-columns: 1fr 1fr; /* Keep 2 columns */
+    gap: 0.5rem;
+  }
+
+  .info-item {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .info-item i {
+    font-size: 1rem;
+  }
+
+  .info-label {
+    font-size: 0.7rem;
+  }
+
+  .info-value {
+    font-size: 0.85rem;
+  }
+
+  .card-actions {
+    padding: 0.6rem 0.8rem;
+    gap: 0.3rem;
+  }
+
+  .btn-action {
+    padding: 0.45rem 0.3rem;
+    font-size: 0.8rem;
+    min-width: calc(50% - 0.15rem);
+  }
+
+  .btn-action:nth-child(odd) {
+    margin-right: 0.15rem;
+  }
+
+  .btn-action:nth-child(even) {
+    margin-left: 0.15rem;
+  }
+
+  .search-input,
+  .sort-select {
+    height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .form-control {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* ===== MOBILE LANDSCAPE OPTIMIZATION ===== */
+@media (max-width: 767px) and (orientation: landscape) {
+  .test-paper-card {
+    margin-bottom: 0.8rem;
+  }
+
+  .card-header {
+    padding: 0.8rem;
+  }
+
+  .card-body {
+    padding: 0.8rem;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns in landscape */
+    gap: 0.5rem;
+  }
+
+  .card-actions {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .btn-action {
+    min-width: calc(25% - 0.3rem); /* 4 buttons per row in landscape */
+    padding: 0.4rem 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-action:not(:last-child) {
+    margin-right: 0.4rem;
+    margin-bottom: 0;
+  }
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+.student-list::-webkit-scrollbar,
+.questions-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.student-list::-webkit-scrollbar-track,
+.questions-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.student-list::-webkit-scrollbar-thumb,
+.questions-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.student-list::-webkit-scrollbar-thumb:hover,
+.questions-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
+@media (hover: none) and (pointer: coarse) {
+  .test-paper-card:hover {
+    /* Remove transform to prevent position change */
+    /* transform: none; */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .btn-action:hover {
+    /* Remove transform to prevent position change */
+    /* transform: none; */
+    box-shadow: none;
+  }
+
+  .student-item:hover {
+    border-color: #e9ecef;
+    box-shadow: none;
+  }
+
+  .btn-action {
+    min-height: 48px;
+    padding: 0.75rem;
   }
 }
 </style>

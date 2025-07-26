@@ -351,6 +351,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Bootstrap Icons */
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
+
 .instructions-page {
   background-color: #f8f9fa;
   min-height: 100vh;
@@ -925,7 +928,4 @@ onUnmounted(() => {
   color: #6c757d;
   line-height: 1.3;
 }
-
-/* Bootstrap Icons - ensure they're available */
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
 </style>

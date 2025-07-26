@@ -1050,7 +1050,6 @@ const navigateToEdit = () => {
 
 /* Adjust modal backdrop opacity to match School Dashboard modals */
 :deep(.modal-backdrop),
-::v-deep .modal-backdrop,
 :global(.modal-backdrop) {
   background-color: rgba(0, 0, 0, 0.25) !important;
   opacity: 0.5 !important;

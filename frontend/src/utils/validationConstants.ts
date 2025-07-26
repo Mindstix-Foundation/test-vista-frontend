@@ -110,8 +110,19 @@ export const validateContactNumber = (number: string): boolean => {
   // Remove all non-digit characters for validation
   const cleaned = number.replace(/\D/g, '')
   
-  // Must be exactly 10 digits for Indian mobile numbers
-  return cleaned.length === 10 && /^[6-9]/.test(cleaned)
+  // Handle both formats:
+  // 1. Plain 10-digit number (6-9 followed by 9 digits)
+  // 2. +91 prefixed number (91 followed by 10-digit number starting with 6-9)
+  if (cleaned.length === 10) {
+    // Plain 10-digit format
+    return /^[6-9]/.test(cleaned)
+  } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+    // +91 prefixed format
+    const phoneNumber = cleaned.substring(2) // Remove '91' prefix
+    return phoneNumber.length === 10 && /^[6-9]/.test(phoneNumber)
+  }
+  
+  return false
 }
 
 // Contact number formatting function for display (no + prefix, allow more than 10 digits to show user input)
@@ -132,11 +143,16 @@ export const formatContactNumberForAPI = (number: string): string => {
   // Remove all non-digit characters
   const cleaned = number.replace(/\D/g, '')
   
-  // If it's exactly 10 digits, add +91
+  // Handle different formats:
   if (cleaned.length === 10) {
+    // Plain 10-digit format - add +91
     return `+91${cleaned}`
+  } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+    // Already has 91 prefix - add + sign
+    return `+${cleaned}`
   }
   
+  // Return as-is for other formats (shouldn't happen with proper validation)
   return cleaned
 }
 

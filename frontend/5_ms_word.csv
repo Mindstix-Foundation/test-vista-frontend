@@ -1,21 +1,21 @@
 question,a,b,c,d,correct_answer
-"Which command is used to store the active document permanently?","Save","Send","Prepare","Save as",a
-"Which shortcut key is used to highlight the entire word document?","Ctrl + A","Ctrl + O","Ctrl + S","Ctrl + E",a
-"Which tool in MS Word is used to keep the familiar and repeated options?","Title bar","Task bar","Scroll bar","Quick access tool bar",d
-"Which area in MS Word is used to enter the text?","Work space","Work sheet","Slides","Work book",a
-"Which bar contains the current position of the cursor in MS Word?","Layout","Title bar","Status bar","Horizontal ruler",c
-"Where does the close button appear in MS Word?","Top left corner of the window","Bottom left corner of the window","Top right corner of the window","Bottom right corner of the window",c
-"Which one of the following is a word processor?","MS Word","MS Excel","MS Access","MS Office publisher",a
-"Which one of the following is text styling feature of MS Word?","Word fill","Word art","Word colour","Word font",b
-"Which option is used to store the duplicate of the active document permanently?","Save","Send","Save as","Rename",c
-"Which option is used to view an existing word document?","New","Open","Publish","Prepare",b
-"Which document view give an appearance as in web browser?","Draft view","Outline view","Web layout","Full screen reading",c
-"Which group includes superscript subscript strike through options in MS Word?","Clipboard","Font","Paragraph","Style",b
-"What is the purpose of x button?","Close button","Office button","Maximize button","Minimize button",a
-"Which option is used for tab setting?","Horizontal ruler","Status bar","Vertical ruler","Vertical scroll bar",a
-"What is the purpose of undo action in MS Word?","Restore previous action","Get the current action","Goes to previous page","Goes to previous paragraph",a
-"Which option is used to activate and deactivate ruler?","View grids","View ruler","Insert tool bar","Insert ruler",b
-"Which menu contains Symbol option in MS Word?","Tools","Table","Format","Insert",d
-"Which operation is to be performed before paste?","Ctrl + V","Cut / copy","Select all","Select text",b
-"Which option is used to locate any specific character symbols or formulas in a document?","Find","Searching text","Replace","Selecting text",a
-"Which feature is used to create a newspaper type document?","Tables","Tab stops","Columns","Bullets and numbering",c 
+Which command is used to store the active document permanently?,Save,Send,Prepare,Save as,a
+Which shortcut key is used to highlight the entire word document?,Ctrl + A,Ctrl + O,Ctrl + S,Ctrl + E,a
+Which tool in MS Word is used to keep the familiar and repeated options?,Title bar,Task bar,Scroll bar,Quick access tool bar,d
+Which area in MS Word is used to enter the text?,Work space,Work sheet,Slides,Work book,a
+Which bar contains the current position of the cursor in MS Word?,Layout,Title bar,Status bar,Horizontal ruler,c
+Where does the close button appear in MS Word?,Top left corner of the window,Bottom left corner of the window,Top right corner of the window,Bottom right corner of the window,c
+Which one of the following is a word processor?,MS Word,MS Excel,MS Access,MS Office publisher,a
+Which one of the following is text styling feature of MS Word?,Word fill,Word art,Word colour,Word font,b
+Which option is used to store the duplicate of the active document permanently?,Save,Send,Save as,Rename,c
+Which option is used to view an existing word document?,New,Open,Publish,Prepare,b
+Which document view give an appearance as in web browser?,Draft view,Outline view,Web layout,Full screen reading,c
+Which group includes superscript subscript strike through options in MS Word?,Clipboard,Font,Paragraph,Style,b
+What is the purpose of x button?,Close button,Office button,Maximize button,Minimize button,a
+Which option is used for tab setting?,Horizontal ruler,Status bar,Vertical ruler,Vertical scroll bar,a
+What is the purpose of undo action in MS Word?,Restore previous action,Get the current action,Goes to previous page,Goes to previous paragraph,a
+Which option is used to activate and deactivate ruler?,View grids,View ruler,Insert tool bar,Insert ruler,b
+Which menu contains Symbol option in MS Word?,Tools,Table,Format,Insert,d
+Which operation is to be performed before paste?,Ctrl + V,Cut / copy,Select all,Select text,b
+Which option is used to locate any specific character symbols or formulas in a document?,Find,Searching text,Replace,Selecting text,a
+Which feature is used to create a newspaper type document?,Tables,Tab stops,Columns,Bullets and numbering,c 

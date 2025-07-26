@@ -435,6 +435,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Bootstrap Icons */
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
+
 .detailed-report-page {
   background-color: #f8f9fa;
   min-height: 100vh;
@@ -577,9 +580,6 @@ onUnmounted(() => {
 .flex-grow-1 {
   flex-grow: 1;
 }
-
-/* Bootstrap Icons */
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
 
 /* Modal Styles */
 .modal {

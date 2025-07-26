@@ -27,127 +27,206 @@
 
         <!-- Score Card -->
         <div class="score-card">
-          <div class="score-circle" ref="scoreCircle">
-            {{ displayObtainedMarks }}/{{ result.total_marks }}
+          <div class="score-header">
+            <h3 class="exam-title">{{ result.title }}</h3>
+            <p class="performance-text">{{ getPerformanceText(displayPercentage) }}</p>
           </div>
-          <h3 class="mb-2">{{ result.title }}</h3>
-          <p class="mb-3">{{ getPerformanceText(displayPercentage) }}</p>
-          <div class="row">
-            <div class="col-md-3 col-6 mb-2">
-              <i class="bi bi-check-circle-fill d-block mb-1"></i>
-              <strong>{{ result.correct_answers }}/{{ result.total_questions }}</strong>
-              <small class="d-block">Correct</small>
+          
+          <div class="score-metrics">
+            <div class="metric-card marks-card" ref="scoreCircle">
+              <div class="metric-icon">
+                <i class="bi bi-award-fill"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-value">
+                  <span class="obtained-marks">{{ displayObtainedMarks }}</span>
+                  <span class="total-marks">/{{ result.total_marks }}</span>
+                </div>
+                <div class="metric-label">Marks Obtained</div>
+              </div>
             </div>
-            <div class="col-md-3 col-6 mb-2">
-              <i class="bi bi-x-circle-fill d-block mb-1"></i>
-              <strong>{{ result.wrong_answers }}/{{ result.total_questions }}</strong>
-              <small class="d-block">Wrong</small>
+            
+            <div class="metric-card percentage-card">
+              <div class="metric-icon">
+                <i class="bi bi-percent"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-value percentage-value">{{ displayPercentage }}%</div>
+                <div class="metric-label">Score Percentage</div>
+              </div>
+                         </div>
+           </div>
+           
+          <div class="row stats-row">
+            <div class="col-lg col-md-4 col-6 mb-3">
+              <i class="bi bi-list-ul d-block mb-2"></i>
+              <strong class="stat-number">{{ result.total_questions }}</strong>
+              <small class="d-block stat-label">Total Questions</small>
             </div>
-            <div class="col-md-3 col-6 mb-2">
-              <i class="bi bi-clock-fill d-block mb-1"></i>
-              <strong>{{ formatTime(result.time_taken_seconds) }}</strong>
-              <small class="d-block">Time Taken</small>
+            <div class="col-lg col-md-4 col-6 mb-3">
+              <i class="bi bi-pencil-fill d-block mb-2"></i>
+              <strong class="stat-number">{{ result.attempted_questions }}</strong>
+              <small class="d-block stat-label">Attempted Questions</small>
             </div>
-            <div class="col-md-3 col-6 mb-2">
-              <i class="bi bi-award-fill d-block mb-1"></i>
-              <strong>{{ displayPercentage }}%</strong>
-              <small class="d-block">Score</small>
+            <div class="col-lg col-md-4 col-6 mb-3">
+              <i class="bi bi-check-circle-fill d-block mb-2"></i>
+              <strong class="stat-number">{{ result.correct_answers }}</strong>
+              <small class="d-block stat-label">Correct</small>
             </div>
-          </div>
-          <div class="row mt-3">
-            <div class="col-12">
-              <i class="bi bi-target d-block mb-1"></i>
-              <strong>{{ displayAccuracy }}%</strong>
-              <small class="d-block">Accuracy</small>
+            <div class="col-lg col-md-4 col-6 mb-3">
+              <i class="bi bi-x-circle-fill d-block mb-2"></i>
+              <strong class="stat-number">{{ result.wrong_answers }}</strong>
+              <small class="d-block stat-label">Wrong</small>
+            </div>
+            <div class="col-lg col-md-4 col-6 mb-3">
+              <i class="bi bi-bullseye d-block mb-2"></i>
+              <strong class="stat-number">{{ displayAccuracy }}%</strong>
+              <small class="d-block stat-label">Accuracy</small>
+            </div>
+            <div class="col-lg col-md-4 col-6 mb-3">
+              <i class="bi bi-award-fill d-block mb-2"></i>
+              <strong class="stat-number">{{ displayPercentage }}%</strong>
+              <small class="d-block stat-label">Score Percentage</small>
+            </div>
+            <div class="col-lg col-md-4 col-12 mb-3">
+              <i class="bi bi-clock-fill d-block mb-2"></i>
+              <strong class="stat-number">{{ formatTime(result.time_taken_seconds) }}</strong>
+              <small class="d-block stat-label">Time Taken</small>
             </div>
           </div>
         </div>
 
         <!-- Chapter-wise Performance Analysis -->
         <div v-if="result.chapter_wise_analysis && result.chapter_wise_analysis.length > 0" class="chapter-analysis-section">
-          <h4 class="section-title">
-            <i class="bi bi-bar-chart-fill"></i> Chapter-wise Performance
-          </h4>
-          <div class="chapter-cards">
-            <div 
-              v-for="analysis in result.chapter_wise_analysis" 
-              :key="analysis.chapterName"
-              class="chapter-card"
-              :class="getChapterCardClass(analysis.performanceLevel)"
-            >
-              <div class="chapter-header">
-                <h5 class="chapter-name">{{ analysis.chapterName }}</h5>
-                <span class="performance-badge" :class="getPerformanceBadgeClass(analysis.performanceLevel)">
-                  {{ analysis.performanceLevel }}
-                </span>
+          <div class="section-header">
+            <h4 class="section-title">
+              <i class="bi bi-bar-chart-fill"></i> Chapter-wise Performance
+            </h4>
+            
+            <!-- Sorting Controls -->
+            <div class="sorting-controls">
+              <div class="sort-label">
+                <i class="bi bi-funnel me-2"></i>
+                <span>Sort by:</span>
               </div>
-              <div class="chapter-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Questions:</span>
-                  <span class="stat-value">{{ analysis.correct }}/{{ analysis.total }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Score:</span>
-                  <span class="stat-value">{{ analysis.percentage }}%</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Marks:</span>
-                  <span class="stat-value">{{ analysis.obtainedMarks }}/{{ analysis.totalMarks }}</span>
-                </div>
-              </div>
-              <div class="progress-bar">
-                <div 
-                  class="progress-fill" 
-                  :style="{ width: analysis.percentage + '%' }"
-                  :class="getProgressBarClass(analysis.performanceLevel)"
-                ></div>
+              <div class="sort-options">
+                <button 
+                  class="sort-option"
+                  :class="{ active: sortBy === 'sequence' }"
+                  @click="sortChapters('sequence')"
+                >
+                  <i class="bi bi-list-ol me-2"></i>
+                  <span>Chapter Order</span>
+                </button>
+                <button 
+                  class="sort-option"
+                  :class="{ active: sortBy === 'score' }"
+                  @click="sortChapters('score')"
+                >
+                  <i class="bi bi-trophy me-2"></i>
+                  <span>Performance</span>
+                </button>
               </div>
             </div>
+          </div>
+
+          <div class="chapter-table-container">
+            <table class="table chapter-table">
+              <thead>
+                <tr>
+                  <th scope="col">Chapter</th>
+                  <th scope="col">Total Questions</th>
+                  <th scope="col">Attempted</th>
+                  <th scope="col">Correct</th>
+                  <th scope="col">Wrong</th>
+                  <th scope="col">Performance</th>
+                  <th scope="col">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="chapter in sortedChapters" 
+                  :key="chapter.chapterName"
+                  class="chapter-row"
+                  :class="getChapterRowClass(chapter.performanceLevel)"
+                >
+                  <td class="chapter-name-cell">
+                    <strong>{{ chapter.chapterName }}</strong>
+                  </td>
+                  <td class="text-center">
+                    <span class="stat-number">{{ chapter.total }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="stat-number">{{ chapter.total - chapter.skipped }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="stat-number correct-count">{{ chapter.correct }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="stat-number wrong-count">{{ chapter.wrong }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="performance-badge" :class="getPerformanceBadgeClass(chapter.performanceLevel)">
+                      {{ chapter.performanceLevel }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <div class="score-cell">
+                      <span class="percentage">{{ chapter.percentage }}%</span>
+                      <div class="progress-bar-small">
+                        <div 
+                          class="progress-fill-small" 
+                          :style="{ width: chapter.percentage + '%' }"
+                          :class="getProgressBarClass(chapter.performanceLevel)"
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
         <!-- Strengths and Weaknesses -->
         <div v-if="result.strengths || result.weaknesses" class="strengths-weaknesses-section">
-          <div class="row">
-            <div class="col-md-6" v-if="result.strengths && result.strengths.length > 0">
-              <div class="strength-card">
-                <h5 class="card-title">
-                  <i class="bi bi-star-fill"></i> Your Strengths
-                </h5>
-                <ul class="strength-list">
-                  <li v-for="strength in result.strengths" :key="strength">
-                    <i class="bi bi-check-circle-fill text-success"></i>
-                    {{ strength }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="col-md-6" v-if="result.weaknesses && result.weaknesses.length > 0">
-              <div class="weakness-card">
-                <h5 class="card-title">
-                  <i class="bi bi-exclamation-triangle-fill"></i> Areas for Improvement
-                </h5>
-                <ul class="weakness-list">
-                  <li v-for="weakness in result.weaknesses" :key="weakness">
-                    <i class="bi bi-x-circle-fill text-danger"></i>
-                    {{ weakness }}
-                  </li>
-                </ul>
-              </div>
-            </div>
+          <div v-if="result.strengths && result.strengths.length > 0" class="strength-card">
+            <h5 class="card-title">
+              <i class="bi bi-star-fill"></i> Your Strengths
+            </h5>
+            <ul class="strength-list">
+              <li v-for="strength in result.strengths" :key="strength">
+                <i class="bi bi-check-circle-fill text-success"></i>
+                {{ strength }}
+              </li>
+            </ul>
+          </div>
+          <div v-if="result.weaknesses && result.weaknesses.length > 0" class="weakness-card">
+            <h5 class="card-title">
+              <i class="bi bi-exclamation-triangle-fill"></i> Areas for Improvement
+            </h5>
+            <ul class="weakness-list">
+              <li v-for="weakness in result.weaknesses" :key="weakness">
+                <i class="bi bi-x-circle-fill text-danger"></i>
+                {{ weakness }}
+              </li>
+            </ul>
           </div>
         </div>
 
         <!-- Recommendations -->
         <div v-if="result.recommendations && result.recommendations.length > 0" class="recommendations-section">
           <h4 class="section-title">
-            <i class="bi bi-lightbulb-fill"></i> Recommendations
+            <i class="bi bi-lightbulb-fill"></i> Personalized Recommendations
           </h4>
-          <div class="recommendations-card">
-            <div class="recommendations-content">
-              <div v-for="recommendation in result.recommendations" :key="recommendation" class="recommendation-item">
-                <i class="bi bi-arrow-right-circle-fill"></i>
-                <span>{{ recommendation }}</span>
+          <div class="recommendations-grid">
+            <div v-for="recommendation in result.recommendations" :key="recommendation" class="recommendation-item" :class="getRecommendationClass(recommendation)">
+              <div class="recommendation-body">
+                <h5 class="recommendation-title">{{ getRecommendationType(recommendation) }}</h5>
+                <div class="recommendation-chapters">
+                  <strong>{{ getRecommendationChapters(recommendation) }}</strong>
+                </div>
+                <p class="recommendation-text">{{ getRecommendationMessage(recommendation) }}</p>
               </div>
             </div>
           </div>
@@ -323,6 +402,7 @@ const detailedReport = ref<DetailedReport | null>(null)
 const showLeaveConfirmation = ref(false)
 const scoreCircle = ref<HTMLElement>()
 const isLoadingDetailedReport = ref(false)
+const sortBy = ref('sequence')
 
 // Computed properties for display
 const displayObtainedMarks = computed(() => {
@@ -330,14 +410,32 @@ const displayObtainedMarks = computed(() => {
 })
 
 const displayPercentage = computed(() => {
-  return result.value.percentage || 0
+  return parseFloat(result.value.percentage || 0).toFixed(2)
 })
 
 const displayAccuracy = computed(() => {
   if (result.value.attempted_questions && result.value.attempted_questions > 0) {
-    return ((result.value.correct_answers / result.value.attempted_questions) * 100).toFixed(1)
+    return ((result.value.correct_answers / result.value.attempted_questions) * 100).toFixed(2)
   }
-  return '0.0'
+  return '0.00'
+})
+
+const sortedChapters = computed(() => {
+  if (!result.value.chapter_wise_analysis || !Array.isArray(result.value.chapter_wise_analysis)) {
+    return []
+  }
+  
+  const chapters = [...result.value.chapter_wise_analysis]
+  
+  if (sortBy.value === 'sequence') {
+    // Sort by sequence number (syllabus order)
+    return chapters.sort((a, b) => (a.sequenceNumber || 999) - (b.sequenceNumber || 999))
+  } else if (sortBy.value === 'score') {
+    // Sort by percentage (highest first)
+    return chapters.sort((a, b) => (b.percentage || 0) - (a.percentage || 0))
+  }
+  
+  return chapters
 })
 
 // Methods
@@ -428,6 +526,16 @@ const backToExams = () => {
   router.push('/student/exam')
 }
 
+const sortChapters = (sortType: 'sequence' | 'score') => {
+  console.log('Sorting chapters by:', sortType)
+  sortBy.value = sortType
+}
+
+const getAttemptedCount = (analysis: any) => {
+  // Calculate attempted as total - skipped
+  return (analysis.total || 0) - (analysis.skipped || 0)
+}
+
 const formatTime = (seconds: number): string => {
   if (!seconds) return '0m 0s'
   
@@ -445,6 +553,15 @@ const getPerformanceText = (percentage: number): string => {
 }
 
 const getChapterCardClass = (performanceLevel: string): string => {
+  switch (performanceLevel) {
+    case 'excellent': return 'chapter-excellent'
+    case 'good': return 'chapter-good'
+    case 'average': return 'chapter-average'
+    default: return 'chapter-poor'
+  }
+}
+
+const getChapterRowClass = (performanceLevel: string): string => {
   switch (performanceLevel) {
     case 'excellent': return 'chapter-excellent'
     case 'good': return 'chapter-good'
@@ -506,22 +623,65 @@ const getOptionClass = (optionIndex: number, correctOption: number, selectedOpti
   return ''
 }
 
+// New methods for parsing recommendations
+const getRecommendationEmoji = (recommendation: string): string => {
+  const match = recommendation.match(/^(🔴|🟡|🟢)/)
+  return match ? match[1] : '💡'
+}
+
+const getRecommendationType = (recommendation: string): string => {
+  if (recommendation.includes('🔴 Critical Focus Areas')) return 'Critical Focus Areas'
+  if (recommendation.includes('🟡 Areas for Enhancement')) return 'Areas for Enhancement'
+  if (recommendation.includes('🟢 Strong Performance')) return 'Strong Performance'
+  return 'Recommendation'
+}
+
+const getRecommendationChapters = (recommendation: string): string => {
+  const match = recommendation.match(/: ([^-]+) -/)
+  return match ? match[1].trim() : ''
+}
+
+const getRecommendationMessage = (recommendation: string): string => {
+  const match = recommendation.match(/ - (.+)$/)
+  return match ? match[1].trim() : recommendation
+}
+
+const getRecommendationClass = (recommendation: string): string => {
+  if (recommendation.includes('🔴 Critical Focus Areas')) return 'recommendation-critical'
+  if (recommendation.includes('🟡 Areas for Enhancement')) return 'recommendation-enhancement'
+  if (recommendation.includes('🟢 Strong Performance')) return 'recommendation-strong'
+  return 'recommendation-default'
+}
+
 const animateScore = () => {
   if (!scoreCircle.value) return
   
   let currentMarks = 0
+  let currentPercentage = 0
   const targetMarks = displayObtainedMarks.value || 0
-  const totalMarks = result.value.total_marks || 1
-  const increment = targetMarks / 50
+  const targetPercentage = parseFloat(displayPercentage.value) || 0
+  const marksIncrement = targetMarks / 50
+  const percentageIncrement = targetPercentage / 50
   
   const timer = setInterval(() => {
-    currentMarks += increment
+    currentMarks += marksIncrement
+    currentPercentage += percentageIncrement
+    
     if (currentMarks >= targetMarks) {
       currentMarks = targetMarks
+      currentPercentage = targetPercentage
       clearInterval(timer)
     }
-    if (scoreCircle.value) {
-      scoreCircle.value.textContent = Math.round(currentMarks) + '/' + totalMarks
+    
+    // Update the marks display
+    const obtainedMarksEl = document.querySelector('.obtained-marks')
+    const percentageValueEl = document.querySelector('.percentage-value')
+    
+    if (obtainedMarksEl) {
+      obtainedMarksEl.textContent = Math.round(currentMarks).toString()
+    }
+    if (percentageValueEl) {
+      percentageValueEl.textContent = Math.round(currentPercentage * 100) / 100 + '%'
     }
   }, 30)
 }
@@ -587,6 +747,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Bootstrap Icons */
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
+
 .result-page {
   background-color: #f8f9fa;
   min-height: 100vh;
@@ -607,57 +770,260 @@ onUnmounted(() => {
 }
 
 .score-card {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-radius: 20px;
-  padding: 30px;
-  text-align: center;
-  margin-bottom: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
 }
 
-.score-circle {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+.score-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.exam-title {
+  color: #2c3e50;
+  font-weight: 700;
+  font-size: 1.75rem;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.performance-text {
+  color: #6c757d;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.score-metrics {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.metric-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 320px;
+  border: 3px solid #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.marks-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.2);
+}
+
+.percentage-card:hover {
+  border-color: #28a745;
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.2);
+}
+
+.marks-card::before {
+  background: linear-gradient(90deg, #007bff, #17a2b8);
+}
+
+.percentage-card::before {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.metric-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #007bff, #17a2b8);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
-  font-size: 2rem;
-  font-weight: bold;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.3);
+}
+
+.percentage-card .metric-icon {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+}
+
+.metric-icon i {
+  font-size: 1.5rem;
+  color: white;
+}
+
+.metric-content {
+  flex: 1;
+  text-align: left;
+}
+
+.metric-value {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.obtained-marks {
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #1a365d;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.total-marks {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #4a5568;
+}
+
+.percentage-value {
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #1a365d;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Stats Row Styling */
+.stats-row {
+  justify-content: center;
+  align-items: stretch;
+  padding-top: 24px;
+  border-top: 2px solid #f8f9fa;
+  background: transparent !important;
+}
+
+.stats-row .col-lg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  min-width: 0;
+}
+
+.stats-row i {
+  font-size: 1.8rem !important;
+  margin-bottom: 8px !important;
+  color: #6c757d !important;
+}
+
+.stats-row .stat-number {
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 4px !important;
+  color: #2c3e50 !important;
+  line-height: 1.2;
+  display: block !important;
+}
+
+.stats-row .stat-label {
+  font-size: 1rem !important;
+  color: #6c757d !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block !important;
+}
+
+/* Stats Row Styling */
+.stats-row {
+  justify-content: center;
+  align-items: stretch;
+}
+
+.stats-row .col-lg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.stats-row i {
+  font-size: 1.8rem !important;
+  margin-bottom: 8px !important;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-number {
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 4px !important;
+  color: white !important;
   line-height: 1.2;
 }
 
-.score-card h3 {
-  color: white;
-  font-weight: 600;
+/* Override stat-number color for table cells */
+.chapter-table .stat-number {
+  color: #333 !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
 }
 
-.score-card p {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.1rem;
+.chapter-table .correct-count {
+  color: #28a745 !important;
 }
 
-.score-card .row .col-md-3 {
-  margin-bottom: 10px;
+.chapter-table .wrong-count {
+  color: #dc3545 !important;
 }
 
-.score-card i {
-  font-size: 1.5rem;
-  margin-bottom: 5px;
+/* Fix stats row visibility - ensure proper colors */
+.score-card .stats-row i {
+  color: #6c757d !important;
 }
 
-.score-card strong {
-  display: block;
-  font-size: 1.2rem;
-  margin-bottom: 2px;
+.score-card .stat-number {
+  color: #2c3e50 !important;
 }
 
-.score-card small {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
+.score-card .stat-label {
+  color: #6c757d !important;
+}
+
+.stat-label {
+  font-size: 1rem !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Chapter Analysis Section */
@@ -665,63 +1031,162 @@ onUnmounted(() => {
   margin-bottom: 30px;
 }
 
-.section-title {
-  color: #333;
-  font-weight: 600;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
   padding-bottom: 10px;
   border-bottom: 2px solid #e9ecef;
 }
 
-.chapter-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+.section-title {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
-.chapter-card {
+/* Sorting Controls - Clean Design */
+.sorting-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 0;
+}
+
+.sort-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.sort-options {
+  display: flex;
+  gap: 8px;
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  color: #495057;
+  font-weight: 500;
+  outline: none;
+}
+
+.sort-option:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sort-option.active {
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.sort-option.active:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.sort-option i {
+  font-size: 0.9rem;
+}
+
+.chapter-table-container {
+  overflow-x: auto;
+}
+
+.chapter-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  color: #333;
   background: white;
   border-radius: 12px;
-  padding: 20px;
+  overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #dee2e6;
-  transition: all 0.3s ease;
 }
 
-.chapter-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+.chapter-table th,
+.chapter-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.chapter-excellent {
-  border-left-color: #28a745;
+.chapter-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
 }
 
-.chapter-good {
-  border-left-color: #17a2b8;
+.chapter-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
-.chapter-average {
-  border-left-color: #ffc107;
+.chapter-row {
+  transition: background-color 0.2s ease;
 }
 
-.chapter-poor {
-  border-left-color: #dc3545;
+.chapter-row:hover {
+  background-color: #f9f9f9;
 }
 
-.chapter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+.chapter-row.chapter-excellent {
+  border-left: 4px solid #28a745;
 }
 
-.chapter-name {
-  font-size: 1.1rem;
+.chapter-row.chapter-good {
+  border-left: 4px solid #17a2b8;
+}
+
+.chapter-row.chapter-average {
+  border-left: 4px solid #ffc107;
+}
+
+.chapter-row.chapter-poor {
+  border-left: 4px solid #dc3545;
+}
+
+.chapter-name-cell {
   font-weight: 600;
   color: #333;
-  margin: 0;
+  min-width: 200px;
+}
+
+.stat-number {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.correct-count {
+  color: #28a745;
+}
+
+.wrong-count {
+  color: #dc3545;
 }
 
 .performance-badge {
@@ -752,39 +1217,28 @@ onUnmounted(() => {
   color: #721c24;
 }
 
-.chapter-stats {
+.score-cell {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
 }
 
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 1rem;
-  font-weight: 600;
+.percentage {
+  font-size: 1.1rem;
+  font-weight: 700;
   color: #333;
 }
 
-.progress-bar {
+.progress-bar-small {
   width: 100%;
   height: 8px;
-  background-color: #e9ecef;
+  background-color: #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
 }
 
-.progress-fill {
+.progress-fill-small {
   height: 100%;
   transition: width 0.3s ease;
 }
@@ -807,30 +1261,52 @@ onUnmounted(() => {
 
 /* Strengths and Weaknesses Section */
 .strengths-weaknesses-section {
-  margin-bottom: 30px;
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
 }
 
 .strength-card,
 .weakness-card {
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  height: 100%;
+  padding: 25px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  min-height: 200px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.strength-card:hover,
+.weakness-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
 .strength-card {
-  border-left: 4px solid #28a745;
+  border-left: 5px solid #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+}
+
+.strength-card:hover {
+  box-shadow: 0 4px 20px rgba(40, 167, 69, 0.15);
 }
 
 .weakness-card {
-  border-left: 4px solid #dc3545;
+  border-left: 5px solid #dc3545;
+  background: linear-gradient(135deg, #fff8f8 0%, #ffffff 100%);
+}
+
+.weakness-card:hover {
+  box-shadow: 0 4px 20px rgba(220, 53, 69, 0.15);
 }
 
 .card-title {
   color: #333;
-  font-weight: 600;
-  margin-bottom: 15px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
 }
 
 .strength-list,
@@ -838,63 +1314,143 @@ onUnmounted(() => {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
 }
 
 .strength-list li,
 .weakness-list li {
-  padding: 8px 0;
+  padding: 12px 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.strength-list li:last-child,
+.weakness-list li:last-child {
+  border-bottom: none;
 }
 
 /* Recommendations Section */
 .recommendations-section {
-  margin-bottom: 30px;
+  margin-bottom: 40px;
 }
 
-.recommendations-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #17a2b8;
-}
-
-.recommendations-content {
+.recommendations-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 25px;
 }
 
 .recommendation-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 10px;
-  border-left: 4px solid #17a2b8;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid #e9ecef;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .recommendation-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
-.recommendation-item i {
-  color: #17a2b8;
-  font-size: 1.2rem;
-  flex-shrink: 0;
+/* Critical Focus Areas - Red Theme */
+.recommendation-critical {
+  border-left-color: #dc3545;
+  background: linear-gradient(135deg, #fff8f8 0%, #ffffff 100%);
 }
 
-.recommendation-item span {
+.recommendation-critical:hover {
+  box-shadow: 0 4px 20px rgba(220, 53, 69, 0.15);
+}
+
+/* Areas for Enhancement - Yellow Theme */
+.recommendation-enhancement {
+  border-left-color: #ffc107;
+  background: linear-gradient(135deg, #fffef8 0%, #ffffff 100%);
+}
+
+.recommendation-enhancement:hover {
+  box-shadow: 0 4px 20px rgba(255, 193, 7, 0.15);
+}
+
+/* Strong Performance - Green Theme */
+.recommendation-strong {
+  border-left-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+}
+
+.recommendation-strong:hover {
+  box-shadow: 0 4px 20px rgba(40, 167, 69, 0.15);
+}
+
+/* Default Theme */
+.recommendation-default {
+  border-left-color: #17a2b8;
+  background: linear-gradient(135deg, #f8fdff 0%, #ffffff 100%);
+}
+
+.recommendation-default:hover {
+  box-shadow: 0 4px 20px rgba(23, 162, 184, 0.15);
+}
+
+.recommendation-body {
+  width: 100%;
+}
+
+.recommendation-title {
+  font-size: 1.3rem;
+  font-weight: 700;
   color: #2c3e50;
+  margin-bottom: 15px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.recommendation-chapters {
+  font-size: 1.05rem;
   font-weight: 600;
-  line-height: 1.5;
-  font-size: 0.95rem;
+  color: #495057;
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.recommendation-critical .recommendation-chapters {
+  background: rgba(220, 53, 69, 0.1);
+  color: #721c24;
+}
+
+.recommendation-enhancement .recommendation-chapters {
+  background: rgba(255, 193, 7, 0.1);
+  color: #856404;
+}
+
+.recommendation-strong .recommendation-chapters {
+  background: rgba(40, 167, 69, 0.1);
+  color: #155724;
+}
+
+.recommendation-default .recommendation-chapters {
+  background: rgba(23, 162, 184, 0.1);
+  color: #0c5460;
+}
+
+.recommendation-text {
+  font-size: 1.05rem;
+  color: #6c757d;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* Detailed Analysis Section */
@@ -1091,9 +1647,6 @@ onUnmounted(() => {
   padding: 15px 30px;
 }
 
-/* Bootstrap Icons */
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css');
-
 /* Modal Styles */
 .modal {
   position: fixed;
@@ -1158,168 +1711,274 @@ onUnmounted(() => {
   
   /* Mobile Score Card */
   .score-card {
-    padding: 20px 15px;
-    margin-bottom: 20px;
-    border-radius: 15px;
+    padding: 24px 16px;
+    margin-bottom: 24px;
+    border-radius: 12px;
   }
   
-  .score-circle {
-    width: 130px;
-    height: 130px;
-    font-size: 1.3rem;
-    margin-bottom: 15px;
+  .score-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
   }
   
-  .score-card h3 {
-    font-size: 1.3rem;
-    margin-bottom: 10px;
+  .exam-title {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
   }
   
-  .score-card p {
+  .performance-text {
     font-size: 1rem;
-    margin-bottom: 15px;
   }
   
-  .score-card .row .col-md-3 {
-    margin-bottom: 15px;
+  .score-metrics {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
   }
   
-  .score-card .col-6 {
-    padding: 0 5px;
+  .metric-card {
+    min-width: auto;
+    padding: 20px;
+    gap: 12px;
   }
   
-  .score-card i {
-    font-size: 1.2rem;
-    margin-bottom: 3px;
+  .metric-icon {
+    width: 48px;
+    height: 48px;
   }
   
-  .score-card strong {
-    font-size: 1rem;
-    margin-bottom: 3px;
+  .metric-icon i {
+    font-size: 1.3rem;
   }
   
-  .score-card small {
+  .obtained-marks {
+    font-size: 2.6rem;
+  }
+  
+  .total-marks {
+    font-size: 1.8rem;
+  }
+  
+  .percentage-value {
+    font-size: 2.6rem;
+  }
+  
+  .metric-label {
     font-size: 0.8rem;
   }
   
+  /* Mobile Stats Row */
+  .stats-row {
+    padding-top: 20px;
+  }
+  
+  .stats-row .col-lg {
+    margin-bottom: 20px;
+  }
+  
+  .stats-row i {
+    font-size: 1.4rem !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .stat-number {
+    font-size: 1.3rem !important;
+    margin-bottom: 3px !important;
+  }
+  
+  .stat-label {
+    font-size: 0.85rem !important;
+    letter-spacing: 0.3px;
+  }
+
   /* Mobile Section Titles */
-  .section-title {
-    font-size: 1.2rem;
+  .section-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
     margin-bottom: 15px;
-    padding-bottom: 8px;
+    padding-bottom: 15px;
     text-align: center;
   }
   
-  /* Mobile Chapter Cards */
-  .chapter-cards {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  .section-title {
+    font-size: 1.2rem;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    text-align: center;
+  }
+
+  /* Mobile Sorting Controls */
+  .sorting-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     margin-bottom: 15px;
   }
   
-  .chapter-card {
-    padding: 15px;
-    border-radius: 10px;
+  .sort-label {
+    font-size: 0.85rem;
   }
   
-  .chapter-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 12px;
+  .sort-options {
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
   }
   
-  .chapter-name {
-    font-size: 1rem;
-    line-height: 1.3;
+  .sort-option {
+    flex: 1;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    text-align: center;
+    justify-content: center;
   }
   
+  .sort-option i {
+    font-size: 0.85rem;
+  }
+
+  /* Mobile Chapter Cards */
+  .chapter-table-container {
+    overflow-x: auto;
+  }
+
+  .chapter-table {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .chapter-table th,
+  .chapter-table td {
+    padding: 10px 12px;
+  }
+
+  .chapter-table th {
+    font-size: 0.85rem;
+  }
+
+  .chapter-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .chapter-row {
+    transition: background-color 0.2s ease;
+  }
+
+  .chapter-row:hover {
+    background-color: #f9f9f9;
+  }
+
+  .chapter-name-cell {
+    font-weight: 600;
+    color: #333;
+  }
+
   .performance-badge {
-    align-self: flex-start;
     padding: 3px 10px;
     font-size: 0.75rem;
   }
   
-  .chapter-stats {
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  
-  .stat-item {
+  .score-cell {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px solid #f0f0f0;
+    gap: 5px;
   }
   
-  .stat-item:last-child {
-    border-bottom: none;
+  .percentage {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #333;
   }
   
-  .stat-label {
-    font-size: 0.85rem;
-    margin-bottom: 0;
+  .progress-bar-small {
+    width: 100%;
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
   }
   
-  .stat-value {
-    font-size: 0.9rem;
-    font-weight: 600;
+  .progress-fill-small {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-excellent {
+    background-color: #28a745;
+  }
+  
+  .progress-good {
+    background-color: #17a2b8;
+  }
+  
+  .progress-average {
+    background-color: #ffc107;
+  }
+  
+  .progress-poor {
+    background-color: #dc3545;
   }
   
   /* Mobile Strengths and Weaknesses */
-  .strengths-weaknesses-section .row {
-    margin: 0;
-  }
-  
-  .strengths-weaknesses-section .col-md-6 {
-    padding: 0;
-    margin-bottom: 15px;
+  .strengths-weaknesses-section {
+    gap: 20px;
   }
   
   .strength-card,
   .weakness-card {
-    padding: 15px;
+    padding: 20px;
     border-radius: 10px;
-    margin-bottom: 10px;
+    min-height: 150px;
   }
   
   .card-title {
-    font-size: 1.1rem;
-    margin-bottom: 12px;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+  
+  .strength-list,
+  .weakness-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
   
   .strength-list li,
   .weakness-list li {
-    padding: 6px 0;
-    font-size: 0.9rem;
+    padding: 10px 0;
+    font-size: 1rem;
     line-height: 1.4;
   }
   
   /* Mobile Recommendations */
   .recommendations-section {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
   }
   
-  .recommendations-card {
-    padding: 15px;
+  .recommendations-grid {
+    gap: 20px;
+  }
+
+  .recommendation-item {
+    padding: 20px;
     border-radius: 10px;
   }
   
-  .recommendation-item {
-    padding: 12px 15px;
-    border-radius: 8px;
-    gap: 10px;
+  .recommendation-title {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
   }
   
-  .recommendation-item i {
+  .recommendation-chapters {
     font-size: 1rem;
+    padding: 8px 12px;
+    margin-bottom: 12px;
   }
   
-  .recommendation-item span {
-    font-size: 0.9rem;
-    line-height: 1.4;
+  .recommendation-text {
+    font-size: 1rem;
+    line-height: 1.5;
   }
   
   /* Mobile Question Cards */
@@ -1451,83 +2110,282 @@ onUnmounted(() => {
   
   /* Extra small score card */
   .score-card {
-    padding: 15px 10px;
-    margin-bottom: 15px;
+    padding: 20px 12px;
+    margin-bottom: 20px;
   }
   
-  .score-circle {
-    width: 100px;
-    height: 100px;
-    font-size: 1.1rem;
-    margin-bottom: 12px;
+  .score-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
   }
   
-  .score-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
+  .exam-title {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
   }
   
-  .score-card p {
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-  }
-  
-  .score-card .row .col-6 {
-    margin-bottom: 12px;
-    padding: 0 3px;
-  }
-  
-  .score-card i {
-    font-size: 1rem;
-  }
-  
-  .score-card strong {
-    font-size: 0.9rem;
-  }
-  
-  .score-card small {
-    font-size: 0.75rem;
-  }
-  
-  /* Extra small section titles */
-  .section-title {
-    font-size: 1.1rem;
-    margin-bottom: 12px;
-    padding-bottom: 6px;
-  }
-  
-  /* Extra small cards */
-  .chapter-card,
-  .strength-card,
-  .weakness-card,
-  .recommendations-card,
-  .question-card {
-    padding: 12px;
-    border-radius: 8px;
-  }
-  
-  .chapter-name {
+  .performance-text {
     font-size: 0.95rem;
   }
   
-  .card-title {
+  .score-metrics {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .metric-card {
+    padding: 16px;
+    gap: 10px;
+  }
+  
+  .metric-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .metric-icon i {
+    font-size: 1.1rem;
+  }
+  
+  .obtained-marks {
+    font-size: 2.2rem;
+  }
+  
+  .total-marks {
+    font-size: 1.6rem;
+  }
+  
+  .percentage-value {
+    font-size: 2.2rem;
+  }
+  
+  .metric-label {
+    font-size: 0.75rem;
+  }
+  
+  /* Extra Small Stats Row */
+  .stats-row {
+    padding-top: 16px;
+  }
+  
+  .stats-row .col-lg {
+    margin-bottom: 15px;
+  }
+  
+  .stats-row i {
+    font-size: 1.2rem !important;
+    margin-bottom: 5px !important;
+  }
+  
+  .stat-number {
+    font-size: 1.1rem !important;
+    margin-bottom: 2px !important;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem !important;
+    letter-spacing: 0.2px;
+  }
+
+  /* Extra small section titles */
+  .section-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    text-align: center;
+  }
+  
+  /* Extra Small Sorting Controls */
+  .sorting-controls {
+    margin-bottom: 0;
+  }
+  
+  .sort-selector {
+    padding: 4px 8px;
+    border-radius: 12px;
+  }
+  
+  .sort-label {
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+    padding: 0 4px;
+  }
+  
+  .sort-options {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .sort-option {
+    padding: 6px 8px;
+    min-width: auto;
+    border-radius: 8px;
+    gap: 5px;
+  }
+  
+  .option-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+  
+  .option-icon i {
+    font-size: 0.8rem;
+  }
+  
+  .option-title {
+    font-size: 0.7rem;
+  }
+
+  /* Extra small cards */
+  .chapter-table-container {
+    overflow-x: auto;
+  }
+
+  .chapter-table {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .chapter-table th,
+  .chapter-table td {
+    padding: 10px 12px;
+  }
+
+  .chapter-table th {
+    font-size: 0.85rem;
+  }
+
+  .chapter-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .chapter-row {
+    transition: background-color 0.2s ease;
+  }
+
+  .chapter-row:hover {
+    background-color: #f9f9f9;
+  }
+
+  .chapter-name-cell {
+    font-weight: 600;
+    color: #333;
+  }
+
+  .performance-badge {
+    padding: 3px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .score-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .percentage {
     font-size: 1rem;
-    margin-bottom: 10px;
+    font-weight: 700;
+    color: #333;
+  }
+  
+  .progress-bar-small {
+    width: 100%;
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .progress-fill-small {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-excellent {
+    background-color: #28a745;
+  }
+  
+  .progress-good {
+    background-color: #17a2b8;
+  }
+  
+  .progress-average {
+    background-color: #ffc107;
+  }
+  
+  .progress-poor {
+    background-color: #dc3545;
+  }
+  
+  /* Extra small Strengths and Weaknesses */
+  .strengths-weaknesses-section {
+    gap: 15px;
+  }
+  
+  .strength-card,
+  .weakness-card {
+    padding: 18px;
+    border-radius: 10px;
+    min-height: 140px;
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  
+  .strength-list,
+  .weakness-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
   
   .strength-list li,
   .weakness-list li {
-    font-size: 0.85rem;
-    padding: 5px 0;
+    font-size: 0.95rem;
+    padding: 8px 0;
   }
   
+  /* Extra small Recommendations */
+  .recommendations-section {
+    margin-bottom: 20px;
+  }
+  
+  .recommendations-grid {
+    gap: 15px;
+  }
+
   .recommendation-item {
-    padding: 10px 12px;
-    gap: 8px;
+    padding: 18px;
+    border-radius: 8px;
   }
   
-  .recommendation-item span {
-    font-size: 0.85rem;
+  .recommendation-title {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  
+  .recommendation-chapters {
+    font-size: 0.95rem;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+  }
+  
+  .recommendation-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
   }
   
   .question-text {
