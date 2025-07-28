@@ -147,7 +147,9 @@
             <div class="d-flex flex-column gap-2">
               <!-- Top row: Fullscreen and Start Exam -->
               <div class="d-flex justify-content-center gap-2">
+                <!-- Fullscreen button - hidden on iOS devices -->
                 <button 
+                  v-if="isFullscreenSupported"
                   class="btn btn-compact flex-fill" 
                   :class="isFullscreen ? 'btn-success' : 'btn-warning'"
                   @click="toggleFullscreen"
@@ -156,10 +158,20 @@
                   <span class="d-none d-sm-inline">{{ isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen' }}</span>
                   <span class="d-inline d-sm-none">{{ isFullscreen ? 'Exit' : 'Fullscreen' }}</span>
                 </button>
+                
+                <!-- iOS Notice - shown only on iOS devices -->
+                <div v-if="isIOSDevice" class="alert alert-info mb-0 flex-fill text-center py-2">
+                  <small>
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>iOS Notice:</strong> Fullscreen not available on iPhone
+                  </small>
+                </div>
+                
                 <button 
-                  class="btn btn-success start-exam-btn btn-compact flex-fill" 
+                  class="btn btn-success start-exam-btn btn-compact" 
+                  :class="isFullscreenSupported ? 'flex-fill' : 'w-100'"
                   @click="startExam" 
-                  :disabled="!isFullscreen || isStarting"
+                  :disabled="(!isFullscreen && isFullscreenSupported) || isStarting"
                 >
                   <span v-if="isStarting" class="spinner-border spinner-border-sm me-2" role="status"></span>
                   <i v-else class="bi bi-play-circle-fill me-2"></i>
@@ -213,7 +225,29 @@ const isStarting = ref(false)
 const error = ref('')
 const examInstructions = ref<ExamInstructions>({} as ExamInstructions)
 
+// Device detection
+const isIOSDevice = ref(false)
+const isFullscreenSupported = ref(true)
+
 // Methods
+const detectDevice = () => {
+  const userAgent = navigator.userAgent.toLowerCase()
+  isIOSDevice.value = /iphone|ipod/.test(userAgent) && !window.MSStream
+  
+  // Check if fullscreen API is actually supported
+  const elem = document.documentElement as FullscreenElement
+  isFullscreenSupported.value = !!(
+    elem.requestFullscreen || 
+    elem.webkitRequestFullscreen || 
+    elem.msRequestFullscreen
+  )
+  
+  // iOS iPhones don't support fullscreen API
+  if (isIOSDevice.value) {
+    isFullscreenSupported.value = false
+  }
+}
+
 const loadExamInstructions = async () => {
   // Check for assignment ID in multiple parameter names for compatibility
   const assignmentId = Number(route.query.test) || Number(route.query.assignmentId)
@@ -248,6 +282,12 @@ const toggleFullscreen = () => {
 }
 
 const enterFullscreen = () => {
+  // Skip fullscreen for iOS devices since it's not supported
+  if (isIOSDevice.value || !isFullscreenSupported.value) {
+    console.log('Fullscreen not supported on this device, proceeding without fullscreen')
+    return
+  }
+  
   const elem = document.documentElement as FullscreenElement
   
   if (elem.requestFullscreen) {
@@ -271,9 +311,22 @@ const exitFullscreen = () => {
 }
 
 const startExam = async () => {
-  if (!isFullscreen.value) {
+  // Only check fullscreen for devices that support it
+  if (!isIOSDevice.value && isFullscreenSupported.value && !isFullscreen.value) {
     alert('Please enable fullscreen mode before starting the exam.')
     return
+  }
+
+  // For iOS devices, show a security notice instead
+  if (isIOSDevice.value) {
+    const proceed = confirm(
+      'Note: Due to iOS limitations, this exam cannot run in fullscreen mode. ' +
+      'Please ensure you have a stable internet connection and avoid switching apps during the exam. ' +
+      'Do you want to continue?'
+    )
+    if (!proceed) {
+      return
+    }
   }
 
   // Check for assignment ID in multiple parameter names for compatibility
@@ -335,6 +388,7 @@ const formatDate = (dateString: string | Date): string => {
 // Lifecycle hooks
 onMounted(() => {
   loadExamInstructions()
+  detectDevice() // Detect device on mount
   
   // Add fullscreen event listeners
   document.addEventListener('fullscreenchange', handleFullscreenChange)

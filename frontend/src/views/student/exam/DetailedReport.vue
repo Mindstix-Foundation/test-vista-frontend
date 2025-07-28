@@ -249,6 +249,9 @@ const router = useRouter()
 const isLoading = ref(true)
 const error = ref('')
 const detailedReport = ref<DetailedReport>({} as DetailedReport)
+
+// Device detection
+const isIOSDevice = ref(false)
 const showLeaveConfirmation = ref(false)
 
 // Computed properties
@@ -374,10 +377,21 @@ const goBack = () => {
   })
 }
 
+const detectDevice = () => {
+  const userAgent = navigator.userAgent.toLowerCase()
+  isIOSDevice.value = /iphone|ipod/.test(userAgent) && !window.MSStream
+}
+
 const exitFullscreen = () => {
+  // Skip fullscreen exit for iOS devices since it's not supported
+  if (isIOSDevice.value) {
+    console.log('Fullscreen not supported on iOS device')
+    return
+  }
+  
   const doc = document as FullscreenDocument
-  if (document.fullscreenElement || 
-      doc.webkitFullscreenElement || 
+  if (document.fullscreenElement ||
+      doc.webkitFullscreenElement ||
       doc.msFullscreenElement) {
     
     if (document.exitFullscreen) {
@@ -425,6 +439,7 @@ const cancelLeave = () => {
 // Lifecycle hooks
 onMounted(() => {
   loadDetailedReport()
+  detectDevice()
   exitFullscreen()
   blockBackNavigation()
 })

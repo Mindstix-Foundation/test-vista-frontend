@@ -3,10 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./src/assets/Cutout.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
     <meta name="format-detection" content="telephone=no, address=no, email=no" />
     <meta name="autocomplete" content="off" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#007bff" />
     <title>Test Vista</title>
+    <style>
+      /* Prevent FOUC and ensure initial mobile scrolling - MOBILE ONLY */
+      @media screen and (max-width: 768px) {
+        html, body {
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          touch-action: manipulation !important;
+          height: auto !important;
+          min-height: 100vh !important;
+        }
+        
+        /* Initial loading state for mobile */
+        #app {
+          min-height: 100vh !important;
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: block !important;
+        }
+      }
+      
+      /* Preserve desktop layout */
+      @media screen and (min-width: 769px) {
+        html, body {
+          overflow-x: hidden;
+          min-height: 100vh;
+        }
+        
+        #app {
+          min-height: 100vh;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>

@@ -75,6 +75,18 @@
         </div>
       </div>
 
+      <!-- iOS Notice Bar - Only shown on iOS devices -->
+      <div v-if="isIOSDevice" class="ios-notice-bar">
+        <div class="container-fluid">
+          <div class="alert alert-info mb-0 py-2 text-center">
+            <small>
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>iOS Notice:</strong> Fullscreen mode is not available on iPhone. Please avoid switching apps during your exam.
+            </small>
+          </div>
+        </div>
+      </div>
+
       <!-- Main Content -->
       <div class="exam-content">
         <!-- Question Panel -->
@@ -239,8 +251,8 @@
     </div>
 
     <!-- Modals -->
-    <!-- Fullscreen Warning Modal -->
-    <div v-if="showFullscreenWarning">
+    <!-- Fullscreen Warning Modal - Only show for devices that support fullscreen -->
+    <div v-if="showFullscreenWarning && isFullscreenSupported">
       <div class="modal-backdrop fade show"></div>
       <div class="modal fade show" tabindex="-1" style="display: block;">
         <div class="modal-dialog modal-dialog-centered">
@@ -264,8 +276,8 @@
       </div>
     </div>
 
-    <!-- Exit Warning Modal -->
-    <div v-if="showExitWarning">
+    <!-- Exit Warning Modal - Only show for devices that support fullscreen -->
+    <div v-if="showExitWarning && isFullscreenSupported">
       <div class="modal-backdrop fade show"></div>
       <div class="modal fade show" tabindex="-1" style="display: block;">
         <div class="modal-dialog modal-dialog-centered">
@@ -394,9 +406,34 @@ const studentName = ref('')
 const showExitWarning = ref(false)
 const showSubmitConfirmation = ref(false)
 const fullscreenChecker = ref<NodeJS.Timeout | null>(null)
+
+// Device detection
+const isIOSDevice = ref(false)
+const isFullscreenSupported = ref(true)
+
+// Additional reactive variables
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
 const showNavigationPanel = ref(false)
+
+// Methods
+const detectDevice = () => {
+  const userAgent = navigator.userAgent.toLowerCase()
+  isIOSDevice.value = /iphone|ipod/.test(userAgent) && !window.MSStream
+  
+  // Check if fullscreen API is actually supported
+  const element = document.documentElement as FullscreenElement
+  isFullscreenSupported.value = !!(
+    element.requestFullscreen || 
+    element.webkitRequestFullscreen || 
+    element.msRequestFullscreen
+  )
+  
+  // iOS iPhones don't support fullscreen API
+  if (isIOSDevice.value) {
+    isFullscreenSupported.value = false
+  }
+}
 
 // Computed properties
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
@@ -739,19 +776,31 @@ const getQuestionBtnClass = (index: number) => {
 }
 
 const checkFullscreen = () => {
+  // Skip fullscreen check for iOS devices
+  if (isIOSDevice.value || !isFullscreenSupported.value) {
+    return
+  }
+  
   const doc = document as FullscreenDocument
   const isFullscreen = !!(
-    document.fullscreenElement ?? 
-    doc.webkitFullscreenElement ?? 
+    document.fullscreenElement ??
+    doc.webkitFullscreenElement ??
     doc.msFullscreenElement
   )
-  
+
   if (!isFullscreen) {
     showFullscreenWarning.value = true
   }
 }
 
 const enterFullscreen = () => {
+  // Skip fullscreen for iOS devices since it's not supported
+  if (isIOSDevice.value || !isFullscreenSupported.value) {
+    console.log('Fullscreen not supported on this device, proceeding without fullscreen')
+    showFullscreenWarning.value = false
+    return
+  }
+  
   const element = document.documentElement as FullscreenElement
   
   if (element.requestFullscreen) {
@@ -771,6 +820,11 @@ const returnToFullscreen = () => {
 }
 
 const startFullscreenMonitoring = () => {
+  // Skip fullscreen monitoring for iOS devices
+  if (isIOSDevice.value || !isFullscreenSupported.value) {
+    return
+  }
+  
   fullscreenChecker.value = setInterval(() => {
     const doc = document as FullscreenDocument
     const isFullscreen = !!(
@@ -778,7 +832,7 @@ const startFullscreenMonitoring = () => {
       doc.webkitFullscreenElement ?? 
       doc.msFullscreenElement
     )
-    
+
     if (!isFullscreen && !showExitWarning.value && !showFullscreenWarning.value && !showSubmitConfirmation.value) {
       showExitWarning.value = true
     }
@@ -847,6 +901,7 @@ const blockBackNavigation = () => {
 onMounted(() => {
   initializeExam()
   blockBackNavigation()
+  detectDevice() // Call detectDevice on mount
   
   // Expose test function for debugging
   ;(window as Window & { testAddAnswers?: () => void; debugAnswers?: () => void }).testAddAnswers = testAddAnswers
@@ -1850,5 +1905,34 @@ body {
   background: #0056b3;
   border-color: #0056b3;
   color: white;
+}
+
+/* iOS Notice Bar */
+.ios-notice-bar {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 999;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.ios-notice-bar .alert {
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.ios-notice-bar .alert-info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-color: #90caf9;
+}
+
+.ios-notice-bar .alert-info .bi-info-circle {
+  color: #1976d2;
 }
 </style> 
