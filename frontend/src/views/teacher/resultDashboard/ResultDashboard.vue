@@ -228,10 +228,6 @@
                   <strong>{{ getRecommendationChapters(recommendation) }}</strong>
                 </div>
                 <p class="recommendation-text">{{ getRecommendationMessage(recommendation) }}</p>
-                <!-- Debug: Show raw recommendation in development -->
-                <div v-if="true" class="text-muted small mt-2" style="font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px;">
-                  Raw: {{ recommendation }}
-                </div>
               </div>
             </div>
           </div>
@@ -625,10 +621,6 @@ const fetchTestPaperResults = async () => {
     classAverageAreas.value = data.class_average_areas || []
     classRecommendations.value = data.class_recommendations || []
     
-    // Debug logging for recommendations
-    console.log('Raw class_recommendations from backend:', data.class_recommendations)
-    console.log('Processed classRecommendations:', classRecommendations.value)
-
   } catch (err) {
     console.error('Error fetching test paper results:', err)
     error.value = 'Failed to load test results. Please try again.'
@@ -782,8 +774,6 @@ const formatDecimal = (value: number) => {
 
 // Methods for parsing recommendations
 const getRecommendationType = (recommendation: string): string => {
-  console.log('Getting recommendation type for:', recommendation)
-  
   if (recommendation.includes('🔴 Critical Focus Areas') || recommendation.includes('Critical Focus Areas')) {
     return 'Critical Focus Areas'
   }
@@ -798,7 +788,6 @@ const getRecommendationType = (recommendation: string): string => {
   const typeMatch = recommendation.match(/^([^:]+):/)
   if (typeMatch) {
     const extractedType = typeMatch[1].replace(/[🔴🟡🟢]/g, '').trim()
-    console.log('Extracted type:', extractedType)
     return extractedType
   }
   
@@ -806,8 +795,6 @@ const getRecommendationType = (recommendation: string): string => {
 }
 
 const getRecommendationChapters = (recommendation: string): string => {
-  console.log('Processing recommendation for chapters:', recommendation)
-  
   // Remove emoji indicators first
   const cleanRecommendation = recommendation.replace(/[🔴🟡🟢]/g, '').trim()
   
@@ -815,7 +802,6 @@ const getRecommendationChapters = (recommendation: string): string => {
   let match = cleanRecommendation.match(/: ([^-]+) -/)
   if (match) {
     const chapters = match[1].trim()
-    console.log('Found chapters with pattern 1:', chapters)
     return chapters
   }
   
@@ -828,10 +814,8 @@ const getRecommendationChapters = (recommendation: string): string => {
     const dashIndex = fullMatch.indexOf(' - ')
     if (dashIndex !== -1) {
       const chapters = fullMatch.substring(0, dashIndex).trim()
-      console.log('Found chapters with pattern 2 (before dash):', chapters)
       return chapters
     } else {
-      console.log('Found chapters with pattern 2 (full):', fullMatch)
       return fullMatch
     }
   }
@@ -847,12 +831,10 @@ const getRecommendationChapters = (recommendation: string): string => {
     const patternMatch = cleanRecommendation.match(pattern)
     if (patternMatch) {
       const chapters = patternMatch[1].trim().replace(/\s*-.*$/, '')
-      console.log('Found chapters with pattern 3:', chapters)
       return chapters
     }
   }
   
-  console.log('No chapters found for recommendation:', recommendation)
   return 'No specific chapters identified'
 }
 
@@ -872,8 +854,6 @@ const getRecommendationMessage = (recommendation: string): string => {
 }
 
 const getRecommendationClass = (recommendation: string): string => {
-  console.log('Getting recommendation class for:', recommendation)
-  
   if (recommendation.includes('🔴 Critical Focus Areas') || recommendation.includes('Critical Focus Areas')) {
     return 'recommendation-critical'
   }
