@@ -224,10 +224,14 @@
             <div v-for="recommendation in classRecommendations" :key="recommendation" class="recommendation-item" :class="getRecommendationClass(recommendation)">
               <div class="recommendation-body">
                 <h5 class="recommendation-title">{{ getRecommendationType(recommendation) }}</h5>
-                <div class="recommendation-chapters">
+                <div class="recommendation-chapters" v-if="getRecommendationChapters(recommendation) && getRecommendationChapters(recommendation) !== 'No specific chapters identified'">
                   <strong>{{ getRecommendationChapters(recommendation) }}</strong>
                 </div>
                 <p class="recommendation-text">{{ getRecommendationMessage(recommendation) }}</p>
+                <!-- Debug: Show raw recommendation in development -->
+                <div v-if="true" class="text-muted small mt-2" style="font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px;">
+                  Raw: {{ recommendation }}
+                </div>
               </div>
             </div>
           </div>
@@ -620,6 +624,10 @@ const fetchTestPaperResults = async () => {
     classWeaknesses.value = data.class_weaknesses || []
     classAverageAreas.value = data.class_average_areas || []
     classRecommendations.value = data.class_recommendations || []
+    
+    // Debug logging for recommendations
+    console.log('Raw class_recommendations from backend:', data.class_recommendations)
+    console.log('Processed classRecommendations:', classRecommendations.value)
 
   } catch (err) {
     console.error('Error fetching test paper results:', err)
@@ -774,26 +782,120 @@ const formatDecimal = (value: number) => {
 
 // Methods for parsing recommendations
 const getRecommendationType = (recommendation: string): string => {
-  if (recommendation.includes('🔴 Critical Focus Areas')) return 'Critical Focus Areas'
-  if (recommendation.includes('🟡 Areas for Enhancement')) return 'Areas for Enhancement'
-  if (recommendation.includes('🟢 Strong Performance')) return 'Strong Performance'
+  console.log('Getting recommendation type for:', recommendation)
+  
+  if (recommendation.includes('🔴 Critical Focus Areas') || recommendation.includes('Critical Focus Areas')) {
+    return 'Critical Focus Areas'
+  }
+  if (recommendation.includes('🟡 Areas for Enhancement') || recommendation.includes('Areas for Enhancement')) {
+    return 'Areas for Enhancement'
+  }
+  if (recommendation.includes('🟢 Strong Performance') || recommendation.includes('Strong Performance')) {
+    return 'Strong Performance'
+  }
+  
+  // Try to extract type from the beginning of the string
+  const typeMatch = recommendation.match(/^([^:]+):/)
+  if (typeMatch) {
+    const extractedType = typeMatch[1].replace(/[🔴🟡🟢]/g, '').trim()
+    console.log('Extracted type:', extractedType)
+    return extractedType
+  }
+  
   return 'Recommendation'
 }
 
 const getRecommendationChapters = (recommendation: string): string => {
-  const match = recommendation.match(/: ([^-]+) -/)
-  return match ? match[1].trim() : ''
+  console.log('Processing recommendation for chapters:', recommendation)
+  
+  // Remove emoji indicators first
+  const cleanRecommendation = recommendation.replace(/[🔴🟡🟢]/g, '').trim()
+  
+  // Pattern 1: "Type: Chapters - Message"
+  let match = cleanRecommendation.match(/: ([^-]+) -/)
+  if (match) {
+    const chapters = match[1].trim()
+    console.log('Found chapters with pattern 1:', chapters)
+    return chapters
+  }
+  
+  // Pattern 2: "Type: Chapters"
+  match = cleanRecommendation.match(/: (.+)$/)
+  if (match) {
+    const fullMatch = match[1].trim()
+    
+    // Check if there's a dash separator
+    const dashIndex = fullMatch.indexOf(' - ')
+    if (dashIndex !== -1) {
+      const chapters = fullMatch.substring(0, dashIndex).trim()
+      console.log('Found chapters with pattern 2 (before dash):', chapters)
+      return chapters
+    } else {
+      console.log('Found chapters with pattern 2 (full):', fullMatch)
+      return fullMatch
+    }
+  }
+  
+  // Pattern 3: Try to extract chapter names from common patterns
+  const chapterPatterns = [
+    /chapters?[:\s]+([^.]+)/i,
+    /topics?[:\s]+([^.]+)/i,
+    /areas?[:\s]+([^.]+)/i
+  ]
+  
+  for (const pattern of chapterPatterns) {
+    const patternMatch = cleanRecommendation.match(pattern)
+    if (patternMatch) {
+      const chapters = patternMatch[1].trim().replace(/\s*-.*$/, '')
+      console.log('Found chapters with pattern 3:', chapters)
+      return chapters
+    }
+  }
+  
+  console.log('No chapters found for recommendation:', recommendation)
+  return 'No specific chapters identified'
 }
 
 const getRecommendationMessage = (recommendation: string): string => {
   const match = recommendation.match(/ - (.+)$/)
-  return match ? match[1].trim() : recommendation
+  if (match) {
+    return match[1].trim()
+  }
+  
+  // If no dash separator found, return the part after the colon
+  const colonMatch = recommendation.match(/: (.+)$/)
+  if (colonMatch) {
+    return colonMatch[1].trim()
+  }
+  
+  return recommendation
 }
 
 const getRecommendationClass = (recommendation: string): string => {
-  if (recommendation.includes('🔴 Critical Focus Areas')) return 'recommendation-critical'
-  if (recommendation.includes('🟡 Areas for Enhancement')) return 'recommendation-enhancement'
-  if (recommendation.includes('🟢 Strong Performance')) return 'recommendation-strong'
+  console.log('Getting recommendation class for:', recommendation)
+  
+  if (recommendation.includes('🔴 Critical Focus Areas') || recommendation.includes('Critical Focus Areas')) {
+    return 'recommendation-critical'
+  }
+  if (recommendation.includes('🟡 Areas for Enhancement') || recommendation.includes('Areas for Enhancement')) {
+    return 'recommendation-enhancement'
+  }
+  if (recommendation.includes('🟢 Strong Performance') || recommendation.includes('Strong Performance')) {
+    return 'recommendation-strong'
+  }
+  
+  // Fallback: check for keywords that might indicate the type
+  const lowerRecommendation = recommendation.toLowerCase()
+  if (lowerRecommendation.includes('critical') || lowerRecommendation.includes('focus') || lowerRecommendation.includes('struggling')) {
+    return 'recommendation-critical'
+  }
+  if (lowerRecommendation.includes('enhancement') || lowerRecommendation.includes('improve') || lowerRecommendation.includes('practice')) {
+    return 'recommendation-enhancement'
+  }
+  if (lowerRecommendation.includes('strong') || lowerRecommendation.includes('excellent') || lowerRecommendation.includes('good')) {
+    return 'recommendation-strong'
+  }
+  
   return 'recommendation-default'
 }
 
