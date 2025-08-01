@@ -360,6 +360,19 @@
       </div>
     </div>
 
+    <!-- Offline Warning Notification -->
+    <div v-if="showOfflineWarning" class="offline-notification">
+      <div class="container-fluid">
+        <div class="alert alert-warning alert-dismissible mb-0 py-2 text-center">
+          <small>
+            <i class="bi bi-wifi-off me-1"></i>
+            <strong>Connection Lost:</strong> You are currently offline. Your answers are being saved locally and will sync when connection is restored.
+          </small>
+          <button type="button" class="btn-close btn-close-sm" @click="showOfflineWarning = false"></button>
+        </div>
+      </div>
+    </div>
+
     <!-- Navigation Panel Backdrop -->
     <div v-if="showNavigationPanel" class="navigation-backdrop" @click="toggleNavigationPanel"></div>
   </div>
@@ -436,6 +449,22 @@ const isFullscreenSupported = ref(true)
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
 const showNavigationPanel = ref(false)
+const isOnline = ref(navigator.onLine)
+const showOfflineWarning = ref(false)
+
+// Network status monitoring
+const handleOnlineStatus = () => {
+  isOnline.value = navigator.onLine
+  if (!isOnline.value) {
+    showOfflineWarning.value = true
+    console.warn('Device went offline during exam')
+  } else {
+    showOfflineWarning.value = false
+    console.log('Device back online')
+    // Try to save state when back online
+    saveExamState()
+  }
+}
 
 // State persistence functions
 const saveExamState = () => {
@@ -453,10 +482,54 @@ const saveExamState = () => {
   }
   
   try {
-    localStorage.setItem(`exam_state_${attemptId.value}`, JSON.stringify(examState))
-    console.log('Exam state saved to localStorage')
+    const stateString = JSON.stringify(examState)
+    
+    // Check if localStorage is available and has enough space
+    if (typeof Storage !== 'undefined') {
+      // Test localStorage availability (might fail in private mode)
+      localStorage.setItem('test_storage', 'test')
+      localStorage.removeItem('test_storage')
+      
+      // Try to save the state
+      localStorage.setItem(`exam_state_${attemptId.value}`, stateString)
+      console.log('Exam state saved to localStorage')
+    } else {
+      console.warn('localStorage not available, state not saved')
+      // Fallback: try to use sessionStorage
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(`exam_state_${attemptId.value}`, stateString)
+        console.log('Exam state saved to sessionStorage (fallback)')
+      }
+    }
   } catch (error) {
     console.error('Failed to save exam state:', error)
+    
+    // Handle quota exceeded error (common on mobile)
+    if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      console.warn('Storage quota exceeded, clearing old data and retrying...')
+      try {
+        // Clear old exam states to free up space
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('exam_state_') && key !== `exam_state_${attemptId.value}`) {
+            localStorage.removeItem(key)
+          }
+        }
+        // Retry saving
+        localStorage.setItem(`exam_state_${attemptId.value}`, JSON.stringify(examState))
+        console.log('Exam state saved after clearing old data')
+      } catch (retryError) {
+        console.error('Failed to save exam state even after clearing old data:', retryError)
+        // Show user warning about potential data loss
+        if (Object.keys(answers).length > 0) {
+          console.warn('Unable to save exam progress locally. Please ensure you have a stable connection.')
+        }
+      }
+    } else if (error.name === 'SecurityError') {
+      console.warn('Storage access blocked (private browsing mode?)')
+    } else {
+      console.error('Unknown storage error:', error)
+    }
   }
 }
 
@@ -838,22 +911,57 @@ const startTimer = () => {
 }
 
 const submitExam = async () => {
+  if (isSubmittingExam.value) return
+  
   try {
     isSubmittingExam.value = true
     
     // Save final state before submission
     await saveCurrentAnswerWithState()
     
-    const response = await testAssignmentService.submitExam(attemptId.value!)
+    console.log('=== EXAM SUBMISSION DEBUG ===')
+    console.log('attemptId.value:', attemptId.value)
     
-    // Clear saved state after successful submission
-    clearExamState()
-    
-    // Navigate to results
-    router.push(`/student/exam/result?attemptId=${attemptId.value}`)
+    if (attemptId.value) {
+      const submissionData = {
+        test_attempt_id: attemptId.value
+      }
+      
+      console.log('Final submission data:', submissionData)
+      
+      const response = await testAssignmentService.submitExam(submissionData)
+      
+      console.log('Submission response:', response)
+      
+      // Clear saved state after successful submission
+      clearExamState()
+      
+      showSubmitConfirmation.value = false
+      
+      // Add a small delay before navigating to give backend time to process
+      setTimeout(() => {
+        // Navigate to result page
+        router.push({
+          path: '/student/exam/result',
+          query: { attemptId: attemptId.value }
+        })
+      }, 500) // 500ms delay
+    }
   } catch (error) {
-    console.error('Error submitting exam:', error)
-    alert('Failed to submit exam. Please try again.')
+    console.error('Failed to submit exam:', error)
+    
+    // Handle specific error types
+    if (error.response?.status === 401) {
+      alert('Your session has expired. Please log in again and restart the exam.')
+      router.push('/login')
+    } else if (error.response?.status === 404) {
+      alert('Exam not found. Please contact support.')
+    } else if (error.response?.status === 409) {
+      alert('Exam has already been submitted.')
+      router.push(`/student/exam/result?attemptId=${attemptId.value}`)
+    } else {
+      alert('Failed to submit exam. Please try again.')
+    }
   } finally {
     isSubmittingExam.value = false
     showSubmitConfirmation.value = false
@@ -861,31 +969,66 @@ const submitExam = async () => {
 }
 
 const autoSubmitExam = async () => {
-  try {
-    isSubmittingExam.value = true
-    
-    // Save the current answer before auto-submitting
-    await saveCurrentAnswerWithState()
-    
-    if (attemptId.value) {
-      const submissionData = {
-        test_attempt_id: attemptId.value
+  const MAX_RETRIES = 3
+  let retryCount = 0
+  
+  const attemptAutoSubmission = async (): Promise<any> => {
+    try {
+      isSubmittingExam.value = true
+      
+      // Save the current answer before auto-submitting
+      await saveCurrentAnswerWithState()
+      
+      if (attemptId.value) {
+        const submissionData = {
+          test_attempt_id: attemptId.value
+        }
+        
+        const response = await testAssignmentService.submitExam(submissionData)
+        
+        // Clear saved state after successful submission
+        clearExamState()
+        
+        // Navigate to result page
+        router.push({
+          path: '/student/exam/result',
+          query: { attemptId: attemptId.value }
+        })
+        
+        return response
+      }
+    } catch (error) {
+      console.error(`Auto-submission attempt ${retryCount + 1} failed:`, error)
+      
+      // Check if it's a network error and we can retry
+      if (retryCount < MAX_RETRIES && (
+        error.code === 'NETWORK_ERROR' || 
+        error.code === 'ECONNABORTED' ||
+        error.response?.status >= 500 ||
+        !error.response // Network timeout
+      )) {
+        retryCount++
+        console.log(`Retrying auto-submission (${retryCount}/${MAX_RETRIES})...`)
+        
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
+        return attemptAutoSubmission()
       }
       
-      const response = await testAssignmentService.submitExam(submissionData)
+      // If auto-submission fails after retries, save state and show error
+      console.error('Auto-submission failed after retries, preserving exam state')
+      error.value = 'Time expired but failed to submit exam automatically. Your answers have been saved. Please check your connection and try submitting manually.'
       
-      // Clear saved state after successful submission
-      clearExamState()
-      
-      // Navigate to result page
-      router.push({
-        path: '/student/exam/result',
-        query: { attemptId: attemptId.value }
-      })
+      // Don't navigate away, let user try manual submission
+      throw error
     }
+  }
+  
+  try {
+    await attemptAutoSubmission()
   } catch (err) {
-    console.error('Failed to auto-submit exam:', err)
-    error.value = 'Failed to submit exam automatically. Please try submitting manually.'
+    console.error('Final auto-submission error:', err)
+    // Keep the exam interface open so user can try manual submission
   } finally {
     isSubmittingExam.value = false
   }
@@ -1056,6 +1199,8 @@ onMounted(() => {
   // Add event listeners for page visibility and beforeunload
   document.addEventListener('visibilitychange', handleVisibilityChange)
   window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('online', handleOnlineStatus)
+  window.addEventListener('offline', handleOnlineStatus)
 })
 
 onUnmounted(() => {
@@ -1075,6 +1220,8 @@ onUnmounted(() => {
   // Remove event listeners
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('online', handleOnlineStatus)
+  window.removeEventListener('offline', handleOnlineStatus)
 })
 </script>
 
@@ -2134,5 +2281,34 @@ body {
 .recovery-notification .btn-close:hover {
   color: #2e7d32;
   opacity: 0.8;
+}
+
+/* Offline Warning Notification */
+.offline-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1002; /* Ensure it's above other content */
+  background-color: #fff3cd; /* Light yellow background */
+  border-bottom: 1px solid #ffeeba; /* Yellow border */
+  box-shadow: 0 2px 8px rgba(255, 238, 186, 0.3);
+}
+
+.offline-notification .alert {
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.offline-notification .alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
+}
+
+.offline-notification .alert-warning .bi-wifi-off {
+  color: #856404;
 }
 </style> 
