@@ -353,7 +353,7 @@
         <div class="alert alert-success alert-dismissible mb-0 py-2 text-center">
           <small>
             <i class="bi bi-check-circle me-1"></i>
-            <strong>Exam Restored:</strong> Your previous answers have been recovered. You can continue from where you left off.
+            <strong>Exam Restored:</strong> Your previous answers and remaining time have been recovered. You can continue from where you left off.
           </small>
           <button type="button" class="btn-close btn-close-sm" @click="showRecoveryNotification = false"></button>
         </div>
@@ -559,9 +559,16 @@ const loadExamState = (): boolean => {
     visitedQuestions.value = new Set(examState.visitedQuestions || [])
     questionTimeSpent.value = examState.questionTimeSpent || {}
     
+    // IMPORTANT: Restore the timeRemaining to continue from where user left off
+    if (examState.timeRemaining !== undefined && examState.timeRemaining > 0) {
+      timeRemaining.value = examState.timeRemaining
+      console.log('Restored timeRemaining from saved state:', examState.timeRemaining)
+    }
+    
     console.log('Exam state loaded from localStorage', {
       answers: Object.keys(answers).length,
-      currentQuestion: currentQuestionIndex.value
+      currentQuestion: currentQuestionIndex.value,
+      timeRemaining: timeRemaining.value
     })
     
     // Show recovery notification if there are answers to restore
@@ -688,15 +695,20 @@ const initializeExam = async () => {
     // Try to load saved state first
     const stateLoaded = loadExamState()
     
-    // Set up timer
-    if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
-      timeRemaining.value = examResponse.timeRemaining
-    } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
-      // Calculate time remaining based on duration
-      timeRemaining.value = examResponse.duration_minutes * 60
+    // Set up timer ONLY if we haven't restored it from saved state
+    if (!stateLoaded || timeRemaining.value <= 0) {
+      console.log('Setting timer from API response (no saved state or expired)')
+      if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
+        timeRemaining.value = examResponse.timeRemaining
+      } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
+        // Calculate time remaining based on duration
+        timeRemaining.value = examResponse.duration_minutes * 60
+      } else {
+        // Default to 1 hour if no duration specified
+        timeRemaining.value = 3600
+      }
     } else {
-      // Default to 1 hour if no duration specified
-      timeRemaining.value = 3600
+      console.log('Using restored timer from saved state:', timeRemaining.value)
     }
   
     // Get student info from localStorage or API
@@ -741,7 +753,8 @@ const initializeExam = async () => {
     console.log('Exam initialized', {
       stateLoaded,
       answersCount: Object.keys(answers).length,
-      currentQuestion: currentQuestionIndex.value
+      currentQuestion: currentQuestionIndex.value,
+      timeRemaining: timeRemaining.value
     })
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to load exam'
