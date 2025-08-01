@@ -698,17 +698,34 @@ const initializeExam = async () => {
     // Set up timer ONLY if we haven't restored it from saved state
     if (!stateLoaded || timeRemaining.value <= 0) {
       console.log('Setting timer from API response (no saved state or expired)')
+      
+      // Prefer backend-provided timeRemaining for accurate time sync
       if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
         timeRemaining.value = examResponse.timeRemaining
+        console.log('Using backend-provided timeRemaining:', examResponse.timeRemaining)
       } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
-        // Calculate time remaining based on duration
+        // Fallback: Calculate time remaining based on duration
         timeRemaining.value = examResponse.duration_minutes * 60
+        console.log('Using calculated timeRemaining from duration:', timeRemaining.value)
       } else {
         // Default to 1 hour if no duration specified
         timeRemaining.value = 3600
+        console.log('Using default timeRemaining:', timeRemaining.value)
       }
     } else {
       console.log('Using restored timer from saved state:', timeRemaining.value)
+      
+      // Optional: Sync with backend time if available and significantly different
+      if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
+        const backendTime = examResponse.timeRemaining
+        const timeDifference = Math.abs(timeRemaining.value - backendTime)
+        
+        // If difference is more than 30 seconds, use backend time (more reliable)
+        if (timeDifference > 30) {
+          console.log(`Time sync: Local time ${timeRemaining.value}s differs from backend ${backendTime}s by ${timeDifference}s. Using backend time.`)
+          timeRemaining.value = backendTime
+        }
+      }
     }
   
     // Get student info from localStorage or API
