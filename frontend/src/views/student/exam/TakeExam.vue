@@ -896,9 +896,10 @@ const saveAndNext = async () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     await nextQuestion()
   } else {
-    // Save current answer before submitting exam
+    // Save current answer before showing confirmation
     await saveCurrentAnswer()
-    submitExam()
+    // Show confirmation modal instead of directly submitting
+    showSubmitConfirmation.value = true
   }
   
   isSubmittingAnswer.value = false
