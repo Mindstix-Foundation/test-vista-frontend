@@ -51,7 +51,11 @@
                                                selectedType === 'Short Note' ||
                                                selectedType === 'One-Word Answer' ||
                                                selectedType === 'Odd One Out' ||
-                                               selectedType === 'Complete the Correlation'">
+                                               selectedType === 'Complete the Correlation' ||
+                                               selectedType === '2 Marks Questions' ||
+                                               selectedType === '3 Marks Questions' ||
+                                               selectedType === '4 Marks Questions' ||
+                                               selectedType === '5 Marks Questions'">
       <div class="row justify-content-center">
         <div class="col col-12 col-sm-10 ">
           <form @submit.prevent="saveQuestion">
@@ -805,7 +809,11 @@ async function fetchQuestionTypes() {
         'Give Scientific Reasons',
         'Short Answer Question',
         'Complete and Identify Reaction',
-        'Short Note'
+        'Short Note',
+        '2 Marks Questions',
+        '3 Marks Questions',
+        '4 Marks Questions',
+        '5 Marks Questions'
       ]
     }
   } catch (error) {
@@ -1371,6 +1379,14 @@ function getQuestionTypeId(): number {
       return 10
     case 'Short Note':
       return 11
+    case '2 Marks Questions':
+      return 12
+    case '3 Marks Questions':
+      return 13
+    case '4 Marks Questions':
+      return 14
+    case '5 Marks Questions':
+      return 15
     default:
       return 0 // Default to 0, which should trigger a validation error
   }
@@ -1384,6 +1400,10 @@ function getIsPreviousExam(): boolean {
     case 'Complete and Identify Reaction':
     case 'Short Note':
     case 'One-Word Answer':
+    case '2 Marks Questions':
+    case '3 Marks Questions':
+    case '4 Marks Questions':
+    case '5 Marks Questions':
       return descriptiveQuestion.value.isPreviousExam
     case 'Multiple Choice Question (MCQ)':
       return mcqQuestion.value.isPreviousExam

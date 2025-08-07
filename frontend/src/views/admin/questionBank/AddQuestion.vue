@@ -16,7 +16,7 @@
               <span class="d-block text-start text-secondary">{{ questionBankData.subjectName }} : {{ questionBankData.chapterName }}</span>
             </h4>
             <div class="d-flex align-items-center gap-3">
-              <!-- CSV/Excel Upload Button for MCQ -->
+              <!-- CSV/Excel Upload Button -->
               <button 
                 v-if="showCsvUploadButton"
                 type="button"
@@ -24,7 +24,7 @@
                 @click="openCsvUploadModal"
               >
                 <i class="bi bi-upload me-2"></i>
-                Upload CSV/Excel (MCQ)
+                Upload CSV/Excel
               </button>
               <h4 class="fw-bolder text-uppercase mb-0" id="pageHeader">Add Question</h4>
             </div>
@@ -67,21 +67,62 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Upload MCQ Questions from CSV/Excel</h5>
+            <h5 class="modal-title">Upload {{ selectedQuestionType }} Questions from CSV/Excel</h5>
             <button type="button" class="btn-close" @click="closeCsvUploadModal"></button>
           </div>
           <div class="modal-body">
             <div class="alert alert-info">
-              <h6>CSV/Excel Format Requirements:</h6>
+              <h6>CSV/Excel Format Requirements for {{ selectedQuestionType }}:</h6>
               <p class="mb-2">Your CSV or Excel file should have the following columns (with headers):</p>
-              <ul class="mb-2">
+              
+              <!-- MCQ Format -->
+              <ul v-if="selectedQuestionType === 'Multiple Choice Question (MCQ)'" class="mb-2">
                 <li><strong>question</strong> - The question text</li>
                 <li><strong>a</strong> - Option A</li>
                 <li><strong>b</strong> - Option B</li>
                 <li><strong>c</strong> - Option C</li>
                 <li><strong>d</strong> - Option D</li>
                 <li><strong>correct_answer</strong> - The correct option (a, b, c, or d)</li>
+                <li><strong>is_previous_exam</strong> - Optional: true/false for board exam questions</li>
               </ul>
+              
+              <!-- True or False Format -->
+              <ul v-else-if="selectedQuestionType === 'True or False'" class="mb-2">
+                <li><strong>question</strong> - The statement to evaluate</li>
+                <li><strong>is_true</strong> - true or false</li>
+                <li><strong>is_previous_exam</strong> - Optional: true/false for board exam questions</li>
+              </ul>
+              
+              <!-- Match the Pairs Format -->
+              <ul v-else-if="selectedQuestionType === 'Match the Pairs'" class="mb-2">
+                <li><strong>question</strong> - The question/instruction text</li>
+                <li><strong>lhs_1, lhs_2, lhs_3, lhs_4, lhs_5</strong> - Left side items (at least 2 required)</li>
+                <li><strong>rhs_1, rhs_2, rhs_3, rhs_4, rhs_5</strong> - Right side items (at least 2 required)</li>
+                <li><strong>is_previous_exam</strong> - Optional: true/false for board exam questions</li>
+              </ul>
+              
+              <!-- Fill in the Blanks Format -->
+              <ul v-else-if="selectedQuestionType === 'Fill in the Blanks'" class="mb-2">
+                <li><strong>question</strong> - The sentence with blanks (use _____ for blanks)</li>
+                <li><strong>is_previous_exam</strong> - Optional: true/false for board exam questions</li>
+              </ul>
+              
+              <!-- Descriptive Question Types -->
+              <!-- Marks-based Questions -->
+              <ul v-else-if="selectedQuestionType === '2 Marks Questions' || 
+                             selectedQuestionType === '3 Marks Questions' || 
+                             selectedQuestionType === '4 Marks Questions' || 
+                             selectedQuestionType === '5 Marks Questions'" class="mb-2">
+                <li><strong>question</strong> - The question text</li>
+                <li><strong>is_previous_exam</strong> - Optional: true/false for board exam questions</li>
+              </ul>
+              
+              <!-- Other Descriptive Questions -->
+              <ul v-else class="mb-2">
+                <li><strong>question</strong> - The question text</li>
+                <li><strong>is_previous_exam</strong> - Optional: true/false for board exam questions</li>
+              </ul>
+              
               <p class="text-muted mb-0">
                 <small>Note: All uploaded questions will be marked as unverified and will use the currently selected topic.</small>
               </p>
@@ -102,7 +143,8 @@
             <div v-if="csvPreviewData.length > 0" class="mb-3">
               <h6>Preview (First 3 rows):</h6>
               <div class="table-responsive">
-                <table class="table table-sm table-bordered">
+                <!-- MCQ Preview -->
+                <table v-if="selectedQuestionType === 'Multiple Choice Question (MCQ)'" class="table table-sm table-bordered">
                   <thead>
                     <tr>
                       <th>Question</th>
@@ -121,6 +163,95 @@
                       <td>{{ row.c }}</td>
                       <td>{{ row.d }}</td>
                       <td>{{ row.correct_answer }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- True/False Preview -->
+                <table v-else-if="selectedQuestionType === 'True or False'" class="table table-sm table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Answer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in csvPreviewData.slice(0, 3)" :key="index">
+                      <td class="text-truncate" style="max-width: 300px;">{{ row.question }}</td>
+                      <td>{{ row.is_true }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- Match the Pairs Preview -->
+                <table v-else-if="selectedQuestionType === 'Match the Pairs'" class="table table-sm table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>LHS Items</th>
+                      <th>RHS Items</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in csvPreviewData.slice(0, 3)" :key="index">
+                      <td class="text-truncate" style="max-width: 200px;">{{ row.question }}</td>
+                      <td class="text-truncate" style="max-width: 150px;">
+                        {{ [row.lhs_1, row.lhs_2, row.lhs_3, row.lhs_4, row.lhs_5].filter(Boolean).join(', ') }}
+                      </td>
+                      <td class="text-truncate" style="max-width: 150px;">
+                        {{ [row.rhs_1, row.rhs_2, row.rhs_3, row.rhs_4, row.rhs_5].filter(Boolean).join(', ') }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- Fill in the Blanks Preview -->
+                <table v-else-if="selectedQuestionType === 'Fill in the Blanks'" class="table table-sm table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Previous Exam</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in csvPreviewData.slice(0, 3)" :key="index">
+                      <td class="text-truncate" style="max-width: 400px;">{{ row.question }}</td>
+                      <td>{{ row.is_previous_exam || 'false' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- Marks-based Questions Preview -->
+                <table v-else-if="selectedQuestionType === '2 Marks Questions' || 
+                                  selectedQuestionType === '3 Marks Questions' || 
+                                  selectedQuestionType === '4 Marks Questions' || 
+                                  selectedQuestionType === '5 Marks Questions'" class="table table-sm table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Previous Exam</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in csvPreviewData.slice(0, 3)" :key="index">
+                      <td class="text-truncate" style="max-width: 400px;">{{ row.question }}</td>
+                      <td>{{ row.is_previous_exam || 'false' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- Other Descriptive Questions Preview -->
+                <table v-else class="table table-sm table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Previous Exam</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in csvPreviewData.slice(0, 3)" :key="index">
+                      <td class="text-truncate" style="max-width: 400px;">{{ row.question }}</td>
+                      <td>{{ row.is_previous_exam || 'false' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -201,14 +332,31 @@ interface AxiosErrorResponse {
   };
 }
 
-// Define CSV data interface
+// Define CSV data interfaces for different question types
 interface CsvRowData {
   question: string;
-  a: string;
-  b: string;
-  c: string;
-  d: string;
-  correct_answer: string;
+  // MCQ fields
+  a?: string;
+  b?: string;
+  c?: string;
+  d?: string;
+  correct_answer?: string;
+  // Match the Pairs fields
+  lhs_1?: string;
+  lhs_2?: string;
+  lhs_3?: string;
+  lhs_4?: string;
+  lhs_5?: string;
+  rhs_1?: string;
+  rhs_2?: string;
+  rhs_3?: string;
+  rhs_4?: string;
+  rhs_5?: string;
+  // Fill in the Blanks - we don't store answers, just the question with blanks
+  // True/False answer
+  is_true?: string;
+  // Previous exam flag (optional for all types)
+  is_previous_exam?: string;
 }
 
 // Define component name
@@ -260,9 +408,9 @@ const questionBankData = ref({
   mediumStandardSubjectId: null
 })
 
-// Computed property to show CSV upload button only for MCQ type
+// Computed property to show CSV upload button for all question types
 const showCsvUploadButton = computed(() => {
-  return selectedQuestionType.value === 'Multiple Choice Question (MCQ)'
+  return selectedQuestionType.value !== '' // Show for all question types when one is selected
 })
 
 // Debug function to validate chapter ID
@@ -276,6 +424,21 @@ function validateChapterId() {
 // Handle question type change from QuestionFormComponent
 function handleQuestionTypeChanged(questionType: string) {
   selectedQuestionType.value = questionType
+}
+
+// Get required headers based on question type
+function getRequiredHeaders(): string[] {
+  switch (selectedQuestionType.value) {
+    case 'Multiple Choice Question (MCQ)':
+      return ['question', 'a', 'b', 'c', 'd', 'correct_answer']
+    case 'True or False':
+      return ['question', 'is_true']
+    case 'Match the Pairs':
+      return ['question', 'lhs_1', 'lhs_2', 'rhs_1', 'rhs_2']
+    default:
+      // For all other question types: Fill in the Blanks, descriptive questions, marks-based questions, etc.
+      return ['question']
+  }
 }
 
 // CSV Upload Modal Methods
@@ -338,7 +501,7 @@ function parseCsvData(csvText: string) {
 
     // Parse header
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-    const requiredHeaders = ['question', 'a', 'b', 'c', 'd', 'correct_answer']
+    const requiredHeaders = getRequiredHeaders()
     
     // Validate headers
     const missingHeaders = requiredHeaders.filter(header => !headers.includes(header))
@@ -396,10 +559,10 @@ function parseExcelData(arrayBuffer: ArrayBuffer) {
 
     // Get headers and convert to lowercase
     const headers = (jsonData[0] as string[]).map(h => String(h).trim().toLowerCase())
-    const requiredHeaders = ['question', 'a', 'b', 'c', 'd', 'correct_answer']
+    const requiredHeaders = getRequiredHeaders()
     
     // Validate headers
-    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header))
+    const missingHeaders = requiredHeaders.filter((header: string) => !headers.includes(header))
     if (missingHeaders.length > 0) {
       csvErrors.value = [`Missing required columns: ${missingHeaders.join(', ')}`]
       return
@@ -442,17 +605,47 @@ function validateCsvRow(row: any, rowNumber: number): string[] {
   if (!row.question?.trim()) {
     errors.push(`Row ${rowNumber}: Question is required`)
   }
-  if (!row.a?.trim()) {
-    errors.push(`Row ${rowNumber}: Option A is required`)
-  }
-  if (!row.b?.trim()) {
-    errors.push(`Row ${rowNumber}: Option B is required`)
-  }
-  
-  // Check correct answer
-  const correctAnswer = row.correct_answer?.toLowerCase()
-  if (!['a', 'b', 'c', 'd'].includes(correctAnswer)) {
-    errors.push(`Row ${rowNumber}: Correct answer must be a, b, c, or d`)
+
+  switch (selectedQuestionType.value) {
+    case 'Multiple Choice Question (MCQ)':
+      if (!row.a?.trim()) {
+        errors.push(`Row ${rowNumber}: Option A is required`)
+      }
+      if (!row.b?.trim()) {
+        errors.push(`Row ${rowNumber}: Option B is required`)
+      }
+      
+      // Check correct answer
+      const correctAnswer = row.correct_answer?.toLowerCase()
+      if (!['a', 'b', 'c', 'd'].includes(correctAnswer)) {
+        errors.push(`Row ${rowNumber}: Correct answer must be a, b, c, or d`)
+      }
+      break
+
+    case 'True or False':
+      const isTrue = row.is_true?.toLowerCase()
+      if (!['true', 'false'].includes(isTrue)) {
+        errors.push(`Row ${rowNumber}: is_true must be true or false`)
+      }
+      break
+
+    case 'Match the Pairs':
+      // Check for at least 2 LHS and 2 RHS items
+      const lhsItems = [row.lhs_1, row.lhs_2, row.lhs_3, row.lhs_4, row.lhs_5].filter(item => item?.trim())
+      const rhsItems = [row.rhs_1, row.rhs_2, row.rhs_3, row.rhs_4, row.rhs_5].filter(item => item?.trim())
+      
+      if (lhsItems.length < 2) {
+        errors.push(`Row ${rowNumber}: At least 2 left-hand side items are required`)
+      }
+      if (rhsItems.length < 2) {
+        errors.push(`Row ${rowNumber}: At least 2 right-hand side items are required`)
+      }
+      break
+
+    default:
+      // For all other question types (Fill in the Blanks, descriptive questions, marks-based questions), 
+      // only question is required (already checked above)
+      break
   }
 
   return errors
@@ -511,7 +704,7 @@ async function uploadCsvQuestions() {
         name: 'questionDashboard',
         query: {
           success: 'true',
-          message: `Uploaded ${successCount} MCQ questions from file`,
+          message: `Uploaded ${successCount} ${selectedQuestionType.value} questions from file`,
           tab: 'unverified'
         }
       })
@@ -529,32 +722,111 @@ async function uploadCsvQuestions() {
 }
 
 function createCsvQuestionRequest(row: CsvRowData, topicId: number) {
-  // Map correct answer letter to index
-  const correctAnswerMap: { [key: string]: number } = {
-    'a': 0, 'b': 1, 'c': 2, 'd': 3
-  }
-
-  const options = [row.a, row.b, row.c, row.d].filter(opt => opt.trim() !== '')
-  const correctOptionIndex = correctAnswerMap[row.correct_answer.toLowerCase()]
-
-  const mcqOptions = options.map((optionText, index) => ({
-    option_text: optionText.trim(),
-    is_correct: index === correctOptionIndex
-  }))
-
-  return {
-    question_type_id: 1, // MCQ type ID
-    board_question: false, // File uploads are not marked as board questions by default
+  const questionTypeId = getQuestionTypeId()
+  const isPreviousExam = row.is_previous_exam?.toLowerCase() === 'true'
+  
+  const baseRequest = {
+    question_type_id: questionTypeId,
+    board_question: isPreviousExam,
     question_text_data: {
-      question_text: row.question.trim(),
-      mcq_options: mcqOptions
-    },
+      question_text: row.question.trim()
+    } as any,
     question_topic_data: {
       topic_id: topicId
     },
     question_text_topic_medium_data: {
       instruction_medium_id: parseInt(questionBankData.value.mediumId)
     }
+  }
+
+  switch (selectedQuestionType.value) {
+    case 'Multiple Choice Question (MCQ)':
+      // Map correct answer letter to index
+      const correctAnswerMap: { [key: string]: number } = {
+        'a': 0, 'b': 1, 'c': 2, 'd': 3
+      }
+      
+      const options = [row.a, row.b, row.c, row.d].filter(opt => opt && opt.trim() !== '')
+      const correctOptionIndex = correctAnswerMap[row.correct_answer?.toLowerCase() || '']
+      
+      const mcqOptions = options.map((optionText, index) => ({
+        option_text: optionText?.trim() || '',
+        is_correct: index === correctOptionIndex
+      }))
+      
+      baseRequest.question_text_data.mcq_options = mcqOptions
+      break
+
+    case 'True or False':
+      // For True/False, we store the answer as answer_text
+      baseRequest.question_text_data.answer_text = row.is_true?.toLowerCase() === 'true' ? 'True' : 'False'
+      break
+
+    case 'Match the Pairs':
+      const lhsItems = [row.lhs_1, row.lhs_2, row.lhs_3, row.lhs_4, row.lhs_5].filter(item => item?.trim())
+      const rhsItems = [row.rhs_1, row.rhs_2, row.rhs_3, row.rhs_4, row.rhs_5].filter(item => item?.trim())
+      
+      const matchPairs = []
+      const maxLength = Math.max(lhsItems.length, rhsItems.length)
+      
+      for (let i = 0; i < maxLength; i++) {
+        const leftText = i < lhsItems.length ? lhsItems[i]?.trim() || '' : ''
+        const rightText = i < rhsItems.length ? rhsItems[i]?.trim() || '' : ''
+        
+        if (leftText || rightText) {
+          matchPairs.push({
+            left_text: leftText,
+            right_text: rightText
+          })
+        }
+      }
+      
+      baseRequest.question_text_data.match_pairs = matchPairs
+      break
+
+    default:
+      // For all other question types (Fill in the Blanks, descriptive questions, marks-based questions),
+      // we only store the question text, no answers
+      break
+  }
+
+  return baseRequest
+}
+
+function getQuestionTypeId(): number {
+  switch (selectedQuestionType.value) {
+    case 'Multiple Choice Question (MCQ)':
+      return 1
+    case 'Odd One Out':
+      return 2
+    case 'Complete the Correlation':
+      return 3
+    case 'True or False':
+      return 4
+    case 'Match the Pairs':
+      return 5
+    case 'Fill in the Blanks':
+      return 6
+    case 'One-Word Answer':
+      return 7
+    case 'Give Scientific Reasons':
+      return 8
+    case 'Short Answer Question':
+      return 9
+    case 'Complete and Identify Reaction':
+      return 10
+    case 'Short Note':
+      return 11
+    case '2 Marks Questions':
+      return 12
+    case '3 Marks Questions':
+      return 13
+    case '4 Marks Questions':
+      return 14
+    case '5 Marks Questions':
+      return 15
+    default:
+      return 1 // Default to MCQ
   }
 }
 

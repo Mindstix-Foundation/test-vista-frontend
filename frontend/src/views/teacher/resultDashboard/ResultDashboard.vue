@@ -219,7 +219,13 @@
         <div class="recommendations-section">
           <h4 class="section-title">
             <i class="bi bi-lightbulb-fill"></i> Teaching Recommendations
+            <small class="text-muted ms-2">({{ classRecommendations.length }} recommendations)</small>
           </h4>
+          <!-- Debug info (remove after fixing) -->
+          <div class="alert alert-info mb-3" style="font-size: 0.85rem;">
+            <strong>Debug Info:</strong> Found {{ classRecommendations.length }} recommendations<br>
+            Types: {{ classRecommendations.map(r => getRecommendationType(r)).join(', ') }}
+          </div>
           <div class="recommendations-grid">
             <div v-for="recommendation in classRecommendations" :key="recommendation" class="recommendation-item" :class="getRecommendationClass(recommendation)">
               <div class="recommendation-body">
@@ -621,6 +627,11 @@ const fetchTestPaperResults = async () => {
     classAverageAreas.value = data.class_average_areas || []
     classRecommendations.value = data.class_recommendations || []
 
+    // Debug logging for recommendations
+    console.log('Class recommendations received:', data.class_recommendations)
+    console.log('Class recommendations length:', classRecommendations.value.length)
+    console.log('Strong performance recommendations:', classRecommendations.value.filter(r => r.includes('🟢 Strong Performance')))
+
   } catch (err) {
     console.error('Error fetching test paper results:', err)
     error.value = 'Failed to load test results. Please try again.'
@@ -782,12 +793,16 @@ const getRecommendationType = (recommendation: string): string => {
 
 const getRecommendationChapters = (recommendation: string): string => {
   const match = recommendation.match(/: ([^-]+) -/)
-  return match ? match[1].trim() : ''
+  const result = match ? match[1].trim() : ''
+  console.log('getRecommendationChapters:', { recommendation, match, result })
+  return result
 }
 
 const getRecommendationMessage = (recommendation: string): string => {
   const match = recommendation.match(/ - (.+)$/)
-  return match ? match[1].trim() : recommendation
+  const result = match ? match[1].trim() : recommendation
+  console.log('getRecommendationMessage:', { recommendation, match, result })
+  return result
 }
 
 const getRecommendationClass = (recommendation: string): string => {

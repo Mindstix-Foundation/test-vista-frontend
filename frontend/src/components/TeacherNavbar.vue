@@ -48,7 +48,7 @@
                 ASSIGN ONLINE TEST
               </router-link>
             </li>
-            <li class="nav-item nav-item-hidden">
+            <li class="nav-item">
               <router-link
                 class="nav-link pb-0"
                 :class="{ 'custom-active': isCreateTestPaperActive }"
