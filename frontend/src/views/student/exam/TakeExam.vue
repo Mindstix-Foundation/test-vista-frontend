@@ -20,7 +20,7 @@
     </div>
 
     <!-- Main Exam Interface -->
-    <div v-else class="exam-container">
+    <div v-else class="exam-container" :class="{ 'with-recovery-notification': showRecoveryNotification }">
       <!-- Exam Header -->
       <div class="exam-header">
         <div class="container-fluid">
@@ -240,9 +240,12 @@
 
           <!-- Submit Section -->
           <div class="submit-section">
-            <button class="btn btn-submit w-100" @click="submitExam" :disabled="isSubmittingExam">
+            <button 
+              class="btn btn-submit"
+              @click="showSubmitConfirmation = true"
+              :disabled="isSubmittingExam"
+            >
               <span v-if="isSubmittingExam" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              <i class="bi bi-check-circle" v-else></i> 
               {{ isSubmittingExam ? 'Submitting...' : 'Submit Exam' }}
             </button>
           </div>
@@ -326,16 +329,46 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" @click="cancelSubmitExam">
-                <i class="bi bi-x-circle"></i> Cancel
+              <button type="button" class="btn btn-secondary" @click="showSubmitConfirmation = false">
+                Cancel
               </button>
-              <button class="btn btn-primary" @click="confirmSubmitExam" :disabled="isSubmittingExam">
+              <button 
+                type="button" 
+                class="btn btn-danger" 
+                @click="submitExam"
+                :disabled="isSubmittingExam"
+              >
                 <span v-if="isSubmittingExam" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                <i class="bi bi-check-circle" v-else></i> 
-                {{ isSubmittingExam ? 'Submitting...' : 'Submit Exam' }}
+                {{ isSubmittingExam ? 'Submitting...' : 'Yes, Submit' }}
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recovery Notification -->
+    <div v-if="showRecoveryNotification" class="recovery-notification">
+      <div class="container-fluid">
+        <div class="alert alert-success alert-dismissible mb-0 py-2 text-center">
+          <small>
+            <i class="bi bi-check-circle me-1"></i>
+            <strong>Exam Restored:</strong> Your previous answers and remaining time have been recovered. You can continue from where you left off.
+          </small>
+          <button type="button" class="btn-close btn-close-sm" @click="showRecoveryNotification = false"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline Warning Notification -->
+    <div v-if="showOfflineWarning" class="offline-notification">
+      <div class="container-fluid">
+        <div class="alert alert-warning alert-dismissible mb-0 py-2 text-center">
+          <small>
+            <i class="bi bi-wifi-off me-1"></i>
+            <strong>Connection Lost:</strong> You are currently offline. Your answers are being saved locally and will sync when connection is restored.
+          </small>
+          <button type="button" class="btn-close btn-close-sm" @click="showOfflineWarning = false"></button>
         </div>
       </div>
     </div>
@@ -406,6 +439,7 @@ const studentName = ref('')
 const showExitWarning = ref(false)
 const showSubmitConfirmation = ref(false)
 const fullscreenChecker = ref<NodeJS.Timeout | null>(null)
+const showRecoveryNotification = ref(false)
 
 // Device detection
 const isIOSDevice = ref(false)
@@ -415,6 +449,184 @@ const isFullscreenSupported = ref(true)
 const isSubmittingAnswer = ref(false)
 const isSubmittingExam = ref(false)
 const showNavigationPanel = ref(false)
+const isOnline = ref(navigator.onLine)
+const showOfflineWarning = ref(false)
+
+// Network status monitoring
+const handleOnlineStatus = () => {
+  isOnline.value = navigator.onLine
+  if (!isOnline.value) {
+    showOfflineWarning.value = true
+    console.warn('Device went offline during exam')
+  } else {
+    showOfflineWarning.value = false
+    console.log('Device back online')
+    // Try to save state when back online
+    saveExamState()
+  }
+}
+
+// State persistence functions
+const saveExamState = () => {
+  if (!attemptId.value) return
+  
+  const examState = {
+    attemptId: attemptId.value,
+    currentQuestionIndex: currentQuestionIndex.value,
+    answers: { ...answers },
+    markedQuestions: Array.from(markedQuestions.value),
+    visitedQuestions: Array.from(visitedQuestions.value),
+    timeRemaining: timeRemaining.value,
+    questionTimeSpent: questionTimeSpent.value,
+    timestamp: Date.now()
+  }
+  
+  try {
+    const stateString = JSON.stringify(examState)
+    
+    // Check if localStorage is available and has enough space
+    if (typeof Storage !== 'undefined') {
+      // Test localStorage availability (might fail in private mode)
+      localStorage.setItem('test_storage', 'test')
+      localStorage.removeItem('test_storage')
+      
+      // Try to save the state
+      localStorage.setItem(`exam_state_${attemptId.value}`, stateString)
+      console.log('Exam state saved to localStorage')
+    } else {
+      console.warn('localStorage not available, state not saved')
+      // Fallback: try to use sessionStorage
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(`exam_state_${attemptId.value}`, stateString)
+        console.log('Exam state saved to sessionStorage (fallback)')
+      }
+    }
+  } catch (error) {
+    console.error('Failed to save exam state:', error)
+    
+    // Handle quota exceeded error (common on mobile)
+    if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      console.warn('Storage quota exceeded, clearing old data and retrying...')
+      try {
+        // Clear old exam states to free up space
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('exam_state_') && key !== `exam_state_${attemptId.value}`) {
+            localStorage.removeItem(key)
+          }
+        }
+        // Retry saving
+        localStorage.setItem(`exam_state_${attemptId.value}`, JSON.stringify(examState))
+        console.log('Exam state saved after clearing old data')
+      } catch (retryError) {
+        console.error('Failed to save exam state even after clearing old data:', retryError)
+        // Show user warning about potential data loss
+        if (Object.keys(answers).length > 0) {
+          console.warn('Unable to save exam progress locally. Please ensure you have a stable connection.')
+        }
+      }
+    } else if (error.name === 'SecurityError') {
+      console.warn('Storage access blocked (private browsing mode?)')
+    } else {
+      console.error('Unknown storage error:', error)
+    }
+  }
+}
+
+const loadExamState = (): boolean => {
+  if (!attemptId.value) return false
+  
+  try {
+    const savedState = localStorage.getItem(`exam_state_${attemptId.value}`)
+    if (!savedState) return false
+    
+    const examState = JSON.parse(savedState)
+    
+    // Verify state is not too old (max 24 hours)
+    const maxAge = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+    if (Date.now() - examState.timestamp > maxAge) {
+      localStorage.removeItem(`exam_state_${attemptId.value}`)
+      return false
+    }
+    
+    // Check if there are any answers to restore
+    const hasAnswers = examState.answers && Object.keys(examState.answers).length > 0
+    
+    // Restore state
+    currentQuestionIndex.value = examState.currentQuestionIndex || 0
+    Object.assign(answers, examState.answers || {})
+    markedQuestions.value = new Set(examState.markedQuestions || [])
+    visitedQuestions.value = new Set(examState.visitedQuestions || [])
+    questionTimeSpent.value = examState.questionTimeSpent || {}
+    
+    // IMPORTANT: Restore the timeRemaining to continue from where user left off
+    if (examState.timeRemaining !== undefined && examState.timeRemaining > 0) {
+      timeRemaining.value = examState.timeRemaining
+      console.log('Restored timeRemaining from saved state:', examState.timeRemaining)
+    }
+    
+    console.log('Exam state loaded from localStorage', {
+      answers: Object.keys(answers).length,
+      currentQuestion: currentQuestionIndex.value,
+      timeRemaining: timeRemaining.value
+    })
+    
+    // Show recovery notification if there are answers to restore
+    if (hasAnswers) {
+      showRecoveryNotification.value = true
+      // Auto-hide notification after 8 seconds
+      setTimeout(() => {
+        showRecoveryNotification.value = false
+      }, 8000)
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Failed to load exam state:', error)
+    return false
+  }
+}
+
+const clearExamState = () => {
+  if (!attemptId.value) return
+  
+  try {
+    localStorage.removeItem(`exam_state_${attemptId.value}`)
+    console.log('Exam state cleared from localStorage')
+  } catch (error) {
+    console.error('Failed to clear exam state:', error)
+  }
+}
+
+// Enhanced auto-save with state persistence
+const saveCurrentAnswerWithState = async () => {
+  await saveCurrentAnswer()
+  saveExamState() // Save state after every answer
+}
+
+// Page visibility API to handle screen sleep/wake
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    // Page is hidden (screen sleep, tab switch, etc.)
+    console.log('Page hidden - saving exam state')
+    saveExamState()
+  } else {
+    // Page is visible again
+    console.log('Page visible - checking for state recovery')
+    // Optionally refresh data or check for updates
+  }
+}
+
+// Enhanced beforeunload handler
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  // Save state before page unload
+  saveExamState()
+  
+  // Show warning for accidental navigation
+  const message = 'Your exam is in progress. Are you sure you want to leave?'
+  event.returnValue = message
+  return message
+}
 
 // Methods
 const detectDevice = () => {
@@ -480,15 +692,40 @@ const initializeExam = async () => {
     attemptId.value = examResponse.attemptId
     questions.value = examResponse.questions
     
-    // Set up timer
-    if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
-      timeRemaining.value = examResponse.timeRemaining
-    } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
-      // Calculate time remaining based on duration
-      timeRemaining.value = examResponse.duration_minutes * 60
+    // Try to load saved state first
+    const stateLoaded = loadExamState()
+    
+    // Set up timer ONLY if we haven't restored it from saved state
+    if (!stateLoaded || timeRemaining.value <= 0) {
+      console.log('Setting timer from API response (no saved state or expired)')
+      
+      // Prefer backend-provided timeRemaining for accurate time sync
+      if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
+        timeRemaining.value = examResponse.timeRemaining
+        console.log('Using backend-provided timeRemaining:', examResponse.timeRemaining)
+      } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
+        // Fallback: Calculate time remaining based on duration
+        timeRemaining.value = examResponse.duration_minutes * 60
+        console.log('Using calculated timeRemaining from duration:', timeRemaining.value)
+      } else {
+        // Default to 1 hour if no duration specified
+        timeRemaining.value = 3600
+        console.log('Using default timeRemaining:', timeRemaining.value)
+      }
     } else {
-      // Default to 1 hour if no duration specified
-      timeRemaining.value = 3600
+      console.log('Using restored timer from saved state:', timeRemaining.value)
+      
+      // Optional: Sync with backend time if available and significantly different
+      if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
+        const backendTime = examResponse.timeRemaining
+        const timeDifference = Math.abs(timeRemaining.value - backendTime)
+        
+        // If difference is more than 30 seconds, use backend time (more reliable)
+        if (timeDifference > 30) {
+          console.log(`Time sync: Local time ${timeRemaining.value}s differs from backend ${backendTime}s by ${timeDifference}s. Using backend time.`)
+          timeRemaining.value = backendTime
+        }
+      }
     }
   
     // Get student info from localStorage or API
@@ -497,20 +734,27 @@ const initializeExam = async () => {
     // Start timer
     startTimer()
     
-    // Mark first question as visited and start question timer
-    visitedQuestions.value.add(0)
+    // If no saved state, initialize fresh
+    if (!stateLoaded) {
+      // Mark first question as visited and start question timer
+      visitedQuestions.value.add(0)
+      currentQuestionIndex.value = 0
+    }
+    
+    // Always ensure current question is visited
+    visitedQuestions.value.add(currentQuestionIndex.value)
     questionStartTime.value = Date.now()
-    currentQuestionTime.value = 0
+    currentQuestionTime.value = Math.floor((questionTimeSpent.value[currentQuestionIndex.value] ?? 0) / 1000)
     
     // Start question timer
     questionTimer.value = setInterval(() => {
       currentQuestionTime.value++
     }, 1000)
     
-    // Start periodic auto-save (every 30 seconds)
+    // Enhanced auto-save with state persistence (every 10 seconds for better reliability)
     autoSaveTimer.value = setInterval(async () => {
-      await saveCurrentAnswer()
-    }, 30000)
+      await saveCurrentAnswerWithState()
+    }, 10000)
     
     // Check fullscreen
     checkFullscreen()
@@ -518,7 +762,17 @@ const initializeExam = async () => {
     // Start periodic fullscreen monitoring
     startFullscreenMonitoring()
     
+    // Save initial state
+    saveExamState()
+    
     isLoading.value = false
+    
+    console.log('Exam initialized', {
+      stateLoaded,
+      answersCount: Object.keys(answers).length,
+      currentQuestion: currentQuestionIndex.value,
+      timeRemaining: timeRemaining.value
+    })
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to load exam'
     error.value = errorMessage
@@ -534,7 +788,7 @@ const loadQuestion = async (index: number) => {
   if (index < 0 || index >= questions.value.length) return
   
   // Save current answer before navigating away
-  await saveCurrentAnswer()
+  await saveCurrentAnswerWithState()
   
   // Record time spent on previous question
   if (questionStartTime.value > 0 && currentQuestionIndex.value >= 0) {
@@ -562,6 +816,9 @@ const loadQuestion = async (index: number) => {
     currentQuestionTime.value++
   }, 1000)
   
+  // Save state after navigation
+  saveExamState()
+  
   // Close navigation panel after question selection (mobile only)
   if (window.innerWidth <= 768) {
     showNavigationPanel.value = false
@@ -582,6 +839,14 @@ const selectOption = (optionIndex: number) => {
   console.log('answers keys after:', Object.keys(answers))
   console.log('answers stringified:', JSON.stringify(answers))
   console.log('answers[currentQuestionIndex.value]:', answers[currentQuestionIndex.value])
+  
+  // Immediately save state when answer is selected (critical for mobile)
+  saveExamState()
+  
+  // Also trigger immediate API save (don't wait for auto-save)
+  saveCurrentAnswerWithState().catch(error => {
+    console.error('Failed to save answer immediately:', error)
+  })
 }
 
 // Save current answer to API
@@ -631,9 +896,10 @@ const saveAndNext = async () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     await nextQuestion()
   } else {
-    // Save current answer before submitting exam
+    // Save current answer before showing confirmation
     await saveCurrentAnswer()
-    submitExam()
+    // Show confirmation modal instead of directly submitting
+    showSubmitConfirmation.value = true
   }
   
   isSubmittingAnswer.value = false
@@ -657,10 +923,12 @@ const toggleMark = () => {
   } else {
     markedQuestions.value.add(currentQuestionIndex.value)
   }
+  saveExamState() // Save state after marking/unmarking
 }
 
 const clearAnswer = () => {
   delete answers[currentQuestionIndex.value]
+  saveExamState() // Save state after clearing answer
 }
 
 const startTimer = () => {
@@ -673,18 +941,14 @@ const startTimer = () => {
   }, 1000)
 }
 
-const submitExam = () => {
-  showSubmitConfirmation.value = true
-}
-
-const confirmSubmitExam = async () => {
+const submitExam = async () => {
   if (isSubmittingExam.value) return
   
   try {
     isSubmittingExam.value = true
     
-    // Save the current answer before submitting
-    await saveCurrentAnswer()
+    // Save final state before submission
+    await saveCurrentAnswerWithState()
     
     console.log('=== EXAM SUBMISSION DEBUG ===')
     console.log('attemptId.value:', attemptId.value)
@@ -700,6 +964,9 @@ const confirmSubmitExam = async () => {
       
       console.log('Submission response:', response)
       
+      // Clear saved state after successful submission
+      clearExamState()
+      
       showSubmitConfirmation.value = false
       
       // Add a small delay before navigating to give backend time to process
@@ -711,41 +978,90 @@ const confirmSubmitExam = async () => {
         })
       }, 500) // 500ms delay
     }
-  } catch (err) {
-    console.error('Failed to submit exam:', err)
-    error.value = 'Failed to submit exam. Please try again.'
+  } catch (error) {
+    console.error('Failed to submit exam:', error)
+    
+    // Handle specific error types
+    if (error.response?.status === 401) {
+      alert('Your session has expired. Please log in again and restart the exam.')
+      router.push('/login')
+    } else if (error.response?.status === 404) {
+      alert('Exam not found. Please contact support.')
+    } else if (error.response?.status === 409) {
+      alert('Exam has already been submitted.')
+      router.push(`/student/exam/result?attemptId=${attemptId.value}`)
+    } else {
+      alert('Failed to submit exam. Please try again.')
+    }
   } finally {
     isSubmittingExam.value = false
+    showSubmitConfirmation.value = false
   }
 }
 
-const cancelSubmitExam = () => {
-  showSubmitConfirmation.value = false
-}
-
 const autoSubmitExam = async () => {
-  alert('Time is up! Your exam will be submitted automatically.')
+  const MAX_RETRIES = 3
+  let retryCount = 0
   
-  try {
-    // Submit exam automatically
-    if (attemptId.value) {
-      const submissionData = {
-        test_attempt_id: attemptId.value
-      }
-  
-      await testAssignmentService.submitExam(submissionData)
-  
-      // Add a small delay before navigating to give backend time to process
-      setTimeout(() => {
+  const attemptAutoSubmission = async (): Promise<any> => {
+    try {
+      isSubmittingExam.value = true
+      
+      // Save the current answer before auto-submitting
+      await saveCurrentAnswerWithState()
+      
+      if (attemptId.value) {
+        const submissionData = {
+          test_attempt_id: attemptId.value
+        }
+        
+        const response = await testAssignmentService.submitExam(submissionData)
+        
+        // Clear saved state after successful submission
+        clearExamState()
+        
         // Navigate to result page
         router.push({
           path: '/student/exam/result',
           query: { attemptId: attemptId.value }
         })
-      }, 500) // 500ms delay
+        
+        return response
+      }
+    } catch (error) {
+      console.error(`Auto-submission attempt ${retryCount + 1} failed:`, error)
+      
+      // Check if it's a network error and we can retry
+      if (retryCount < MAX_RETRIES && (
+        error.code === 'NETWORK_ERROR' || 
+        error.code === 'ECONNABORTED' ||
+        error.response?.status >= 500 ||
+        !error.response // Network timeout
+      )) {
+        retryCount++
+        console.log(`Retrying auto-submission (${retryCount}/${MAX_RETRIES})...`)
+        
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
+        return attemptAutoSubmission()
+      }
+      
+      // If auto-submission fails after retries, save state and show error
+      console.error('Auto-submission failed after retries, preserving exam state')
+      error.value = 'Time expired but failed to submit exam automatically. Your answers have been saved. Please check your connection and try submitting manually.'
+      
+      // Don't navigate away, let user try manual submission
+      throw error
     }
+  }
+  
+  try {
+    await attemptAutoSubmission()
   } catch (err) {
-    console.error('Failed to auto-submit exam:', err)
+    console.error('Final auto-submission error:', err)
+    // Keep the exam interface open so user can try manual submission
+  } finally {
+    isSubmittingExam.value = false
   }
 }
 
@@ -910,6 +1226,12 @@ onMounted(() => {
     console.log('Current answers keys:', Object.keys(answers))
     console.log('Current answers stringified:', JSON.stringify(answers))
   }
+
+  // Add event listeners for page visibility and beforeunload
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('online', handleOnlineStatus)
+  window.addEventListener('offline', handleOnlineStatus)
 })
 
 onUnmounted(() => {
@@ -925,6 +1247,12 @@ onUnmounted(() => {
   if (fullscreenChecker.value) {
     clearInterval(fullscreenChecker.value)
   }
+
+  // Remove event listeners
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('online', handleOnlineStatus)
+  window.removeEventListener('offline', handleOnlineStatus)
 })
 </script>
 
@@ -958,6 +1286,18 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Exam container adjustments for recovery notification */
+.exam-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: padding-top 0.3s ease;
+}
+
+.exam-container.with-recovery-notification {
+  padding-top: 60px; /* Adjust based on notification height */
 }
 
 /* Header styles */
@@ -1934,5 +2274,72 @@ body {
 
 .ios-notice-bar .alert-info .bi-info-circle {
   color: #1976d2;
+}
+
+/* Recovery Notification */
+.recovery-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1002; /* Ensure it's above other content */
+  background-color: #e8f5e9; /* Light green background */
+  border-bottom: 1px solid #a5d6a7; /* Green border */
+  box-shadow: 0 2px 8px rgba(165, 214, 167, 0.3);
+}
+
+.recovery-notification .alert {
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.recovery-notification .alert-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+.recovery-notification .alert-success .bi-check-circle {
+  color: #2e7d32;
+}
+
+.recovery-notification .btn-close {
+  color: #2e7d32;
+}
+
+.recovery-notification .btn-close:hover {
+  color: #2e7d32;
+  opacity: 0.8;
+}
+
+/* Offline Warning Notification */
+.offline-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1002; /* Ensure it's above other content */
+  background-color: #fff3cd; /* Light yellow background */
+  border-bottom: 1px solid #ffeeba; /* Yellow border */
+  box-shadow: 0 2px 8px rgba(255, 238, 186, 0.3);
+}
+
+.offline-notification .alert {
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.offline-notification .alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
+}
+
+.offline-notification .alert-warning .bi-wifi-off {
+  color: #856404;
 }
 </style> 
