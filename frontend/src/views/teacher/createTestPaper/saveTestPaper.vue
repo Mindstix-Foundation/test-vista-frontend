@@ -138,7 +138,7 @@
             <div class="text-center document-header">
               <h5 class="school-name">{{ schoolName }}</h5>
               <h3 class="paper-title">{{ paperTitle }}</h3>
-              <p style="margin-bottom: 5px;"><strong>Subject:</strong> {{ subjectName }} | <strong>Standard:</strong> {{ standardName }}</p>
+              <p style="margin-bottom: 5px;"><strong>Standard:</strong> {{ standardName }} | <strong>Subject:</strong> {{ subjectName }}</p>
               <p style="margin-top: 5px;">
                 <strong>Time:</strong> {{ testDuration }} | <strong>Total Marks:</strong> {{ totalMarks }}
               </p>
@@ -392,11 +392,35 @@ const schoolName = ref('')
 // Exam instructions loaded from localStorage
 const examInstructions = ref<string[]>([])
 
+// Helper function to safely decode URL components (handles multiple levels of encoding)
+const safeDecodeURIComponent = (value: string | undefined): string => {
+  if (!value) return 'Not Selected';
+  
+  try {
+    let decoded = value;
+    let previousDecoded = '';
+    let attempts = 0;
+    const maxAttempts = 3; // Prevent infinite loops
+    
+    // Keep decoding until no more % characters or we've tried enough times
+    while (decoded.includes('%') && decoded !== previousDecoded && attempts < maxAttempts) {
+      previousDecoded = decoded;
+      decoded = decodeURIComponent(decoded);
+      attempts++;
+    }
+    
+    return decoded;
+  } catch (error) {
+    console.warn('Failed to decode URL component:', value, error);
+    return value; // Return original if decoding fails
+  }
+};
+
 // Get test details from query parameters or use defaults
-const paperTitle = ref(decodeURIComponent(route.query.paperTitle as string || 'Test Paper'))
-const testDuration = ref(route.query.testDuration as string || '1 Hour')
-const standardName = computed(() => decodeURIComponent(route.query.standard as string || 'Not Selected'))
-const subjectName = computed(() => decodeURIComponent(route.query.subject as string || 'Not Selected'))
+const paperTitle = ref(safeDecodeURIComponent(route.query.paperTitle as string || 'Test Paper'))
+const testDuration = ref(safeDecodeURIComponent(route.query.testDuration as string || '1 Hour'))
+const standardName = computed(() => safeDecodeURIComponent(route.query.standard as string))
+const subjectName = computed(() => safeDecodeURIComponent(route.query.subject as string))
 const totalMarks = computed(() => route.query.totalMarks as string || '40')
 
 // Define interface for image data
@@ -1087,6 +1111,13 @@ const getRequiredData = async () => {
   const userId = route.query.userId;
   const schoolId = route.query.schoolId;
   
+  console.log('Raw route query params:', { 
+    userId, 
+    schoolId, 
+    chapters: route.query.chapters, 
+    weightages: route.query.weightages 
+  });
+  
   // Parse chapters array - ensure it's in the format the API needs
   let chapters = [];
   if (route.query.chapters) {
@@ -1123,6 +1154,12 @@ const getRequiredData = async () => {
   
   // Validate required data (we'll validate the flattened arrays later)
   if (!userId || !schoolId || chapters.length === 0 || weightages.length === 0) {
+    console.error('Validation failed:', {
+      hasUserId: !!userId,
+      hasSchoolId: !!schoolId,
+      chaptersLength: chapters.length,
+      weightagesLength: weightages.length
+    });
     throw new Error('Missing required data for saving test paper');
   }
   
@@ -1383,8 +1420,8 @@ const appendToFormData = (formData: FormData, name: string, value: number | stri
 
 // Submit test paper data to the API
 const submitTestPaperData = async (
-  userId: number,
-  schoolId: number,
+  userId: string | number,
+  schoolId: string | number,
   chapters: Array<{ id?: number; chapterId?: number } | number>,
   weightages: number[],
   patternId: string,
@@ -1424,45 +1461,38 @@ const submitTestPaperData = async (
     throw new Error('No valid chapter IDs found after processing');
   }
   
-  // Add chapters to form data - individually with the same key for array
-  chapterIds.forEach(id => {
-    if (id !== null && id !== undefined) {
-      formData.append('chapters[]', id.toString());
-    }
-  });
+  // Add chapters as JSON array (API expects array format)
+  const chaptersArray = chapterIds.map(id => Number(id)).filter(id => !isNaN(id));
+  formData.append('chapters', JSON.stringify(chaptersArray));
   
-  // Add weightages to form data - individually with the same key for array
-  processedWeightages.forEach(weight => {
-    if (weight !== null && weight !== undefined) {
-      formData.append('weightages[]', weight.toString());
-    }
-  });
+  // Add weightages as JSON array (API expects array format)  
+  const weightagesArray = processedWeightages.map(w => Number(w)).filter(w => !isNaN(w));
+  formData.append('weightages', JSON.stringify(weightagesArray));
   
-  // Add chapters as JSON string (the DTO will parse it)
-  formData.append('chapters', JSON.stringify(chapterIds));
-  
-  // Add weightages as JSON string (the DTO will parse it)
-  formData.append('weightages', JSON.stringify(processedWeightages));
-  
-  // Add instruction mediums as JSON string
-  const mediumIds = availableMediums.value.map(medium => medium.id);
+  // Add instruction mediums as JSON array
+  const mediumIds = availableMediums.value.map(medium => Number(medium.id)).filter(id => !isNaN(id));
   formData.append('instruction_mediums', JSON.stringify(mediumIds));
   
-  // Add instruction mediums individually for array handling
-  mediumIds.forEach(id => {
-    if (id !== null && id !== undefined) {
-      formData.append('instruction_mediums[]', id.toString());
-    }
+  // Final validation
+  console.log('Final data being sent to API:', {
+    chapters: chaptersArray,
+    weightages: weightagesArray,
+    instruction_mediums: mediumIds,
+    name: paperTitle.value,
+    exam_time: testDuration.value,
+    pattern_id: patternId,
+    test_paper_origin_type: 'board',
+    filesCount: pdfFiles.length
   });
+  
+  // Validate arrays have same length
+  if (chaptersArray.length !== weightagesArray.length) {
+    throw new Error(`Final validation failed: chapters (${chaptersArray.length}) and weightages (${weightagesArray.length}) arrays must have the same length`);
+  }
   
   // Validate that we have files for each medium
   if (pdfFiles.length !== mediumIds.length) {
     throw new Error(`Mismatch between PDF files (${pdfFiles.length}) and instruction mediums (${mediumIds.length})`);
-  }
-  
-  // Verify we have files
-  if (!pdfFiles || pdfFiles.length === 0) {
-    throw new Error('No PDF files available to submit');
   }
   
   // Add files - make sure they're in the same order as instruction_mediums
@@ -1498,6 +1528,11 @@ const submitTestPaperData = async (
   try {
     // Call the API endpoint with userId and schoolId as query parameters
     const url = `/test-paper-html/create?userId=${userId}&schoolId=${schoolId}`;
+    console.log('Making API call to:', url);
+    console.log('Request headers will include:', {
+      'Content-Type': 'multipart/form-data'
+    });
+    
     const response = await axiosInstance.post(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -1509,11 +1544,34 @@ const submitTestPaperData = async (
     console.error('API error:', error);
     // Log more detailed error information
     if (error.response) {
-      console.error('Error response:', {
+      console.error('Error response details:', {
         status: error.response.status,
+        statusText: error.response.statusText,
         data: error.response.data,
-        headers: error.response.headers
+        headers: error.response.headers,
+        config: {
+          url: error.response.config?.url,
+          method: error.response.config?.method,
+          headers: error.response.config?.headers
+        }
       });
+      
+      // If it's a validation error, show more specific information
+      if (error.response.status === 400) {
+        console.error('400 Bad Request - Validation failed. Check the following:');
+        console.error('1. Data format:', {
+          chapters: chaptersArray,
+          weightages: weightagesArray,
+          instruction_mediums: mediumIds,
+          filesCount: pdfFiles.length
+        });
+        console.error('2. Query parameters:', { userId, schoolId });
+        console.error('3. Form data keys:', Array.from(formData.keys()));
+      }
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error setting up request:', error.message);
     }
     throw error;
   }
@@ -1845,16 +1903,41 @@ const addMatchPairsToQuestion = (displayQuestion: DisplayQuestion, questionText:
 
 // Print page functionality
 const printPage = async () => {
+  console.log('🖨️ Print button clicked - starting print process...');
+  
   try {
-    // Show loading indicator
-    document.body.classList.add('printing-test-paper');
+    console.log('Starting print process...');
     
     // Get the print element
     const element = document.getElementById('printSection');
     if (!element) {
       console.error('Print section not found');
+      alert('Print section not found. Please refresh the page and try again.');
       return;
     }
+    
+    // Check if the element has content
+    const hasContent = element.innerHTML.trim().length > 0;
+    const hasVisibleContent = element.offsetHeight > 0 && element.offsetWidth > 0;
+    
+    console.log('Print section found, preparing for print...', {
+      hasContent,
+      hasVisibleContent,
+      innerHTML: element.innerHTML.length,
+      offsetHeight: element.offsetHeight,
+      offsetWidth: element.offsetWidth
+    });
+    
+    if (!hasContent) {
+      console.error('Print section is empty');
+      alert('No content to print. Please make sure the test paper has loaded completely.');
+      return;
+    }
+    
+    console.log('Print section found, preparing for print...');
+    
+    // Show loading indicator
+    document.body.classList.add('printing-test-paper');
     
     // Hide the app header or navigation before printing
     const appHeader = document.querySelector('header');
@@ -1874,95 +1957,26 @@ const printPage = async () => {
     
     // Hide elements that should be hidden in print
     const elementsToHide = document.querySelectorAll('.no-print');
-    elementsToHide.forEach((el) => {
-      (el as HTMLElement).style.display = 'none';
+    const originalDisplays: string[] = [];
+    elementsToHide.forEach((el, index) => {
+      const htmlEl = el as HTMLElement;
+      originalDisplays[index] = htmlEl.style.display;
+      htmlEl.style.display = 'none';
     });
     
-    // Try to create a better PDF using jsPDF and html2canvas
-    try {
-      // Import the libraries dynamically
-      const html2canvasModule = await import('html2canvas');
-      const html2canvas = html2canvasModule.default;
-      const jsPDFModule = await import('jspdf');
-      const { jsPDF } = jsPDFModule;
-      
-      // Create a new jsPDF document
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: false,
-        putOnlyUsedFonts: true,
-        floatPrecision: 16
-      });
-      
-      // Create a high-quality canvas
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        letterRendering: true,
-        backgroundColor: '#FFFFFF'
-      });
-      
-      // Add the image to the PDF
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      doc.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, imgWidth, imgHeight);
-      
-      // Add text layer for selectability (simplified version)
-      const textElements = element.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th');
-      doc.setTextColor(0, 0, 0, 0); // Transparent text (still selectable)
-      doc.setFontSize(12);
-      
-      // Extract and position text elements
-      const width = element.offsetWidth;
-      const height = element.offsetHeight;
-      textElements.forEach(el => {
-        try {
-          const rect = (el as HTMLElement).getBoundingClientRect();
-          const elementText = (el as HTMLElement).textContent?.trim() || '';
-          
-          if (elementText) {
-            // Convert coordinates to PDF space
-            const pdfX = (rect.left / width) * imgWidth;
-            const pdfY = (rect.top / height) * imgHeight;
-            
-            // Add invisible but selectable text
-            if (pdfX >= 0 && pdfY >= 0 && pdfX < imgWidth && pdfY < imgHeight) {
-              doc.text(elementText, pdfX, pdfY, { 
-                renderingMode: 'invisible',
-                baseline: 'top'
-              });
-            }
-          }
-        } catch (err) {
-          console.log('Error processing text element:', err);
-        }
-      });
-      
-      // Open the PDF in a new window for printing
-      const pdfDataUri = doc.output('datauristring');
-      const printWindow = window.open(pdfDataUri);
-      
-      if (printWindow) {
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-      } else {
-        // If popup blocked, fall back to standard print
-        window.print();
-      }
-    } catch (error) {
-      console.error('Error generating PDF for print:', error);
-      // Fall back to standard print method
-      window.print();
-    }
+    console.log('Styles applied, calling window.print()...');
     
-    // Restore styles after printing
+    // Add a small delay to ensure styles are applied
     setTimeout(() => {
+      // Use the browser's native print dialog
+      window.print();
+      console.log('Print dialog opened successfully');
+    }, 100);
+    
+    // Restore styles after a short delay
+    setTimeout(() => {
+      console.log('Restoring original styles...');
+      
       document.body.classList.remove('printing-test-paper');
       
       if (appHeader) appHeader.classList.remove('no-print-important');
@@ -1975,16 +1989,27 @@ const printPage = async () => {
         a4PaperCard.style.transform = '';
       }
       
-      elementsToHide.forEach((el) => {
-        (el as HTMLElement).style.display = '';
+      // Restore original display values
+      elementsToHide.forEach((el, index) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.display = originalDisplays[index] || '';
       });
+      
+      console.log('Styles restored successfully');
     }, 1000);
+    
   } catch (error) {
     console.error('Error in print process:', error);
-    // Fall back to standard print method as last resort
-    window.print();
+    alert('Print failed. Please try again or use your browser\'s print function (Ctrl+P).');
+    
+    // Clean up in case of error
+    document.body.classList.remove('printing-test-paper');
+    const appHeader = document.querySelector('header');
+    const appNav = document.querySelector('nav');
+    if (appHeader) appHeader.classList.remove('no-print-important');
+    if (appNav) appNav.classList.remove('no-print-important');
   }
-}
+};
 
 // Go back button handler
 const goBack = () => {
@@ -2538,12 +2563,14 @@ if (savedZoomLevel) {
     padding-top: 0 !important;
   }
   
-  /* Force the main content to start at the very top of the page */
+  /* Ensure the print section is visible and properly positioned */
   #printSection {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    visibility: visible !important;
+    display: block !important;
   }
   
   body {
@@ -2552,10 +2579,20 @@ if (savedZoomLevel) {
     print-color-adjust: exact !important;
   }
   
+  /* Ensure all content is visible */
+  .save-container, .a4-paper-container, .a4-paper-card {
+    position: static !important;
+    visibility: visible !important;
+    display: block !important;
+    opacity: 1 !important;
+  }
+  
   .save-container {
     box-shadow: none;
     padding: 0;
     width: 210mm;
+    max-width: none !important;
+    margin: 0 !important;
   }
   
   #backToTop, 

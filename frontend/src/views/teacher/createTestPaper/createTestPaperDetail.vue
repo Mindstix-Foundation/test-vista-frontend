@@ -10,13 +10,13 @@
       <div class="row justify-content-center align-items-center my-2">
         <div class="col-12 col-sm-10">
           <p class="text-muted text-start fs-5 mb-1">
-            <span class="d-inline-block">{{ decodeURIComponent(boardName) }}</span>
-            <span class="d-inline-block ms-1">| {{ decodeURIComponent(mediumName) }}</span>
+            <span class="d-inline-block">{{ boardName }}</span>
+            <span class="d-inline-block ms-1">| {{ mediumName }}</span>
           </p>
           <h4 class="fw-bolder text-start text-dark mb-2">
-            Standard {{ decodeURIComponent(standardName) }}
+            Standard {{ standardName }}
             <span class="d-block text-start text-secondary mt-1">
-              {{ decodeURIComponent(subjectName) }} <span class="optional-info-marks-heading fs-5" v-if="patternDetails">{{ patternDetails.total_marks }} Marks</span> 
+              {{ subjectName }} <span class="optional-info-marks-heading fs-5" v-if="patternDetails">{{ patternDetails.total_marks }} Marks</span> 
               <span class="d-block text-start text-secondary mt-1" >{{ patternName }}</span>
             </span>
           </h4>
@@ -51,19 +51,20 @@
                       class="btn btn-sm btn-dark" 
                       @click="generate"
                       :disabled="isLoading || totalAssignedMarks !== absoluteMarks"
-                      :title="totalAssignedMarks !== absoluteMarks ? 'Assigned marks must equal total marks' : 'Generate marks distribution'"
+                      :title="totalAssignedMarks !== absoluteMarks ? 'Assigned marks must equal total marks' : 'Distributes marks based on the values you have set for each chapter'"
                     >
-                      <i class="bi bi-magic me-1" :class="{'spinner-border spinner-border-sm': isLoading}"></i>
-                      Generate
+                      <i class="bi bi-sliders me-1" :class="{'spinner-border spinner-border-sm': isLoading}"></i>
+                      Custom Distribution
                     </button>
                     <button 
                       type="button" 
                       class="btn btn-sm btn-dark" 
                       @click="refreshChapterMarksDistribution"
                       :disabled="isLoading"
+                      :title="'Automatically distributes marks equally across all selected chapters'"
                     >
-                      <i class="bi bi-arrow-repeat me-1" :class="{'spinner-border spinner-border-sm': isLoading}"></i>
-                      Generate Equally
+                      <i class="bi bi-distribute-horizontal me-1" :class="{'spinner-border spinner-border-sm': isLoading}"></i>
+                      Equal Distribution
                     </button>
                   </div>
                 </div>
@@ -421,7 +422,8 @@
                 :disabled="!isMarksDistributionValid || hasZeroMarksChapters || !hasGeneratedDistribution"
                 :title="getCreateButtonTooltip()"
               >
-                Create Test Paper
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Generate Questions
               </button>
             </div>
           </div>
@@ -2022,27 +2024,17 @@ const refreshChapterMarksDistribution = async () => {
       questionOrigin: 'both'
     });
     
-    // Call the test-paper allocation API
-    const response = await fetch(
-      `${apiBaseUrl}/create-test-paper/allocation?` + 
-      `patternId=${patternIdNum}&` +
-      `${chapterIds.map(id => `chapterIds=${id}`).join('&')}&` +
-      `${mediumIds.map(id => `mediumIds=${id}`).join('&')}&` +
-      `questionOrigin=both`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
+    // Call the test-paper allocation API using axiosInstance
+    const response = await axiosInstance.get('/create-test-paper/allocation', {
+      params: {
+        patternId: patternIdNum,
+        chapterIds: chapterIds,
+        mediumIds: mediumIds,
+        questionOrigin: 'both'
       }
-    );
+    });
 
-    if (!response.ok) {
-      throw new Error(`API request failed with status: ${response.status}`);
-    }
-
-    const allocationData = await response.json();
+    const allocationData = response.data;
     
     console.log('refreshChapterMarksDistribution API response:', allocationData);
     
@@ -2087,8 +2079,16 @@ const generate = async () => {
     // Get API request parameters
     const { chapterIds, mediumId, requestedMarks, origin } = prepareDistributionParams();
     
+    console.log('Calling chapter marks distribution API with:', {
+      patternId,
+      chapterIds,
+      mediumIds: [Number(mediumId)],
+      requestedMarks,
+      questionOrigin: origin
+    });
+    
     // Call the API endpoint with the required parameters
-    const response = await axiosInstance.get('/create-test-paper/allocation', {
+    const response = await axiosInstance.get('/chapter-marks-distribution/distribute', {
       params: {
         patternId,
         chapterIds,
@@ -2100,7 +2100,7 @@ const generate = async () => {
     
     // Process response
     if (!response.data) {
-      throw new Error('No data received from chapter marks distribution API');
+      throw new Error('No data received from chapter marks distribute API');
     }
     
     handleSuccessResponse(response.data);
@@ -2127,20 +2127,12 @@ const prepareDistributionParams = () => {
   // Get question origin
   const origin = questionSource.value ?? 'both';
   
-  console.log('Generating marks distribution with:', {
-    patternId,
-    chapterIds,
-    mediumIds: [Number(mediumId)],
-    requestedMarks,
-    questionOrigin: origin
-  });
-  
   return { chapterIds, mediumId, requestedMarks, origin };
 };
 
 // Helper function to handle successful response
 const handleSuccessResponse = (data: TestPaperAllocation) => {
-  console.log('Chapter marks distribution API response:', data);
+  console.log('Chapter marks distribute API response:', data);
   
   // Update test paper allocation with response data
   testPaperAllocation.value = data;

@@ -142,12 +142,12 @@
                   </a>
                   <button 
                     class="btn btn-outline-danger ms-auto delete-btn" 
-                    disabled
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top" 
-                    title="Delete functionality coming soon"
+                    @click="confirmDeleteTestPaper(paper)"
+                    :disabled="isDeleting"
                   >
-                    <i class="bi bi-trash"></i> Delete
+                    <span v-if="isDeleting && deletingPaperId === paper.id" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <i v-else class="bi bi-trash me-1"></i> 
+                    {{ isDeleting && deletingPaperId === paper.id ? 'Deleting...' : 'Delete' }}
                   </button>
                 </div>
                 
@@ -192,6 +192,73 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold" id="deleteConfirmationModalLabel">
+              <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+              Confirm Delete
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-2">
+            <p class="mb-3">Are you sure you want to delete this test paper?</p>
+            
+            <div v-if="paperToDelete" class="alert alert-light border">
+              <div class="row">
+                <div class="col-12">
+                  <h6 class="fw-bold mb-2">{{ paperToDelete.name }}</h6>
+                  <div class="small text-muted">
+                    <div><strong>Pattern:</strong> {{ paperToDelete.pattern?.pattern_name || 'N/A' }}</div>
+                    <div><strong>School:</strong> {{ paperToDelete.school?.name || 'N/A' }}</div>
+                    <div><strong>Total Marks:</strong> {{ paperToDelete.pattern?.total_marks || 'N/A' }}</div>
+                    <div><strong>Created:</strong> {{ formatDate(paperToDelete.created_at) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              <strong>This action cannot be undone.</strong>
+            </div>
+
+            <div class="mb-3">
+              <p class="mb-2">Type <strong class="text-danger">DELETE</strong> in the box below to confirm:</p>
+              <input 
+                type="text" 
+                v-model="deleteConfirmationText" 
+                class="form-control" 
+                placeholder="DELETE"
+                @input="validateDeleteConfirmation"
+                :class="{ 'is-invalid': deleteConfirmationText && !isDeleteConfirmationValid, 'is-valid': isDeleteConfirmationValid }"
+              >
+              <div v-if="deleteConfirmationText && !isDeleteConfirmationValid" class="invalid-feedback">
+                Please type "DELETE" exactly as shown above
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-circle me-2"></i>Cancel
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-danger" 
+              @click="deleteTestPaper"
+              :disabled="isDeleting || !isDeleteConfirmationValid"
+            >
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-trash me-2"></i>
+              {{ isDeleting ? 'Deleting...' : 'Delete Test Paper' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification for status messages -->
     <ToastNotification
       :show="showToast"
@@ -231,11 +298,23 @@ const sortOption = ref('date-desc'); // Default sort: newest first
 // Loading state
 const isLoading = ref(false);
 
+// Delete state
+const isDeleting = ref(false);
+const deletingPaperId = ref(null);
+const paperToDelete = ref(null);
+
+// Delete confirmation text input
+const deleteConfirmationText = ref('');
+const isDeleteConfirmationValid = ref(false);
+
 // Test papers data - will be populated from API
 const testPapers = ref([]);
 
 // Track expanded paper cards
 const expandedPapers = ref([]);
+
+// Modal instance
+let deleteModal = null;
 
 // Toggle chapter view for a paper
 const toggleChaptersView = (index) => {
@@ -393,6 +472,78 @@ const viewPDF = (pdfUrl, paper) => {
   router.push(`/teacher/test-paper-pdf/${paper.id}`);
 };
 
+// Show delete confirmation modal
+const confirmDeleteTestPaper = (paper) => {
+  paperToDelete.value = paper;
+  deleteConfirmationText.value = ''; // Clear previous input
+  isDeleteConfirmationValid.value = false; // Reset validation
+  
+  if (!deleteModal) {
+    deleteModal = new Modal(document.getElementById('deleteConfirmationModal'));
+  }
+  
+  deleteModal.show();
+};
+
+// Validate delete confirmation text
+const validateDeleteConfirmation = () => {
+  isDeleteConfirmationValid.value = deleteConfirmationText.value.toLowerCase() === 'delete';
+};
+
+// Delete test paper
+const deleteTestPaper = async () => {
+  if (!paperToDelete.value) return;
+  
+  if (!isDeleteConfirmationValid.value) {
+    showErrorToast('Validation Error', 'Please type "DELETE" exactly as shown above to confirm deletion.');
+    return;
+  }
+
+  try {
+    isDeleting.value = true;
+    deletingPaperId.value = paperToDelete.value.id;
+    
+    const response = await axiosInstance.delete(`/test-paper-html/${paperToDelete.value.id}`);
+    
+    if (response.status === 200) {
+      // Remove the deleted paper from the list
+      testPapers.value = testPapers.value.filter(paper => paper.id !== paperToDelete.value.id);
+      
+      // Show success message
+      const deletedCount = response.data.deleted_files_count || 0;
+      const chaptersCount = response.data.deleted_chapters_count || 0;
+      
+      showSuccessToast(
+        'Test Paper Deleted', 
+        `Test paper "${paperToDelete.value.name}" has been successfully deleted. ${deletedCount} file(s) and ${chaptersCount} chapter(s) removed.`
+      );
+      
+      // Hide modal
+      deleteModal.hide();
+      
+      // Reset state
+      paperToDelete.value = null;
+    }
+  } catch (error) {
+    console.error('Error deleting test paper:', error);
+    
+    let errorMessage = 'Failed to delete test paper. Please try again.';
+    
+    if (error.response?.status === 404) {
+      errorMessage = 'Test paper not found. It may have already been deleted.';
+      // Remove from local list if it's a 404
+      testPapers.value = testPapers.value.filter(paper => paper.id !== paperToDelete.value.id);
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+    
+    showErrorToast('Delete Failed', errorMessage);
+  } finally {
+    isDeleting.value = false;
+    deletingPaperId.value = null;
+  }
+};
+
 // Search test papers (debounced in real implementation)
 const searchTestPapers = () => {
   // The computed property handles filtering
@@ -408,6 +559,13 @@ const showErrorToast = (title: string, message: string) => {
   toastTitle.value = title;
   toastMessage.value = message;
   toastType.value = 'danger';
+  showToast.value = true;
+};
+
+const showSuccessToast = (title: string, message: string) => {
+  toastTitle.value = title;
+  toastMessage.value = message;
+  toastType.value = 'success';
   showToast.value = true;
 };
 
@@ -734,5 +892,36 @@ input[type="text"] {
 .delete-btn {
   font-size: 0.85rem;
   padding: 0.4rem 0.75rem;
+}
+
+/* Delete confirmation input styling */
+.form-control.is-valid {
+  border-color: #198754;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.94-.94 1.36 1.36L6.5 5.26l.94.94-2.86 2.86L2.3 6.73z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid {
+  border-color: #dc3545;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 4.6 2.4 2.4M8.2 4.6l-2.4 2.4'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+  color: #dc3545;
+}
+
+/* Delete confirmation text styling */
+.text-danger {
+  color: #dc3545 !important;
+  font-weight: 600;
 }
 </style> 

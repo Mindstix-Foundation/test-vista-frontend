@@ -171,7 +171,7 @@
                   </div>
                 </div>
               </div>
-              <p style="margin-bottom: 5px;"><strong>Subject:</strong> {{ subjectName }} | <strong>Standard:</strong> {{ standardName }}</p>
+              <p style="margin-bottom: 5px;"><strong>Standard:</strong> {{ standardName }} | <strong>Subject:</strong> {{ subjectName }}</p>
               <p style="margin-top: 5px;">
                 <strong>Time:</strong> 
                 <span v-if="!isEditingTime" class="editable-field">
@@ -738,11 +738,35 @@ const cancelEditingTime = () => {
   isEditingTime.value = false
 }
 
+// Helper function to safely decode URL components (handles multiple levels of encoding)
+const safeDecodeURIComponent = (value: string | undefined): string => {
+  if (!value) return 'Not Selected';
+  
+  try {
+    let decoded = value;
+    let previousDecoded = '';
+    let attempts = 0;
+    const maxAttempts = 3; // Prevent infinite loops
+    
+    // Keep decoding until no more % characters or we've tried enough times
+    while (decoded.includes('%') && decoded !== previousDecoded && attempts < maxAttempts) {
+      previousDecoded = decoded;
+      decoded = decodeURIComponent(decoded);
+      attempts++;
+    }
+    
+    return decoded;
+  } catch (error) {
+    console.warn('Failed to decode URL component:', value, error);
+    return value; // Return original if decoding fails
+  }
+};
+
 // Get details from query parameters
 const patternId = computed(() => route.query.patternId as string || '1')
-const standardName = computed(() => decodeURIComponent(route.query.standard as string || 'Not Selected'))
-const subjectName = computed(() => decodeURIComponent(route.query.subject as string || 'Not Selected'))
-const patternName = computed(() => decodeURIComponent(route.query.patternName as string || 'Mid Term Paper'))
+const standardName = computed(() => safeDecodeURIComponent(route.query.standard as string))
+const subjectName = computed(() => safeDecodeURIComponent(route.query.subject as string))
+const patternName = computed(() => safeDecodeURIComponent(route.query.patternName as string || 'Mid Term Paper'))
 const totalMarks = computed(() => route.query.totalMarks as string || '40')
 
 // Editable title functionality

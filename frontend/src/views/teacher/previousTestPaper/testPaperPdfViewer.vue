@@ -60,64 +60,9 @@
     <!-- Actions Row -->
     <div class="row mt-3">
       <div class="col-12 text-end">
-        <button
-          v-if="currentPdfUrl && selectedMedium"
-          class="btn btn-outline-danger me-2"
-          @click="confirmDeleteMedium(selectedMedium)"
-          :disabled="isDeleteLoading"
-        >
-          <i class="bi" :class="isDeleteLoading ? 'bi-hourglass-split' : 'bi-trash'"></i>
-          Delete Current Medium
-        </button>
         <a v-if="currentPdfUrl" :href="currentPdfUrl" target="_blank" class="btn btn-dark">
           <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
         </a>
-      </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Are you sure you want to delete the <strong>{{ selectedMediumToDelete?.instruction_medium?.instruction_medium || 'selected' }}</strong> version of this test paper?</p>
-            <p class="text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>This action cannot be undone.</p>
-            
-            <!-- Verification input -->
-            <div class="mt-3">
-              <label for="deleteVerification" class="form-label">Type <strong>DELETE</strong> in the box below to confirm:</label>
-              <input 
-                type="text" 
-                id="deleteVerification" 
-                class="form-control" 
-                v-model="deleteVerificationText"
-                placeholder="Type DELETE here"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button 
-              type="button" 
-              class="btn btn-danger"
-              @click="deleteMedium"
-              :disabled="isDeleteLoading || deleteVerificationText !== 'DELETE'"
-            >
-              <span v-if="isDeleteLoading">
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Deleting...
-              </span>
-              <span v-else>
-                <i class="bi bi-trash me-2"></i>Delete
-              </span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -137,7 +82,6 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ToastNotification from '@/components/common/ToastNotification.vue';
 import axiosInstance from '@/config/axios';
-import { Modal } from 'bootstrap';
 
 // Define component name
 defineOptions({
@@ -160,12 +104,6 @@ const paperMediums = ref([]);
 const testPaperId = ref(null);
 const testPaperName = ref('');
 const selectedMedium = ref(null);
-let deleteConfirmModal = null;
-
-// Delete medium state
-const isDeleteLoading = ref(false);
-const selectedMediumToDelete = ref(null);
-const deleteVerificationText = ref('');
 
 // Loading state
 const isLoading = ref(false);
@@ -184,105 +122,6 @@ const getMediumName = (file) => {
 const switchMedium = (pdfUrl, mediumFile) => {
   currentPdfUrl.value = pdfUrl;
   selectedMedium.value = mediumFile;
-};
-
-// Confirm medium deletion
-const confirmDeleteMedium = (mediumFile) => {
-  selectedMediumToDelete.value = mediumFile;
-  deleteVerificationText.value = ''; // Reset verification text
-  
-  // Initialize delete confirmation modal if it doesn't exist
-  if (!deleteConfirmModal) {
-    const modalElement = document.getElementById('deleteConfirmModal');
-    if (modalElement) {
-      deleteConfirmModal = new Modal(modalElement);
-    }
-  }
-  
-  if (deleteConfirmModal) {
-    deleteConfirmModal.show();
-  }
-};
-
-// Delete medium
-const deleteMedium = async () => {
-  if (!selectedMediumToDelete.value || !testPaperId.value) {
-    showErrorToast('Error', 'Invalid test paper or medium selected.');
-    return;
-  }
-  
-  const paperId = testPaperId.value;
-  const instructionMediumId = selectedMediumToDelete.value.instruction_medium_id;
-  
-  if (!instructionMediumId) {
-    showErrorToast('Error', 'Could not determine the medium ID.');
-    return;
-  }
-  
-  try {
-    isDeleteLoading.value = true;
-    
-    // Call the DELETE API endpoint
-    await axiosInstance.delete(`/test-paper-html/${paperId}/medium/${instructionMediumId}`);
-    
-    // Close the delete confirmation modal
-    if (deleteConfirmModal) {
-      deleteConfirmModal.hide();
-    }
-    
-    // Remove deleted medium from the list
-    const mediumIndex = paperMediums.value.findIndex(m => 
-      m.instruction_medium_id === instructionMediumId
-    );
-    
-    if (mediumIndex !== -1) {
-      // If currently viewing this medium, switch to another one if available
-      if (currentPdfUrl.value === paperMediums.value[mediumIndex].presigned_url) {
-        if (paperMediums.value.length > 1) {
-          // Find next available medium
-          const nextIndex = mediumIndex === paperMediums.value.length - 1 ? 0 : mediumIndex + 1;
-          currentPdfUrl.value = paperMediums.value[nextIndex].presigned_url;
-          selectedMedium.value = paperMediums.value[nextIndex];
-        } else {
-          // No more mediums available
-          currentPdfUrl.value = '';
-          selectedMedium.value = null;
-        }
-      }
-      
-      // Remove from the array
-      paperMediums.value.splice(mediumIndex, 1);
-    }
-    
-    // Show success toast
-    toastTitle.value = 'Success';
-    toastMessage.value = 'Medium deleted successfully.';
-    toastType.value = 'success';
-    showToast.value = true;
-    
-    // If no more mediums available, go back to the dashboard
-    if (paperMediums.value.length === 0) {
-      setTimeout(() => {
-        goBack();
-      }, 1500);
-    }
-  } catch (error) {
-    console.error('Error deleting medium:', error);
-    let errorMessage = 'Failed to delete medium. Please try again.';
-    
-    if (error.response) {
-      if (error.response.status === 404) {
-        errorMessage = 'The medium could not be found. It may have been already deleted.';
-      } else if (error.response.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-    }
-    
-    showErrorToast('Error', errorMessage);
-  } finally {
-    isDeleteLoading.value = false;
-    selectedMediumToDelete.value = null;
-  }
 };
 
 // Toast notification methods

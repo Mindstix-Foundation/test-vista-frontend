@@ -373,6 +373,24 @@
       </div>
     </div>
 
+    <!-- Sync Status Notification -->
+    <div v-if="syncInProgress || pendingAnswers.size > 0" class="sync-notification">
+      <div class="container-fluid">
+        <div class="alert alert-info alert-dismissible mb-0 py-2 text-center">
+          <small>
+            <i class="bi bi-arrow-repeat me-1" :class="{ 'spinning': syncInProgress }"></i>
+            <strong v-if="syncInProgress">Syncing Answers:</strong>
+            <strong v-else>Pending Sync:</strong>
+            {{ syncInProgress ? 'Uploading your answers to server...' : `${pendingAnswers.size} answer(s) waiting to sync` }}
+          </small>
+          <button type="button" class="btn-close btn-close-sm" @click="syncPendingAnswers()" 
+                  :disabled="syncInProgress" :title="syncInProgress ? 'Sync in progress' : 'Retry sync now'">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Navigation Panel Backdrop -->
     <div v-if="showNavigationPanel" class="navigation-backdrop" @click="toggleNavigationPanel"></div>
   </div>
@@ -452,6 +470,10 @@ const showNavigationPanel = ref(false)
 const isOnline = ref(navigator.onLine)
 const showOfflineWarning = ref(false)
 
+// Offline answer queue system
+const pendingAnswers = ref(new Map<number, any>()) // questionIndex -> submissionData
+const syncInProgress = ref(false)
+
 // Network status monitoring
 const handleOnlineStatus = () => {
   isOnline.value = navigator.onLine
@@ -463,7 +485,46 @@ const handleOnlineStatus = () => {
     console.log('Device back online')
     // Try to save state when back online
     saveExamState()
+    // Sync pending answers when connection is restored
+    syncPendingAnswers()
   }
+}
+
+// Sync pending answers to backend
+const syncPendingAnswers = async () => {
+  if (syncInProgress.value || pendingAnswers.value.size === 0) {
+    return
+  }
+  
+  syncInProgress.value = true
+  console.log(`Starting sync of ${pendingAnswers.value.size} pending answers...`)
+  
+  const failedSyncs = new Map()
+  
+  for (const [questionIndex, submissionData] of pendingAnswers.value.entries()) {
+    try {
+      console.log(`Syncing answer for question ${questionIndex + 1}:`, submissionData)
+      await testAssignmentService.submitAnswer(submissionData)
+      console.log(`Successfully synced answer for question ${questionIndex + 1}`)
+      
+      // Remove from pending queue on success
+      pendingAnswers.value.delete(questionIndex)
+    } catch (error) {
+      console.error(`Failed to sync answer for question ${questionIndex + 1}:`, error)
+      failedSyncs.set(questionIndex, error)
+    }
+  }
+  
+  if (failedSyncs.size > 0) {
+    console.warn(`Failed to sync ${failedSyncs.size} answers. Will retry later.`)
+  } else if (pendingAnswers.value.size === 0) {
+    console.log('All pending answers synced successfully!')
+  }
+  
+  syncInProgress.value = false
+  
+  // Save updated state
+  saveExamState()
 }
 
 // State persistence functions
@@ -478,6 +539,7 @@ const saveExamState = () => {
     visitedQuestions: Array.from(visitedQuestions.value),
     timeRemaining: timeRemaining.value,
     questionTimeSpent: questionTimeSpent.value,
+    pendingAnswers: Array.from(pendingAnswers.value.entries()), // Save pending answers
     timestamp: Date.now()
   }
   
@@ -492,7 +554,7 @@ const saveExamState = () => {
       
       // Try to save the state
       localStorage.setItem(`exam_state_${attemptId.value}`, stateString)
-      console.log('Exam state saved to localStorage')
+    console.log('Exam state saved to localStorage')
     } else {
       console.warn('localStorage not available, state not saved')
       // Fallback: try to use sessionStorage
@@ -558,6 +620,12 @@ const loadExamState = (): boolean => {
     markedQuestions.value = new Set(examState.markedQuestions || [])
     visitedQuestions.value = new Set(examState.visitedQuestions || [])
     questionTimeSpent.value = examState.questionTimeSpent || {}
+    
+    // Restore pending answers queue
+    if (examState.pendingAnswers && Array.isArray(examState.pendingAnswers)) {
+      pendingAnswers.value = new Map(examState.pendingAnswers)
+      console.log('Restored pending answers:', pendingAnswers.value.size)
+    }
     
     // IMPORTANT: Restore the timeRemaining to continue from where user left off
     if (examState.timeRemaining !== undefined && examState.timeRemaining > 0) {
@@ -700,16 +768,16 @@ const initializeExam = async () => {
       console.log('Setting timer from API response (no saved state or expired)')
       
       // Prefer backend-provided timeRemaining for accurate time sync
-      if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
-        timeRemaining.value = examResponse.timeRemaining
+    if ('timeRemaining' in examResponse && examResponse.timeRemaining !== undefined) {
+      timeRemaining.value = examResponse.timeRemaining
         console.log('Using backend-provided timeRemaining:', examResponse.timeRemaining)
-      } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
+    } else if ('duration_minutes' in examResponse && examResponse.duration_minutes) {
         // Fallback: Calculate time remaining based on duration
-        timeRemaining.value = examResponse.duration_minutes * 60
+      timeRemaining.value = examResponse.duration_minutes * 60
         console.log('Using calculated timeRemaining from duration:', timeRemaining.value)
-      } else {
-        // Default to 1 hour if no duration specified
-        timeRemaining.value = 3600
+    } else {
+      // Default to 1 hour if no duration specified
+      timeRemaining.value = 3600
         console.log('Using default timeRemaining:', timeRemaining.value)
       }
     } else {
@@ -756,6 +824,20 @@ const initializeExam = async () => {
       await saveCurrentAnswerWithState()
     }, 10000)
     
+    // Periodic retry for pending answers (every 30 seconds)
+    const pendingSyncTimer = setInterval(async () => {
+      if (isOnline.value && pendingAnswers.value.size > 0 && !syncInProgress.value) {
+        console.log(`Periodic retry: Found ${pendingAnswers.value.size} pending answers. Attempting sync...`)
+        await syncPendingAnswers()
+      }
+    }, 30000)
+    
+    // Store timer reference for cleanup
+    if (!window.examTimers) {
+      window.examTimers = []
+    }
+    window.examTimers.push(pendingSyncTimer)
+    
     // Check fullscreen
     checkFullscreen()
     
@@ -764,6 +846,12 @@ const initializeExam = async () => {
     
     // Save initial state
     saveExamState()
+    
+    // Sync any pending answers from previous session
+    if (pendingAnswers.value.size > 0) {
+      console.log(`Found ${pendingAnswers.value.size} pending answers from previous session. Starting sync...`)
+      syncPendingAnswers()
+    }
     
     isLoading.value = false
     
@@ -881,10 +969,34 @@ const saveCurrentAnswer = async () => {
   try {
     await testAssignmentService.submitAnswer(submissionData)
     console.log('Answer saved successfully')
+    
+    // Remove from pending queue if it was there (successful sync)
+    if (pendingAnswers.value.has(currentQuestionIndex.value)) {
+      pendingAnswers.value.delete(currentQuestionIndex.value)
+      console.log(`Removed question ${currentQuestionIndex.value + 1} from pending queue (successful sync)`)
+    }
   } catch (error) {
     console.error('Error saving answer:', error)
+    
+    // Add to pending queue for later sync if online/offline or network error
+    if (!isOnline.value || isNetworkError(error)) {
+      pendingAnswers.value.set(currentQuestionIndex.value, submissionData)
+      console.log(`Added question ${currentQuestionIndex.value + 1} to pending queue due to network error`)
+    }
+    
     // Don't block navigation, just log the error
   }
+}
+
+// Helper function to detect network errors
+const isNetworkError = (error: any): boolean => {
+  return (
+    error.code === 'NETWORK_ERROR' ||
+    error.code === 'ECONNABORTED' ||
+    error.message?.includes('Network Error') ||
+    error.message?.includes('timeout') ||
+    !error.response // No response usually means network issue
+  )
 }
 
 const saveAndNext = async () => {
@@ -896,10 +1008,9 @@ const saveAndNext = async () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     await nextQuestion()
   } else {
-    // Save current answer before showing confirmation
+    // Save current answer before submitting exam
     await saveCurrentAnswer()
-    // Show confirmation modal instead of directly submitting
-    showSubmitConfirmation.value = true
+    submitExam()
   }
   
   isSubmittingAnswer.value = false
@@ -963,10 +1074,10 @@ const submitExam = async () => {
       const response = await testAssignmentService.submitExam(submissionData)
       
       console.log('Submission response:', response)
-      
-      // Clear saved state after successful submission
-      clearExamState()
-      
+    
+    // Clear saved state after successful submission
+    clearExamState()
+    
       showSubmitConfirmation.value = false
       
       // Add a small delay before navigating to give backend time to process
@@ -991,7 +1102,7 @@ const submitExam = async () => {
       alert('Exam has already been submitted.')
       router.push(`/student/exam/result?attemptId=${attemptId.value}`)
     } else {
-      alert('Failed to submit exam. Please try again.')
+    alert('Failed to submit exam. Please try again.')
     }
   } finally {
     isSubmittingExam.value = false
@@ -1004,27 +1115,27 @@ const autoSubmitExam = async () => {
   let retryCount = 0
   
   const attemptAutoSubmission = async (): Promise<any> => {
-    try {
-      isSubmittingExam.value = true
+  try {
+    isSubmittingExam.value = true
+    
+    // Save the current answer before auto-submitting
+    await saveCurrentAnswerWithState()
+    
+    if (attemptId.value) {
+      const submissionData = {
+        test_attempt_id: attemptId.value
+      }
       
-      // Save the current answer before auto-submitting
-      await saveCurrentAnswerWithState()
+      const response = await testAssignmentService.submitExam(submissionData)
       
-      if (attemptId.value) {
-        const submissionData = {
-          test_attempt_id: attemptId.value
-        }
-        
-        const response = await testAssignmentService.submitExam(submissionData)
-        
-        // Clear saved state after successful submission
-        clearExamState()
-        
-        // Navigate to result page
-        router.push({
-          path: '/student/exam/result',
-          query: { attemptId: attemptId.value }
-        })
+      // Clear saved state after successful submission
+      clearExamState()
+      
+      // Navigate to result page
+      router.push({
+        path: '/student/exam/result',
+        query: { attemptId: attemptId.value }
+      })
         
         return response
       }
@@ -1246,6 +1357,12 @@ onUnmounted(() => {
   }
   if (fullscreenChecker.value) {
     clearInterval(fullscreenChecker.value)
+  }
+
+  // Clean up pending sync timers
+  if (window.examTimers) {
+    window.examTimers.forEach(timer => clearInterval(timer))
+    window.examTimers = []
   }
 
   // Remove event listeners
@@ -2341,5 +2458,43 @@ body {
 
 .offline-notification .alert-warning .bi-wifi-off {
   color: #856404;
+}
+
+/* Sync Status Notification */
+.sync-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1002; /* Ensure it's above other content */
+  background-color: #e3f2fd; /* Light blue background */
+  border-bottom: 1px solid #90caf9; /* Blue border */
+  box-shadow: 0 2px 8px rgba(144, 175, 255, 0.3);
+}
+
+.sync-notification .alert {
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.sync-notification .alert-info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-color: #90caf9;
+}
+
+.sync-notification .alert-info .bi-arrow-repeat {
+  color: #1976d2;
+}
+
+.sync-notification .alert-info .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style> 

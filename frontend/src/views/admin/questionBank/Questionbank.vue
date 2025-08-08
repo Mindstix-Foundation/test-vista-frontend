@@ -160,6 +160,7 @@ interface Subject {
   id: number
   board_id: number
   name: string
+  mediumStandardSubjectId?: number
 }
 
 interface Medium {
@@ -236,25 +237,13 @@ const handleBoardChange = async () => {
     // Update the selected board with the full details
     selectedBoard.value = boardDetails
 
-    // Set mediums, standards, and subjects from the API response
+    // Set mediums and standards from the API response
     mediums.value = boardDetails.instruction_mediums || []
     standards.value = boardDetails.standards || []
-
-    // Make sure we extract subjects properly
-    if (boardDetails.subjects && boardDetails.subjects.length > 0) {
-      subjects.value = boardDetails.subjects.map((subject: Subject) => ({
-        id: subject.id,
-        name: subject.name,
-        board_id: boardDetails.id
-      }))
-    } else {
-      subjects.value = []
-    }
 
     console.log('Board details fetched successfully:', boardDetails)
     console.log('Mediums:', mediums.value)
     console.log('Standards:', standards.value)
-    console.log('Subjects:', subjects.value)
   } catch (error) {
     console.error('Error fetching board details:', error)
     resetForm()
@@ -267,15 +256,19 @@ const handleMediumChange = () => {
   selectedSubject.value = null
   selectedChapter.value = null
   chapters.value = []
-  // Do not clear subjects here as they should persist
+  subjects.value = [] // Clear subjects as they depend on both medium and standard
 }
 
-const handleStandardChange = () => {
+const handleStandardChange = async () => {
   // Reset dependent fields
   selectedSubject.value = null
   selectedChapter.value = null
   chapters.value = []
-  // Do not clear subjects here as they should persist
+  
+  // Fetch subjects for this specific combination
+  if (selectedStandard.value && selectedMedium.value && selectedBoard.value) {
+    await fetchSubjects()
+  }
 }
 
 const handleSubjectChange = async () => {
@@ -325,6 +318,39 @@ const fetchChapters = async () => {
   }
 }
 
+const fetchSubjects = async () => {
+  try {
+    if (!selectedBoard.value || !selectedMedium.value || !selectedStandard.value) {
+      subjects.value = []
+      return
+    }
+
+    console.log('Fetching subjects with boardId:', selectedBoard.value.id,
+                'mediumId:', selectedMedium.value.id,
+                'and standardId:', selectedStandard.value.id)
+
+    // Use the medium-standard-subjects API endpoint with query parameters
+    const response = await axiosInstance.get(
+      `/medium-standard-subjects?boardId=${selectedBoard.value.id}&instruction_medium_id=${selectedMedium.value.id}&standard_id=${selectedStandard.value.id}`
+    )
+
+    console.log('Raw subjects response:', response.data)
+
+    // Map the response data to our subjects array
+    subjects.value = response.data.map((item: any) => ({
+      id: item.subject.id,
+      name: item.subject.name,
+      board_id: selectedBoard.value!.id,
+      mediumStandardSubjectId: item.id
+    }))
+
+    console.log('Processed subjects:', subjects.value)
+  } catch (error) {
+    console.error('Error fetching subjects:', error)
+    subjects.value = []
+  }
+}
+
 const resetForm = () => {
   selectedMedium.value = null
   selectedStandard.value = null
@@ -350,7 +376,8 @@ const viewQuestions = () => {
     subjectId: selectedSubject.value?.id,
     subjectName: selectedSubject.value?.name ?? '',
     chapterId: selectedChapter.value?.id,
-    chapterName: selectedChapter.value?.name ?? ''
+    chapterName: selectedChapter.value?.name ?? '',
+    mediumStandardSubjectId: selectedSubject.value?.mediumStandardSubjectId ?? null
   }))
 
   // Navigate to question dashboard page
