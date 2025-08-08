@@ -84,6 +84,7 @@ import type { TeacherFormData } from '@/models/Teacher'
 import axiosInstance from '@/config/axios'
 import * as bootstrap from 'bootstrap'
 import { useToastStore } from '@/store/toast'
+import { formatContactNumberForAPI } from '@/utils/validationConstants'
 
 interface OperationResult {
   operation: string
@@ -296,8 +297,10 @@ const updateTeacher = async (userId: string, formData: TeacherFormData) => {
     const payload = {
       name: formData.name,
       email_id: formData.emailId,
-      contact_number: formData.contactNumber,
-      alternate_contact_number: formData.alternateContactNumber ?? null,
+      contact_number: formatContactNumberForAPI(formData.contactNumber),
+      alternate_contact_number: formData.alternateContactNumber 
+        ? formatContactNumberForAPI(formData.alternateContactNumber)
+        : null,
       highest_qualification: formData.highestQualification,
       status: true,
       school_id: formData.schoolId,

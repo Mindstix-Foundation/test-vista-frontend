@@ -114,12 +114,12 @@ export const validateContactNumber = (number: string): boolean => {
   // 1. Plain 10-digit number (6-9 followed by 9 digits)
   // 2. +91 prefixed number (91 followed by 10-digit number starting with 6-9)
   if (cleaned.length === 10) {
-    // Plain 10-digit format
-    return /^[6-9]/.test(cleaned)
+    // Plain 10-digit format - must start with 6, 7, 8, or 9
+    return /^[6-9]\d{9}$/.test(cleaned)
   } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
     // +91 prefixed format
     const phoneNumber = cleaned.substring(2) // Remove '91' prefix
-    return phoneNumber.length === 10 && /^[6-9]/.test(phoneNumber)
+    return phoneNumber.length === 10 && /^[6-9]\d{9}$/.test(phoneNumber)
   }
   
   return false

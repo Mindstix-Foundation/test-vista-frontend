@@ -511,6 +511,7 @@ import { Modal } from 'bootstrap'
 import type { Teacher } from '@/models/Teacher'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
+import { formatContactNumberForAPI } from '@/utils/validationConstants'
 
 // Extend the Teacher interface to include the new properties
 interface ExtendedTeacher extends Teacher {
@@ -1006,12 +1007,16 @@ async function updateTeacherStatus() {
 
   try {
     const newStatus = !selectedTeacher.value.status
+    const alternateContactFormatted = selectedTeacher.value.alternateContactNumber 
+      ? formatContactNumberForAPI(String(selectedTeacher.value.alternateContactNumber))
+      : null
+
     await axiosInstance.put(`/users/${selectedTeacher.value.id}`, {
       status: newStatus,
       name: selectedTeacher.value.name,
       email_id: selectedTeacher.value.emailId,
-      contact_number: selectedTeacher.value.contactNumber,
-      alternate_contact_number: selectedTeacher.value.alternateContactNumber,
+      contact_number: formatContactNumberForAPI(selectedTeacher.value.contactNumber),
+      alternate_contact_number: alternateContactFormatted,
       highest_qualification: selectedTeacher.value.highestQualification,
     })
 

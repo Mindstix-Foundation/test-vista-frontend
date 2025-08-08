@@ -27,6 +27,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TeacherFormData } from '@/models/Teacher'
 import axiosInstance from '@/config/axios'
 import { useToastStore } from '@/store/toast'
+import { formatContactNumberForAPI } from '@/utils/validationConstants'
 
 const router = useRouter()
 const toastStore = useToastStore()
@@ -69,8 +70,10 @@ const handleSubmit = async (data: {
       name: data.formData.name,
       email_id: data.formData.emailId,
       password: 'Testvista@123', // Default password
-      contact_number: data.formData.contactNumber,
-      alternate_contact_number: data.formData.alternateContactNumber ?? undefined,
+      contact_number: formatContactNumberForAPI(data.formData.contactNumber),
+      alternate_contact_number: data.formData.alternateContactNumber 
+        ? formatContactNumberForAPI(data.formData.alternateContactNumber)
+        : undefined,
       highest_qualification: data.formData.highestQualification,
       status: true,
       school_id: data.formData.schoolId,
