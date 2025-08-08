@@ -2018,7 +2018,7 @@ const savePage = async () => {
       query: {
         ...route.query, // Pass along current query params
         paperTitle: paperTitle.value,
-        testDuration: `${hours.value}:${minutes.value}`,
+        testDuration: testDuration.value, // Use the computed formatted value instead of raw format
         saveRequested: 'true', // Flag to indicate save should be performed
         userId: userId.toString(),
         schoolId: schoolId.toString(),
