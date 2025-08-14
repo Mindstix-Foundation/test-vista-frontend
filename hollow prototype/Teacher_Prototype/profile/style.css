@@ -1,0 +1,40 @@
+.profile-info {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 600px; /* Set maximum width */
+    margin: 0 auto; /* Center-align horizontally */
+}
+/* Center the entire profile container */
+.profile-container {
+    max-width: 600px; /* Set maximum width */
+    margin: 0 auto; /* Center-align horizontally */
+}
+
+/* Profile Info Styling */
+.profile-info {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-info p {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.profile-info .form-label {
+    font-weight: bold;
+}
+
+#big {
+    width: 48%;
+}
+
+/* Align Header */
+.profile-container h3 {
+    margin-bottom: 20px;
+    color: black;
+}

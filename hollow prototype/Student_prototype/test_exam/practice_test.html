@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Test - TEST VISTA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        #navExam{
+            font-weight: bolder;
+            text-decoration: underline;
+            text-decoration-color: white;
+        }
+        @media (max-width: 768px) {
+            #navExam{
+                font-weight: bolder;
+                font-size: 1.1rem !important;
+                text-decoration: none !important;
+            }
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        .subject-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .subject-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="container mt-4 mb-5">
+        <!-- Page Header -->
+        <div class="row p-2 justify-content-center mb-4">
+            <div class="col-12 col-sm-10">
+                <div class="d-flex align-items-center mb-3">
+                    <button class="btn btn-outline-secondary me-3" onclick="goBack()">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </button>
+                    <h3 class="fw-bolder text-uppercase mb-0">
+                        <i class="bi bi-pencil-square"></i> Practice Tests
+                    </h3>
+                </div>
+                <p class="text-muted">Choose a subject to start practicing. Take unlimited attempts to improve your skills.</p>
+            </div>
+            <hr>
+        </div>
+
+        <!-- Subject Selection -->
+        <div class="row gy-4 g-4 justify-content-center">
+            <!-- Mathematics -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card subject-card h-100" onclick="startPracticeTest('mathematics')">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-calculator text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">Mathematics</h5>
+                        <p class="card-text text-muted mb-3">Algebra, Geometry, Calculus, Statistics</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1">25 Questions</span>
+                            <span class="badge bg-light text-dark">45 Minutes</span>
+                        </div>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-play-circle"></i> Start Practice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Science -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card subject-card h-100" onclick="startPracticeTest('science')">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-flask text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">Science</h5>
+                        <p class="card-text text-muted mb-3">Physics, Chemistry, Biology</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1">30 Questions</span>
+                            <span class="badge bg-light text-dark">60 Minutes</span>
+                        </div>
+                        <button class="btn btn-success">
+                            <i class="bi bi-play-circle"></i> Start Practice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- English -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card subject-card h-100" onclick="startPracticeTest('english')">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-book text-info" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">English</h5>
+                        <p class="card-text text-muted mb-3">Grammar, Literature, Comprehension</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1">20 Questions</span>
+                            <span class="badge bg-light text-dark">40 Minutes</span>
+                        </div>
+                        <button class="btn btn-info">
+                            <i class="bi bi-play-circle"></i> Start Practice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card subject-card h-100" onclick="startPracticeTest('history')">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-clock-history text-warning" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">History</h5>
+                        <p class="card-text text-muted mb-3">Ancient, Medieval, Modern History</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1">20 Questions</span>
+                            <span class="badge bg-light text-dark">35 Minutes</span>
+                        </div>
+                        <button class="btn btn-warning">
+                            <i class="bi bi-play-circle"></i> Start Practice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Geography -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card subject-card h-100" onclick="startPracticeTest('geography')">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-globe text-secondary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">Geography</h5>
+                        <p class="card-text text-muted mb-3">Physical, Human, Economic Geography</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1">25 Questions</span>
+                            <span class="badge bg-light text-dark">40 Minutes</span>
+                        </div>
+                        <button class="btn btn-secondary">
+                            <i class="bi bi-play-circle"></i> Start Practice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Computer Science -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card subject-card h-100" onclick="startPracticeTest('computer')">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-laptop text-dark" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">Computer Science</h5>
+                        <p class="card-text text-muted mb-3">Programming, Algorithms, Data Structures</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1">30 Questions</span>
+                            <span class="badge bg-light text-dark">50 Minutes</span>
+                        </div>
+                        <button class="btn btn-dark">
+                            <i class="bi bi-play-circle"></i> Start Practice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript files -->
+    <script src="../commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar -->
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+
+        function goBack() {
+            window.location.href = './practice_test.html';
+        }
+
+        function startPracticeTest(subject) {
+            // Navigate to exam instructions page with subject parameter
+            window.location.href = `../exam_pages/instructions.html?subject=${subject}&type=practice`;
+        }
+    </script>
+</body>
+
+</html> 

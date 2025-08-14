@@ -1,0 +1,310 @@
+
+<!-- /teacher/teacher.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Managmenet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../commonPart/navbar.css" rel="stylesheet">
+    
+</head>
+<body>
+    <div class="container my-4">
+        <div class="container">
+            <div class="row g-2 justify-content-end">
+                <a class="btn btn-close" href="./board.html" aria-label="Close"></a>
+              </div>
+              <div class="row justify-content-center align-items-center my-2">
+                <div class="col col-12 col-sm-10 col-md-8">
+                  <h4 class="text-left  fw-bolder text-uppercase  mb-2">Edit Board</h4>
+                </div>
+                </div>
+                <hr>
+        </div>
+        <div id="form-container" class="row mt-4 justify-content-center" >
+            
+               <form>
+                <div class="row g-3 justify-content-center">
+                    <div class="col col-12 col-sm-10 col-md-8">
+                        <div class="mb-3 form-floating">
+                          <input type="text" class="form-control" id="boardName" placeholder="Enter Board Name" value="Maharashtra State Board of Secondary and Higher Secondary Education ">
+                          <label for="boardName" class="form-label">Board Name</label>
+    
+                      </div>
+                    </div>
+
+                    <div class="col col-12 col-sm-10 col-md-8">
+                      <div class="mb-3 form-floating">
+                        <input type="text" class="form-control" id="boardAbbreviation" placeholder="Enter Board Abbreviation" value="MSBSHSE">
+                        <label for="boardAbbreviation" class="form-label">Board Abbreviation</label>
+  
+                    </div>
+                  </div>
+
+                  <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-3">
+                    <legend class="float-none w-auto  ">Board Address &nbsp;</legend>
+              
+                    <div class="row g-2 justify-content-center">
+                      
+                        <div class="col col-12 col-md-4">
+                          <div class="form-floating">
+                            <input type="text" class="form-control" id="countryName" placeholder="Search for Country" list="countryList" value="India">
+                            <label for="countryName'">Search for Country</label>
+                          </div>
+                          <datalist id="countryList"></datalist>
+                        </div>
+                       
+                        <div class="col col-12 col-md-4">
+                          <div class="form-floating">
+                            <input type="text" class="form-control" id="stateName" placeholder="Search for State" list="stateList" value="Maharashtra">
+                            <label for="stateName'">Search for state</label>
+                          </div>
+                          <datalist id="stateList"></datalist>
+                        </div>
+                        
+                        <div class="col col-12 col-md-4">
+                          <div class="form-floating">
+                            <input type="text" class="form-control" id="cityName" placeholder="Search for City" list="cityList" value="Mumbai">
+                            <label for="cityName">Search for City/Town</label>
+                          </div>
+                          <datalist id="cityList"></datalist>
+                        </div>
+                        
+                       
+                        <div class="col col-12">    
+                        <div class="form-floating">
+                          <textarea class="form-control" id="address" rows="2" placeholder="Enetr Address" oninput="autoResize(this)"></textarea>
+                          <label for="address">Address</label>
+                        </div>
+                      </div>
+                      
+                        <div class="col col-12">
+                        <div class=" form-floating">
+                         <input type="text" class="form-control" id="postalCode" placeholder="Enter School Postal Code" value="400001">
+                         <label for="postalCode" class="form-label">Postal Code</label>
+                        </div>
+                        </div>
+                    </div>
+                    
+                 
+                </fieldset>
+                <hr hidden>
+
+                
+                <fieldset class="border p-2 rounded col col-12 col-sm-10 col-md-8 mb-4">
+                    <legend class="float-none w-auto  ">Mediums Of Instruction &nbsp;</legend>
+              
+                    <div class="row g-2 justify-content-center" id="input-container">
+                      
+                        <div class="col col-12 ">
+                        <div class=" form-floating">
+                         <input type="text" class="form-control medium-input" id="medium" placeholder="Enter Medium"oninput="handleInput(this)" value="English">
+                         <label for="medium" class="form-label">Medium Name</label>
+                        </div>
+                      </div>
+                        <div class="col col-12 ">
+                        <div class=" form-floating">
+                          <input type="text" class="form-control medium-input" id="medium" placeholder="Enter Medium"oninput="handleInput(this)" value="Marathi">
+                          <label for="medium" class="form-label">Medium Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control medium-input" id="medium" placeholder="Enter Medium"oninput="handleInput(this)" value="Hindi">
+                          <label for="medium" class="form-label">Medium Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                          <div class=" form-floating">
+                           <input type="text" class="form-control medium-input" id="medium" placeholder="Enter Medium"oninput="handleInput(this)" >
+                           <label for="medium" class="form-label">Medium Name</label>
+                          </div>
+                         </div>
+                        </div>
+
+                 
+                    
+                 
+                </fieldset>
+                
+                
+                <div class="row justify-content-center">
+                  <fieldset class="border p-2 rounded col col-12 col-sm-5 col-md-4 mb-2 ms-2">
+                    <legend class="float-none w-auto  "> Standards Offered &nbsp;</legend>
+              
+                    <div class="row g-2 justify-content-center" id="input-container">
+                      
+                        <div class="col col-12">
+                        <div class=" form-floating">
+                         <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="First">
+                         <label for="standard" class="form-label">Standard Name</label>
+                        </div>
+                      </div>
+                      <div class="col col-12 ">
+                        <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Second">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Third">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Fourth">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Fifth">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Sixth">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Seventh">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Eighth">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Ninth">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)" value="Tenth">
+                          <label for="standard" class="form-label">Standard Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                          <div class=" form-floating">
+                           <input type="text" class="form-control standard-input" id="standard" placeholder="Enter Standard"oninput="handleInput(this)">
+                           <label for="standard" class="form-label">Standard Name</label>
+                          </div>
+                         </div>
+  
+                        </div>
+                   
+                    
+                 
+                </fieldset>
+                <fieldset class="border p-2 rounded col col-12 col-sm-5 col-md-4 mb-2 ms-2">
+                    <legend class="float-none w-auto  ">Subjects Offered &nbsp;</legend>
+              
+                    <div class="row g-2 justify-content-center" id="input-container">
+                      
+                        <div class="col col-12">
+                        <div class=" form-floating">
+                         <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Marathi">
+                         <label for="subject" class="form-label">Subject Name</label>
+                        </div>
+                      </div>
+                      <div class="col col-12 ">
+                        <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Hindi">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="English">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Maths">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Science">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Social Science">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Sanskrit">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                         <div class=" form-floating">
+                          <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" value="Health & Physical Education">
+                          <label for="subject" class="form-label">Subject Name</label>
+                         </div>
+                        </div>
+                        <div class="col col-12 ">
+                          <div class=" form-floating">
+                           <input type="text" class="form-control subject-input" id="subject" placeholder="Enter Subject"oninput="handleInput(this)" >
+                           <label for="subject" class="form-label">Subject Name</label>
+                          </div>
+                         </div>
+                        </div>
+                    
+                    
+                 
+                </fieldset>
+              </div>
+                    <div class="col col-12 col-sm-10 col-md-8 mt-4">
+                    <div class="text-center ">
+                      <a id="save_button" type="submit" class="btn btn-dark" href="./board.html">Save</a>
+                  </div>
+                    </div>
+  
+                </div>
+
+               </form>
+            
+        </div>
+    </div>
+
+
+  
+    
+
+    <script>
+      function autoResize(textarea) {
+        textarea.style.height = ''; // Reset the height
+        textarea.style.height = textarea.scrollHeight + 'px'; // Set the height to fit the content
+      }
+    
+      // Automatically resize any pre-filled textareas on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        const textareas = document.querySelectorAll("textarea");
+        textareas.forEach(autoResize); // Apply autoResize to each textarea
+      });
+    </script>
+    <script src="./form.js"></script>
+</body>
+</html>
+    
+  

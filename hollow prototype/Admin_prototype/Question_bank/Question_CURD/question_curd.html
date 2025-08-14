@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question Filter</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="./question_curd.css" rel="stylesheet">
+  <link href="../../commonPart/navbar.css" rel="stylesheet">
+  <style>
+    #navQuestion{
+        font-weight: bolder;
+      
+        text-decoration: underline;
+        text-decoration-color: white;
+        /*color: #ffc107 !important;*/
+    }
+    @media (max-width: 768px) {
+    #navQuestion{
+      font-weight: bolder;
+      font-size: 1.1rem !important;
+
+        text-decoration: none !important;
+     
+  }
+  }
+</style>
+</head>
+<body>
+ <!-- Load Navbar -->
+ <div id="navbar-container"></div>
+
+
+  <div class="container my-4">
+    <div class="container">
+      <div class="row g-2 justify-content-end">
+        <a class="btn btn-close" href="../question.html" aria-label="Close"></a>
+      </div>
+      <div class="row justify-content-center align-items-center">
+        <div class="col col-12 col-sm-5 ">    
+          <p class="text-muted text-start fs-5 m-0">
+            <span class="col-12 col-md-auto">Maharashtra State Board |</span>  
+            <span class="col-12 col-md-auto"> English Medium</span>
+            
+            </p>
+          <h4 class="fw-bolder text-start text-dark m-0 ">
+              Standard 10  
+              <span class="d-block text-start text-secondary">Science : Chapter 1</span>
+              
+            </h4>
+            <h4 class="text-left  fw-bolder text-uppercase  mb-2">
+              
+              Question Bank
+              </h4>
+          </div>
+      
+      
+      
+        <div class="col col-12 col-sm-5 dynamic-style text-end align-self-end">
+          <div class="row justify-content-end align-items-end g-2">
+              <div class="col col-5 col-sm-auto text-end ">
+                <a class="btn btn-dark stick-bottom " href="./addQuestion.html" id="addButton" >Add Questions</a>
+              </div>
+              <div class="col col-7 col-sm-auto text-end">
+                <a class="btn btn-light " style="border: 1px solid gray !important;" id="addButton" href="./needTranslation.html">Translation Pending</a>
+              </div>
+            </div>
+
+          </div>
+      </div>
+      <hr>
+    </div>    
+    
+    <div id="questionsSection" class="container ">
+      <div class="container mb-4">
+        <div class="row g-2 my-2 justify-content-center">
+          <div class="col-12 col-md-10">
+           
+            <div class=" input-group">
+                        
+              <div class="form-floating">
+                  <input type="text" class="form-control" id="searchBar" placeholder="Search questions..." oninput="filterCards()" >
+                  <label for="searchBar"><i class="bi bi-search text-secondary"></i> Search questions...</label>
+              </div>
+              <span class="input-group-text clear-icon" onclick="clearInput('searchBar')" style="cursor: pointer;">
+                <i class="bi bi-x-lg"></i>
+            </span>
+            </div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2 justify-content-center">
+          <div class="col-md-5">
+            <div class="form-floating">
+            <select id="filterTopic" class="form-select" onchange="filterCards()">
+              <option value="">Select Topic</option>
+            </select>
+            <label for="filterTopic" class="form-label"> Filter by Topic </label>
+          </div>
+          </div>
+          <div class="col-md-5">
+            <div class="form-floating">
+            <select id="filterType" class="form-select" onchange="filterCards()">
+              <option value="">Select Type</option>
+              <option value="Descriptive">Descriptive</option>
+              <option value="MCQ">MCQ</option>
+              <option value="Fill in the Blanks">Fill in the Blanks</option>
+              <option value="Match the Pairs">Match the Pairs</option>
+            </select>
+            <label for="filterType" class="form-label"> Filter by Type </label>
+          </div>
+          </div>   
+        </div>
+        <div class="row g-2 my-2 justify-content-center">
+          <div class="col-12 col-md-10">
+            <div class="row mb-2 justify-content-end align-items-center">
+              <!-- First column: Label Before -->
+              <div class="col-auto text-end">
+                <label id="verifiedLabel" class="form-check-label fw-bold" for="flexSwitchCheckBefore">Verified</label>
+              </div>
+  
+              <!-- Second column: The Switch -->
+              <div class="col-auto text-center">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="flexSwitchCheckBefore" onchange="toggleContainers()">
+                </div>
+              </div>
+  
+              <!-- Third column: Label After -->
+              <div class="col-auto text-start">
+                <label id="unverifiedLabel" class="form-check-label  fw-bold" for="flexSwitchCheckBefore">Unverified</label>
+              </div>
+          </div>
+          </div>
+        </div>
+        
+
+      </div>
+      
+      <div class="container mb-5">
+        <div class="row g-2 justify-content-center" id="verifiedContainer"></div>
+        <div class="row g-2 justify-content-center" id="unverifiedContainer" hidden>
+          <div class="row g-2 justify-content-center"id="unverifiedQuestionsContainer"></div>
+        </div>
+        
+      </div>
+     
+      
+    </div>
+
+    
+
+    </div>
+  <!-- Load JavaScript files -->
+  <script src="../../commonPart/loadComponents.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+  <!-- Load Navbar and Footer -->
+  <script>
+      loadComponent('navbar', '../../commonPart/navbar.html', 'navbar-container');
+      
+  </script>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- External JavaScript -->
+  <script src="question_curd.js"></script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!-- /syllabus/syllabus.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../commonPart/navbar.css" rel="stylesheet">
+    <link href="./syllabus.css" rel="stylesheet">
+    <style>
+        #navProfile{
+            font-weight: bolder;
+           
+            text-decoration: underline;
+            text-decoration-color: white;
+            /*color: #ffc107 !important;*/
+        }
+        @media (max-width: 768px) {
+        #navProfile{
+          font-weight: bolder;
+          font-size: 1.1rem !important;
+
+            text-decoration: none !important;
+         
+      }
+      }
+    </style>
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+      <!-- Main Container -->
+      <div class="container mt-4 mb-5">
+        
+        <div class="row p-2 g-2 mb-1">
+            <div class="row  g-2 justify-content-center align-items-center mb-4">
+            <div class="col-12 col-sm-10">
+                <h5 class="text-left  fw-bolder text-uppercase  m-0">My Profile</h5>
+            </div>
+            </div>
+            
+            <hr>
+        </div>
+        
+        <div class="row gy-2 g-3 justify-content-center p-3">
+            <div class="col-12 col-sm-10 col-md-8">
+                <div class="card shadow-sm">
+                    
+                    <div class="card-body ">
+                        <form>
+                <div class="row mb-2">
+              
+                    <label for="name" class="col-12 col-sm-3 col-form-label fw-bolder">Name</label>
+                    <div class="col-12 col-sm-9">
+                    <input type="text" class="form-control-plaintext" id="name" value="Admin Mindstix Foundation" readonly>
+                </div>
+                </div>
+           
+                <div class="row mb-2">
+                    <label for="schoolName" class="col-12 col-lg-3 col-form-label fw-bold">School Name:</label>
+                    <div class="col-12 col-lg-9">
+                        <input type="text" readonly class="form-control-plaintext" id="schoolName" value="PQR School ">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-lg-6">
+                        <div class="row">
+                            <label for="contactNumber" class="col-12 col-lg-6 col-form-label fw-bold">Contact Number:</label>
+                            <div class="col-12 col-lg-6">
+                                <input type="text" readonly class="form-control-plaintext" id="contactNumber" value="9874563211">
+                            </div>
+                        </div>       
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="row">
+                            <label for="alternateContactNumber" class="col-12 col-lg-6 col-form-label fw-bold">Alternate Number:</label>
+                            <div class="col-12 col-lg-6">
+                                <input type="text" readonly class="form-control-plaintext" id="alternateContactNumber"  value="1234567899">
+                            </div>
+                        </div>            
+                    </div>             
+                </div>   
+                <div class="row mb-2">
+                    <label for="emailId" class="col-12 col-lg-3 col-form-label fw-bold">Email Id:</label>
+                    <div class="col-12 col-lg-9">
+                        <input type="text" readonly class="form-control-plaintext" id="emailId"  value="admin@gmail.com">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label for="qualification" class="col-12 col-lg-3 col-form-label fw-bold">Highest Qualification:</label>
+                    <div class="col-12 col-lg-9">
+                        <input type="text" readonly class="form-control-plaintext" id="qualification" value="M.Sc. B.Ed.">
+                    </div>
+                </div>
+                
+                        </form>
+                    </div>
+                    <div class="card-footer text-end">
+                        <button type="button" class="btn btn-light" style="border: 1px solid gray;" id="resetPass" >Reset Passward</button>
+                        <button type="button" class="btn btn-danger fw-bold" id="logout" >Logout  <strong><i class="bi bi-box-arrow-right "  ></i></strong></button>
+                    </div>
+            </div>
+
+        </div>
+        
+
+    </div>
+
+   
+
+    <!-- Footer 
+    <div id="footer-container"></div>
+    -->
+    <!-- Load JavaScript files -->
+    <script src="../commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar and Footer -->
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+     
+    </script>
+
+</body>
+</html>

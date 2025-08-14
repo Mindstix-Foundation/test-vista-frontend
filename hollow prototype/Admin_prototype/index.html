@@ -1,0 +1,50 @@
+<!-- /index.html or any other page (school.html, pattern.html, etc.) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="./commonPart/navbar.css" rel="stylesheet">  <!-- Use styles.css from commonPart -->
+</head>
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div> <!-- This is where the navbar will be loaded -->
+
+    
+       <!-- Main Container -->
+       <div class="container mt-4 mb-5">
+        
+        <div class="row p-2 justify-content-center mb-2">
+            <div class="col-12 col-sm-10">
+                <h5 class="text-left  fw-bolder text-uppercase  mb-4">Welcome to the Admin Dashboard</h5>
+            </div>
+           
+          
+            <hr>
+        </div>
+        
+        <div class="row gy-2 g-3 justify-content-center">
+            <div class="col-12 col-sm-10">
+                <p>Manage schools, teachers, patterns,Syllabus and question banks from here.</p>
+            </div>
+           
+        </div>
+        
+
+    </div>
+
+    <!-- Load JavaScript files -->
+    <script src="commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar and Footer -->
+    <script>
+        loadComponent('navbar', 'commonPart/navbar.html', 'navbar-container');
+        loadComponent('footer', 'commonPart/footer.html', 'footer-container');
+    </script>
+</body>
+</html>

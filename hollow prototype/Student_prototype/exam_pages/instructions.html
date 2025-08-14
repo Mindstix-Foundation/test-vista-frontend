@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Instructions - TEST VISTA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .instructions-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .fullscreen-warning {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .instruction-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+        .start-exam-btn {
+            font-size: 1.2rem;
+            padding: 15px 30px;
+            border-radius: 10px;
+        }
+        .exam-info-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Load Navbar -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="container mt-4 mb-5">
+        <div class="instructions-container">
+            <!-- Page Header -->
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">
+                    <i class="bi bi-info-circle"></i> Exam Instructions
+                </h2>
+                <p class="text-muted">Please read all instructions carefully before starting the exam</p>
+            </div>
+
+            <!-- Exam Info Card -->
+            <div class="card exam-info-card mb-4">
+                <div class="card-body text-center">
+                    <h4 class="mb-3" id="examTitle">Mathematics Practice Exam</h4>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-2">
+                            <i class="bi bi-clock-fill d-block mb-1" style="font-size: 1.5rem;"></i>
+                            <strong id="examDuration">45 Minutes</strong>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <i class="bi bi-question-circle-fill d-block mb-1" style="font-size: 1.5rem;"></i>
+                            <strong id="examQuestions">25 Questions</strong>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <i class="bi bi-award-fill d-block mb-1" style="font-size: 1.5rem;"></i>
+                            <strong id="examMarks">100 Marks</strong>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <i class="bi bi-check-circle-fill d-block mb-1" style="font-size: 1.5rem;"></i>
+                            <strong id="examType">Practice</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fullscreen Warning -->
+            <div class="fullscreen-warning text-center">
+                <h5><i class="bi bi-fullscreen"></i> Fullscreen Mode Required</h5>
+                <p class="mb-0">This exam must be taken in fullscreen mode. Click "Enter Fullscreen" below to continue.</p>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Exam Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="instruction-item">
+                        <strong><i class="bi bi-clock text-warning"></i> Time Management:</strong>
+                        <p class="mb-0 mt-2">You have a limited time to complete this exam. A timer will be displayed throughout the exam.</p>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <strong><i class="bi bi-arrow-left-right text-info"></i> Navigation:</strong>
+                        <p class="mb-0 mt-2">You can navigate between questions using the "Previous" and "Next" buttons or by clicking on question numbers.</p>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <strong><i class="bi bi-check-square text-success"></i> Answering Questions:</strong>
+                        <p class="mb-0 mt-2">Select your answer by clicking on the option. You can change your answer anytime before submitting.</p>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <strong><i class="bi bi-bookmark text-primary"></i> Marking for Review:</strong>
+                        <p class="mb-0 mt-2">You can mark questions for review and come back to them later before final submission.</p>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <strong><i class="bi bi-send text-danger"></i> Submission:</strong>
+                        <p class="mb-0 mt-2">Click "Submit Exam" when you're done. You'll get a confirmation before final submission.</p>
+                    </div>
+                    
+                    <div class="instruction-item">
+                        <strong><i class="bi bi-exclamation-triangle text-warning"></i> Important:</strong>
+                        <p class="mb-0 mt-2">Do not refresh the page or close the browser during the exam. Your progress will be lost.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Check -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> System Check</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                <span>Internet Connection: <strong>Good</strong></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                <span>Browser Compatibility: <strong>Supported</strong></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                <span>Camera Access: <strong>Available</strong></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                <span>Microphone Access: <strong>Available</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <button class="btn btn-outline-secondary btn-lg me-3" onclick="goBack()">
+                    <i class="bi bi-arrow-left"></i> Back
+                </button>
+                <button class="btn btn-warning btn-lg me-3" onclick="enterFullscreen()" id="fullscreenBtn">
+                    <i class="bi bi-fullscreen"></i> Enter Fullscreen
+                </button>
+                <button class="btn btn-success start-exam-btn" onclick="startExam()" id="startBtn" disabled>
+                    <i class="bi bi-play-circle-fill"></i> Start Exam
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript files -->
+    <script src="../commonPart/loadComponents.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Load Navbar -->
+    <script>
+        loadComponent('navbar', '../commonPart/navbar.html', 'navbar-container');
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const subject = urlParams.get('subject');
+        const series = urlParams.get('series');
+        const type = urlParams.get('type');
+
+        // Update exam info based on parameters
+        document.addEventListener('DOMContentLoaded', function() {
+            updateExamInfo();
+        });
+
+        function updateExamInfo() {
+            const titleElement = document.getElementById('examTitle');
+            const typeElement = document.getElementById('examType');
+            
+            if (subject) {
+                titleElement.textContent = `${subject.charAt(0).toUpperCase() + subject.slice(1)} Practice Exam`;
+                typeElement.textContent = 'Practice';
+            } else if (series) {
+                titleElement.textContent = `${series.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Test`;
+                typeElement.textContent = type === 'live' ? 'Live Test' : 'Test Series';
+            }
+        }
+
+        function goBack() {
+            if (subject) {
+                window.location.href = '../test_exam/practice_exam.html';
+            } else if (series) {
+                window.location.href = '../test_exam/test_series.html';
+            } else {
+                window.location.href = '../test_exam/test_exam.html';
+            }
+        }
+
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function startExam() {
+            // Navigate to exam page
+            const params = new URLSearchParams();
+            if (subject) params.append('subject', subject);
+            if (series) params.append('series', series);
+            if (type) params.append('type', type);
+            
+            window.location.href = `./exam.html?${params.toString()}`;
+        }
+
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const isFullscreen = document.fullscreenElement || 
+                                document.webkitFullscreenElement || 
+                                document.msFullscreenElement;
+            
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const startBtn = document.getElementById('startBtn');
+            
+            if (isFullscreen) {
+                fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> Exit Fullscreen';
+                fullscreenBtn.classList.remove('btn-warning');
+                fullscreenBtn.classList.add('btn-success');
+                startBtn.disabled = false;
+            } else {
+                fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen"></i> Enter Fullscreen';
+                fullscreenBtn.classList.remove('btn-success');
+                fullscreenBtn.classList.add('btn-warning');
+                startBtn.disabled = true;
+            }
+        }
+    </script>
+</body>
+
+</html> 

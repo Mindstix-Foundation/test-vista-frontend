@@ -1,0 +1,227 @@
+
+<!-- /teacher/teacher.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../commonPart/navbar.css" rel="stylesheet">
+    <style>
+
+   /* For screen size "sm" or smaller */
+@media (max-width: 576px) {
+  .btn-custom {
+    background-color: #dc3545;
+    color: white;
+  }
+}
+
+/* For larger screen sizes */
+@media (min-width: 577px) {
+  .btn-custom {
+    border: 1px solid gray !important;
+    background-color: #f8f9fa; /* Matches btn-light */
+    color: black;
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth hover effect */
+  }
+  .btn-custom:hover {
+    border: 1px solid #dc3545 !important;
+    background-color: #dc3545;
+    color: white;
+  }
+}
+    </style>
+</head>
+<body>
+    <div class="container my-4">
+        <div class="container">
+            <div class="row g-2 justify-content-end">
+                <a class="btn btn-close" href="./teacher.html" aria-label="Close"></a>
+              </div>
+              <div class="row justify-content-center align-items-center my-2">
+                <div class="col col-12 col-sm-10 col-md-8">
+                <h4 class="text-left  fw-bolder text-uppercase  mb-2">Add New Teacher</h4>
+               </div>
+              </div>
+              <hr>
+        </div>
+        <div id="form-container" class="row mt-4 justify-content-center" >
+            
+                <form > 
+                  <div class="row g-3 justify-content-center">
+                  <div class="col col-12 col-sm-10 col-md-8">
+                    <div class=" form-floating">
+                      <input type="text" class="form-control" id="teacherName" placeholder="Enter Teacher Name">
+                      <label for="teacherName" class="form-label">Teacher Name</label>
+
+                  </div>
+                  </div>
+                  <div class="col col-12 col-sm-10 col-md-8">
+                    <div class=" form-floating">
+                      <input type="text" class="form-control" id="schoolName" placeholder="Search for School" list="schoolList" >
+                      <label for="schoolName">Search for School</label>
+                  </div>
+                  
+                  <datalist id="schoolList">
+                    <option value="ABC School">
+                    <option value="XYZ School">
+                    <option value="PQR School">
+                    <option value="MNO School">
+                    <option value="EFG School">
+
+                  </datalist>
+                    
+                  </div>
+                   
+                  <div class="col col-12 col-sm-10 col-md-8">
+                    
+                      <div class="row g-3 justify-content-center">
+                          <!-- Contact Number -->
+                          <div class="col-12 col-md">
+                              <div class=" form-floating">
+                                  <input type="tel" class="form-control" id="contactNo1" placeholder="Enter Contact Number">
+                                  <label for="contactNo1" class="form-label">Contact Number</label>
+                              </div>
+                          </div>
+                  
+                          <!-- Alternate Contact Number -->
+                          <div class="col-12 col-md">
+                              <div class=" form-floating">
+                                  <input type="tel" class="form-control" id="contactNo2" placeholder="Enter Contact Number">
+                                  <label for="contactNo2" class="form-label">Alternate Contact Number</label>
+                              </div>
+                          </div>
+                      </div>
+                  
+                  </div>
+                    
+
+                    <div class="col col-12 col-sm-10 col-md-8">
+                      <div class=" form-floating">
+                        <input type="email" class="form-control" id="emailId" placeholder="Enter Your Email">
+                        <label for="emailId" class="form-label">Email Id </label>
+
+                    </div>
+                    </div>
+                    
+
+                    <div class="col col-12 col-sm-10 col-md-8">
+                      <div class=" form-floating">
+                        <input type="text" class="form-control" id="qualification" placeholder="Enter Qualification">
+                        <label for="qualification" class="form-label">Highest Qualification </label>
+  
+                    </div>
+                    </div>
+                    
+                    
+                    <!-- Class-Subject Pair Section -->
+                    <div class="col col-12 col-sm-10 col-md-8">
+                      <div class=" form-floating">
+                        <select class="form-select" id="classSelect" >
+                            <option value="" disabled selected>Select Standard</option>
+                            <option value="Standard 1">Standard 1</option>
+                            <option value="Standard 2">Standard 2</option>
+                            <option value="Standard 3">Standard 3</option>
+                            <option value="Standard 4">Standard 4</option>
+                            <option value="Standard 5">Standard 5</option>
+                            <option value="Standard 6">Standard 6</option>
+                            <option value="Standard 7">Standard 7</option>
+                            <option value="Standard 8">Standard 8</option>
+                            <option value="Standard 9">Standard 9</option>
+                            <option value="Standard 10">Standard 10</option>
+                            <!-- Add more options dynamically or statically as needed -->
+                        </select>
+                        <label for="classSelect" class="form-label">Standard</label>
+
+                    </div>
+                    </div>
+
+        
+                 
+        
+                    <div class="col col-12 col-sm-10 col-md-8 ">
+                    <!-- Display the added Class-Subject Pairs -->
+                    <div id="classSubjectList " class="mb-4" hidden>
+                      
+                        <h4>Standards & Subjects</h4>
+                        <ul id="classSubjectPairs" class="list-group"></ul>
+                      </div>
+                         
+                    </div>
+                    <div class="text-center mt-3">
+                        <a id="submit_button" type="submit" class="btn btn-dark" href="./teacher.html">Submit</a>
+                    </div>
+                  </div>
+                </form>
+            
+        </div>
+    </div>
+
+    <!-- Modal -->
+<div class="modal fade" id="subjectSelectModal" tabindex="-1" aria-labelledby="subjectSelectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="subjectSelectModalLabel">Select Subjects</h4>
+        </div>
+        <div class="modal-body">
+            <div id="subjectSelectContainer" class="p-3 border rounded">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectEnglish" name="subject" value="English">
+                  <label class="form-check-label  fs-5" for="subjectEnglish">English</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectMaths" name="subject" value="Mathematics">
+                  <label class="form-check-label  fs-5" for="subjectMaths">Mathematics</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectScience" name="subject" value="Science">
+                  <label class="form-check-label  fs-5" for="subjectScience">Science</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectHistory" name="subject" value="History">
+                  <label class="form-check-label  fs-5" for="subjectHistory">History</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectGeography" name="subject" value="Geography">
+                  <label class="form-check-label  fs-5" for="subjectGeography">Geography</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectMarathi" name="subject" value="Marathi">
+                  <label class="form-check-label  fs-5" for="subjectMarathi">Marathi</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectHindi" name="subject" value="Hindi">
+                  <label class="form-check-label fs-5" for="subjectHindi">Hindi</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectSanskrit" name="subject" value="Sanskrit">
+                  <label class="form-check-label  fs-5" for="subjectSanskrit">Sanskrit</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="subjectEnvironmentalScience" name="subject" value="Environmental Science">
+                  <label class="form-check-label  fs-5" for="subjectEnvironmentalScience">Environmental Science</label>
+                </div>
+              </div>              
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-light" style="border: 1px solid gray;" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" onclick="">Add Class-Subject Pair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  
+    
+    <!-- Link to your external JavaScript file -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <script src="./form.js"></script>
+</body>
+</html>
+    
+  

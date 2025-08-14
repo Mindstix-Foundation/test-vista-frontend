@@ -1,0 +1,116 @@
+/* Default styles for screens above 576px */
+.dynamic-style {
+    position: static; /* Replace with your desired default positioning */
+    background-color: transparent; /* Example of default styling */
+    box-shadow: none;
+    width: auto;
+  }
+  
+  /* Styles for screens below 576px */
+  @media (max-width: 576px) {
+    .dynamic-style {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100% !important;
+      background-color: white;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Small shadow */
+      padding: 1rem;
+    }
+  }
+  
+  .btn-custom {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+@media (max-width: 576px) {
+  #addButton{
+    width: 100% !important;
+  }
+}
+/* Hover styles for all devices */
+.btn-custom:hover,
+.btn-custom:focus {
+  border: 1px solid #dc3545  !important;
+    background-color: #dc3545 !important ;
+    color: white !important;
+}
+
+/* For screen size "sm" or smaller */
+@media (max-width: 576px) {
+    .btn-custom {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
+    
+}
+
+/* For larger screen sizes */
+@media (min-width: 577px) {
+    .btn-custom {
+      border: 1px solid gray !important;
+        background-color: #f8f9fa; /* Matches btn-light */
+        color: black !important;
+    }
+    table{
+      table-layout: fixed;
+    }
+}
+
+th{
+  vertical-align: middle !important;
+}
+thead th:nth-child(4) {
+  text-align: center;
+}
+
+/* Toggle Button Styling */
+.btn-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  display: grid !important;
+  border-radius: 30px;
+  background-color: #f5f5f5; /* Neutral background */
+  color: #333; /* Neutral text color */
+  font-size: 16px;
+  font-weight: 600;
+  border: 1px solid gray !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Soft shadow */
+  padding: 0;
+}
+
+/* Default State */
+.btn-toggle .status-indicator {
+  position: absolute;
+  align-self: center;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: #28a745; /* Green for Grant */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Shadow for the indicator */
+}
+
+/* revoke State */
+.btn-toggle[data-status="revoke"] {
+  background-color: #ffe6e6; /* Soft red background */
+  color: #b22222; /* Dark red text */
+}
+
+.btn-toggle[data-status="revoke"] .status-indicator {
+  background-color: #dc3545; /* Red for Revoke */
+}
+
+
+/* Status Text Styling */
+.btn-toggle .status-text {
+  margin-left: 20px;
+  transition: color 0.3s ease;
+}
+
+
