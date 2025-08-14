@@ -227,12 +227,7 @@
               <div class="recommendation-body">
                 <h5 class="recommendation-title">{{ getRecommendationType(recommendation) }}</h5>
                 <div class="recommendation-chapters">
-                  <strong 
-                    :title="getOriginalChapterNames(recommendation)"
-                    class="chapter-names-display"
-                  >
-                    {{ getRecommendationChapters(recommendation) }}
-                  </strong>
+                  <strong>{{ getRecommendationChapters(recommendation) }}</strong>
                 </div>
                 <p class="recommendation-text">{{ getRecommendationMessage(recommendation) }}</p>
               </div>
@@ -783,23 +778,29 @@ const getRecommendationType = (recommendation: string): string => {
 }
 
 const getRecommendationChapters = (recommendation: string): string => {
+  // Add debugging to see the actual format
+  console.log('Processing recommendation:', recommendation)
+  
   // Try multiple regex patterns to handle different formats
   
   // Pattern 1: Standard format ": chapter_name -"
   let match = recommendation.match(/: ([^-]+) -/)
   if (match && match[1].trim()) {
+    console.log('Pattern 1 matched:', match[1].trim())
     return formatChapterNames(match[1].trim())
   }
   
   // Pattern 2: Handle format with emoji prefix ": chapter_name"
   match = recommendation.match(/: (.+?) - /)
   if (match && match[1].trim()) {
+    console.log('Pattern 2 matched:', match[1].trim())
     return formatChapterNames(match[1].trim())
   }
   
   // Pattern 3: Extract everything between ":" and first " -" or end
   match = recommendation.match(/: (.+?)(?:\s-\s|$)/)
   if (match && match[1].trim()) {
+    console.log('Pattern 3 matched:', match[1].trim())
     return formatChapterNames(match[1].trim())
   }
   
@@ -812,12 +813,14 @@ const getRecommendationChapters = (recommendation: string): string => {
         // Extract text after ":" and before " -"
         const colonMatch = afterIndicator.match(/:\s*(.+?)(?:\s-|$)/)
         if (colonMatch && colonMatch[1].trim()) {
+          console.log('Pattern 4 matched:', colonMatch[1].trim())
           return formatChapterNames(colonMatch[1].trim())
         }
       }
     }
   }
   
+  console.log('No pattern matched, using fallback')
   // If all patterns fail, return a fallback message
   return 'Multiple Chapters'
 }
@@ -827,81 +830,8 @@ const formatChapterNames = (chapters: string): string => {
     return 'Multiple Chapters'
   }
   
-  // If the chapter list is too long (more than 100 characters), truncate it
-  if (chapters.length > 100) {
-    // Try to find a good breaking point (comma, semicolon, or "and")
-    const breakPoints = [', and ', '; ', ', ']
-    for (const breakPoint of breakPoints) {
-      const parts = chapters.split(breakPoint)
-      if (parts.length > 1) {
-        let result = parts[0]
-        let charCount = result.length
-        let addedParts = 1
-        
-        for (let i = 1; i < parts.length && charCount < 80; i++) {
-          const nextPart = breakPoint + parts[i]
-          if (charCount + nextPart.length < 80) {
-            result += nextPart
-            charCount += nextPart.length
-            addedParts++
-          } else {
-            break
-          }
-        }
-        
-        if (addedParts < parts.length) {
-          const remaining = parts.length - addedParts
-          result += ` and ${remaining} more chapter${remaining > 1 ? 's' : ''}`
-        }
-        
-        return result
-      }
-    }
-    
-    // If no good breaking point found, just truncate
-    return chapters.substring(0, 80) + '... and more'
-  }
-  
-  return chapters
-}
-
-const getOriginalChapterNames = (recommendation: string): string => {
-  // Extract the original chapter names without formatting/truncation for tooltip
-  
-  // Pattern 1: Standard format ": chapter_name -"
-  let match = recommendation.match(/: ([^-]+) -/)
-  if (match && match[1].trim()) {
-    return match[1].trim()
-  }
-  
-  // Pattern 2: Handle format with emoji prefix ": chapter_name"
-  match = recommendation.match(/: (.+?) - /)
-  if (match && match[1].trim()) {
-    return match[1].trim()
-  }
-  
-  // Pattern 3: Extract everything between ":" and first " -" or end
-  match = recommendation.match(/: (.+?)(?:\s-\s|$)/)
-  if (match && match[1].trim()) {
-    return match[1].trim()
-  }
-  
-  // Pattern 4: Fallback - extract content after type indicator
-  const typeIndicators = ['🔴 Critical Focus Areas', '🟡 Areas for Enhancement', '🟢 Strong Performance']
-  for (const indicator of typeIndicators) {
-    if (recommendation.includes(indicator)) {
-      const afterIndicator = recommendation.split(indicator)[1]
-      if (afterIndicator) {
-        // Extract text after ":" and before " -"
-        const colonMatch = afterIndicator.match(/:\s*(.+?)(?:\s-|$)/)
-        if (colonMatch && colonMatch[1].trim()) {
-          return colonMatch[1].trim()
-        }
-      }
-    }
-  }
-  
-  return 'Hover to see full chapter list'
+  // Simply return all chapter names without truncation
+  return chapters.trim()
 }
 
 const getRecommendationMessage = (recommendation: string): string => {
@@ -1717,8 +1647,7 @@ input[type="text"]:focus {
   
   .recommendation-chapters {
     font-size: 1rem;
-    padding: 8px 12px;
-    margin-bottom: 12px;
+    line-height: 1.5;
   }
   
   .recommendation-text {
@@ -2362,10 +2291,12 @@ input[type="text"]:focus {
   font-weight: 600;
   color: #495057;
   margin-bottom: 15px;
-  padding: 10px 15px;
+  padding: 12px 16px;
   background: rgba(0, 0, 0, 0.04);
   border-radius: 8px;
-  display: inline-block;
+  display: block;
+  word-wrap: break-word;
+  line-height: 1.4;
 }
 
 .recommendation-critical .recommendation-chapters {
@@ -2386,11 +2317,6 @@ input[type="text"]:focus {
 .recommendation-default .recommendation-chapters {
   background: rgba(23, 162, 184, 0.1);
   color: #0c5460;
-}
-
-.chapter-names-display {
-
-  position: relative;
 }
 
 .recommendation-text {
