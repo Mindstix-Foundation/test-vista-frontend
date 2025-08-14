@@ -221,17 +221,18 @@
             <i class="bi bi-lightbulb-fill"></i> Teaching Recommendations
             <small class="text-muted ms-2">({{ classRecommendations.length }} recommendations)</small>
           </h4>
-          <!-- Debug info (remove after fixing) -->
-          <div class="alert alert-info mb-3" style="font-size: 0.85rem;">
-            <strong>Debug Info:</strong> Found {{ classRecommendations.length }} recommendations<br>
-            Types: {{ classRecommendations.map(r => getRecommendationType(r)).join(', ') }}
-          </div>
+          
           <div class="recommendations-grid">
             <div v-for="recommendation in classRecommendations" :key="recommendation" class="recommendation-item" :class="getRecommendationClass(recommendation)">
               <div class="recommendation-body">
                 <h5 class="recommendation-title">{{ getRecommendationType(recommendation) }}</h5>
                 <div class="recommendation-chapters">
-                  <strong>{{ getRecommendationChapters(recommendation) }}</strong>
+                  <strong 
+                    :title="getOriginalChapterNames(recommendation)"
+                    class="chapter-names-display"
+                  >
+                    {{ getRecommendationChapters(recommendation) }}
+                  </strong>
                 </div>
                 <p class="recommendation-text">{{ getRecommendationMessage(recommendation) }}</p>
               </div>
@@ -282,7 +283,7 @@
               @click="toggleAutoRefresh" 
               class="btn w-100 w-lg-auto"
               :class="autoRefresh ? 'btn-success' : 'btn-outline-secondary'"
-              :title="autoRefresh ? 'Auto-refresh ON (every 1 sec)' : 'Auto-refresh OFF'"
+              :title="autoRefresh ? 'Auto-refresh ON (every 2.5 sec)' : 'Auto-refresh OFF'"
             >
               <i class="bi bi-arrow-clockwise me-1"></i>
               <span>{{ autoRefresh ? 'Live' : 'Refresh' }}</span>
@@ -627,11 +628,6 @@ const fetchTestPaperResults = async () => {
     classAverageAreas.value = data.class_average_areas || []
     classRecommendations.value = data.class_recommendations || []
 
-    // Debug logging for recommendations
-    console.log('Class recommendations received:', data.class_recommendations)
-    console.log('Class recommendations length:', classRecommendations.value.length)
-    console.log('Strong performance recommendations:', classRecommendations.value.filter(r => r.includes('🟢 Strong Performance')))
-
   } catch (err) {
     console.error('Error fetching test paper results:', err)
     error.value = 'Failed to load test results. Please try again.'
@@ -650,10 +646,15 @@ const toggleAutoRefresh = () => {
   autoRefresh.value = !autoRefresh.value
   
   if (autoRefresh.value) {
-    // Start auto-refresh every 1 second
+    // Start auto-refresh every 2.5 seconds
     refreshInterval.value = setInterval(async () => {
-      await fetchTestPaperResults()
-    }, 1000)
+      try {
+        await fetchTestPaperResults()
+      } catch (error) {
+        console.error('Auto-refresh failed:', error)
+        // Optionally disable auto-refresh on repeated failures
+      }
+    }, 2500)
   } else {
     // Stop auto-refresh
     if (refreshInterval.value) {
@@ -664,7 +665,6 @@ const toggleAutoRefresh = () => {
 }
 
 const sortChapters = (sortType: 'sequence' | 'score') => {
-  console.log('Sorting chapters by:', sortType)
   sortBy.value = sortType
 }
 
@@ -734,15 +734,6 @@ const downloadPDF = () => {
   }
 }
 
-// const getChapterCardClass = (performanceLevel: string) => {
-//   switch (performanceLevel) {
-//     case 'excellent': return 'chapter-excellent'
-//     case 'good': return 'chapter-good'
-//     case 'average': return 'chapter-average'
-//     default: return 'chapter-poor'
-//   }
-// } // Commented out as it's not used anymore with table format
-
 const getPerformanceBadgeClass = (performanceLevel: string) => {
   switch (performanceLevel) {
     case 'excellent': return 'badge-excellent'
@@ -792,16 +783,130 @@ const getRecommendationType = (recommendation: string): string => {
 }
 
 const getRecommendationChapters = (recommendation: string): string => {
-  const match = recommendation.match(/: ([^-]+) -/)
-  const result = match ? match[1].trim() : ''
-  console.log('getRecommendationChapters:', { recommendation, match, result })
-  return result
+  // Try multiple regex patterns to handle different formats
+  
+  // Pattern 1: Standard format ": chapter_name -"
+  let match = recommendation.match(/: ([^-]+) -/)
+  if (match && match[1].trim()) {
+    return formatChapterNames(match[1].trim())
+  }
+  
+  // Pattern 2: Handle format with emoji prefix ": chapter_name"
+  match = recommendation.match(/: (.+?) - /)
+  if (match && match[1].trim()) {
+    return formatChapterNames(match[1].trim())
+  }
+  
+  // Pattern 3: Extract everything between ":" and first " -" or end
+  match = recommendation.match(/: (.+?)(?:\s-\s|$)/)
+  if (match && match[1].trim()) {
+    return formatChapterNames(match[1].trim())
+  }
+  
+  // Pattern 4: Fallback - extract content after type indicator
+  const typeIndicators = ['🔴 Critical Focus Areas', '🟡 Areas for Enhancement', '🟢 Strong Performance']
+  for (const indicator of typeIndicators) {
+    if (recommendation.includes(indicator)) {
+      const afterIndicator = recommendation.split(indicator)[1]
+      if (afterIndicator) {
+        // Extract text after ":" and before " -"
+        const colonMatch = afterIndicator.match(/:\s*(.+?)(?:\s-|$)/)
+        if (colonMatch && colonMatch[1].trim()) {
+          return formatChapterNames(colonMatch[1].trim())
+        }
+      }
+    }
+  }
+  
+  // If all patterns fail, return a fallback message
+  return 'Multiple Chapters'
+}
+
+const formatChapterNames = (chapters: string): string => {
+  if (!chapters || chapters.trim() === '') {
+    return 'Multiple Chapters'
+  }
+  
+  // If the chapter list is too long (more than 100 characters), truncate it
+  if (chapters.length > 100) {
+    // Try to find a good breaking point (comma, semicolon, or "and")
+    const breakPoints = [', and ', '; ', ', ']
+    for (const breakPoint of breakPoints) {
+      const parts = chapters.split(breakPoint)
+      if (parts.length > 1) {
+        let result = parts[0]
+        let charCount = result.length
+        let addedParts = 1
+        
+        for (let i = 1; i < parts.length && charCount < 80; i++) {
+          const nextPart = breakPoint + parts[i]
+          if (charCount + nextPart.length < 80) {
+            result += nextPart
+            charCount += nextPart.length
+            addedParts++
+          } else {
+            break
+          }
+        }
+        
+        if (addedParts < parts.length) {
+          const remaining = parts.length - addedParts
+          result += ` and ${remaining} more chapter${remaining > 1 ? 's' : ''}`
+        }
+        
+        return result
+      }
+    }
+    
+    // If no good breaking point found, just truncate
+    return chapters.substring(0, 80) + '... and more'
+  }
+  
+  return chapters
+}
+
+const getOriginalChapterNames = (recommendation: string): string => {
+  // Extract the original chapter names without formatting/truncation for tooltip
+  
+  // Pattern 1: Standard format ": chapter_name -"
+  let match = recommendation.match(/: ([^-]+) -/)
+  if (match && match[1].trim()) {
+    return match[1].trim()
+  }
+  
+  // Pattern 2: Handle format with emoji prefix ": chapter_name"
+  match = recommendation.match(/: (.+?) - /)
+  if (match && match[1].trim()) {
+    return match[1].trim()
+  }
+  
+  // Pattern 3: Extract everything between ":" and first " -" or end
+  match = recommendation.match(/: (.+?)(?:\s-\s|$)/)
+  if (match && match[1].trim()) {
+    return match[1].trim()
+  }
+  
+  // Pattern 4: Fallback - extract content after type indicator
+  const typeIndicators = ['🔴 Critical Focus Areas', '🟡 Areas for Enhancement', '🟢 Strong Performance']
+  for (const indicator of typeIndicators) {
+    if (recommendation.includes(indicator)) {
+      const afterIndicator = recommendation.split(indicator)[1]
+      if (afterIndicator) {
+        // Extract text after ":" and before " -"
+        const colonMatch = afterIndicator.match(/:\s*(.+?)(?:\s-|$)/)
+        if (colonMatch && colonMatch[1].trim()) {
+          return colonMatch[1].trim()
+        }
+      }
+    }
+  }
+  
+  return 'Hover to see full chapter list'
 }
 
 const getRecommendationMessage = (recommendation: string): string => {
   const match = recommendation.match(/ - (.+)$/)
   const result = match ? match[1].trim() : recommendation
-  console.log('getRecommendationMessage:', { recommendation, match, result })
   return result
 }
 
@@ -1132,8 +1237,12 @@ onMounted(async () => {
     // Start auto-refresh by default
     if (autoRefresh.value) {
       refreshInterval.value = setInterval(async () => {
-        await fetchTestPaperResults()
-      }, 1000)
+        try {
+          await fetchTestPaperResults()
+        } catch (error) {
+          console.error('Auto-refresh failed:', error)
+        }
+      }, 2500)
     }
   } catch (err) {
     console.error('Error loading result dashboard:', err)
@@ -2277,6 +2386,11 @@ input[type="text"]:focus {
 .recommendation-default .recommendation-chapters {
   background: rgba(23, 162, 184, 0.1);
   color: #0c5460;
+}
+
+.chapter-names-display {
+
+  position: relative;
 }
 
 .recommendation-text {

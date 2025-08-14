@@ -21,10 +21,10 @@
                 <p class="m-0 text-muted small text-truncate">{{ selectedPaper?.name }}</p>
               </div>
               <div class="d-flex gap-2">
-                <button @click="goToResultDashboard" class="btn btn-outline-primary btn-sm">
+                <button @click="goToResultDashboard" class="btn btn-primary btn-sm">
                   <i class="bi bi-graph-up"></i>
                 </button>
-                <button @click="goBack" class="btn btn-outline-secondary btn-sm">
+                <button @click="goBack" class="btn btn-outline-dark btn-sm">
                   <i class="bi bi-arrow-left"></i>
                 </button>
               </div>
@@ -68,13 +68,15 @@
               <h4 class="m-0 fw-bold text-dark">Assign Test Paper</h4>
               <p class="m-0 text-muted">{{ selectedPaper?.name }}</p>
             </div>
-            <div class="d-flex gap-2">
-              <button @click="goToResultDashboard" class="btn btn-outline-primary">
-                <i class="bi bi-graph-up me-2"></i>Results
-              </button>
-              <button @click="goBack" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back
-              </button>
+            <div class="header-buttons-container">
+              <div class="d-flex gap-2 mb-2">
+                <button @click="goToResultDashboard" class="btn btn-primary">
+                  <i class="bi bi-graph-up me-2"></i>Results
+                </button>
+                <button @click="goBack" class="btn btn-outline-dark">
+                  <i class="bi bi-arrow-left me-2"></i>Back
+                </button>
+              </div>
             </div>
             <div class="test-info-card">
               <div class="row g-3">
@@ -126,63 +128,25 @@
             </h5>
           </div>
           <div class="card-body">
-            <!-- Due Date -->
-            <div class="mb-3">
-              <label for="dueDate" class="form-label">Due Date *</label>
-              <div class="custom-date-picker">
-                <input 
-                  type="text" 
-                  class="form-control date-input-modern" 
-                  id="dueDate" 
-                  v-model="formattedDueDate"
-                  placeholder="DD-MM-YYYY"
-                  @click="showDueDatePicker = true"
-                  @focus="showDueDatePicker = true"
-                  readonly
-                  required
-                >
-                <i class="bi bi-calendar3 date-icon"></i>
-                
-                <!-- Custom Date Picker Dropdown -->
-                <div v-if="showDueDatePicker" class="date-picker-dropdown">
-                  <div class="date-picker-header">
-                    <button @click="previousMonth('due')" class="nav-btn">&lt;</button>
-                    <span class="month-year">{{ currentMonthYear('due') }}</span>
-                    <button @click="nextMonth('due')" class="nav-btn">&gt;</button>
-                  </div>
-                  <div class="date-picker-calendar">
-                    <div class="weekdays">
-                      <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
-                    </div>
-                    <div class="dates">
-                      <button 
-                        v-for="date in getCalendarDates('due')" 
-                        :key="date.key"
-                        @click="selectDate('due', date)"
-                        class="date-btn"
-                        :class="{
-                          'other-month': date.otherMonth,
-                          'selected': date.selected,
-                          'today': date.today
-                        }"
-                        :disabled="date.otherMonth"
-                      >
-                        {{ date.day }}
-                      </button>
-                    </div>
-                  </div>
-                  <div class="date-picker-footer">
-                    <button @click="clearDate('due')" class="btn btn-sm btn-outline-secondary">Clear</button>
-                    <button @click="selectToday('due')" class="btn btn-sm btn-outline-primary">Today</button>
-                  </div>
-                </div>
-              </div>
-              <small class="form-text text-muted">Format: DD-MM-YYYY</small>
-            </div>
-
             <!-- Available From -->
             <div class="mb-3">
-              <label for="availableFrom" class="form-label">Available From *</label>
+              <label for="availableFrom" class="form-label">
+                Available From *
+                <button 
+                  type="button"
+                  @click="showAvailableFromHelp = !showAvailableFromHelp"
+                  class="btn btn-link p-0 ms-2 text-primary helper-toggle"
+                  title="Click for more information"
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </label>
+              
+              <div v-if="showAvailableFromHelp" class="helper-text-collapsible">
+                <div class="helper-content">
+                  <span>When should students be able to start taking this test? <strong>(Default: In a moment)</strong></span>
+                </div>
+              </div>
               <div class="custom-datetime-picker">
                 <input 
                   type="text" 
@@ -218,9 +182,12 @@
                           :class="{
                             'other-month': date.otherMonth,
                             'selected': date.selected,
-                            'today': date.today
+                            'today': date.today,
+                            'past-date': date.isPastDate,
+                            'disabled': date.disabled
                           }"
-                          :disabled="date.otherMonth"
+                          :disabled="date.disabled"
+                          :title="date.isPastDate ? 'Past dates cannot be selected' : ''"
                         >
                           {{ date.day }}
                         </button>
@@ -281,16 +248,98 @@
                   </div>
                   <div class="date-picker-footer">
                     <button @click="clearDate('available')" class="btn btn-sm btn-outline-secondary">Clear</button>
-                    <button @click="selectToday('available')" class="btn btn-sm btn-outline-primary">Today</button>
+                    <button @click="selectNow('available')" class="btn btn-sm btn-outline-primary" title="Set to current date and time">Now</button>
                     <button @click="confirmAvailableDateTime" class="btn btn-sm btn-success">Select</button>
                   </div>
                 </div>
               </div>
               <small class="form-text text-muted">Format: DD-MM-YYYY HH:MM</small>
+              <!-- <small v-if="assignmentData.availableFrom" class="form-text text-success">
+                <i class="bi bi-check-circle me-1"></i>Available from: {{ formattedAvailableFrom }}
+              </small> -->
+            </div>
+
+            <!-- Due Date -->
+            <div class="mb-3">
+              <label for="dueDate" class="form-label">
+                Due Date *
+                <button 
+                  type="button"
+                  @click="showDueDateHelp = !showDueDateHelp"
+                  class="btn btn-link p-0 ms-2 text-primary helper-toggle"
+                  title="Click for more information"
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </label>
+              
+              <div v-if="showDueDateHelp" class="helper-text-collapsible">
+                <div class="helper-content">
+                  <span>When should the test expire and no longer be available? <strong>(Default: 7 days from now)</strong></span>
+                </div>
+              </div>
+              <div class="custom-date-picker">
+                <input 
+                  type="text" 
+                  class="form-control date-input-modern" 
+                  id="dueDate" 
+                  v-model="formattedDueDate"
+                  placeholder="DD-MM-YYYY"
+                  @click="showDueDatePicker = true"
+                  @focus="showDueDatePicker = true"
+                  readonly
+                  required
+                >
+                <i class="bi bi-calendar3 date-icon"></i>
+                
+                <!-- Custom Date Picker Dropdown -->
+                <div v-if="showDueDatePicker" class="date-picker-dropdown">
+                  <div class="date-picker-header">
+                    <button @click="previousMonth('due')" class="nav-btn">&lt;</button>
+                    <span class="month-year">{{ currentMonthYear('due') }}</span>
+                    <button @click="nextMonth('due')" class="nav-btn">&gt;</button>
+                  </div>
+                  <div class="date-picker-calendar">
+                    <div class="weekdays">
+                      <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
+                    </div>
+                    <div class="dates">
+                      <button 
+                        v-for="date in getCalendarDates('due')" 
+                        :key="date.key"
+                        @click="selectDate('due', date)"
+                        class="date-btn"
+                        :class="{
+                          'other-month': date.otherMonth,
+                          'selected': date.selected,
+                          'today': date.today,
+                          'past-date': date.isPastDate,
+                          'invalid-due-date': date.isInvalidDueDate,
+                          'disabled': date.disabled
+                        }"
+                        :disabled="date.disabled"
+                        :title="date.disabledReason || ''"
+                      >
+                        {{ date.day }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="date-picker-footer">
+                    <button @click="clearDate('due')" class="btn btn-sm btn-outline-secondary">Clear</button>
+                    <button @click="selectToday('due')" class="btn btn-sm btn-outline-primary">Today</button>
+                  </div>
+                </div>
+              </div>
+              <small class="form-text text-muted">Format: DD-MM-YYYY</small>
+              <!-- <small v-if="assignmentData.dueDate" class="form-text text-success">
+                <i class="bi bi-check-circle me-1"></i>Due date selected: {{ formattedDueDate }}
+              </small> -->
             </div>
 
             <!-- Max Attempts and Time Limit -->
-            <div class="row mb-3">
+            <!-- TODO: Feature to be implemented later - Max Attempts and Time Limit controls -->
+            <!-- Currently hidden but code preserved for future implementation -->
+            <div class="row mb-3" style="display: none;">
               <div class="col-6">
                 <label for="maxAttempts" class="form-label">Max Attempts</label>
                 <input type="number" class="form-control" id="maxAttempts" v-model="assignmentData.maxAttempts" min="1" max="10">
@@ -299,6 +348,24 @@
                 <label for="timeLimitMinutes" class="form-label">Time Limit</label>
                 <input type="number" class="form-control" id="timeLimitMinutes" v-model="assignmentData.timeLimitMinutes" min="1" placeholder="Minutes">
                 <small class="form-text text-muted d-none d-md-block">Leave empty to use default</small>
+              </div>
+            </div>
+
+            <!-- Date Validation Status -->
+            <div v-if="assignmentData.dueDate || assignmentData.availableFrom" class="mb-3">
+              <div class="alert" :class="{
+                'alert-success': dateValidationStatus.type === 'success',
+                'alert-info': dateValidationStatus.type === 'info',
+                'alert-warning': dateValidationStatus.type === 'warning',
+                'alert-danger': dateValidationStatus.type === 'error'
+              }" role="alert">
+                <i class="bi" :class="{
+                  'bi-check-circle': dateValidationStatus.type === 'success',
+                  'bi-info-circle': dateValidationStatus.type === 'info',
+                  'bi-exclamation-triangle': dateValidationStatus.type === 'warning',
+                  'bi-x-circle': dateValidationStatus.type === 'error'
+                }"></i>
+                <small>{{ dateValidationStatus.message }}</small>
               </div>
             </div>
 
@@ -346,7 +413,7 @@
                     v-model="assignedOnlyToggle" 
                     @change="filterStudents"
                   >
-                  <label class="form-check-label ms-2 fw-semibold" for="assignedOnlyToggle">
+                  <label class="form-check-label ms-2 fw-semibold toggle-label-fixed" for="assignedOnlyToggle">
                     {{ assignedOnlyToggle ? 'Assigned' : 'Non-Assigned' }}
                   </label>
                 </div>
@@ -480,6 +547,11 @@ const assigningTest = ref(false)
 const removingAssignment = ref(false)
 const assignedOnlyToggle = ref(false)
 const selectAllStudents = ref(false)
+const initializingDefaults = ref(true)
+
+// Helper text visibility controls
+const showAvailableFromHelp = ref(false)
+const showDueDateHelp = ref(false)
 
 // Date picker reactive variables
 const showDueDatePicker = ref(false)
@@ -509,9 +581,46 @@ const months = [
 const assignmentData = ref({
   dueDate: '',
   availableFrom: '',
-  maxAttempts: 1,
-  timeLimitMinutes: null as number | null
+  // TODO: Features below are temporarily hidden - will be implemented later
+  maxAttempts: 1,                    // Currently hidden - Max attempts feature
+  timeLimitMinutes: null as number | null  // Currently hidden - Time limit feature
 })
+
+// Set smart defaults for dates
+const setSmartDefaults = () => {
+  const now = new Date()
+  
+  // Set Available From to current date and time + 1 minute buffer to ensure it's in the future
+  const availableFromTime = new Date(now.getTime() + 60 * 1000) // Add 1 minute
+  assignmentData.value.availableFrom = availableFromTime.toISOString()
+  
+  // Update time picker to current time (rounded to next minute)
+  const currentHour = availableFromTime.getHours()
+  const currentMinute = availableFromTime.getMinutes()
+  const ampm = currentHour >= 12 ? 'PM' : 'AM'
+  
+  availableTime.value.hour = currentHour
+  availableTime.value.minute = currentMinute
+  availableTime.value.ampm = ampm
+  
+  // Set date picker for available from to current month
+  availableDatePicker.value.year = now.getFullYear()
+  availableDatePicker.value.month = now.getMonth()
+  
+  // Set Due Date to 7 days from now
+  const dueDate = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)) // Add 7 days
+  const year = dueDate.getFullYear()
+  const month = (dueDate.getMonth() + 1).toString().padStart(2, '0')
+  const day = dueDate.getDate().toString().padStart(2, '0')
+  assignmentData.value.dueDate = `${year}-${month}-${day}`
+  
+  // Set date picker for due date to the correct month
+  dueDatePicker.value.year = dueDate.getFullYear()
+  dueDatePicker.value.month = dueDate.getMonth()
+  
+  // Mark initialization as complete
+  initializingDefaults.value = false
+}
 
 // Computed properties
 const filteredStudents = computed(() => students.value)
@@ -522,6 +631,72 @@ const hasSelectedStudents = computed(() => {
 
 const selectedStudentsCount = computed(() => {
   return filteredStudents.value.filter(student => student.selected).length
+})
+
+// Date validation status computed property
+const dateValidationStatus = computed(() => {
+  // Skip validation during initialization to avoid false positives
+  if (initializingDefaults.value) {
+    return {
+      isValid: false,
+      message: 'Setting up smart defaults...',
+      type: 'info'
+    }
+  }
+  
+  // Handle different workflow combinations
+  if (!assignmentData.value.availableFrom && !assignmentData.value.dueDate) {
+    return {
+      isValid: false,
+      message: 'Select when the test should be available and when it should expire',
+      type: 'info'
+    }
+  }
+  
+  if (assignmentData.value.availableFrom && !assignmentData.value.dueDate) {
+    return {
+      isValid: false,
+      message: 'Now select when the test should expire (due date)',
+      type: 'info'
+    }
+  }
+  
+  if (!assignmentData.value.availableFrom && assignmentData.value.dueDate) {
+    return {
+      isValid: false,
+      message: 'Now select when the test should become available to students',
+      type: 'info'
+    }
+  }
+  
+  const validation = validateDates()
+  
+  if (validation.isValid && assignmentData.value.dueDate && assignmentData.value.availableFrom) {
+    const dueDate = new Date(assignmentData.value.dueDate)
+    const availableFrom = new Date(assignmentData.value.availableFrom)
+    const timeDiff = dueDate.getTime() - availableFrom.getTime()
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+    const hoursDiff = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    
+    let timeInfo = ''
+    if (daysDiff > 0) {
+      timeInfo = `${daysDiff} day(s) and ${hoursDiff} hour(s)`
+    } else {
+      timeInfo = `${Math.floor(timeDiff / (1000 * 60 * 60))} hour(s)`
+    }
+    
+    return {
+      isValid: true,
+      message: `Ready to assign! Students will have ${timeInfo} to complete the test (you can adjust these dates if needed)`,
+      type: 'success'
+    }
+  }
+  
+  return {
+    isValid: validation.isValid,
+    message: validation.message,
+    type: validation.isValid ? 'success' : 'warning'
+  }
 })
 
 // Date formatting computed properties
@@ -747,17 +922,19 @@ const getCalendarDates = (type: 'due' | 'available') => {
   const picker = type === 'due' ? dueDatePicker.value : availableDatePicker.value
   const firstDay = new Date(picker.year, picker.month, 1)
   const today = new Date()
+  today.setHours(0, 0, 0, 0) // Reset time for accurate comparison
   const selectedDate = type === 'due' 
     ? (assignmentData.value.dueDate ? new Date(assignmentData.value.dueDate) : null)
     : (assignmentData.value.availableFrom ? new Date(assignmentData.value.availableFrom) : null)
   
   const dates = []
-  const startDate = new Date(firstDay)
-  startDate.setDate(startDate.getDate() - firstDay.getDay())
+  
+  // Calculate the start date of the calendar (first day of the week containing the first day of the month)
+  const startDate = new Date(picker.year, picker.month, 1 - firstDay.getDay())
   
   for (let i = 0; i < 42; i++) {
-    const currentDate = new Date(startDate)
-    currentDate.setDate(startDate.getDate() + i)
+    // Create dates using year, month, date constructor to avoid DST issues
+    const currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i)
     
     const isSelected = selectedDate && 
       currentDate.getDate() === selectedDate.getDate() &&
@@ -768,28 +945,104 @@ const getCalendarDates = (type: 'due' | 'available') => {
       currentDate.getMonth() === today.getMonth() &&
       currentDate.getFullYear() === today.getFullYear()
     
-    dates.push({
+    // Check if date is in the past
+    const isPastDate = currentDate < today
+    
+    // Additional validation for due date calendar
+    let isInvalidDueDate = false
+    let invalidReason = ''
+    
+    if (type === 'due' && assignmentData.value.availableFrom) {
+      const availableFromDate = new Date(assignmentData.value.availableFrom)
+      availableFromDate.setHours(0, 0, 0, 0)
+      
+      if (currentDate < availableFromDate) {
+        isInvalidDueDate = true
+        invalidReason = 'Due date cannot be before available from date'
+      }
+    }
+    
+    const isDisabled = isPastDate || currentDate.getMonth() !== picker.month || isInvalidDueDate
+    
+    const dateInfo = {
       key: `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`,
       day: currentDate.getDate(),
-      date: new Date(currentDate),
+      date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()),
       otherMonth: currentDate.getMonth() !== picker.month,
       selected: isSelected,
-      today: isToday
-    })
+      today: isToday,
+      isPastDate: isPastDate,
+      isInvalidDueDate: isInvalidDueDate,
+      disabled: isDisabled,
+      disabledReason: invalidReason || (isPastDate ? 'Past dates cannot be selected' : '')
+    }
+    
+    dates.push(dateInfo)
   }
   
   return dates
 }
 
 const selectDate = (type: 'due' | 'available', dateObj: any) => {
-  if (dateObj.otherMonth) return
+  if (dateObj.otherMonth || dateObj.disabled) return
   
-  const selectedDate = new Date(dateObj.date)
+  // Create a new date object using the exact date components to avoid timezone issues
+  const year = dateObj.date.getFullYear()
+  const month = dateObj.date.getMonth()
+  const day = dateObj.date.getDate()
+  const selectedDate = new Date(year, month, day)
+  
+  // Validate the selected date
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  if (selectedDate < today) {
+    showToast('Invalid Date', 'Cannot select a date in the past.', 'warning')
+    return
+  }
   
   if (type === 'due') {
-    assignmentData.value.dueDate = selectedDate.toISOString().split('T')[0]
+    // Additional validation for due date
+    if (assignmentData.value.availableFrom) {
+      const availableFromDate = new Date(assignmentData.value.availableFrom)
+      availableFromDate.setHours(0, 0, 0, 0)
+      
+      if (selectedDate < availableFromDate) {
+        const availableFromFormatted = new Date(assignmentData.value.availableFrom).toLocaleDateString('en-GB')
+        showToast('Invalid Due Date', `Due date must be on or after ${availableFromFormatted} when the test becomes available.`, 'warning')
+        return
+      }
+      
+      // Check if there's enough time between available from and due date
+      const timeDifference = selectedDate.getTime() - availableFromDate.getTime()
+      const hoursDifference = timeDifference / (1000 * 60 * 60)
+      
+      if (hoursDifference < 1) {
+        showToast('Insufficient Time', 'Students need at least 1 hour to complete the test. Please select a later due date.', 'warning')
+        return
+      }
+    }
+    // If available from is not set, allow due date selection but show helpful info
+    else {
+      showToast('Due Date Set', 'Great! Now set when the test should become available to students.', 'info')
+    }
+    
+    // Format date as YYYY-MM-DD to avoid timezone issues
+    const formattedDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+    assignmentData.value.dueDate = formattedDate
     showDueDatePicker.value = false
   } else {
+    // Additional validation for available from date
+    if (assignmentData.value.dueDate) {
+      const dueDate = new Date(assignmentData.value.dueDate)
+      dueDate.setHours(23, 59, 59, 999) // End of due date
+      
+      if (selectedDate > dueDate) {
+        showToast('Invalid Available Date', 'Available from date cannot be later than the due date.', 'warning')
+        return
+      }
+    }
+    
     // For available from, preserve the selected time
     let hour24 = availableTime.value.hour
     if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
@@ -806,9 +1059,33 @@ const selectToday = (type: 'due' | 'available') => {
   const today = new Date()
   
   if (type === 'due') {
+    // Validate due date against available from
+    if (assignmentData.value.availableFrom) {
+      const availableFromDate = new Date(assignmentData.value.availableFrom)
+      availableFromDate.setHours(0, 0, 0, 0)
+      const todayDate = new Date(today)
+      todayDate.setHours(0, 0, 0, 0)
+      
+      if (todayDate < availableFromDate) {
+        showToast('Invalid Due Date', 'Due date cannot be earlier than the available from date.', 'warning')
+        return
+      }
+    }
+    
     assignmentData.value.dueDate = today.toISOString().split('T')[0]
     showDueDatePicker.value = false
   } else {
+    // Validate available from against due date
+    if (assignmentData.value.dueDate) {
+      const dueDate = new Date(assignmentData.value.dueDate)
+      dueDate.setHours(23, 59, 59, 999)
+      
+      if (today > dueDate) {
+        showToast('Invalid Available Date', 'Available from date cannot be later than the due date.', 'warning')
+        return
+      }
+    }
+    
     // Convert 12-hour to 24-hour format
     let hour24 = availableTime.value.hour
     if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
@@ -819,6 +1096,45 @@ const selectToday = (type: 'due' | 'available') => {
     
     today.setHours(hour24, availableTime.value.minute, 0, 0)
     assignmentData.value.availableFrom = today.toISOString()
+  }
+}
+
+const selectNow = (type: 'due' | 'available') => {
+  const now = new Date()
+  
+  if (type === 'due') {
+    // For due date, just select today's date (same as selectToday)
+    selectToday('due')
+  } else {
+    // For available from, set current date and time
+    
+    // Validate available from against due date
+    if (assignmentData.value.dueDate) {
+      const dueDate = new Date(assignmentData.value.dueDate)
+      dueDate.setHours(23, 59, 59, 999)
+      
+      if (now > dueDate) {
+        showToast('Invalid Available Date', 'Current time is after the due date. Please adjust the due date first.', 'warning')
+        return
+      }
+    }
+    
+    // Update the time picker controls to current time
+    const currentHour = now.getHours()
+    const currentMinute = now.getMinutes()
+    const ampm = currentHour >= 12 ? 'PM' : 'AM'
+    let displayHour = currentHour % 12
+    if (displayHour === 0) displayHour = 12
+    
+    // Update the time picker state
+    availableTime.value.hour = currentHour
+    availableTime.value.minute = currentMinute
+    availableTime.value.ampm = ampm
+    
+    // Set the available from date and time
+    assignmentData.value.availableFrom = now.toISOString()
+    
+    showToast('Time Set', 'Available from set to current date and time.', 'success')
   }
 }
 
@@ -833,40 +1149,53 @@ const clearDate = (type: 'due' | 'available') => {
 }
 
 const confirmAvailableDateTime = () => {
+  // Convert 12-hour to 24-hour format
+  let hour24 = availableTime.value.hour
+  if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
+    hour24 = availableTime.value.hour + 12
+  } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
+    hour24 = 0
+  }
+
+  let selectedDateTime: Date
+
   // If no date is selected yet, select today
   if (!assignmentData.value.availableFrom) {
     const today = new Date()
-    
-    // Convert 12-hour to 24-hour format
-    let hour24 = availableTime.value.hour
-    if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
-      hour24 = availableTime.value.hour + 12
-    } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
-      hour24 = 0
-    }
-    
     today.setHours(hour24, availableTime.value.minute, 0, 0)
-    assignmentData.value.availableFrom = today.toISOString()
+    selectedDateTime = today
   } else {
     // Update the existing date with current time selection
     const date = new Date(assignmentData.value.availableFrom)
-    
-    // Convert 12-hour to 24-hour format
-    let hour24 = availableTime.value.hour
-    if (availableTime.value.ampm === 'PM' && availableTime.value.hour !== 12) {
-      hour24 = availableTime.value.hour + 12
-    } else if (availableTime.value.ampm === 'AM' && availableTime.value.hour === 12) {
-      hour24 = 0
-    }
-    
     date.setHours(hour24, availableTime.value.minute, 0, 0)
-    assignmentData.value.availableFrom = date.toISOString()
+    selectedDateTime = date
   }
+
+  // Validate that the selected datetime is not in the past
+  const now = new Date()
+  if (selectedDateTime < now) {
+    showToast('Invalid Time', 'Selected date and time cannot be in the past.', 'warning')
+    return
+  }
+
+  // Validate against due date if set
+  if (assignmentData.value.dueDate) {
+    const dueDate = new Date(assignmentData.value.dueDate)
+    dueDate.setHours(23, 59, 59, 999)
+    
+    if (selectedDateTime > dueDate) {
+      showToast('Invalid Available Date', 'Available from date cannot be later than the due date.', 'warning')
+      return
+    }
+  }
+
+  assignmentData.value.availableFrom = selectedDateTime.toISOString()
   
-  // Close the picker
+  // Close the picker automatically since we've set everything
   showAvailablePicker.value = false
 }
 
+// Simplified version without automatic adjustments
 const updateAvailableTime = () => {
   if (assignmentData.value.availableFrom) {
     const date = new Date(assignmentData.value.availableFrom)
@@ -879,7 +1208,9 @@ const updateAvailableTime = () => {
       hour24 = 0
     }
     
+    // Simply update the time without any automatic adjustments
     date.setHours(hour24, availableTime.value.minute, 0, 0)
+    
     assignmentData.value.availableFrom = date.toISOString()
   }
 }
@@ -944,16 +1275,84 @@ const filterStudents = async () => {
   await loadEnrolledStudents()
 }
 
+// Add comprehensive validation function
+const validateDates = (): { isValid: boolean; message: string } => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  if (!assignmentData.value.availableFrom) {
+    return { isValid: false, message: 'Please select when the test should become available to students.' }
+  }
+  
+  if (!assignmentData.value.dueDate) {
+    return { isValid: false, message: 'Please select the due date for the test.' }
+  }
+  
+  const dueDate = new Date(assignmentData.value.dueDate)
+  dueDate.setHours(0, 0, 0, 0)
+  
+  const availableFromDate = new Date(assignmentData.value.availableFrom)
+  
+  // Check if available from is in the past
+  // Allow a 1-minute tolerance to handle timing differences when setting defaults
+  const now = new Date()
+  const oneMinuteAgo = new Date(now.getTime() - 60 * 1000) // 1 minute ago
+  
+  if (availableFromDate < oneMinuteAgo) {
+    return { isValid: false, message: 'Available from date and time cannot be in the past.' }
+  }
+  
+  // Check if due date is in the past
+  if (dueDate < today) {
+    return { isValid: false, message: 'Due date cannot be in the past.' }
+  }
+  
+  // Check if available from is after due date
+  const dueDateEndOfDay = new Date(dueDate)
+  dueDateEndOfDay.setHours(23, 59, 59, 999)
+  
+  if (availableFromDate > dueDateEndOfDay) {
+    return { isValid: false, message: 'The test must be available before the due date. Please select an earlier available from time or a later due date.' }
+  }
+  
+  // Check if there's reasonable time between available from and due date
+  const timeDifference = dueDateEndOfDay.getTime() - availableFromDate.getTime()
+  const hoursDifference = timeDifference / (1000 * 60 * 60)
+  
+  if (hoursDifference < 1) {
+    return { isValid: false, message: 'Students need at least 1 hour to complete the test. Please adjust your dates.' }
+  }
+  
+  return { isValid: true, message: '' }
+}
+
 const confirmAssignment = async () => {
   if (!hasSelectedStudents.value) {
     showToast('No Students Selected', 'Please select at least one student to assign the test.', 'info')
     return
   }
   
-  if (!assignmentData.value.dueDate || !assignmentData.value.availableFrom) {
-    showToast('Missing Information', 'Please fill in all required fields (Due Date and Available From).', 'warning')
+  // Comprehensive date validation
+  const dateValidation = validateDates()
+  if (!dateValidation.isValid) {
+    showToast('Invalid Date Selection', dateValidation.message, 'warning')
     return
   }
+  
+  // Additional validations
+  // TODO: Uncomment when Max Attempts and Time Limit features are implemented
+  /*
+  if (assignmentData.value.maxAttempts < 1 || assignmentData.value.maxAttempts > 10) {
+    showToast('Invalid Max Attempts', 'Max attempts should be between 1 and 10.', 'warning')
+    return
+  }
+  
+  if (assignmentData.value.timeLimitMinutes !== null && 
+      (assignmentData.value.timeLimitMinutes < 1 || assignmentData.value.timeLimitMinutes > 1440)) {
+    showToast('Invalid Time Limit', 'Time limit should be between 1 and 1440 minutes (24 hours).', 'warning')
+    return
+  }
+  */
 
   const selectedStudents = filteredStudents.value.filter(s => s.selected)
   await executeAssignment(selectedStudents)
@@ -968,8 +1367,9 @@ const executeAssignment = async (selectedStudents: Student[]) => {
       student_ids: selectedStudents.map(s => s.id),
       due_date: new Date(assignmentData.value.dueDate).toISOString(),
       available_from: new Date(assignmentData.value.availableFrom).toISOString(),
-      max_attempts: assignmentData.value.maxAttempts,
-      time_limit_minutes: assignmentData.value.timeLimitMinutes
+      // TODO: Uncomment when Max Attempts and Time Limit features are implemented
+      // max_attempts: assignmentData.value.maxAttempts,
+      // time_limit_minutes: assignmentData.value.timeLimitMinutes
     }
     
     const response = await axiosInstance.post('/test-assignments/bulk', assignmentPayload)
@@ -1054,6 +1454,7 @@ const removeAssignment = async (student: Student) => {
 
 // Lifecycle hooks
 onMounted(() => {
+  setSmartDefaults()
   fetchTestPaper()
   document.addEventListener('click', handleClickOutside)
 })
@@ -1067,6 +1468,48 @@ onUnmounted(() => {
 /* Header Section */
 .header-section {
   margin-bottom: 0;
+}
+
+/* Header Buttons Styling */
+.header-buttons-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.header-buttons-container .btn {
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-buttons-container .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-buttons-container .btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  color: white;
+}
+
+.header-buttons-container .btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+}
+
+.header-buttons-container .btn-outline-dark {
+  border: 2px solid #495057;
+  color: #495057;
+  background: white;
+}
+
+.header-buttons-container .btn-outline-dark:hover {
+  background: #495057;
+  color: white;
+  border-color: #495057;
 }
 
 .test-info-card {
@@ -1427,6 +1870,38 @@ onUnmounted(() => {
   color: #ced4da;
   cursor: not-allowed;
   background: #f8f9fa;
+}
+
+.date-btn.disabled,
+.date-btn.past-date,
+.date-btn.invalid-due-date {
+  color: #ced4da !important;
+  cursor: not-allowed !important;
+  background: #f8f9fa !important;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.date-btn.invalid-due-date {
+  background: #fff5f5 !important;
+  border: 1px solid #fed7d7 !important;
+  color: #c53030 !important;
+}
+
+.date-btn.disabled:hover,
+.date-btn.past-date:hover,
+.date-btn.invalid-due-date:hover {
+  background: #f8f9fa !important;
+  color: #ced4da !important;
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+.date-btn.invalid-due-date:hover {
+  background: #fff5f5 !important;
+  color: #c53030 !important;
+  border-color: #fed7d7 !important;
 }
 
 .date-btn.selected {
@@ -2008,9 +2483,87 @@ onUnmounted(() => {
   margin-bottom: 0.5rem;
 }
 
-/* Assignment Details Card Spacing */
-.card-body .mb-3:last-of-type {
-  margin-bottom: 1.5rem !important;
+/* Improved Helper Text */
+.helper-text-improved {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #1565c0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.helper-text-improved i {
+  font-size: 1.1rem;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.helper-text-improved span {
+  line-height: 1.4;
+}
+
+.helper-text-improved strong {
+  color: #0d47a1;
+  font-weight: 600;
+}
+
+/* Helper Text Collapsible */
+.helper-text-collapsible {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.helper-content {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: #1565c0;
+  line-height: 1.4;
+}
+
+.helper-content strong {
+  color: #0d47a1;
+  font-weight: 600;
+}
+
+/* Helper Toggle Button */
+.helper-toggle {
+  border: none !important;
+  text-decoration: none !important;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.helper-toggle:hover {
+  color: #0d47a1 !important;
+  transform: scale(1.1);
+}
+
+.helper-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  outline: none;
+}
+
+/* Slide down animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Animation for cards */
@@ -2076,5 +2629,128 @@ onUnmounted(() => {
     border-color: #718096;
    
   }
+}
+
+/* Validation Status Alerts */
+.alert {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alert small {
+  margin: 0;
+  font-weight: 500;
+}
+
+.alert i {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.alert-success {
+  background-color: #d1eddd;
+  color: #155724;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Assignment Details Card Spacing */
+.card-body .mb-3:last-of-type {
+  margin-bottom: 1.5rem !important;
+}
+
+/* Animation for cards */
+
+/* Mobile Header Buttons */
+.d-block.d-lg-none .btn {
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.d-block.d-lg-none .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.d-block.d-lg-none .btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  color: white;
+}
+
+.d-block.d-lg-none .btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+}
+
+.d-block.d-lg-none .btn-outline-dark {
+  border: 2px solid #495057;
+  color: #495057;
+  background: white;
+}
+
+.d-block.d-lg-none .btn-outline-dark:hover {
+  background: #495057;
+  color: white;
+  border-color: #495057;
+}
+
+.toggle-label-fixed {
+  min-width: 110px;
+  display: inline-block;
+  text-align: left;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+/* Enhanced Form Switch Styling */
+.form-check.form-switch .form-check-input {
+  width: 2.5rem;
+  height: 1.25rem;
+  background-color: #dee2e6;
+  border: 2px solid #dee2e6;
+  border-radius: 2rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.form-check.form-switch .form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.form-check.form-switch .form-check-input:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check.form-switch .form-check-input:hover {
+  transform: scale(1.05);
 }
 </style> 
