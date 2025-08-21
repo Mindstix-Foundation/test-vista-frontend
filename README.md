@@ -47,35 +47,35 @@ Test Vista revolutionizes educational assessment by providing an intelligent, au
 **Complete workflow showing how Test Vista intelligently generates test papers:**
 
 #### 1. Board, Standard & Subject Selection For Creating Test Paper
-![Board, Standard & Subject Selection For Creating Test Paper](screenshots/1-dashboard.png)
+![Board, Standard & Subject Selection For Creating Test Paper](frontend/screenshots/1-dashboard.png)
 *Initial test paper creation interface with educational parameter selection*
 
 #### 2. Chapter Selection
-![Chapter Selection](screenshots/2-test-creation-start.png)
+![Chapter Selection](frontend/screenshots/2-test-creation-start.png)
 *Advanced chapter selection with intelligent weightage distribution system*
 
 #### 3. Question Source And Total Marks Selection
-![Question Source And Total Marks Selection](screenshots/3-board-selection.png)
+![Question Source And Total Marks Selection](frontend/screenshots/3-board-selection.png)
 *Advanced question source and total marks selection*
 
 #### 4. Pattern Selection
-![Pattern Selection](screenshots/4-subject-selection.png)
+![Pattern Selection](frontend/screenshots/4-subject-selection.png)
 *Flexible exam pattern configuration with multiple question types and sections selection*
 
 #### 5. Chapter Weightage Configuration
-![Chapter Weightage Configuration](screenshots/5-chapter-weightage.png)
+![Chapter Weightage Configuration](frontend/screenshots/5-chapter-weightage.png)
 *Advanced chapter intelligent weightage distribution system*
 
 #### 6. Generate Questions
-![Generate Questions](screenshots/6-pattern-selection.png)
+![Generate Questions](frontend/screenshots/6-pattern-selection.png)
 *Generating questions using chapter distribution and chapters selected*
 
 #### 7. Test Paper Preview
-![Test Paper Preview](screenshots/7-test-generation.png)
+![Test Paper Preview](frontend/screenshots/7-test-generation.png)
 *Real-time preview of all questions with ability to change them if you want and name the test paper*
 
 #### 8. Saving Final Generated Test Paper
-![Saving Final Generated Test Paper](screenshots/8-final-test-paper.png)
+![Saving Final Generated Test Paper](frontend/screenshots/8-final-test-paper.png)
 *Professional, ready-to-print test paper output with proper formatting and structure*
 
 > **🎯 Core Feature Highlight**: These screenshots demonstrate Test Vista's main objective - **intelligent, automated test paper generation** that transforms a 3-5 hour manual process into a 3-5 minute automated workflow while ensuring perfect syllabus coverage and balanced question distribution.
