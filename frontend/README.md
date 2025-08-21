@@ -211,8 +211,8 @@ frontend/
 
 2. **Install dependencies**
    ```bash
-   npm install
-   ```
+npm install
+```
 
 3. **Environment Configuration**
    Create a `.env` file in the root directory:
@@ -224,8 +224,8 @@ frontend/
 
 4. **Start development server**
    ```bash
-   npm run dev
-   ```
+npm run dev
+```
 
 The application will be available at `http://localhost:5174`
 
