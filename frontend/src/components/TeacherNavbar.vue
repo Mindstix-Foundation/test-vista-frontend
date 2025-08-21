@@ -97,7 +97,7 @@
                 id="navManageItiStudents"
                 @click="closeOffcanvas"
               >
-                MANAGE ITI STUDENTS
+                MANAGE STUDENTS
               </router-link>
             </li>
             <li class="nav-item">
