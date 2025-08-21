@@ -1,12 +1,8 @@
 # Test Vista - Intelligent SaaS Platform For Competitive Test Paper Generation
 
-**Vue.js frontend application for the Test Vista educational testing platform, providing intelligent test paper generation and comprehensive analytics interfaces.**
 
 > **🌟 An open-source educational testing platform that simplifies and automates the generation of practice test papers for various academic boards and educational institutions. Test Vista draws questions from a rich and well-curated question bank, creating test papers based on specific board, standard, syllabus, subject, and chapters.**
 
-## 🔗 Related Repository
-
-- **Backend API**: [Test Vista Backend Repository](https://github.com/your-org/test-vista-be) - NestJS backend providing robust APIs for test paper generation and management
 
 ## 🎯 Project Vision & Problem Statement
 
@@ -50,36 +46,36 @@ Test Vista revolutionizes educational assessment by providing an intelligent, au
 
 **Complete workflow showing how Test Vista intelligently generates test papers:**
 
-#### 1. Dashboard Overview
-![Dashboard](screenshots/1-dashboard.png)
-*Main dashboard interface showing the clean, intuitive design and navigation*
-
-#### 2. Test Creation Start
-![Test Creation Start](screenshots/2-test-creation-start.png)
+#### 1. Board, Standard & Subject Selection For Creating Test Paper
+![Board, Standard & Subject Selection For Creating Test Paper](screenshots/1-dashboard.png)
 *Initial test paper creation interface with educational parameter selection*
 
-#### 3. Board Selection
-![Board Selection](screenshots/3-board-selection.png)
-*Educational board selection - supporting CBSE, ICSE, State Boards and more*
-
-#### 4. Subject Selection
-![Subject Selection](screenshots/4-subject-selection.png)
-*Subject and class selection interface with comprehensive curriculum coverage*
-
-#### 5. Chapter Weightage Configuration
-![Chapter Weightage](screenshots/5-chapter-weightage.png)
+#### 2. Chapter Selection
+![Chapter Selection](screenshots/2-test-creation-start.png)
 *Advanced chapter selection with intelligent weightage distribution system*
 
-#### 6. Pattern Selection
-![Pattern Selection](screenshots/6-pattern-selection.png)
-*Flexible exam pattern configuration with multiple question types and sections*
+#### 3. Question Source And Total Marks Selection
+![Question Source And Total Marks Selection](screenshots/3-board-selection.png)
+*Advanced question source and total marks selection*
 
-#### 7. Test Generation Process
-![Test Generation](screenshots/7-test-generation.png)
-*Real-time test paper generation showing the intelligent question selection algorithm*
+#### 4. Pattern Selection
+![Pattern Selection](screenshots/4-subject-selection.png)
+*Flexible exam pattern configuration with multiple question types and sections selection*
 
-#### 8. Final Generated Test Paper
-![Final Test Paper](screenshots/8-final-test-paper.png)
+#### 5. Chapter Weightage Configuration
+![Chapter Weightage Configuration](screenshots/5-chapter-weightage.png)
+*Advanced chapter intelligent weightage distribution system*
+
+#### 6. Generate Questions
+![Generate Questions](screenshots/6-pattern-selection.png)
+*Generating questions using chapter distribution and chapters selected*
+
+#### 7. Test Paper Preview
+![Test Paper Preview](screenshots/7-test-generation.png)
+*Real-time preview of all questions with ability to change them if you want and name the test paper*
+
+#### 8. Saving Final Generated Test Paper
+![Saving Final Generated Test Paper](screenshots/8-final-test-paper.png)
 *Professional, ready-to-print test paper output with proper formatting and structure*
 
 > **🎯 Core Feature Highlight**: These screenshots demonstrate Test Vista's main objective - **intelligent, automated test paper generation** that transforms a 3-5 hour manual process into a 3-5 minute automated workflow while ensuring perfect syllabus coverage and balanced question distribution.
@@ -728,27 +724,33 @@ And to all the educators who provided feedback and helped shape this platform to
 ## 🎓 Meet the Team
 
 ### 💡 **Vision & Leadership**
-- **Project Manager & Visionary**: [Siddhant Raut](https://github.com/siddhant-raut) - Strategic direction and project oversight
-- **Idea & Vision**: [Jayendra Kulkarni](https://github.com/jayendra-kulkarni) - Product conceptualization and educational expertise
+- **Project Manager & Visionary**: [Siddhant Raut](https://github.com/siddhant-raut) - Project management and strategic vision
 
-### 👨‍💻 **Core Development Team**
-- **Lead Developer**: [Nishant Bondre](https://github.com/nishant-bondre) - Full-stack development and architecture
-- **Senior Developer**: [Uday Narsale](https://github.com/uday-narsale) - Backend development and database design
+- **Idea & Vision**: [Jayendra Kulkarni](https://github.com/jayendra-kulkarni) - Product conceptualization and vision
 
 ### 🎯 **Technical Guidance**
 - **Technical Guide**: [Roshan Kulkarni](https://github.com/roshan-kulkarni) - Architecture guidance and code reviews
 
+### 👨‍💻 **Core Development Team**
+
+- **Full-Stack Developer**: [Uday Narsale](https://github.com/uday-narsale) - Full-stack development and database design
+
+- **Full-Stack Developer**: [Nishant Bondre](https://github.com/nishant-bondre) - Full-stack development and database design
+
+
 ### 🤝 **Contributing Team Members**
-- **[Sameer Shirodkar](https://github.com/sameer-shirodkar)** - Frontend development and UI/UX
-- **[Preman Ghevade](https://github.com/preman-ghevade)** - Testing and quality assurance
-- **[Pooja Singh](https://github.com/pooja-singh)** - Documentation and user experience
-- **[Akshay Malkar](https://github.com/akshay-malkar)** - API development and integration
-- **[Sanket Sakharkar](https://github.com/sanket-sakharkar)** - Database optimization and performance
-- **[Shubham Khetre](https://github.com/shubham-khetre)** - DevOps and deployment automation
+- **[Madhu Harsha](https://github.com/madhu-harsha)** - Frontend UI/UX Design Guidance
+- **[Sanket Sakharkar](https://github.com/sanket-sakharkar)** - Database Design Guidance
+- **[Shubham Khetre](https://github.com/shubham-khetre)** - Database Design Guidance
+- **[Sameer Shirodkar](https://github.com/sameer-shirodkar)** - Educational Domain Expertise
+- **[Preman Ghevade](https://github.com/preman-ghevade)** - Data Entry and Content Management
+- **[Pooja Singh](https://github.com/pooja-singh)** - Data Entry and Content Management
+- **[Akshay Malkar](https://github.com/akshay-malkar)** - Testing and Quality Assurance in Educational Institutions
 
-## 🔗 Repository Links
 
-- **📱 Frontend Repository**: [Test Vista Frontend](https://github.com/your-username/test-vista-frontend) - Vue.js application (Current Repository)
+## 🔗 Repository Link:
+
+
 - **⚙️ Backend Repository**: [Test Vista Backend](https://github.com/your-username/test-vista-backend) - NestJS API server providing robust backend services
 
 ---
