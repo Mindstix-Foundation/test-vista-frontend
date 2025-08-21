@@ -544,7 +544,7 @@ VITE_ENABLE_DEBUG=true
 ## 📖 API Integration & Backend
 
 ### Backend API Repository
-- **Test Vista Backend**: [https://github.com/your-org/test-vista-be](https://github.com/your-org/test-vista-be) - NestJS backend providing robust APIs
+- **Test Vista Backend**: [Test Vista Backend](https://github.com/Mindstix-Foundation/test-vista-backend) - NestJS backend providing robust APIs
 
 ### API Documentation
 The backend provides comprehensive REST APIs documented with Swagger:
@@ -753,7 +753,7 @@ And to all the educators who provided feedback and helped shape this platform to
 ## 🔗 Repository Link:
 
 
-- **⚙️ Backend Repository**: [Test Vista Backend](https://github.com/your-username/test-vista-backend) - NestJS API server providing robust backend services
+- **⚙️ Backend Repository**: [Test Vista Backend](https://github.com/Mindstix-Foundation/test-vista-backend) - NestJS API server providing robust backend services
 
 ---
 
