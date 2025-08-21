@@ -608,17 +608,17 @@ function validateCsvRow(row: any, rowNumber: number): string[] {
 
   switch (selectedQuestionType.value) {
     case 'Multiple Choice Question (MCQ)':
-      if (!row.a?.trim()) {
-        errors.push(`Row ${rowNumber}: Option A is required`)
-      }
-      if (!row.b?.trim()) {
-        errors.push(`Row ${rowNumber}: Option B is required`)
-      }
-      
-      // Check correct answer
-      const correctAnswer = row.correct_answer?.toLowerCase()
-      if (!['a', 'b', 'c', 'd'].includes(correctAnswer)) {
-        errors.push(`Row ${rowNumber}: Correct answer must be a, b, c, or d`)
+  if (!row.a?.trim()) {
+    errors.push(`Row ${rowNumber}: Option A is required`)
+  }
+  if (!row.b?.trim()) {
+    errors.push(`Row ${rowNumber}: Option B is required`)
+  }
+  
+  // Check correct answer
+  const correctAnswer = row.correct_answer?.toLowerCase()
+  if (!['a', 'b', 'c', 'd'].includes(correctAnswer)) {
+    errors.push(`Row ${rowNumber}: Correct answer must be a, b, c, or d`)
       }
       break
 
@@ -741,19 +741,19 @@ function createCsvQuestionRequest(row: CsvRowData, topicId: number) {
 
   switch (selectedQuestionType.value) {
     case 'Multiple Choice Question (MCQ)':
-      // Map correct answer letter to index
-      const correctAnswerMap: { [key: string]: number } = {
-        'a': 0, 'b': 1, 'c': 2, 'd': 3
-      }
-      
+  // Map correct answer letter to index
+  const correctAnswerMap: { [key: string]: number } = {
+    'a': 0, 'b': 1, 'c': 2, 'd': 3
+  }
+
       const options = [row.a, row.b, row.c, row.d].filter(opt => opt && opt.trim() !== '')
       const correctOptionIndex = correctAnswerMap[row.correct_answer?.toLowerCase() || '']
-      
-      const mcqOptions = options.map((optionText, index) => ({
+
+  const mcqOptions = options.map((optionText, index) => ({
         option_text: optionText?.trim() || '',
-        is_correct: index === correctOptionIndex
-      }))
-      
+    is_correct: index === correctOptionIndex
+  }))
+
       baseRequest.question_text_data.mcq_options = mcqOptions
       break
 
