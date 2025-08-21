@@ -802,11 +802,11 @@ const hasZeroMarksChapters = computed(() => {
 
 // Get details from query parameters
 const patternId = route.query.patternId as string
-const boardName = computed(() => route.query.board as string ?? 'Not Selected')
-const mediumName = computed(() => route.query.medium as string ?? 'Not Selected')
-const standardName = computed(() => route.query.standard as string ?? 'Not Selected')
-const subjectName = computed(() => route.query.subject as string ?? 'Not Selected')
-const patternName = computed(() => route.query.patternName as string ?? 'Not Selected')
+const boardName = computed(() => decodeURIComponent(route.query.board as string ?? 'Not Selected'))
+const mediumName = computed(() => decodeURIComponent(route.query.medium as string ?? 'Not Selected'))
+const standardName = computed(() => decodeURIComponent(route.query.standard as string ?? 'Not Selected'))
+const subjectName = computed(() => decodeURIComponent(route.query.subject as string ?? 'Not Selected'))
+const patternName = computed(() => decodeURIComponent(route.query.patternName as string ?? 'Not Selected'))
 
 // Fetch pattern details
 const fetchPatternDetails = async () => {

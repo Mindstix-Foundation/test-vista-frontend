@@ -640,8 +640,52 @@ const getRecommendationType = (recommendation: string): string => {
 }
 
 const getRecommendationChapters = (recommendation: string): string => {
-  const match = recommendation.match(/: ([^-]+) -/)
-  return match ? match[1].trim() : ''
+  // Try multiple regex patterns to handle different formats
+  
+  // Pattern 1: Standard format ": chapter_name -"
+  let match = recommendation.match(/: ([^-]+) -/)
+  if (match && match[1].trim()) {
+    return formatChapterNames(match[1].trim())
+  }
+  
+  // Pattern 2: Handle format with emoji prefix ": chapter_name"
+  match = recommendation.match(/: (.+?) - /)
+  if (match && match[1].trim()) {
+    return formatChapterNames(match[1].trim())
+  }
+  
+  // Pattern 3: Extract everything between ":" and first " -" or end
+  match = recommendation.match(/: (.+?)(?:\s-\s|$)/)
+  if (match && match[1].trim()) {
+    return formatChapterNames(match[1].trim())
+  }
+  
+  // Pattern 4: Fallback - extract content after type indicator
+  const typeIndicators = ['🔴 Critical Focus Areas', '🟡 Areas for Enhancement', '🟢 Strong Performance']
+  for (const indicator of typeIndicators) {
+    if (recommendation.includes(indicator)) {
+      const afterIndicator = recommendation.split(indicator)[1]
+      if (afterIndicator) {
+        // Extract text after ":" and before " -"
+        const colonMatch = afterIndicator.match(/:\s*(.+?)(?:\s-|$)/)
+        if (colonMatch && colonMatch[1].trim()) {
+          return formatChapterNames(colonMatch[1].trim())
+        }
+      }
+    }
+  }
+  
+  // If all patterns fail, return a fallback message
+  return 'Multiple Chapters'
+}
+
+const formatChapterNames = (chapters: string): string => {
+  if (!chapters || chapters.trim() === '') {
+    return 'Multiple Chapters'
+  }
+  
+  // Simply return all chapter names without truncation
+  return chapters.trim()
 }
 
 const getRecommendationMessage = (recommendation: string): string => {
@@ -1435,10 +1479,12 @@ onUnmounted(() => {
   font-weight: 600;
   color: #495057;
   margin-bottom: 15px;
-  padding: 10px 15px;
+  padding: 12px 16px;
   background: rgba(0, 0, 0, 0.04);
   border-radius: 8px;
-  display: inline-block;
+  display: block;
+  word-wrap: break-word;
+  line-height: 1.4;
 }
 
 .recommendation-critical .recommendation-chapters {
@@ -1989,6 +2035,7 @@ onUnmounted(() => {
     font-size: 1rem;
     padding: 8px 12px;
     margin-bottom: 12px;
+    line-height: 1.5;
   }
   
   .recommendation-text {
@@ -2396,6 +2443,7 @@ onUnmounted(() => {
     font-size: 0.95rem;
     padding: 6px 10px;
     margin-bottom: 10px;
+    line-height: 1.4;
   }
   
   .recommendation-text {
