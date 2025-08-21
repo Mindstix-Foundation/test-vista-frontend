@@ -725,29 +725,29 @@ And to all the educators who provided feedback and helped shape this platform to
 
 ### 💡 **Vision & Leadership**
 
-- **Idea & Vision**: [Jayendra Kulkarni](https://github.com/jayendra-kulkarni) - Product conceptualization and vision
+- **Idea & Vision**: Jayendra Kulkarni - Product conceptualization and vision
 
-- **Technical Guide**: [Roshan Kulkarni](https://github.com/roshan-kulkarni) - Architecture guidance and code reviews
+- **Technical Guide**: Roshan Kulkarni - Architecture guidance and code reviews
 
-- **Project Manager**: [Siddhant Raut](https://github.com/siddhant-raut) - Project management and strategic vision
+- **Project Manager**: Siddhant Raut - Project management and strategic vision
 
 
 ### 👨‍💻 **Core Development Team**
 
-- **Full-Stack Developer**: [Uday Narsale](https://github.com/uday-narsale) - Full-stack development, frontend design, and database design
+- **Full-Stack Developer**: [Uday Narsale](https://github.com/Uday-Mindstix) - Full-stack development, frontend design, and database design
 
-- **Full-Stack Developer**: [Nishant Bondre](https://github.com/nishant-bondre) - Full-stack development, frontend design, and database design
+- **Full-Stack Developer**: [Nishant Bondre](https://github.com/nishant-mindstix) - Full-stack development, frontend design, and database design
 
 
 ### 🤝 **Contributing Team Members**
 
-- **[Madhu Harsha](https://github.com/madhu-harsha)** - Frontend UI/UX Design Guidance
-- **[Sanket Sakharkar](https://github.com/sanket-sakharkar)** - Database Design Guidance
-- **[Shubham Khetre](https://github.com/shubham-khetre)** - Database Design Guidance
-- **[Sameer Shirodkar](https://github.com/sameer-shirodkar)** - Educational Domain Expertise
-- **[Preman Ghevade](https://github.com/preman-ghevade)** - Data Entry and Content Management
-- **[Pooja Singh](https://github.com/pooja-singh)** - Data Entry and Content Management
-- **[Akshay Malkar](https://github.com/akshay-malkar)** - Testing and Quality Assurance in Educational Institutions
+- **Madhu Harsha** - Frontend UI/UX Design Guidance
+- **Sanket Sakharkar** - Database Design Guidance
+- **Shubham Khetre** - Database Design Guidance
+- **Sameer Shirodkar** - Educational Domain Expertise
+- **Preman Ghevade** - Data Entry and Content Management
+- **Pooja Singh** - Data Entry and Content Management
+- **Akshay Malkar** - Testing and Quality Assurance in Educational Institutions
 
 
 ## 🔗 Repository Link:
