@@ -46,46 +46,43 @@ Test Vista revolutionizes educational assessment by providing an intelligent, au
 | **Analytics** | Manual calculation | Real-time insights |
 | **Scalability** | Limited to individual teachers | Institution-wide deployment |
 
-### 📸 Test Paper Creation Process
+### 📸 Test Paper Creation Process Screenshots
 
-**Step-by-Step Test Paper Generation Workflow**
+**Complete workflow showing how Test Vista intelligently generates test papers:**
 
-#### 1. Dashboard & Navigation
-![Test Vista Dashboard](Screenshots/Screenshot%20from%202025-08-21%2011-24-13.png)
-*Main dashboard interface showing navigation to test paper creation*
+#### 1. Dashboard Overview
+![Dashboard](screenshots/1-dashboard.png)
+*Main dashboard interface showing the clean, intuitive design and navigation*
 
-#### 2. Educational Parameters Selection
-![Board and Subject Selection](Screenshots/Screenshot%20from%202025-08-21%2011-24-20.png)
-*Select Board, Medium, Standard, and Subject for your test paper*
+#### 2. Test Creation Start
+![Test Creation Start](screenshots/2-test-creation-start.png)
+*Initial test paper creation interface with educational parameter selection*
 
-#### 3. Chapter Selection & Weightage
-![Chapter Selection](Screenshots/Screenshot%20from%202025-08-21%2011-24-30.png)
-*Choose specific chapters and assign weightage for balanced question distribution*
+#### 3. Board Selection
+![Board Selection](screenshots/3-board-selection.png)
+*Educational board selection - supporting CBSE, ICSE, State Boards and more*
 
-#### 4. Pattern Configuration
-![Pattern Setup](Screenshots/Screenshot%20from%202025-08-21%2011-24-37.png)
-*Configure exam patterns with section-wise question distribution*
+#### 4. Subject Selection
+![Subject Selection](screenshots/4-subject-selection.png)
+*Subject and class selection interface with comprehensive curriculum coverage*
 
-#### 5. Question Generation Preview
-![Question Preview](Screenshots/Screenshot%20from%202025-08-21%2011-25-24.png)
-*Preview automatically generated questions based on your configuration*
+#### 5. Chapter Weightage Configuration
+![Chapter Weightage](screenshots/5-chapter-weightage.png)
+*Advanced chapter selection with intelligent weightage distribution system*
 
-#### 6. Test Paper Customization
-![Paper Customization](Screenshots/Screenshot%20from%202025-08-21%2011-25-35.png)
-*Customize test paper with instructions, branding, and final adjustments*
+#### 6. Pattern Selection
+![Pattern Selection](screenshots/6-pattern-selection.png)
+*Flexible exam pattern configuration with multiple question types and sections*
 
-#### 7. Final Test Paper Output
-![Generated Test Paper](Screenshots/Screenshot%20from%202025-08-21%2011-25-44.png)
-*Professional test paper ready for printing or digital distribution*
+#### 7. Test Generation Process
+![Test Generation](screenshots/7-test-generation.png)
+*Real-time test paper generation showing the intelligent question selection algorithm*
 
-#### 8. Export & Management Options
-![Export Options](Screenshots/Screenshot%20from%202025-08-21%2011-26-08.png)
-*Export to PDF, save for future use, or assign to students for online testing*
+#### 8. Final Generated Test Paper
+![Final Test Paper](screenshots/8-final-test-paper.png)
+*Professional, ready-to-print test paper output with proper formatting and structure*
 
----
-
-**✨ From Selection to Generation in Minutes!**
-*The entire process takes just 3-5 minutes, compared to 3-5 hours of manual creation*
+> **🎯 Core Feature Highlight**: These screenshots demonstrate Test Vista's main objective - **intelligent, automated test paper generation** that transforms a 3-5 hour manual process into a 3-5 minute automated workflow while ensuring perfect syllabus coverage and balanced question distribution.
 
 ## 🎯 Platform Overview
 
@@ -726,6 +723,8 @@ Special thanks to all team members who have contributed to making Test Vista a r
 
 And to all the educators who provided feedback and helped shape this platform to truly serve the educational community.
 
+---
+
 ## 🎓 Meet the Team
 
 ### 💡 **Vision & Leadership**
@@ -749,8 +748,8 @@ And to all the educators who provided feedback and helped shape this platform to
 
 ## 🔗 Repository Links
 
-- **Frontend Repository**: [Test Vista Frontend](https://github.com/your-org/test-vista-fe) - Vue.js application (Current Repository)
-- **Backend Repository**: [Test Vista Backend](https://github.com/your-org/test-vista-be) - NestJS API server providing robust backend services
+- **📱 Frontend Repository**: [Test Vista Frontend](https://github.com/your-username/test-vista-frontend) - Vue.js application (Current Repository)
+- **⚙️ Backend Repository**: [Test Vista Backend](https://github.com/your-username/test-vista-backend) - NestJS API server providing robust backend services
 
 ---
 
