@@ -734,9 +734,9 @@ And to all the educators who provided feedback and helped shape this platform to
 
 ### 👨‍💻 **Core Development Team**
 
-- **Full-Stack Developer**: [Uday Narsale](https://github.com/uday-narsale) - Full-stack development and database design
+- **Full-Stack Developer**: [Uday Narsale](https://github.com/uday-narsale) - Full-stack development, frontend design, and database design
 
-- **Full-Stack Developer**: [Nishant Bondre](https://github.com/nishant-bondre) - Full-stack development and database design
+- **Full-Stack Developer**: [Nishant Bondre](https://github.com/nishant-bondre) - Full-stack development, frontend design, and database design
 
 
 ### 🤝 **Contributing Team Members**
