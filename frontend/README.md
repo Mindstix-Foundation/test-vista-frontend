@@ -724,12 +724,13 @@ And to all the educators who provided feedback and helped shape this platform to
 ## 🎓 Meet the Team
 
 ### 💡 **Vision & Leadership**
-- **Project Manager & Visionary**: [Siddhant Raut](https://github.com/siddhant-raut) - Project management and strategic vision
 
 - **Idea & Vision**: [Jayendra Kulkarni](https://github.com/jayendra-kulkarni) - Product conceptualization and vision
 
-### 🎯 **Technical Guidance**
 - **Technical Guide**: [Roshan Kulkarni](https://github.com/roshan-kulkarni) - Architecture guidance and code reviews
+
+- **Project Manager**: [Siddhant Raut](https://github.com/siddhant-raut) - Project management and strategic vision
+
 
 ### 👨‍💻 **Core Development Team**
 
@@ -739,6 +740,7 @@ And to all the educators who provided feedback and helped shape this platform to
 
 
 ### 🤝 **Contributing Team Members**
+
 - **[Madhu Harsha](https://github.com/madhu-harsha)** - Frontend UI/UX Design Guidance
 - **[Sanket Sakharkar](https://github.com/sanket-sakharkar)** - Database Design Guidance
 - **[Shubham Khetre](https://github.com/shubham-khetre)** - Database Design Guidance
